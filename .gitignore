@@ -1,0 +1,72 @@
+*.raw
+*.log
+*.vcd
+*.vvp
+__pycache__/
+.DS_Store
+# ngspice BSIM4 parameter-check scratch file, written to the invocation cwd
+bsim4v5.out
+
+# sim/ harness: per-corner ngspice logs under corners/ are committed evidence
+# (append-only record trail), so they escape the *.log rule.
+!sim/*/corners/**/*.log
+sim/build/
+design/build/
+# synthesis / P&R scratch
+flow/build/
+# local klt install, created by the setup script
+.venv/
+# >>> loom-managed (do not edit) >>>
+# Loom runtime state (don't commit these)
+.loom-in-use
+.loom-checkpoint
+.loom-managed
+.no-changes-needed
+.snapshots/
+.loom/.daemon.pid
+.loom/.daemon.log
+.loom/daemon.sock
+.loom/daemon-loop.pid
+.loom/daemon-metrics.json
+.loom/loom-source-path
+.loom/spawn-loop-state.json
+.loom/spawn-loop.pid
+.loom/stop-spawn-loop
+.loom/issue-failures.json
+.loom/interventions/
+.loom/worktrees/
+.loom/worktrees-local/
+.claude/worktrees/
+.loom/state.json
+.loom/mcp-command.json
+.loom/activity.db
+.loom/claims/
+.loom/locks/
+.loom/signals/
+.loom/status/
+.loom/retry-state/
+.loom/exit-codes/
+.loom/sweep-checkpoint/
+.loom/sweep-run/
+.loom/stats/
+.loom/diagnostics/
+.loom/guide-docs-state.json
+.loom/metrics_state.json
+.loom/manifest.json
+.loom/stuck-config.json
+.loom/metrics/
+.loom/usage-cache.json
+.loom/claude-config/
+.loom/tokens/
+.loom/accounts.env
+.loom/account-health.json
+.loom/account-health.lock
+.loom/CANARY
+.loom/*.log
+.loom/*.sock
+.loom/*.tmp
+.loom/*.bak
+.loom/.install.lock
+.loom/logs/
+.loom/.resync-in-progress
+# <<< loom-managed <<<
