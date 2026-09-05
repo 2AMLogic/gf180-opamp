@@ -24,3 +24,7 @@ on GlobalFoundries GF180MCU, a 180 nm open CMOS PDK, designed and verified by AI
   on every recorded result; `sim/` results are append-only evidence.
 - Spec changes go through `spec/` with a decision record; agents do not
   relax the ratified spec to make results pass.
+
+<!-- BEGIN LOOM ORCHESTRATION -->
+This repository uses [Loom](https://github.com/rjwalters/loom) for AI-powered development orchestration — see the Loom repository for the full guide (roles, labels, worktrees, configuration). When installed, Loom also writes a locally-substituted copy of that guide to `.loom/CLAUDE.md`.
+<!-- END LOOM ORCHESTRATION -->
