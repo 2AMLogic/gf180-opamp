@@ -38,6 +38,17 @@ Same row structure as the twins, at 3.3 V primary (5 V flavor as a labelled
 stretch row pending a decision record). Rows filled only from committed
 benches at PVT corners.
 
+The full per-row table, with per-row value tags (`[P]`/`[TBD]`) and binding
+corners, lives in [`spec/target-spec.md`](spec/target-spec.md) — every
+performance row is currently `[TBD]`, since no gm/ID device characterization
+or PVT-cornered simulation exists in this repo yet. See
+[`spec/porting-plan.md`](spec/porting-plan.md) for what carries over from
+this block's nearest same-PDK siblings (`gf180-bandgap`, `gf180-ldo`) and
+`sg13g2-bandgap`'s amp-characterization testbench shape, and the
+[gap-to-T1 tracker](https://github.com/2AMLogic/gf180-opamp/issues/7) for the
+block's current distance from the klayout-tools T1 ("sim-validated")
+design-evidence tier.
+
 ## License
 
 Apache-2.0.
