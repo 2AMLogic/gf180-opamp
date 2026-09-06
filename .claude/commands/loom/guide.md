@@ -760,7 +760,7 @@ was_previously_approved() {
 }
 ```
 
-### Superseding Block Check (#4634)
+### Superseding Block Check (#4634, extended #7267)
 
 A body-declared "Depends on #N" can go stale once the issue moves further
 through the lifecycle after it was written — e.g. `loom:blocked` gets
@@ -773,6 +773,28 @@ true, but not the reason the label was applied — while implementation PR
 #4519 sat open with `loom:changes-requested`, forcing Champion to keep
 manually re-blocking with the real, current reason each time.
 
+**#7267 extension**: the original check above only looked at the linked PR's
+*labels*. It missed a linked PR's *merge state* — `mergeable ==
+"CONFLICTING"` or `mergeStateStatus` in (`DIRTY`, `CONFLICTING`), which
+`curator.md`'s "When Dependencies Complete" check has always also treated as
+an independent, sufficient block signal — and it missed `loom:operator` (a
+Champion merge-risk hold: a human decision is pending on that PR, so
+restoring `loom:issue` and re-queuing the issue for a **new** Builder is
+premature no matter how "mergeable" the PR looks). Because Guide's narrower
+check and Curator's fuller check no longer agreed on what counts as a
+superseding block, Guide's automated "Unblocked" pass and Curator's
+dependency re-check disagreed and flip-flopped `loom:blocked` on issue #6925
+against its own implementing PR #7246 (`loom:pr`+`loom:operator`,
+`mergeable=CONFLICTING`/`mergeStateStatus=DIRTY`) — four times in ~4 hours.
+The function below folds in both signals so the two checks cannot diverge on
+the case that actually occurred; `loom:operator` is intentionally checked
+**unconditionally** here (not only when the merge state is also bad) even
+though `curator.md`'s own check treats a bare `loom:operator` label as
+insufficient *for its own, lower-stakes action* (marking `loom:curated`,
+resolved by #6939/#6317) — Guide's action (restoring `loom:issue`, which
+re-queues the issue for a brand-new Builder) is higher-stakes, so this check
+is deliberately a superset of Curator's.
+
 **Before unblocking on a resolved body dependency, always run this check
 first.** It is the primary, mechanical gate — not a heuristic — and it
 overrides a fully-resolved body dependency:
@@ -781,10 +803,15 @@ overrides a fully-resolved body dependency:
 has_superseding_block() {
   local number="$1"
   # Any PR that would close this issue (Closes #N / closingIssuesReferences)
-  # still OPEN and carrying loom:changes-requested or loom:blocked is a
-  # superseding, CURRENT block reason — regardless of what the body's
-  # Dependencies section says. An open PR with no review-state label yet
-  # (still being built) is conservatively treated as NOT superseding here;
+  # still OPEN is a superseding, CURRENT block reason — regardless of what
+  # the body's Dependencies section says — when ANY of the following holds:
+  #   1. it carries loom:changes-requested, loom:blocked, or loom:operator
+  #      (a Champion merge-risk hold — a human decision is pending), or
+  #   2. mergeable == "CONFLICTING", or mergeStateStatus is "DIRTY" or
+  #      "CONFLICTING" (it cannot currently land no matter what its labels
+  #      say).
+  # An open PR with no review-state label yet (still being built) and a
+  # clean merge state is conservatively treated as NOT superseding here;
   # `check_and_unblock` still applies its own gates afterward.
   local pr_numbers
   pr_numbers=$(gh issue view "$number" --json closedByPullRequestsReferences \
@@ -792,14 +819,23 @@ has_superseding_block() {
 
   for pr in $pr_numbers; do
     local pr_json
-    pr_json=$(gh pr view "$pr" --json state,labels 2>/dev/null) || continue
+    pr_json=$(gh pr view "$pr" --json state,labels,mergeable,mergeStateStatus 2>/dev/null) || continue
     # NOTE: `printf '%s\n' "$VAR" | jq`, never `echo "$VAR" | jq` — zsh's
     # `echo` builtin reinterprets `\n`/`\t` escapes by default, which
     # corrupts captured `gh --json` output before jq ever parses it (#5094).
     local pr_state=$(printf '%s\n' "$pr_json" | jq -r '.state')
+    if [ "$pr_state" != "OPEN" ]; then
+      continue
+    fi
     local pr_blocked=$(printf '%s\n' "$pr_json" | jq -r \
-      '[.labels[].name] | any(. == "loom:changes-requested" or . == "loom:blocked")')
-    if [ "$pr_state" = "OPEN" ] && [ "$pr_blocked" = "true" ]; then
+      '[.labels[].name] | any(. == "loom:changes-requested" or . == "loom:blocked" or . == "loom:operator")')
+    if [ "$pr_blocked" = "true" ]; then
+      echo "true"
+      return
+    fi
+    local pr_mergeable=$(printf '%s\n' "$pr_json" | jq -r '.mergeable')
+    local pr_merge_state=$(printf '%s\n' "$pr_json" | jq -r '.mergeStateStatus')
+    if [ "$pr_mergeable" = "CONFLICTING" ] || [ "$pr_merge_state" = "DIRTY" ] || [ "$pr_merge_state" = "CONFLICTING" ]; then
       echo "true"
       return
     fi
@@ -904,6 +940,14 @@ gh issue comment 963 --body "🔓 **Unblocked**: Dependencies resolved (#962). R
 # loom:changes-requested → stay blocked, do NOT strip loom:blocked or post
 # an "Unblocked" comment, no matter how stale the body's Dependencies text
 # looks.
+
+# Counter-example (#7267's exact sequence, issue #6925 against PR #7246): all
+# body-declared dependencies are CLOSED, but has_superseding_block finds
+# linked PR #7246 still OPEN, carrying loom:pr + loom:operator, with
+# mergeable=CONFLICTING / mergeStateStatus=DIRTY → true (both the
+# loom:operator label check AND the merge-state check independently trigger
+# here) → stay blocked, do NOT strip loom:blocked or post an "Unblocked"
+# comment.
 ```
 
 ### PR Dependencies
@@ -920,10 +964,15 @@ pr_state=$(gh pr view "$pr_number" --json state,mergedAt --jq '.state')
 
 - If no parseable dependencies found → Skip (may need manual review)
 - If any dependency is still OPEN → Keep blocked
-- **If a linked implementation PR is still OPEN with `loom:changes-requested` or
-  `loom:blocked` → Keep blocked, even if every body-declared dependency has
-  closed** (`has_superseding_block`, #4634) — the body dependency being
-  resolved is necessary but not sufficient
+- **If a linked implementation PR is still OPEN with `loom:changes-requested`,
+  `loom:blocked`, or `loom:operator` → Keep blocked, even if every
+  body-declared dependency has closed** (`has_superseding_block`, #4634,
+  extended #7267) — the body dependency being resolved is necessary but not
+  sufficient
+- **If a linked implementation PR is still OPEN with `mergeable ==
+  "CONFLICTING"` or `mergeStateStatus` in (`DIRTY`, `CONFLICTING`) → Keep
+  blocked**, regardless of its labels (`has_superseding_block`, #7267) — a PR
+  in that state cannot currently land no matter what
 - If issue was blocked for non-dependency reasons → Check comments for context
 
 ## Epic Progress Tracking
@@ -1166,6 +1215,16 @@ PR" above) — mechanically, not just when a tick remembers to check first. That
 one lookup is the deliberate exception to fail-closed: if it cannot complete,
 the guard does **not** suppress on its account, so a forge hiccup on this
 specific probe never blocks an otherwise-legitimate promotion.
+
+Two more checks guard the hard cap itself against a concurrent-tick race
+(#7272 — two ticks independently refilling an emptied urgent set can each add
+a different rank-4 fill, pushing the count to 4): an `add` is also refused
+when the **live**, fleet-wide `loom:urgent` count is already >= 3 at write
+time regardless of cooldown/flap state (narrows, but does not fully close,
+the race — same fail-open posture as the PR-linkage lookup above); and a
+`remove` is exempted from `reversal-within-cooldown` whenever that live count
+currently *exceeds* 3, so an over-cap set is never stuck behind the cooldown
+waiting for `LOOM_URGENT_FLIP_COOLDOWN_SECS` to elapse.
 
 A suppressed write is not an error and is not something to work around — do not
 retry it, do not reach for `gh api` to bypass it, and do not "just this once"
