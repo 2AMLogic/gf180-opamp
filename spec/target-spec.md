@@ -1,8 +1,9 @@
 # Target specification — gf180-opamp
 
-- **Status**: **DRAFT** — engineering input, not yet ratified. No decision
-  record exists yet; ratification is a future issue, once gm/ID
-  device-characterization data lands under `sim/`.
+- **Status**: **DRAFT** — engineering input, not yet ratified. One proposed
+  decision record exists (`spec/decision-records/0001-topology-and-cl.md`,
+  topology + `CL`); ratification of this table as a whole is a separate,
+  future issue.
 - **Date**: 2026-09-05
 - **Assembled by**: Loom Builder agent, issue #2 (bootstrap/scaffolding pass)
 - **Scope**: 3.3 V primary variant only. The 5 V device-flavor stretch row is
@@ -30,7 +31,7 @@ proposal at a glance:
 
 | Tag | Meaning |
 |---|---|
-| **[DR-n]** | Carried unchanged from decision record `n`. None exist yet in this repo — no row currently carries this tag. |
+| **[DR-n]** | Carried unchanged from decision record `n`. `[DR-1]` = [`spec/decision-records/0001-topology-and-cl.md`](decision-records/0001-topology-and-cl.md). |
 | **[P]** | **Proposed by this bootstrap pass** — an engineering placeholder with no measured gf180mcu data behind it yet (e.g. carried from the block's own README/CLAUDE.md framing, or a structural convention borrowed from a sibling repo's ratified spec). Needs an explicit ratification decision before it binds. |
 | **[TBD]** | Deliberately unset — no gf180mcu device data exists yet to propose even a placeholder number. Filled in once gm/ID device characterization (`sim/`) and PVT-cornered testbenches exist. Tracked collectively under the gap-to-T1 tracker, [#7](https://github.com/2AMLogic/gf180-opamp/issues/7) (item 5, "Full PVT corner simulation vs a ratified spec"), rather than one issue per row — no per-row characterization issue has been filed yet. |
 
@@ -54,15 +55,15 @@ this placeholder prediction of where the number will eventually bind. A
 | Supply voltage, VDD | **3.3 V ±10% → 2.97–3.63 V** [P] | Primary variant. Matches `gf180-bandgap`'s and `gf180-ldo`'s ratified 3.3 V primary rows — the fleet-wide convention for this PDK's wave-1 target, per `CLAUDE.md`. |
 | Supply voltage, VDD (stretch) | **5 V — not opened** [P] | GF180MCU's 5 V-tolerant device flavors are surveyed but not characterized (`README.md`). Per `CLAUDE.md`, opening this row requires its own decision record; it is named here only so a future DR has a place to point at, not to imply the row is in scope. Never mixed with 3.3 V-flavor devices in one variant. |
 | Operating temperature | **−40…+125 °C** [P] | Matches the fleet-wide convention (`gf180-bandgap`, `gf180-temp-por`) for a commercial-grade PDK part. No gf180mcu-specific device data has been checked against this range yet — proposed by analogy, not measured. |
-| Corner grid | **`typical, ff, ss, fs, sf` (MOS) [P]** | Adopted by the gm/ID characterization study (issue #10, [`sim/gm-id-characterization/`](../sim/gm-id-characterization/README.md)) — gf180mcu's own top-level MOS `.LIB` corner bundles in `sm141064.ngspice` (`fs` = fast NMOS / slow PMOS, `sf` = the reverse), the same five names `gf180-bandgap`'s ratified grid uses. This is a **proposal from measured usage**, not a ratification: resistor/BJT/cap corners are not yet chosen, since this block's passive device menu isn't picked yet — see [`porting-plan.md`](porting-plan.md) §1. Still `[P]`, not `[DR-n]`, until a `spec/` decision record ratifies it. |
-| Load capacitance, CL | **[TBD]** | GBW/phase-margin targets are stated "into stated CL" per `CLAUDE.md`; no CL has been chosen yet since no application/bench context exists for this standalone op-amp characterization. |
+| Corner grid | **`typical, ff, ss, fs, sf` (MOS) [DR-1]** | Adopted by the gm/ID characterization study (issue #10, [`sim/gm-id-characterization/`](../sim/gm-id-characterization/README.md)) — gf180mcu's own top-level MOS `.LIB` corner bundles in `sm141064.ngspice` (`fs` = fast NMOS / slow PMOS, `sf` = the reverse), the same five names `gf180-bandgap`'s ratified grid uses. Ratified by [decision record 0001](decision-records/0001-topology-and-cl.md) on the basis of the study's own process/temperature spread data (bounded, sane behavior across all five corners). Resistor/BJT/cap corners are still not chosen, since this block's passive device menu isn't picked yet — see [`porting-plan.md`](porting-plan.md) §1. |
+| Load capacitance, CL | **2 pF [DR-1]** | Ratified by [decision record 0001](decision-records/0001-topology-and-cl.md), adopted from `sg13g2-opamp`'s DR-0001 for cross-PDK comparability of GBW/phase-margin/slew targets across the three-foundry twins. |
 
 ## 2. Performance targets
 
 | Parameter | Target | Stretch | Statistical basis | Binding corner (predicted) | Status |
 |---|---|---|---|---|---|
 | Open-loop DC gain | **[TBD]** | — | — (deterministic corner-worst-case candidate) | SS / −40 °C (lowest gm, highest output impedance loss) | not started |
-| GBW (into stated CL, [TBD] above) | **[TBD]** | — | — | SS / −40 °C / low VDD (slowest devices) | not started |
+| GBW (into stated CL = 2 pF [DR-1] above) | **[TBD]** | — | — | SS / −40 °C / low VDD (slowest devices) | not started |
 | Phase margin (at GBW, same CL) | **≥ 60° [P]** | ≥ 45° at the FF/hot corner if 60° is unreachable there | — (deterministic corner-worst-case) | FF / 125 °C (fastest devices, most peaking risk) | not started |
 | Slew rate | **[TBD]** | — | — | SS / −40 °C / low VDD (lowest tail-current headroom) | not started |
 | Input-referred noise | **[TBD]** — band not yet chosen | — | n/a until a band is set | n/a | not started |
@@ -83,16 +84,20 @@ pass committed to `sim/`, per `CLAUDE.md`'s "gm/ID first, committed to
 
 ## 3. What this table is not
 
-- **Not ratified.** No `spec/decision-records/` directory exists yet in this
-  repo. Ratification (per `CLAUDE.md`'s two-key mechanism — an EE key and a
-  market key) is a future issue's job, once the `[TBD]` rows above have real
-  gf180mcu device data behind them. Per the generalized 2026-08-28 ruling
-  cited in the original issue body, a scope-only spec DR ratified with both
-  keys needs no separate per-PR operator statement — but that ruling applies
-  at ratification time, not to this DRAFT.
-- **Not a commitment that every `[TBD]` row will end up non-trivial.** Some
-  rows (e.g. the corner grid, or the load capacitance) may turn out to be
-  determined jointly with a topology decision rather than independently.
+- **Not ratified.** One proposed decision record exists
+  (`spec/decision-records/0001-topology-and-cl.md`), but this table as a
+  whole is not. Ratification (per `CLAUDE.md`'s two-key mechanism — an EE key
+  and a market key) is a future issue's job, once the `[TBD]` rows above have
+  real gf180mcu device data behind them. Per the generalized 2026-08-28
+  ruling cited in the original issue body, a scope-only spec DR ratified with
+  both keys needs no separate per-PR operator statement — but that ruling
+  applies at ratification time, not to this DRAFT.
+- **Not a commitment that every `[TBD]` row will end up non-trivial.** The
+  corner grid and load capacitance rows were determined jointly with the
+  topology decision, as anticipated here — see
+  [decision record 0001](decision-records/0001-topology-and-cl.md). Other
+  still-`[TBD]` rows (e.g. DC gain, GBW, slew rate) may follow the same
+  pattern once a sizing pass exists.
 - **Not opening the 5 V stretch row.** It is named, not scoped in.
 
 ## 4. Sources
@@ -103,3 +108,4 @@ pass committed to `sim/`, per `CLAUDE.md`'s "gm/ID first, committed to
 - [`gf180-temp-por/spec/target-spec.md`](https://github.com/2AMLogic/gf180-temp-por/blob/main/spec/target-spec.md) — the standalone `spec/target-spec.md` file precedent (rather than inline in `README.md`) and the `[DR-n]`/`[P]`/`[TBD-#n]` value-tag convention.
 - [`gf180-ldo/spec/architecture-survey.md`](https://github.com/2AMLogic/gf180-ldo/blob/main/spec/architecture-survey.md) — the "mark device-level numbers pending a future issue rather than guessing" practice this table follows for every `[TBD]` row.
 - [Gap-to-T1 tracker, #7](https://github.com/2AMLogic/gf180-opamp/issues/7) — the artifact-presence checklist this spec's eventual evidence trail (`sim/`, `layout/`) will need to satisfy.
+- [`spec/decision-records/0001-topology-and-cl.md`](decision-records/0001-topology-and-cl.md) — the topology (input-pair polarity, output-stage class, cascode-or-not) and `CL` decision behind this file's `[DR-1]`-tagged rows, argued from `sim/gm-id-characterization/records/20260909-052956-79c6a45.md`.
