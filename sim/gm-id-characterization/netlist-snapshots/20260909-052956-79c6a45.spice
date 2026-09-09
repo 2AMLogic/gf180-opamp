@@ -1,0 +1,49 @@
+* tb_gmid.spice -- gf180mcu 3.3 V MOS gm/ID characterization
+*
+* nfet_03v3 / pfet_03v3 (the block's primary 3.3 V device flavor, CLAUDE.md)
+* swept in gm/ID methodology style: a single DC gate-voltage sweep at a
+* fixed, representative Vds, with the BSIM4 small-signal operating-point
+* parameters (gm, gds, id, cgg, vth) read directly off the model at every
+* sweep point via ngspice's `@m.<inst>.m0[<param>]` accessor -- no separate
+* AC analysis or finite-difference derivative is needed; BSIM4 computes
+* these as part of its own Newton-Raphson operating point at each DC step.
+*
+* Both polarities share ONE sweep source (`sweep`, 0..3.3 V) so one ngspice
+* run covers every length of both devices at once:
+*   - NMOS: gate = sweep, source = 0, drain = fixed Vds above source.
+*   - PMOS: source = VDD, drain = VDD - Vds (mirrored, so the *magnitude*
+*     of Vgs and Vds match the NMOS side), gate = VDD - sweep via a
+*     behavioural source (`Bgp`) so the same sweep variable drives an
+*     equal-and-opposite overdrive on the PMOS side.
+*
+* Five channel lengths per polarity at W = 10 um (fixed): 0.28 um (the
+* model's minimum, `lmin` in sm141064.ngspice), 0.5 um, 1 um, 2 um and 4 um
+* -- minimum length to ~14x minimum, per this study's scope.
+*
+* This is a *fragment*: no `.lib`, `.temp`, `.control`, `.end`. The driver
+* (`run_gmid.py`) wraps it with the PDK `.include`/`.lib <corner>` header,
+* `.temp <T>`, and a `.control` block that runs the `.dc sweep` and writes
+* the raw data with `wrdata`. Vds and the length list below are the ones
+* `run_gmid.py` assumes; if you change them here, update `run_gmid.py`'s
+* `VDS`, `LENGTHS_UM` to match.
+
+* ---- Shared sweep + supply ----
+Vsweep sweep 0 dc 0
+Vdd    vdd   0 dc 3.3
+
+* ---- NMOS: source at 0, gate = sweep, drain held at +Vds ----
+Vdsn dn 0 dc 1.65
+XN028 dn sweep 0 0 nfet_03v3 w=10u l=0.28u nf=1 as=15p ad=15p ps=22u pd=22u
+XN050 dn sweep 0 0 nfet_03v3 w=10u l=0.5u  nf=1 as=15p ad=15p ps=22u pd=22u
+XN100 dn sweep 0 0 nfet_03v3 w=10u l=1u    nf=1 as=15p ad=15p ps=22u pd=22u
+XN200 dn sweep 0 0 nfet_03v3 w=10u l=2u    nf=1 as=15p ad=15p ps=22u pd=22u
+XN400 dn sweep 0 0 nfet_03v3 w=10u l=4u    nf=1 as=15p ad=15p ps=22u pd=22u
+
+* ---- PMOS: source at VDD, gate = VDD - sweep, drain held at VDD - Vds ----
+Bgp gp 0 V='3.3 - V(sweep)'
+Vdsp dp 0 dc 1.65
+XP028 dp gp vdd vdd pfet_03v3 w=10u l=0.28u nf=1 as=15p ad=15p ps=22u pd=22u
+XP050 dp gp vdd vdd pfet_03v3 w=10u l=0.5u  nf=1 as=15p ad=15p ps=22u pd=22u
+XP100 dp gp vdd vdd pfet_03v3 w=10u l=1u    nf=1 as=15p ad=15p ps=22u pd=22u
+XP200 dp gp vdd vdd pfet_03v3 w=10u l=2u    nf=1 as=15p ad=15p ps=22u pd=22u
+XP400 dp gp vdd vdd pfet_03v3 w=10u l=4u    nf=1 as=15p ad=15p ps=22u pd=22u
