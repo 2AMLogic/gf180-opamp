@@ -74,14 +74,13 @@ Same PDK means the *process* transfers wholesale; only the *topology* is new
 - **gm/ID-first sizing.** `CLAUDE.md`'s "gm/ID first, committed to `sim/`
   before sizing" is the same practice both same-PDK siblings follow; nothing
   about a two-stage op-amp topology changes that ordering.
-- **The decision-record process itself**, once one is needed. No
-  `spec/decision-records/` directory exists in this repo yet (this bootstrap
-  pass makes no decisions requiring one — see "Affected files" note in issue
-  #2). When the first real decision is made (e.g. picking a compensation
-  scheme, or opening the 5 V stretch row), it should follow one of the two
-  precedented conventions — `gf180-bandgap`'s `NNNN-<slug>.md` or
-  `gf180-ldo`'s `DR-NNNN-<slug>.md` — picked once and kept consistent within
-  this repo; the fleet has not converged on one, so neither choice is wrong.
+- **The decision-record process itself.** `spec/decision-records/` now holds
+  its first record, `0001-topology-and-cl.md` (issue #12), following
+  `gf180-bandgap`'s `NNNN-<slug>.md` convention — the same one
+  `sg13g2-opamp`'s DR-0001 used, picked here for consistency with the
+  three-foundry twin rather than `gf180-ldo`'s `DR-NNNN-<slug>.md`
+  alternative. Future decisions in this repo (e.g. opening the 5 V stretch
+  row) should follow the same `NNNN-<slug>.md` numbering.
 
 ## 2. What changes, and why
 
@@ -138,15 +137,21 @@ on this PDK."*
 
 ## 4. Open items and next steps
 
-- **Topology decision.** Neither same-PDK sibling's amplifier schematic
-  transfers directly (§3), so the first real design decision this repo needs
-  is its own two-stage Miller-compensated topology choice (single-ended vs.
-  fully differential first stage, output-stage class, cascode-or-not) — not
-  yet made, and out of scope for this bootstrap pass.
-- **Load capacitance (`CL`) target.** `target-spec.md`'s GBW/PM rows are
-  stated "into stated CL" per `CLAUDE.md`, but no CL value has been chosen
-  yet — see §2's "Compensation" row above. Choosing one is part of the
-  topology decision, not independent of it.
+- **Topology decision — resolved (issue #12).** Neither same-PDK sibling's
+  amplifier schematic transfers directly (§3), so the first real design
+  decision this repo needed was its own two-stage Miller-compensated
+  topology choice (input-pair polarity, output-stage class,
+  cascode-or-not). Decided in
+  [`spec/decision-records/0001-topology-and-cl.md`](decision-records/0001-topology-and-cl.md):
+  NMOS input pair, single-ended Class-A PMOS common-source output stage,
+  non-cascoded — argued from `sim/gm-id-characterization/records/
+  20260909-052956-79c6a45.md`'s gm/ID, gm/gds, and fT figures. Device
+  widths, lengths, bias currents, and mirror ratios remain unchosen — that
+  is a future sizing pass's job.
+- **Load capacitance (`CL`) target — resolved (issue #12).**
+  `target-spec.md`'s GBW/PM rows are stated "into stated CL" per
+  `CLAUDE.md`; `CL = 2 pF` is now ratified by the same decision record,
+  adopted from `sg13g2-opamp`'s DR-0001 for cross-PDK comparability.
 - **Device characterization.** `CLAUDE.md`'s "gm/ID first" ordering means the
   next concrete step, once this bootstrap pass merges, is a gm/ID
   characterization sweep over gf180mcu's 3.3 V MOS flavors, committed to
