@@ -134,7 +134,6 @@ TEMPS_C = [-40.0, 27.0, 125.0]
 # half the nominal 3.3 V supply, per this study's scope ("a representative
 # Vds and the block's nominal 3.3 V supply").
 VDS = 1.65
-NOMINAL_VDD = 3.3
 
 # name -> (nmos gm vector, pmos gm vector, L in um)
 LENGTHS_UM = [0.28, 0.5, 1.0, 2.0, 4.0]
@@ -301,7 +300,7 @@ def ngspice_version() -> str:
 REPRESENTATIVE_VOVS = [0.05, 0.10, 0.20, 0.30]
 
 
-def build_plots(record: str, results: dict, plot_dir: Path) -> list[str]:
+def build_plots(results: dict, plot_dir: Path) -> list[str]:
     plot_dir.mkdir(parents=True, exist_ok=True)
     paths = []
     corner, temp = "typical", 27.0
@@ -518,7 +517,7 @@ def main() -> int:
     )
 
     plot_dir = HERE / "records" / f"{record}-plots"
-    plot_paths = build_plots(record, results, plot_dir)
+    plot_paths = build_plots(results, plot_dir)
 
     records_dir = HERE / "records"
     records_dir.mkdir(parents=True, exist_ok=True)
