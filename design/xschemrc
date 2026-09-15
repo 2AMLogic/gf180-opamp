@@ -1,0 +1,94 @@
+#### Project-local xschem configuration for gf180-opamp (issue #17).
+####
+#### Load it explicitly and unambiguously (independent of cwd):
+####
+####     xschem -n -x -q --rcfile design/xschemrc -o design/netlist \
+####            design/opamp_two_stage.sch
+####
+#### Relying on xschem's cwd-relative "./xschemrc" auto-discovery is NOT
+#### sufficient: that only fires when xschem's cwd happens to be design/.
+####
+#### Why a project-local rc file at all: a machine's *user*-level
+#### ~/.xschem/xschemrc can silently override XSCHEM_LIBRARY_PATH with
+#### unrelated content, which makes every generic device symbol fail to
+#### resolve ("l_s_d(): Symbol not found"). Resetting the path here makes
+#### this repo's xschem invocations reproducible regardless of what is (or
+#### isn't) in any given machine's dotfiles. Same rationale, and same
+#### structure, as `gf180-bandgap/design/xschemrc`.
+
+set XSCHEM_LIBRARY_PATH {}
+append XSCHEM_LIBRARY_PATH :${XSCHEM_SHAREDIR}/xschem_library/devices
+
+#### ---------------------------------------------------------------------
+#### gf180mcu PDK resolution.
+####
+#### Resolved by the same rules, in the same order, as
+#### `sim/gm-id-characterization/run_gmid.py`'s `find_pdk()`, so xschem and
+#### the ngspice runners always agree on which PDK is in use:
+####   1. GF180_PDK_PATH  -- a gf180mcu *variant* dir containing libs.tech/
+####   2. PDK_ROOT (+ PDK, default gf180mcuD)
+####   3. the default volare install path ~/.volare/<variant>
+#### Nothing here hardcodes a PDK path.
+
+set GF180_VARIANT {gf180mcuD}
+set GF180_ROOT {}
+
+if { [info exists env(GF180_PDK_PATH)] && $env(GF180_PDK_PATH) ne {} } {
+    set GF180_ROOT [file dirname [file normalize $env(GF180_PDK_PATH)]]
+    set GF180_VARIANT [file tail [file normalize $env(GF180_PDK_PATH)]]
+} else {
+    if { [info exists env(PDK)] && $env(PDK) ne {} } {
+        set GF180_VARIANT $env(PDK)
+    }
+    foreach candidate [list [expr {[info exists env(PDK_ROOT)] ? $env(PDK_ROOT) : {}}] \
+                            [file join $env(HOME) .volare] \
+                            [file join $env(HOME) .ciel] \
+                            /usr/share/pdk /usr/local/share/pdk \
+                            [file join $env(HOME) share pdk] /opt/pdk] {
+        if { $candidate ne {} && [file isdir [file join $candidate $GF180_VARIANT libs.tech xschem]] } {
+            set GF180_ROOT $candidate
+            break
+        }
+    }
+}
+
+if { $GF180_ROOT eq {} } {
+    puts stderr "xschemrc: no gf180mcu install found."
+    puts stderr "xschemrc: install it with volare (see sim/gm-id-characterization/README.md)"
+    puts stderr "xschemrc: or point GF180_PDK_PATH at an existing variant directory."
+} else {
+    # The PDK ships its own xschemrc: it reads PDK_ROOT from the environment
+    # and adds the gf180mcu device symbol library (symbols/*.sym) plus the
+    # 180MCU_MODELS tcl var its testbench symbols use.
+    set env(PDK_ROOT) $GF180_ROOT
+    set PDK_ROOT $GF180_ROOT
+    set pdk_xschemrc [file join $GF180_ROOT $GF180_VARIANT libs.tech xschem xschemrc]
+    if { [file exists $pdk_xschemrc] } {
+        source $pdk_xschemrc
+    } else {
+        puts stderr "xschemrc: $pdk_xschemrc not found; gf180mcu symbols unavailable."
+    }
+}
+
+#### ------------------------------------------------------- repo libraries ---
+#### Re-assert the generic devices library and add this repo's own
+#### directories last, so that sourcing the PDK's xschemrc above cannot drop
+#### them.
+set REPO_ROOT [file dirname [file dirname [file normalize [info script]]]]
+
+if { ![info exists XSCHEM_LIBRARY_PATH] } { set XSCHEM_LIBRARY_PATH {} }
+append XSCHEM_LIBRARY_PATH :${XSCHEM_SHAREDIR}/xschem_library/devices
+append XSCHEM_LIBRARY_PATH :[file join $REPO_ROOT design]
+
+# Testbenches live at sim/<experiment-slug>/testbench/ (see sim/README.md).
+foreach tb_dir [glob -nocomplain -type d [file join $REPO_ROOT sim * testbench]] {
+    append XSCHEM_LIBRARY_PATH :$tb_dir
+}
+
+# Netlists land next to the schematics they came from, not in a scratch
+# directory, so the exported .spice is reviewable in git.
+set netlist_dir [file join $REPO_ROOT design netlist]
+file mkdir $netlist_dir
+
+# Start on an empty sheet rather than the PDK's demo top-level.
+set XSCHEM_START_WINDOW {}
