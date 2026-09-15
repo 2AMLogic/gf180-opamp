@@ -1,0 +1,108 @@
+* tb_gain_gbw_pm.spice -- provisional open-loop AC testbench for the
+* two-stage Miller-compensated op-amp (DR-0001,
+* spec/decision-records/0001-topology-and-cl.md).
+*
+* THIS IS A SMOKE-LEVEL, PROVISIONAL NETLIST -- explicitly not a sizing
+* pass. No design/ schematic exists yet for this block (issue #19's own
+* scope note); this netlist exists only to establish the sim/<name>/
+* structure and one-command driver pattern ahead of the schematic-entry
+* and spec-ratification sibling issues. Device widths/lengths/bias
+* currents below are illustrative, chosen to converge and produce sane
+* small-signal behaviour -- not the product of a gm/ID sizing pass.
+*
+* ---- Topology (DR-0001) ----
+*   - First stage: NMOS input differential pair (M1/M2, nfet_03v3) with a
+*     PMOS current-mirror load (M3 diode-connected, M4 mirror; pfet_03v3).
+*     First-stage output = node d2 (M2/M4 shared drain).
+*   - Second stage: PMOS common-source gain device (M5, pfet_03v3), gate
+*     driven by d2, single-ended output at `vout`.
+*   - Miller compensation: Cc between d2 (first-stage output) and vout
+*     (second-stage output).
+*   - CL = 2 pF at vout, per DR-0001 (spec/target-spec.md Sec.1, [DR-1]).
+*
+* ---- Bias simplification (explicit, per issue #19) ----
+* The tail current (Itail) and the second-stage bias current (Ibias2) are
+* IDEAL SPICE current sources, not a self-biased mirror/reference network.
+* This deliberately factors out bias-generator design (a real sizing task
+* for a future issue) and keeps this netlist robust across all 15 PVT
+* points -- an ideal current source has infinite output impedance, so it
+* never degrades either stage's intrinsic gain the way a real mirror
+* transistor's own finite rds would.
+*
+* ---- Device sizing (illustrative only) ----
+* Input pair at L = 0.28 um (short channel, chosen for fT per DR-0001's own
+* input-pair reasoning -- nfet_03v3 fT ~ 25.12 GHz at L=0.28um, Vov=200mV,
+* typical corner, sim/gm-id-characterization/records/
+* 20260909-052956-79c6a45.md). Second-stage PMOS at L = 4 um (long channel,
+* chosen for gm/gds per DR-0001's own output-stage reasoning -- pfet_03v3
+* gm/gds ~ 2122.7 at L=4um, Vov=200mV, same record/corner). AS/AD/PS/PD
+* follow the same per-micron diffusion convention
+* sim/gm-id-characterization/testbench/tb_gmid.spice uses (as=ad~1.5p per
+* um of W, ps=pd~2*(W+1.5um)).
+*
+* ---- Open-loop AC "big resistor" trick ----
+* Rfb (1e13 ohm) ties vout back to the inverting input (vin): DC-closes the
+* loop (self-biases the whole amplifier so vout settles near the DC
+* operating point set by vip's DC value) while being AC-open (its
+* admittance is negligible at any swept frequency vs. the gate capacitance
+* it competes with), so a single .ac sweep of vip directly yields the true
+* open-loop gain/GBW/phase margin as Vout/Vip.
+*
+* This is a *fragment*: no `.lib`, `.temp`, `.control`, `.end`. The driver
+* (`run_gain_gbw_pm.py`) wraps it with the PDK `.include`/`.lib <corner>`
+* header, `.temp <T>`, and a `.control` block that runs the `.ac` sweep and
+* writes the raw data with `wrdata`.
+
+* ---- Polarity note (important, verified empirically -- see PR discussion) ----
+* In this 5T first-stage topology, the gate of the transistor whose drain is
+* the DIODE-CONNECTED mirror side (M1, node d1) is the amplifier's overall
+* INVERTING input once the second (inverting, common-source) stage is
+* included; the gate of the transistor on the MIRROR-OUTPUT side (M2, node
+* d2, which directly drives the second stage) is the overall NON-INVERTING
+* input. `vin` (fed back through Rfb) is therefore wired to M1's gate, and
+* the AC excitation `vip` is wired to M2's gate -- swapping this produces a
+* positive-feedback DC bias loop (verified to still numerically converge to
+* *a* solution, but not the intended small-signal AC characterization
+* point).
+
+* ---- Supply ----
+Vdd vdd 0 dc 3.3
+
+* ---- Inputs ----
+* Non-inverting input: DC common-mode bias + AC excitation.
+Vip vip 0 dc 1.65 ac 1
+* Inverting input: no independent source -- tied only to vout through the
+* big feedback resistor below (the "big-R" open-loop trick).
+
+* ---- First stage: NMOS input pair + PMOS mirror load ----
+Itail tail 0 dc 40u
+M1 d1 vin tail 0 nfet_03v3 w=20u l=0.28u nf=1 as=30p ad=30p ps=43u pd=43u
+M2 d2 vip tail 0 nfet_03v3 w=20u l=0.28u nf=1 as=30p ad=30p ps=43u pd=43u
+M3 d1 d1 vdd vdd pfet_03v3 w=5u l=1u nf=1 as=8p ad=8p ps=13u pd=13u
+M4 d2 d1 vdd vdd pfet_03v3 w=5u l=1u nf=1 as=8p ad=8p ps=13u pd=13u
+
+* ---- Second stage: PMOS common-source gain device + ideal current sink ----
+M5 vout d2 vdd vdd pfet_03v3 w=80u l=4u nf=1 as=120p ad=120p ps=163u pd=163u
+Ibias2 vout 0 dc 50u
+
+* ---- Compensation + load ----
+* Cc = 30 pF chosen empirically (see PR description) to push the
+* non-dominant pole far enough above GBW for a sane phase margin with this
+* bias point -- larger than a typical "just past CL" Miller cap because
+* the illustrative bias currents above are modest (tens of uA).
+Cc d2 vout 30p
+CL vout 0 2p
+
+* ---- Open-loop DC-feedback / AC-open big resistor ----
+* 1e15 ohm: within this trick's usual 1e13-1e15 range. Because the
+* inverting-input gate capacitance here is very small (a few fF, short-
+* channel input pair), the low-frequency artifact zero this trick
+* introduces (Rfb in parallel with that small gate cap) sits within a few
+* hundred Hz of DC rather than far below it -- verified empirically by
+* sweeping Rfb from 1e13-1e20 ohm and confirming the *peak* AC gain value
+* converges (to within ~0.3 dB at 1e15) as Rfb grows, while GBW/phase
+* margin extracted from the roll-off region well above the peak are
+* unchanged by Rfb's value. The driver reports the swept response's peak
+* magnitude as "open-loop DC gain" for this reason (see run_gain_gbw_pm.py
+* and the record's own note) -- not a literal f->0 sample.
+Rfb vout vin 1e15
