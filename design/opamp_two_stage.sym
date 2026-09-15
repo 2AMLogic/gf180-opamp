@@ -1,0 +1,40 @@
+v {xschem version=3.4.7 file_version=1.2
+* opamp_two_stage symbol -- two-stage Miller-compensated op-amp (issue #17),
+* topology per spec/decision-records/0001-topology-and-cl.md.
+* See opamp_two_stage.sch for the design and design/opamp_sizing.md for the
+* gm/ID sizing derivation.
+*
+* This .sym MUST stay next to opamp_two_stage.sch: xschem only descends into
+* the child schematic when the referencing symbol resolves at the same
+* relative path as the same-named .sch.
+*
+* Pins (declaration order == the .sch's iopin order == the subckt pin order):
+*   vdd, vss, vinp, vinn, vout, ibias
+}
+G {}
+K {type=subcircuit
+format="@spiceprefix@name @pinlist opamp_two_stage"
+template="name=x1
+spiceprefix=X"
+}
+V {}
+S {}
+E {}
+L 4 -40 -60 40 -60 {}
+L 4 -40 60 40 60 {}
+L 4 -40 -60 -40 60 {}
+L 4 40 -60 40 60 {}
+B 5 -42 -42 -38 -38 {name=vdd dir=inout pinnumber=1}
+B 5 -42 42 -38 46 {name=vss dir=inout pinnumber=2}
+B 5 -42 -12 -38 -8 {name=vinp dir=in pinnumber=3}
+B 5 -42 8 -38 12 {name=vinn dir=in pinnumber=4}
+B 5 38 -2 42 2 {name=vout dir=out pinnumber=5}
+B 5 38 38 42 42 {name=ibias dir=in pinnumber=6}
+T {vdd} -35 -42 0 1 0.2 0.2 {}
+T {vss} -35 42 0 1 0.2 0.2 {}
+T {vinp} -35 -12 0 1 0.2 0.2 {}
+T {vinn} -35 8 0 1 0.2 0.2 {}
+T {vout} 35 -2 0 0 0.2 0.2 {}
+T {ibias} 35 38 0 0 0.2 0.2 {}
+T {@name} -38 -66 0 0 0.2 0.2 {}
+T {opamp_two_stage} -38 72 0 0 0.2 0.2 {}

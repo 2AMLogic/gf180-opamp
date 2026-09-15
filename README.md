@@ -5,8 +5,14 @@ A two-stage Miller-compensated operational amplifier on GF180MCU on
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.
 
-**Status: just opened.** Nothing is designed yet. The first work is
-the gm/ID device-characterization study at 3.3 V, with the 5 V device flavors surveyed but not yet characterized.
+**Status: schematic entry.** The 3.3 V gm/ID device-characterization study is
+committed ([`sim/gm-id-characterization/`](sim/gm-id-characterization/README.md)),
+the topology is decided
+([DR-0001](spec/decision-records/0001-topology-and-cl.md)), and a gm/ID-sized
+schematic of that topology exists in [`design/`](design/README.md) with a
+passing nominal DC operating-point check. No AC, PVT or post-layout evidence
+exists yet, so every performance row in the target spec is still `[TBD]`. The
+5 V device flavors remain surveyed but not characterized.
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
