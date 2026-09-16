@@ -12,7 +12,7 @@
 # tests/hooks/ (repo root, NOT defaults/scripts/tests/ — Repo Skills' guard
 # tests live there, one directory per guard family they test). Entries for
 # suites outside this directory are qualified with their path relative to the
-# repo root (e.g. `tests/hooks/test-guard-destructive.sh`); run-ci-suites.sh
+# repo root (e.g. `tests/hooks/test-guard-destructive-core.sh`); run-ci-suites.sh
 # and check-ci-suite-manifest.sh both resolve a `/`-containing entry against
 # the repo root instead of this directory. They were confirmed hermetic (no
 # live forge/network calls — the `gh`/`curl` strings in them are guard-input
@@ -138,6 +138,7 @@ test-loom-dispatcher.sh
 test-loom-status.sh
 test-mcp-config.sh
 test-mcp-pnpm-selfrepair.sh
+test-memory-budget.sh
 test-merge-admission-telemetry.sh
 test-merge-pr-app-permission-fallback.sh
 test-merge-pr-auto-merge-disabled-fallback.sh
@@ -149,6 +150,7 @@ test-merge-pr-dirty-worktree-guard.sh
 test-merge-pr-head-mismatch.sh
 test-merge-pr-help.sh
 test-merge-pr-local-branch-cleanup.sh
+test-merge-pr-loom-pr-label-guard.sh
 test-merge-pr-merge-ordering-guard.sh
 test-merge-pr-partial-increment.sh
 test-merge-pr-primary-checkout-advice.sh
@@ -177,6 +179,7 @@ test-repo-mismatch-fallback.sh
 test-require-complexity-marker.sh
 test-resolve-tier-model.sh
 test-resync-installed.sh
+test-review-feedback-reconciliation.sh
 test-run-ci-suites-daemon-guard.sh
 test-run-ci-suites-failure-excerpt.sh
 test-run-ci-suites-serial-lane.sh
@@ -200,6 +203,7 @@ test-sync-labels-repo-flag.sh
 test-urgent-flip-guard.sh
 test-verdict-staleness-guard.sh
 test-verify-install-scope.sh
+test-verify-proposal-refs.sh
 test-version-check-gate-callsites.sh
 test-version-check-gate.sh
 test-warn-operator-gated.sh
@@ -224,7 +228,17 @@ test-worktree-stash-baseline.sh
 
 # tests/hooks/ (repo root) — Claude-path guard suites, wired since #4769.
 tests/hooks/test-guard-destructive-dispatcher.sh
-tests/hooks/test-guard-destructive.sh
+tests/hooks/test-guard-destructive-cargo-and-perf.sh
+tests/hooks/test-guard-destructive-category-opt-ins.sh
+tests/hooks/test-guard-destructive-core.sh
+tests/hooks/test-guard-destructive-decision-log.sh
+tests/hooks/test-guard-destructive-force-scope.sh
+tests/hooks/test-guard-destructive-masking.sh
+tests/hooks/test-guard-destructive-matching-precision.sh
+tests/hooks/test-guard-destructive-readonly-fastpath.sh
+tests/hooks/test-guard-destructive-rm-scope.sh
+tests/hooks/test-guard-destructive-stash-scope.sh
+tests/hooks/test-guard-destructive-write-confinement.sh
 tests/hooks/test-guard-loom-workflow.sh
 # Not a Claude-path guard, but the same repo-root tests/hooks/ location and
 # hermetic-fixture pattern (throwaway `git worktree add` trees, fake binaries,
