@@ -137,8 +137,6 @@ test-loom-daemon-quiesce.sh
 test-loom-daemon-start.sh
 test-loom-daemon-update.sh
 test-loom-daemon-stop.sh
-test-loom-daemon-watchdog-dedup.sh
-test-loom-daemon-watchdog.sh
 test-loom-dispatcher.sh
 test-loom-status.sh
 test-mcp-config.sh
@@ -285,6 +283,7 @@ tests/install/test-lint-ignore-configs.sh
 tests/install/test-manifest-freshness-after-hook-wiring.sh
 tests/install/test-pnpm-runnable-check.sh
 tests/install/test-provision-daemon.sh
+tests/install/test-setup-branch-protection-bypass-actors.sh
 tests/install/test-setup-branch-protection-required-checks.sh
 tests/install/test-setup-repository-settings-merge-method.sh
 tests/install/test-uninstall-clean-preserves-unmanaged-hooks.sh
