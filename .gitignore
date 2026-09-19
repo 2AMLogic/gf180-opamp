@@ -71,4 +71,5 @@ flow/build/
 .loom/.resync-in-progress
 .loom/gh-config/
 .loom/gh-config-by-owner/
+.loom-local/
 # <<< loom-managed <<<
