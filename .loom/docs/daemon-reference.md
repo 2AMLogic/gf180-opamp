@@ -21,6 +21,7 @@
 - [Per-workspace registry pool (`WorkspacePool`, #3928/#3929)](#per-workspace-registry-pool-workspacepool-39283929)
 - [Delegated daemon administration (`daemon.delegatedTo`, #5345)](#delegated-daemon-administration-daemondelegatedto-5345)
 - [Fleet — operator-triggered multi-host worker fanout (`fleet`, #4340)](#fleet--operator-triggered-multi-host-worker-fanout-fleet-4340)
+- [Fleet model A/B — `sweep-experiment plan` (#8055 phase 1)](#fleet-model-ab--sweep-experiment-plan-8055-phase-1)
 - [Token pool provisioning for managed repos (#3938)](#token-pool-provisioning-for-managed-repos-3938)
 - [Per-repo status breakdown + per-repo main-health gate (#3930 — phase d)](#per-repo-status-breakdown--per-repo-main-health-gate-3930--phase-d)
 - [Gate verdicts: VERIFIED_RED vs UNEVALUATED (#3974)](#gate-verdicts-verified_red-vs-unevaluated-3974)
@@ -1330,6 +1331,85 @@ not a claimed success or failure).
 CURRENT`; non-zero if any host is `FAILED`/`UNREACHABLE`, or `--all` was given
 against an empty fleet registry (mirrors `fleet status`'s #5060 "empty roster
 never reads as healthy" policy).
+
+## Fleet model A/B — `sweep-experiment plan` (#8055 phase 1)
+
+`loom-daemon sweep-experiment` already randomizes **per issue**, by parity
+(`assign-arm`), on the dispatch path of a single repo. Asking whether a model
+earns its per-token weight across a *managed fleet* needs the other unit of
+assignment: the **workspace**. `plan` is that surface — and it is deliberately
+the read-only half of the trio, so an operator can run it against a live fleet
+before deciding anything.
+
+```bash
+loom-daemon sweep-experiment plan \
+  --arms opus,sonnet --stratify merges14d,kind --seed 7 [--out plan.json] [--offline] [--json]
+```
+
+It reads the machine-level workspace registry (`~/.loom/workspaces.json`, or
+`LOOM_WORKSPACES_PATH`), measures each registered workspace, assigns every one
+of them an arm, and prints the table. These are **sub-actions on the existing
+`sweep-experiment` verb**, not a second top-level `experiment` verb: that verb
+already owns the arm vocabulary (`assign_arm` / `arm_model` /
+`resolved_arm_model`), and a parallel verb speaking the same vocabulary is how
+the two would drift on what "an arm" means.
+
+| Flag | Default | Meaning |
+|---|---|---|
+| `--arms A,B` | `opus,sonnet` | Comma-separated arms, at least two. An arm's name **is** the model alias `start` would write into the overlay |
+| `--stratify DIMS` | `merges14d,kind` | Stratification dimensions; `none` disables stratification (one `all` stratum) |
+| `--seed N` | `0` | Assignment seed — the only thing that varies the assignment for a fixed fleet |
+| `--out PATH` | *(none)* | The **only** thing `plan` ever writes. `start --plan <file>` consumes it |
+| `--offline` | off | Skip the `gh` merge-count query entirely (`merges14d` degrades to its alphabetical fallback) |
+| `--json` | off | Print the plan document instead of the operator table |
+
+**Writes nothing.** Without `--out`, a `plan` run leaves the filesystem
+byte-for-byte as it found it — the workspace roots, the registry, and `~/.loom`
+included; in particular it never creates `~/.loom/experiments/` (only `start`
+may). That is a property of the *command*, not merely of the assignment
+function, so it is asserted at the process boundary over a whole temp fixture
+by `loom-daemon/tests/sweep_experiment_plan_writes_nothing.rs` (#8244), with the
+`--out` case as the control proving the harness can see a write.
+
+**Deterministic by construction.** `build_plan` is a pure function of
+`(seed, sorted workspace list, strata, arms, now)`: SHA-256 shuffle keys — not
+`DefaultHasher`, whose output is explicitly unstable across Rust releases, so a
+re-plan on an upgraded host would silently reassign arms — strata grouped in a
+`BTreeMap`, and no wall clock beyond the injected `now`. The same seed, fleet
+and strata therefore produce a byte-identical assignment on any host and any
+release; a different seed produces a different one.
+
+**Stratification** pairs comparable repos so an arm difference is not
+confounded by one arm drawing all the busy Rust repos:
+
+| Dimension | How it is measured |
+|---|---|
+| `merges14d` | Merged PRs in the last 14 days (`gh pr list --state merged --search merged:>=<cutoff>`), median split into `high`/`low`. **One** unmeasurable repo degrades the whole dimension to the documented alphabetical fallback (`alpha-a`/`alpha-b`) — degrading wholesale keeps stratum labels comparable instead of dropping every unreachable repo into one bucket |
+| `kind` | First-match-wins build-manifest heuristic at the repo root: `Cargo.toml`→`rust`, `package.json`→`node`, `pyproject.toml`/`setup.py`/`requirements.txt`→`python`, `go.mod`→`go`, a `scripts/` dir→`shell`, else `docs`. Filesystem-only, so it is identical on every host |
+
+**Balance.** Within each stratum members are ordered by shuffle key and dealt
+round-robin, and the deal counter **continues across strata** (visited in
+`BTreeMap` order) rather than restarting in each one. Restarting would balance
+each stratum while handing the leftover member of every odd-sized stratum to
+the same arm — exactly the failure mode of a fleet of mostly singleton strata.
+Continuing it bounds arm sizes to differ by at most one *both* within each
+stratum and fleet-wide.
+
+**Output.** `--json` (and `--out`) emit the plan document `start` consumes:
+
+| Field | Meaning |
+|---|---|
+| `experiment_id` | `exp-<YYYYMMDD>-<hash8>`; the hash covers the seed, arms, strata and the full assignment, so two different assignments can never share an id |
+| `created_at` | When the plan was built (`%Y-%m-%dT%H:%M:%SZ`) |
+| `seed`, `arms`, `stratify` | The inputs the assignment is reproducible from |
+| `workspaces[]` | `path` (the key), `repo` (`owner/name`, else the basename — reporting only), `arm`, `stratum`; ordered by `path` |
+
+`start --plan <file>` / `stop --id <id>` (#8055 phase 2) are the mutating half:
+`start` deep-merges the arm's model into each workspace's `.loom-local/local.json`
+overlay and records the experiment under `~/.loom/experiments/`
+(`LOOM_EXPERIMENTS_DIR`); `stop` reverses exactly the keys `start` wrote.
+`status` / drift reporting, `--scope dispatch|pipeline`, pool-preflight refusal
+and authoritative arm stamping in outcome records remain tracked on #8055.
 
 ## Token pool provisioning for managed repos (#3938)
 
@@ -4032,7 +4112,7 @@ knobs not yet audited here.
 | `autonomous.autoUpdate.enabled` | `LOOM_AUTO_UPDATE` | `false` | Autonomous self-update loop on/off (#4055). **Opt-in** (it rebuilds + restarts the daemon process). Exactly one loop per daemon, not a per-workspace fan-out. See [Autonomous self-update loop](#autonomous-self-update-loop-4055) below |
 | `autonomous.autoUpdate.intervalSecs` | `LOOM_AUTO_UPDATE_INTERVAL_SECS` | `900` | Cadence between staleness checks. Zero/invalid → default |
 | `autonomous.autoUpdate.settleSecs` | `LOOM_AUTO_UPDATE_SETTLE_SECS` | `600` | Settle window: wait this long after first observing a stale commit — resetting on every further commit — before rolling, so a burst of merges collapses into one roll. Zero/invalid → default |
-| `autonomous.autoUpdate.deferDeadlineSecs` | `LOOM_AUTO_UPDATE_DEFER_DEADLINE_SECS` | `21600` (6h) | Bound on the build-stampede gate (#4929): after this much **continuous** deferral for in-flight sweeps, the rebuild runs anyway at reduced CPU priority (`nice 19`) instead of deferring forever. Any check that sees zero in-flight sweeps — or a new source commit, or a completed rebuild — re-arms the clock, so short busy bursts never reach it. Zero/invalid → default; there is deliberately no "defer forever" value (set a very large one instead) |
+| `autonomous.autoUpdate.deferDeadlineSecs` | `LOOM_AUTO_UPDATE_DEFER_DEADLINE_SECS` | `21600` (6h) | Bound on the build-stampede gate (#4929): after this much **continuous** deferral for in-flight sweeps, the rebuild runs anyway at reduced CPU priority (`nice 19`) instead of deferring forever. Any check that sees zero in-flight sweeps — or a new source commit, or a completed rebuild — re-arms the clock, so short busy bursts never reach it. **Bounds the rebuild/source path only (#8252)** — a resolved release artifact is fetched immediately regardless of in-flight sweeps (niced, not deferred), so this deadline never delays an artifact roll. Zero/invalid → default; there is deliberately no "defer forever" value (set a very large one instead) |
 
 ### Idle exit for remote hosts (#4467)
 
@@ -8884,13 +8964,25 @@ anything about whether a newer signed binary exists.
   still-differing local sha afterwards is reported and left alone. If **either**
   checksum is unknown, the tick treats the artifact as converged rather than
   guessing — a wrong "differs" is far more costly than a missed convergence.
-- **Every gate below applies to an artifact roll exactly as to a rebuild** —
-  settle window (including the #6261 ceiling), the in-flight-sweep stampede
-  gate and its defer deadline, exponential backoff, and terminal state. The
-  settle window tracks an `artifact:<version>:<sha>` identity on this path in
-  place of the source commit, so a host that switches paths mid-streak (a
-  release appears) restarts its settle window exactly as it would for a new
-  commit.
+- **Every gate below applies to an artifact roll exactly as to a rebuild,
+  except the in-flight-sweep stampede gate (#8252)** — the settle window
+  (including the #6261 ceiling), exponential backoff, and terminal state all
+  apply unchanged. The settle window tracks an `artifact:<version>:<sha>`
+  identity on this path in place of the source commit, so a host that switches
+  paths mid-streak (a release appears) restarts its settle window exactly as it
+  would for a new commit.
+- **An artifact fetch is never deferred for in-flight sweeps (#8252).** The
+  stampede gate and its `deferDeadlineSecs` bound exist to keep an unattended
+  `cargo build --release` off a saturated host; downloading a signed asset,
+  verifying its checksum, and relaunching under the supervisor is not a build.
+  Coupling them cost real availability: on 2026-09-18 a host sat on a resolved
+  `0.19.168` artifact for ~1.5h (with up to ~4.5h of deferral still to run)
+  while every `merge-pr.sh` invocation on it failed closed against a subcommand
+  the stale binary lacked, and the operator rolled by hand in ~40s. A busy host
+  now fetches on the tick the decision is made, merely niced (`nice 19`) so it
+  yields CPU to the in-flight sweeps. Only the source/rebuild path still defers,
+  and `loom-daemon status` says which: `deferring the source rebuild …` versus
+  `fetched release artifact …`.
 - **Reported, not just logged.** `loom-daemon status` (human and `--json`) and
   `loom-daemon health` report `artifact_available` (`version`, `published_at`;
   `null` when none resolved) next to the installed version, so fleet-wide
