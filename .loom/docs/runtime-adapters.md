@@ -11,7 +11,7 @@ special cases.
 Pi and OpenCode have experimental **native Rust** adapters behind the same
 worker entry point. Harness selection, model profiles and trial evidence are
 separate: see [Native harness and model trials](runtime-model-trials.md).
-Neither adapter is admitted for Builder, Doctor, Judge or full sweeps yet.
+Guarded issue roles and sweeps: [native guardrail parity](guardrail-parity-native.md).
 
 > **Path convention.** This doc lives at `defaults/docs/runtime-adapters.md` in
 > the Loom source repo and cites `defaults/` paths throughout. A consumer
@@ -109,14 +109,14 @@ tier-1/tier-2:
   than exactly `"yes"` as unmet, so `"no"` fails closed identically to
   `"partial"`.
 - **Read-only admission is per-role, not automatic for the whole "read-only"
-  category.** `judge.json` declares `runtimeRequirements: ["mcp"]`, so a
-  tier-3 runtime with no MCP support (the honest default — see below) is
+  category.** `judge.json` declares `runtimeRequirements: ["loomControl"]`, so a
+  tier-3 runtime with no verified Loom control route is
   refused for Judge too, for the same reason it is refused for Builder: a
   declared `"no"` is not a declared `"yes"`. `curator.json`, `guide.json`, and
   `auditor.json` declare **no** `runtimeRequirements` today, so they are the
-  roles a no-MCP tier-3 runtime is actually admitted for (any runtime is
+  roles an unverified tier-3 runtime is actually admitted for (any runtime is
   trivially compatible with a role that declares no requirements). A tier-3
-  runtime that *does* support MCP can declare `mcp: "yes"` and pick up Judge
+  runtime with a verified control route can declare `loomControl: "yes"` and admit Judge
   too — the manifest is the single source of truth, not a hardcoded
   runtime-vs-role table.
 
@@ -456,7 +456,7 @@ separate issue (epic #4167, design pillar 2). Sketch:
 }
 ```
 
-Roles declare requirements (e.g. Builder needs `worktreeIsolation` + `mcp`;
+Roles declare requirements (e.g. Builder needs `worktreeIsolation` + `loomControl`;
 Judge needs read-only + forge access). Dispatch computes role → runtime
 compatibility and refuses to dispatch a role onto a runtime that cannot meet its
 requirements, rather than letting the session fail partway. The declaration is
@@ -469,10 +469,10 @@ by the standalone checker and daemon admission:
 - **Declaration** — `defaults/runtimes/<name>.json` (e.g.
   `defaults/runtimes/claude.json`), matching the sketch above exactly (tri-state
   `"yes" | "no" | "partial"` string values, capability set `mcp`, `subagents`,
-  `hooks`, `skills`, `worktreeIsolation`).
+  `hooks`, `skills`, `worktreeIsolation`, `loomControl`).
 - **Requirements** — an optional `"runtimeRequirements"` array on a role sidecar
   (`defaults/roles/<name>.json`), e.g. `"runtimeRequirements": ["worktreeIsolation",
-  "mcp"]` on `builder.json`. A role with no `runtimeRequirements` key has no
+  "loomControl"]` on `builder.json`. A role with no `runtimeRequirements` key has no
   constraints (any runtime is compatible). This is a distinct field from the
   pre-existing `suggestedWorkerType` (a dispatch *preference* hint) — the checker
   reads only `runtimeRequirements`, and `runtime_admission::resolve_and_admit`
@@ -523,7 +523,7 @@ there is no parity doc for tier-3 at all (see
 [Tier 3: generic passthrough](#tier-3-generic-passthrough)). The same "any
 non-`yes` value fails closed" matcher rule that enforces Codex's `partial`
 enforces this `no` identically — `--role builder --runtime aider` and
-`--role judge --runtime aider` (judge requires `mcp`, declared `"no"` here)
+`--role judge --runtime aider` (judge requires `loomControl`, declared `"no"` here)
 both exit 78, while `--role curator --runtime aider` exits 0 because
 `curator.json` declares no `runtimeRequirements` at all.
 
@@ -535,7 +535,7 @@ unchanged, deliberately: they are **evidence-gated**, and the remaining evidence
 is recorded machine-readably in `codex.json`'s `capabilityGate.pending` and in
 prose in [`guardrail-parity-codex.md`](guardrail-parity-codex.md) § "Promotion
 gate". Read that block before changing either value. `defaults/roles/doctor.json`
-also declares `["worktreeIsolation", "mcp"]` as of #4495 — Doctor mutates a
+now declares `["worktreeIsolation", "loomControl"]` — Doctor mutates a
 worktree exactly as Builder does, so it must fail closed for the same reason
 instead of slipping through with no constraints.
 
@@ -949,6 +949,17 @@ region, or an `account=unknown`/malformed identity. `category` is one of the
   classifier has been taught) degrades to the same class-less, account-wide
   health write a v1 record produces — selection must never fail closed on an
   unrecognized model name.
+- **A `model@…` suffix is stripped before classification** (#8380), so
+  `gpt-5-codex@high` (Loom's own `model@effort` rung grammar, #3702) and
+  `gpt-5-codex@2026-01-01` (a pinned dated ID — why `@` is in `model=`'s
+  charset at all) both resolve to the one `gpt-5-codex` class, exactly as
+  `model_tiers::base_of`, `sweep_registry::model_family`, and
+  `spawn-codex.sh`'s own `${EFFECTIVE_MODEL%%@*}` Claude-shape check already
+  do. The suffix names a reasoning effort or a snapshot of the *same* model,
+  never a second credit pool. Before this, `@` failed normalization outright
+  and a fleet pinning suffixed IDs got **zero** benefit from Phase 2 — every
+  credit exhaustion was still a whole-account outage. A value that is only a
+  suffix (`@high`, empty base) stays unrecognized, on the fail-safe side.
 
 Consumer: `sweep_registry::quarantine::apply_provider_health_feedback`, the
 only production caller, feeds the parsed `(provider, account, category,
@@ -964,6 +975,44 @@ An adapter emitting this record for the first time should start at `v=2`
 directly — there is no reason to ship the strictly-less-informative `v=1`
 shape going forward, though the daemon keeps parsing it for adapters (and
 historical logs) that already do.
+
+##### Known and accepted: selection narrows by a model the #5499 guard may then drop (#8380)
+
+`spawn-codex.sh` narrows account selection to the model about to be dispatched
+(`tokens select --model "$EFFECTIVE_MODEL"`, #8277) so an account held only for
+a *different* class stays selectable. But the [#5499 ChatGPT-plan
+guard](#chatgpt-plan-seats-cannot-serve-a-pinned-model-at-all-5499) that decides
+whether the pin actually survives runs **after** selection — it has to, because
+it shells out to `codex login status` against the profile selection just chose,
+and nothing before that point knows the profile's auth mode.
+
+So when the pin is dropped, selection was narrowed to class X while class Y —
+the account's own default — is what really runs. An account holding a live
+class-Y `class_cooldowns` entry is therefore selectable for a dispatch that will
+run exactly the exhausted class.
+
+**This is accepted, not a latent bug to be fixed opportunistically**, on these
+grounds:
+
+- **Bounded and self-correcting.** The blast radius is one failed dispatch. That
+  run reports `model=none` (the pin was dropped, so the adapter cannot name what
+  ran), which writes the **account-wide** hold — the account then drops out of
+  selection entirely rather than being re-offered the same doomed narrowing. It
+  cannot loop.
+- **The alternatives cost more than the failure.** Re-selecting after a drop
+  buys a second selection round-trip that lands on a *different* profile, whose
+  auth mode is again unknown — so the probe has to re-run, and the
+  select→probe→reselect cycle needs an arbitrary cutoff to terminate. The real
+  fix is to carry the profile's auth mode in the account descriptor so selection
+  knows up front which seats are ChatGPT-plan (they *always* drop the pin, so
+  the narrowing is always wrong for them — a persistent property, not a
+  per-dispatch accident). That is a larger change than this asymmetry justifies
+  on its own.
+- **It fails in the safe direction.** The mismatch can only ever *admit* an
+  account that should have been skipped; it can never block one that had credit.
+
+If the ordering is ever inverted, this subsection and the `model=none` bullet
+above are the two places that must change together.
 
 ### Runtime resolution (precedence)
 
