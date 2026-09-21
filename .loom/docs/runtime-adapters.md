@@ -748,6 +748,20 @@ model-selection block resolves an effective model (explicit `-m`/`--model` >
 options and exits `78` (`EX_CONFIG`) before any auth work. Escape hatch:
 `LOOM_CODEX_MODEL_CHECK=0`.
 
+#### The credential-pool preflight follows the admitted runtime (#8408)
+
+Resolving admission first also decides **which credential pool** the role
+runner's pre-spawn pool gate (#4642 / #7607) reads. It used to read the Claude
+token pool for every role, so `runtimes.roles.judge = "codex"` on a host whose
+Claude pool was exhausted skipped every judge tick (`token pool exhausted: 0/N
+spawnable in .loom/tokens`) while valid codex accounts sat idle. The gate now
+reads the pool the admitted runtime draws from — `.loom/tokens/` for `claude`
+(unchanged), the enabled `loom-daemon accounts` codex profiles for `codex`,
+nothing for the native harnesses — and a skip names that pool in the role log,
+the daemon log, and `role_tick.outcome`'s `gated_pool` key. Full contract,
+including when the codex gate deliberately stands down:
+[token-pool.md § The gate follows the admitted runtime](token-pool.md#the-gate-follows-the-admitted-runtime-8408).
+
 #### ChatGPT-plan seats cannot serve a pinned model at all (#5499)
 
 The family-level checks above only catch a Claude-shaped model on a Codex
@@ -1225,12 +1239,16 @@ design" property to systemd via the container boundary instead of process
 reparenting. `loom-daemon restart --drain` (#4090/#5119) remains the
 recommended path on both supervisors and is unaffected: a containerized
 sweep is admitted into the same in-flight accounting `--drain` already polls
-to zero. **Not shipped by this issue** (explicit Phase 3 follow-up ADR-0017
-names but defers): `SweepRegistry::reconstruct`'s container-recognition
-extension (so a restarted daemon re-admits a still-running orphaned
-container instead of risking a duplicate re-dispatch), and teaching
-`cancel_sweep` to `docker stop`/`docker rm` a containerized sweep it
-explicitly cancels.
+to zero. **Cancellation no longer leaks the container** (#8435): the
+daemon's cancellation path — the explicit `cancel_sweep` verb and every
+watchdog/deadline-driven cancel, which compose the same begin/finish pair —
+label-identifies the cancelled issue's container via
+`loom.sweep.issue=<N>` + `loom.dispatch=container` and issues
+`docker stop --time <grace>` (the cancel's own grace) then `docker kill` on
+expiry; `--rm` removes the stopped container. Still deferred (the remaining
+ADR-0017 follow-up): `SweepRegistry::reconstruct`'s container-recognition
+extension, so a restarted daemon re-admits a still-running orphaned
+container instead of risking a duplicate re-dispatch.
 
 **Explicitly out of scope for this issue**: the fleet-default rollout
 decision (a separate, later Phase 3 issue). Per-sweep resource limits shipped

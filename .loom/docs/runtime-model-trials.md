@@ -31,6 +31,22 @@ Tested CLI versions: Pi (`@earendil-works/pi-coding-agent`) 0.85.1 and OpenCode
 (`opencode-ai`) 1.18.31. Install the CLIs using their upstream instructions and
 put them on PATH, or set `LOOM_PI_BIN` / `LOOM_OPENCODE_BIN` to their executables.
 
+Supported OpenCode versions, per launch path (#8438):
+
+| OpenCode | Unguarded free-form launch | Guarded (role-tagged) launch |
+|----------|----------------------------|------------------------------|
+| 1.x | supported — verified live on 1.18.31 | supported — verified live on 1.18.31 |
+| 2.x | supported — argv built for 2.0.10 | **refused before spawn (exit 78)** until a live 2.x guarded canary is recorded |
+| any other major | refused before spawn (exit 78) | refused before spawn (exit 78) |
+
+The adapter runs `opencode --version` before it `exec`s and builds the argv for
+the reported major; an unreadable, failing or unrecognized version is refused
+rather than guessed at, and a missing binary still exits 127. What "built for
+2.0.10" does and does not claim: the 2.x shape was read from that release's
+`run --help`, and a free-form `run --standalone` launch from the worker's
+directory was reproduced live in #8438. The `#<effort>` model suffix and the
+whole guarded path have **not** been executed against a real 2.x CLI.
+
 Export `ZAI_API_KEY` in the launching environment, or authenticate the selected
 provider using the CLI's own login flow. Loom never sources your shell startup
 files. The profile maps that key to Pi's `ZAI_API_KEY` and OpenCode's
@@ -56,8 +72,26 @@ LOOM_RUNTIME=opencode loom-daemon spawn-worker -- --profile zai-flash \
 
 Pi's tools execute without interactive approval. OpenCode's Loom skip-permission
 flag maps to `run --auto`, which still respects explicit denials. Role launches separately provision Loom
-guarded tools; free-form trials use the ordinary harness tools. The actual working directory is preserved; OpenCode gets
-an explicit `--dir` so an inherited stale `PWD` cannot redirect a trial.
+guarded tools; free-form trials use the ordinary harness tools. The actual working directory is preserved, so an
+inherited stale `PWD` cannot redirect a trial: `PWD` is pinned to the real
+directory on the child, and the launch differs by OpenCode major:
+
+| | OpenCode 1.x | OpenCode 2.x |
+|---|---|---|
+| Working directory | explicit `--dir <cwd>` | inherited across `exec` (2.x removed `--dir`) |
+| Server | n/a | `--standalone`, always |
+| Effort | `--model provider/model --variant <effort>` | `--model provider/model#<effort>` (2.x removed `--variant`) |
+
+`--standalone` is unconditional on 2.x, guarded or not. There, `run` attaches by
+default to a shared background service (`opencode serve --service`) that was
+started by some earlier process and therefore never sees this launch's child
+environment. Everything Loom hands a native harness travels that way — the
+credential mapping, the `{env:VAR}` values it resolves, and the per-launch
+`OPENCODE_CONFIG_CONTENT` that is the *only* carrier of a profile's provider
+block (see "Multi-variable credentials and provider options" below). Against
+the shared service a project-file provider fails with HTTP 401 and a
+`providerDefinition` profile with an unknown provider/model. A private server
+also keeps two workers bound to different credentials from sharing one process.
 
 The compatibility entry point accepts the same worker options:
 `LOOM_RUNTIME=pi .loom/scripts/spawn-worker.sh --profile zai-flash -p '...'`.
@@ -86,6 +120,56 @@ provider fallback. For repeatable comparisons, define a named profile:
     }
   }
 }
+```
+
+### Multi-variable credentials and provider options
+
+One API key is the simplest case, not the only one. `credentialEnv` also takes
+an **array** of variable names, and `credentialTargets.<harness>` a **map** from
+each source variable to the name the harness expects in the child environment:
+
+| Form | Meaning | Presence |
+|------|---------|----------|
+| `"credentialEnv": "VAR"` | one variable, mapped by a `credentialTargets.<harness>` **string** | optional — a harness login store may supply it instead |
+| `"credentialEnv": ["A","B"]` | the **required set**, mapped by a `credentialTargets.<harness>` **object** | every entry must be present in the launching environment |
+
+The array form fails closed before spawn (exit 78) with a diagnostic naming the
+missing *variable names*; the legacy string form is unchanged, so `zai-flash`
+still launches against a CLI login with `ZAI_API_KEY` unexported. Only mapped
+variables are set on the child, and a `credentialTargets` entry naming a
+variable `credentialEnv` did not declare is rejected.
+
+Two optional per-harness fields carry **non-secret** provider configuration into
+OpenCode's per-launch injected config (`OPENCODE_CONFIG_CONTENT`); Pi rejects
+both, since it has no equivalent:
+
+- `providerOptions.<harness>` — merged into `provider.<providerId>.options`
+  (region, project, anything the provider block accepts).
+- `providerDefinition.<harness>` — the whole `provider.<providerId>` block, for
+  an endpoint the harness does not know natively (`npm`, `options`, `models`).
+
+**Secrets travel only as environment variables the child inherits.** Never
+interpolate a key into these blocks: reference it with OpenCode's own
+`{env:VAR}` indirection and let the credential mapping populate that variable.
+A profile whose provider configuration embeds the literal value of one of its
+own `credentialEnv` variables is rejected before launch.
+
+Three bundled **examples** (placeholder model ids, no account-specific values —
+copy into `runtimes.modelProfiles` and edit, they are not usable as shipped):
+
+| Profile | Provider | Requires |
+|---------|----------|----------|
+| `example-bedrock` | `amazon-bedrock` | `AWS_PROFILE`; `providerOptions.opencode.region` |
+| `example-vertex` | `google-vertex` | `GOOGLE_APPLICATION_CREDENTIALS`, `GOOGLE_CLOUD_PROJECT`, `VERTEX_LOCATION` |
+| `example-openai-compatible` | `loom-openweights` | `LOOM_OPENWEIGHTS_API_KEY`, `LOOM_OPENWEIGHTS_BASE_URL`; `providerDefinition.opencode` declares `@ai-sdk/openai-compatible` with `{env:…}` options |
+
+Check any profile's resolvability without spawning a worker — it reads no
+secret values, contacts no provider, and exits 78 when a bound harness cannot
+be resolved:
+
+```sh
+loom-daemon worker profile-check example-bedrock
+loom-daemon worker profile-check my-comparison --runtime opencode
 ```
 
 Native adapters require `--prompt`; use the harness CLI directly for interactive
