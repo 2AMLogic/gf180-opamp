@@ -4,7 +4,13 @@
   2am#357 ratification-via-PR policy, the operator's approval of the PR
   that lands this record *is* the ratification act — this record does not
   itself flip `spec/target-spec.md`'s `Status` field, which remains
-  `DRAFT`)
+  `DRAFT`) — **carried into force by
+  [0003-target-spec-ratification.md](0003-target-spec-ratification.md)**
+  (issue #24, 2026-09-21): that record's ratification act (the operator's
+  approval of the PR carrying it) flips `target-spec.md`'s `Status` to
+  RATIFIED (partial) and makes this record's bounds ratified table
+  content; the `proposed` above describes only this record's state while
+  that approval was pending
 - **Date**: 2026-09-15
 - **Decided by**: Builder agent, issue #18
 - **Related**: [gap-to-T1 tracker #7](https://github.com/2AMLogic/gf180-opamp/issues/7)

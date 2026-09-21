@@ -3,7 +3,13 @@
 - **Status**: proposed (input to a future spec-ratification issue; this
   repo has no ratified spec yet — `spec/target-spec.md` itself is still
   DRAFT, matching the identical "proposed, not ratified" posture of
-  `sg13g2-opamp`'s own DR-0001)
+  `sg13g2-opamp`'s own DR-0001) — **carried into force by
+  [0003-target-spec-ratification.md](0003-target-spec-ratification.md)**
+  (issue #24, 2026-09-21): the future spec-ratification act this line
+  awaited is that record's ratification act (the operator's approval of
+  the PR carrying it), as of which this record's decisions are ratified
+  table content; the `proposed` above describes only this record's state
+  while that approval was pending
 - **Date**: 2026-09-09
 - **Decided by**: Builder agent, issue #12
 - **Related**: #10 / PR #11 (the gm/ID device-characterization study this
