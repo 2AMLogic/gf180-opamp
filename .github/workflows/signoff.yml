@@ -1,0 +1,53 @@
+# Re-run the block's klt signoff (manifests/gf180-opamp.json) on every push
+# and PR, and require the committed record (manifests/gf180-opamp.signoff.json)
+# to be byte-reproducible from a fresh run — evidence, checklist, manifest, and
+# klt pin cannot drift apart without failing the build. See manifests/README.md
+# for the regeneration command and the pin/bump procedure.
+name: signoff
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  signoff:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      # klt pin — bump together with a regenerated manifests/gf180-opamp.signoff.json
+      # (same PR), per manifests/README.md -> "The klt pin".
+      - name: Install the pinned klt
+        run: pipx install "klayout-tools==0.5.0"
+
+      - name: Re-run the block signoff fresh
+        run: |
+          set +e
+          klt signoff --manifest manifests/gf180-opamp.json \
+                      --tiers-doc manifests/design-evidence-tiers.md \
+                      --format json > "$RUNNER_TEMP/fresh-signoff.json"
+          rc=$?
+          set -e
+          # 0 = tier "T1" (all items met), 3 = tier null (report produced, items
+          # unmet — expected for this block today). Neither is a CI failure: the
+          # gate is the record, not the exit code. Anything else means the
+          # manifest or checklist is unreadable/malformed — a real failure.
+          if [ "$rc" -ne 0 ] && [ "$rc" -ne 3 ]; then
+            echo "::error::klt signoff exited $rc (expected 0 or 3). The manifest or checklist no longer parses; see manifests/README.md."
+            exit 1
+          fi
+
+      - name: Require the committed record to match the fresh run
+        run: |
+          if cmp -s "$RUNNER_TEMP/fresh-signoff.json" manifests/gf180-opamp.signoff.json; then
+            echo "Committed signoff record matches a fresh run."
+            exit 0
+          fi
+          echo "::error::manifests/gf180-opamp.signoff.json is stale — a fresh klt signoff run does not reproduce it. Re-run the regeneration command in manifests/README.md and commit the result; if the klt pin or the vendored checklist moved, regenerate and commit those changes together in the same PR."
+          echo "--- committed record vs fresh run (pretty-printed diff) ---"
+          diff -u \
+            <(python3 -m json.tool manifests/gf180-opamp.signoff.json) \
+            <(python3 -m json.tool "$RUNNER_TEMP/fresh-signoff.json") || true
+          exit 1
