@@ -2127,15 +2127,21 @@ success is **transient** (reported as a count only). Recording happens *before*
 the log-dedup decision, so #4349's DEBUG-downgraded repeat failures are still
 fully visible to a health check.
 
-A third, **disjoint** bucket exists: `pool_exhausted` (#7607). A tick whose
-latest record is a `RoleTickOutcome::PoolExhausted` skip — the token pool was
-present but had **zero spawnable accounts** — is neither persistent nor
-transient, and is never escalated. It renders as its own call-out, `pool
+A third, **disjoint** bucket exists: `pool_exhausted` (#7607), but since #8444
+it holds only the **self-healing** hold. A tick whose latest record is a
+`RoleTickOutcome::PoolExhausted` skip — the credential pool was present but had
+**zero spawnable accounts** (`PoolHold::SelfHealing`) — is neither persistent
+nor transient, and is never escalated. It renders as its own call-out, `pool
 exhausted (N role(s) held)`, so a fleet-wide dry pool stops reading as N broken
 roles (the incident behind #7607 saw 693 identical exit-78s masking every real
 role failure). The verdict is still `Degraded` — an exhausted pool is real,
 operator-actionable information — but the summary line never says "PERSISTENT
-failure(s)" for it.
+failure(s)" for it. The two *permanent* holds escalate instead:
+`PoolHold::Unprovisioned` (nothing provisioned for the role's admitted runtime)
+and `PoolHold::Unreadable(_)` (an unreadable `.loom/accounts.json` /
+`.loom/account-health.json`) are routed to `persistent` like `NoTokenPool`
+(#8444) — a pool that is dry because it was never provisioned or cannot be
+read is a configuration fault, not fleet dryness.
 
 ### Role liveness: "is it ticking at all" (#6201)
 
@@ -5812,7 +5818,8 @@ digest — into one unit) and:
 1. Removes every **dangling** image (no tag points at it) outright — always
    safe, since nothing can be "using" an unreferenced image by name.
 2. For each **tracked** repository (default: `loom-worker`,
-   `loom-worker-session`, and their `ghcr.io/rjwalters/...` aliases), keeps
+   `loom-worker-session`, `loom-worker-native`, and their
+   `ghcr.io/rjwalters/...` aliases), keeps
    only the `keepLastN` (default 2) most-recently-built tagged images and
    removes the rest **by image ID**, so every alias tag riding on that ID goes
    with it in one `docker rmi` call.
@@ -5863,7 +5870,7 @@ flows outside GitHub-hosted CI (see `docker/worker/README.md` and
 | `LOOM_DOCKER_IMAGE_RETENTION` | `autonomous.dockerImageRetention.enabled` | env > config > default | `true` (on) |
 | `LOOM_DOCKER_IMAGE_RETENTION_KEEP_N` | `autonomous.dockerImageRetention.keepLastN` | env > config > default | `2` |
 | `LOOM_DOCKER_IMAGE_RETENTION_MIN_INTERVAL_SECS` | `autonomous.dockerImageRetention.minIntervalSecs` | env > config > default | `1800` (30 min) |
-| — | `autonomous.dockerImageRetention.trackedRepos` | config > default | `loom-worker`, `loom-worker-session`, and their `ghcr.io/rjwalters/...` aliases |
+| — | `autonomous.dockerImageRetention.trackedRepos` | config > default | `loom-worker`, `loom-worker-session`, `loom-worker-native`, and their `ghcr.io/rjwalters/...` aliases |
 | — | `autonomous.dockerImageRetention.allowlist` | config > default | `[]` (empty — a shared long-lived image must be opted in explicitly) |
 
 **Expected steady-state footprint.** On a container-enabled host running these
