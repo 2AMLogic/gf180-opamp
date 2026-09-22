@@ -163,3 +163,21 @@ on this PDK."*
   unmet, since no schematic/layout/sim work has started. It is the natural
   place future passes record progress against items 1–10 as design work
   lands.
+
+## 5. Consumer findings live on the consumer
+
+`gf180-ldo` and `gf180-bandgap` each embed their own error-amplifier work
+(`error_amp.sch`, `bandgap_amp.sch` — §2/§3 above: not the same block as
+this one). When evaluating this block as a replacement surfaces a finding
+about **their** embedded amplifier, that finding is filed on **their**
+tracker, per the fleet's cross-pollination protocol — the
+[sky130-sar-adc#346](https://github.com/2AMLogic/sky130-sar-adc/issues/346)
+pattern: an issue on the consumer's repo describing the finding generically,
+with links back to this block's records. This plan links out to such
+findings; it does not accumulate their results.
+
+The consumer list itself (who `consumes:` this block) lives in
+[`2AMLogic/2am` `repos.yml`](https://github.com/2AMLogic/2am/blob/main/repos.yml)
+— a new `consumes:` entry there is the update trigger for
+[`target-spec.md`](target-spec.md)'s "Consumers (non-normative)" section,
+which carries each consumer's requirement rows and verdicts.

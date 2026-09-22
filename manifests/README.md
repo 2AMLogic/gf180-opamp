@@ -18,6 +18,7 @@ tracker (#7) points here as the verdict of record.
 | `gf180-opamp.json` | The block manifest: `block` (how this repo is identified in a fleet roll-up), `kind`, and the per-item `evidence` map. |
 | `design-evidence-tiers.md` | The T1–T4 checklist, vendored verbatim from klayout-tools and pinned (see "Why the checklist is vendored"). |
 | `gf180-opamp.signoff.json` | The committed `klt signoff --manifest` JSON record — the verdict of record. |
+| `integrator.json` | The **integrator view**: top cell, port list, netlist/GDS paths, area, and maturity rung, as structured data at a fixed path (issue #27; see "The integrator view" below). |
 | `README.md` | This file. |
 
 ## Current verdict, and why the `evidence` map is empty
@@ -35,6 +36,38 @@ not `klt` envelopes. Per the issue #23 framing, an all-`unmet` manifest with
 replaces hand-written prose that goes stale with a mechanical read that
 cannot. Every row currently renders `unmet`/`no_evidence`, `tier` is
 `null`, and the command exits `3` — that is the point, not a failure.
+
+## The integrator view (`integrator.json`)
+
+`manifests/integrator.json` publishes, as structured data at a fixed path,
+what a fleet consumer takes from this block to evaluate it as a replacement:
+`top_cell`, `ports` (name + direction, in schematic/netlist declaration
+order), `netlist` path, `gds`, `area`, and `rung` (the design-evidence
+maturity). Prose is not the delivery vehicle for these — a full-chip
+integrator measured what prose costs (a floorplan budget wrong by 10× on
+the first block read, issue #27); the JSON is.
+
+**Honest-`null` discipline, same as the signoff manifest:** `gds` and `area`
+are explicit `null`s until layout lands — never omitted keys, never
+placeholder numbers. `rung` is `"below-T1"` while
+`gf180-opamp.signoff.json`'s `tier` is `null`.
+
+**Consistency obligations** — manual until the artifacts they mirror exist
+(the signoff CI does not check them):
+
+- **`rung` ↔ `gf180-opamp.signoff.json`'s `tier`**: `tier: null` ⇒
+  `"below-T1"`; a `T1`–`T4` verdict ⇒ the same string. Update `rung` in the
+  same change that flips `tier`.
+- **`gds`/`area` ↔ `layout/`**: filled (GDS path; area in mm²) in the same
+  change that lands layout — mirroring issue #23's "honest empty evidence
+  beats stale prose".
+- **`top_cell`/`ports`/`netlist` ↔ `design/`**: any port, top-cell, or
+  netlist change regenerates the view in the same commit.
+
+**Update trigger for consumers:** a new `consumes:` entry in
+[`2AMLogic/2am` `repos.yml`](https://github.com/2AMLogic/2am/blob/main/repos.yml)
+updates `spec/target-spec.md`'s "Consumers (non-normative)" section — not
+this file.
 
 ## Regenerating the record
 
