@@ -99,6 +99,178 @@ When testing an uninstalled build, set `LOOM_DAEMON_SELF_BIN` to the newly built
 binary before invoking the stub. Existing Claude/Codex adapters still receive
 all their arguments unchanged.
 
+## API-key account pool (`loom-daemon api-keys`, #8401)
+
+A single exported `ZAI_API_KEY` (above) is the trial path — fine for one
+account. Running a **fleet** of API-key subscriptions (e.g. several Z.ai GLM
+coding-plan accounts) through OpenCode/Pi the way the fleet already rotates
+Claude OAuth accounts ([`token-pool.md`](token-pool.md)) needs a registry and
+per-spawn selection, which is what `loom-daemon api-keys` provides — the
+API-key analogue of `loom-daemon tokens` (Claude OAuth) and `loom-daemon
+accounts` (Codex `CODEX_HOME` profiles), implemented at
+`loom-daemon/src/api_keys_pool/`.
+
+**Registry.** One account is one file: `.loom/api-keys/<provider>/<account>.env`
+(gitignored, `0600`, per host — never in `.loom/config.json` or
+`model-profiles.json`), holding a single `KEY=value` assignment. `<provider>`
+is a pool namespace derived from the profile's `credentialEnv`
+(`ZAI_API_KEY` -> `zai`; override with a profile's `credentialPool` when two
+profiles must share one pool, or when two credential sources for the same
+model family — say a flat-rate subscription and a metered key — must be kept
+as **separate** pools). `KEY` must be `UPPER_SNAKE_CASE` and must equal the
+profile's `credentialEnv`: an account file that assigns any other variable is
+withheld from that profile rather than injected under its harness variable.
+`add` defaults `KEY` to `<PROVIDER>_API_KEY`, so an account for a
+`credentialPool`-named pool needs an explicit `--env-var <credentialEnv>`.
+Manage it with:
+
+```sh
+loom-daemon api-keys add zai alice --key-file /path/to/key   # or pipe on stdin
+loom-daemon api-keys add zai-metered team --env-var ZAI_API_KEY --shared --key-file /path/to/key
+loom-daemon api-keys list [--provider zai] [--json]
+loom-daemon api-keys disable zai alice
+loom-daemon api-keys enable zai alice
+loom-daemon api-keys limit zai alice --max-concurrent 2      # or --unlimited
+loom-daemon api-keys remove zai alice
+```
+
+No verb accepts key material on the command line; `add` reads it from
+`--key-file` or stdin only. `list`/`health` render a secret-free account
+record that cannot carry a value — on a host with no pool, `list` says so and
+exits `0`. A hand-placed file whose left-hand side is not `UPPER_SNAKE_CASE`
+(a bare base64 key with `=` padding, for instance) is reported `unusable` with
+`variable=-`; its text is never echoed.
+
+**Per-repo and shared pools.** There are two pool roots, in precedence order:
+
+1. the per-repo pool, `<repo>/.loom/api-keys/` — what `add` writes by default;
+2. the shared machine-level pool, `~/.loom/api-keys/` — what `add --shared`
+   writes. `LOOM_SHARED_API_KEYS_DIR=<dir>` relocates it (`~` is expanded);
+   `LOOM_SHARED_API_KEYS_DIR=` (set but empty) disables it entirely.
+
+Precedence is resolved **per provider**, not per repo: a provider uses the
+per-repo root if that root holds at least one account *for that provider*,
+and the shared root otherwise. A repo with its own `zai` accounts therefore
+still gets `zai-metered` (or `openai`, …) from the shared pool. Within one
+provider the two roots are never merged — registering a per-repo account for
+`zai` takes `zai` over for that repo, and `add` prints a note when doing so
+puts shared accounts out of reach. `disable`/`enable`/`remove`/`mark-bad`/
+`unblock` act on whichever root is effective for the provider they name.
+
+**Selection at spawn.** When a profile's `credentialEnv` is set, the native
+dispatcher resolves it in this order: explicit environment (unchanged from
+the single-key trial path above) > pool selection for the profile's provider
+> fail closed. Pool selection excludes disabled and bad-marked accounts, then
+prefers a `.allowlist` pin (falling back to the full eligible set if the pin
+is stale), then round-robins across what remains using the same rotation
+cursor `spawn-claude.sh`'s selection ladder uses — consecutive spawns
+alternate accounts. The chosen account's **name** (never the key) is recorded
+in the `LOOM_LAUNCH` record's `credentialAccount`/`credentialProvider`/
+`credentialSource` fields and in the sweep log; a host with no accounts
+registered for the provider is not an error (the harness is left to its own
+auth store), but an *all-exhausted or all-disabled* pool for a provider that
+does have registered accounts fails closed at exit `78` (`EX_CONFIG`) with the
+same "which binary decided, and why each account was excluded" diagnostic
+shape an empty Claude pool produces.
+
+**One account supplies one variable.** An account file is a single
+`KEY=value`, so the pool fills at most **one** unset source variable of a
+profile's credential mapping; every variable that *is* exported passes through
+from the environment exactly as described under
+[Multi-variable credentials](#multi-variable-credentials-and-provider-options).
+In practice that means pooling is for the single-string `"credentialEnv":
+"VAR"` form. The array form is by definition a set that must already be present
+in the launching environment — that check runs first, so the pool is never
+reached for it — and a profile that sets `credentialPool` while leaving more
+than one variable unset is rejected at `78`.
+
+**"No pool" means the directory does not exist — nothing else.** A provider
+directory that exists but cannot be read (`EACCES` because it is `0700` and
+owned by a different uid, a uid-mismatched bind mount in a container, `EIO`,
+`ESTALE`) also fails closed at `78`, naming the path and the error: accounts
+may well be registered there, and all disabled to stop spend, so falling back
+to the harness's own auth store would run the spawn on a credential the
+operator did not choose. `list` and `health` report the unreadable directory
+and exit non-zero instead of printing "no accounts". The same rule covers the
+state files that decide eligibility: an unreadable `.disabled`/`.allowlist`, or
+a `.bad_accounts.json` that is empty or does not parse, **withholds** the
+provider's accounts (`health` counts them `unverifiable`) and `mark-bad`/
+`unblock` refuse to rewrite it. To recover, repair the file, or delete it to
+discard that provider's marks. All pool files are written atomically (temp
+file + `rename`, `0600`), so Loom itself never leaves one half-written.
+
+**Exhaustion / bad-marking.** `loom-daemon api-keys mark-bad <provider>
+<name> --reason <text> [--cooldown-secs N] [--model-class <id>]` removes an
+account from selection until its reset horizon (or indefinitely, until
+`api-keys unblock`); a bad mark self-heals once its horizon passes, with no
+operator action required. `loom_daemon::api_keys_pool::classify` recognises a
+harness's own quota/rate-limit error text (`insufficient balance`, HTTP `429`,
+…) and produces the classification that is recorded.
+
+*Marks are automatic as well as operator-invoked (#8424).* After a native
+sweep or role tick exits, Loom re-reads that run's own retained log
+(`api_keys_pool::ingest`) and bad-marks the account the run used when the log
+says its allowance ran out. This is deliberately **post-hoc**, not live
+interception: a native harness spawn `exec`s the child to preserve PID/signal
+parity for the reaper and role runner, so no Loom process survives to watch
+the stream — the same shape `sweep_registry`'s Codex health bridge and
+`worker_spawn::launch_outcome` already use. The cost, stated plainly: the mark
+lands when the run exits rather than the moment it fails, and a run whose
+output Loom never retains is never ingested. Four guards keep it from marking
+a healthy account — only a pool-selected credential (never an operator's
+one-off `export`), only from Loom's own `# LOOM_LAUNCH` record, never from an
+exit-0 run, and never from an auth failure (below).
+
+*Auth failures are not exhaustion.* A `provider.auth` / HTTP 401 harness event
+is classified `credential-failure`: it is surfaced in the log and **never**
+bad-marked, and it carries no reset horizon at all. On OpenCode 2.x a 401 is
+also what a *correct* key looks like when the launch forgets `--standalone`
+(#8438), so marking on it would take a healthy account out of the pool for a
+launch-configuration bug.
+
+*Pattern provenance.* Each entry in the classifier's table records whether it
+was captured from real harness output or transcribed from provider
+documentation. The captured `provider.auth`/401 event above is real (OpenCode
+2.0.10, `run --format json`, observed 2026-09-20); **no live Z.ai coding-plan
+*exhaustion* string has been captured yet**, so those rows remain documented
+shapes and a unit test keeps that labelling honest. Fold each new capture in
+as it is observed.
+
+*Model-class scoping.* `--model-class <model-id>` (e.g. `glm-5.3-flash`, an
+`#effort` suffix is stripped) scopes a mark to one allowance, mirroring the
+Claude pool's `is_bad_for_class`: an exhausted `glm-5.3-flash` allowance
+leaves the same account selectable for `glm-5`. Omit it for an account-wide
+mark — which is what every pre-#8424 mark is, and what an automatic mark falls
+back to when the launch record names no usable model. `api-keys unblock` takes
+the same flag: with it, only that class's mark is cleared; without it, every
+mark for the account is.
+
+**Concurrency.** `loom-daemon api-keys limit <provider> <name>
+--max-concurrent <N>` (or `--unlimited` to clear it; `api-keys add` accepts
+`--max-concurrent` too) declares a provider-side concurrent-request ceiling
+for one account. Selection **enforces** it: an account already holding `N`
+live spawns is skipped in favour of another eligible account, and becomes
+selectable again the moment one of those spawns exits — no operator action,
+and no cooldown. A pool whose every account is at its cap fails closed at `78`
+with a diagnostic naming the cap. An account with no declared cap is
+unbounded, exactly as before #8424.
+
+In-flight holds are counted as one lease file per live spawn under
+`<provider>/.inflight/<account>/`, keyed on the spawning PID — which, because
+the spawn `exec`s, *is* the harness's PID for the whole run, so a lease is
+released by the process dying and there is nothing to forget. Stale leases are
+reaped on read (dead PID, or older than `LOOM_API_KEY_INFLIGHT_STALE_SECS`,
+default 4h). Unlike `.disabled`/`.bad_accounts.json`/`.limits.json` — which
+encode operator decisions and therefore fail *closed* — an unusable lease
+store degrades **open** and the spawn proceeds uncapped: a broken counter
+directory must not become an outage.
+
+**Health.** `loom-daemon api-keys health [--provider zai] [--json]` reports,
+per provider: total/selectable/disabled/malformed/exhausted/at-concurrency-cap/
+unverifiable counts, any `.allowlist` pin, accounts whose file permissions are
+looser than `0600`, and any provider directory that cannot be read (non-zero
+exit) — secret-free by construction, the same as `list`.
+
 ## More models
 
 Use `--model provider/model` for a one-off selection using the selected CLI's
@@ -189,6 +361,43 @@ to use the selected profile. An unconfigured native role uses its profile,
 never the shipped Claude `sonnet` alias. Its authentication does not require
 a Claude token pool. `/loom:<role> arguments` expands the installed role text
 and repository instructions, and checks admission before launch.
+
+## Backstopping a trial tap behind the subscriptions (#8436)
+
+A trial profile is usually a *second* way to reach a model, not a replacement
+for the Claude/Codex seats already paid for. `runtimes.preference` orders those
+taps and falls through only when a higher one has nothing spawnable, so a metered
+endpoint stays a backstop rather than becoming the default:
+
+```jsonc
+"runtimes": {
+  "preference": ["claude", "codex", {"runtime": "opencode", "modelProfile": "zai-metered"}]
+}
+```
+
+Three things to know before pointing a trial at this:
+
+- **A tap is (runtime, credential source), not a runtime id.** The same model is
+  reachable through a flat-rate coding-plan subscription and through a metered
+  serverless endpoint, under different provider ids. Name the `modelProfile` when
+  the distinction matters — that is what makes "which tap did this run use"
+  answerable from the launch record.
+- **Exhaustion means different things per tap.** A flat-rate tap exhausts on plan
+  limits and recovers on a clock, which is what the #8401 API-key pool's bad-mark
+  model describes. A metered tap effectively never exhausts; its limiter is a
+  **spend ceiling**, and it must not be modelled as a cooldown. A harness cost
+  estimate is at least directionally meaningful for a metered tap and is not a
+  charge at all for a flat-rate one.
+- **Codex is not admitted for Builder/Doctor**
+  (`worktreeIsolation: "partial"`), so a build-role chain is effectively
+  `claude → <native tap>` whatever the list says; and because a native sweep runs
+  every phase in one session with no subagents, set `rolePreference.judge` to keep
+  review off the tap that produced the change.
+
+Full semantics, the operator-pin rule, and the
+`# LOOM_RUNTIME_PREFERENCE` observability marker: `runtime-adapters.md` §
+"Ordered runtime preference with fall-through". Dispatch is not yet wired to the
+resolver — see the follow-up issues on #8436.
 
 ## Evidence and limits
 
