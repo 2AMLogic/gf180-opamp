@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "block": "gf180-opamp",
+  "top_cell": "opamp_two_stage",
+  "ports": [
+    { "name": "vdd", "direction": "inout" },
+    { "name": "vss", "direction": "inout" },
+    { "name": "vinp", "direction": "in" },
+    { "name": "vinn", "direction": "in" },
+    { "name": "vout", "direction": "out" },
+    { "name": "ibias", "direction": "in" }
+  ],
+  "netlist": "design/netlist/opamp_two_stage.spice",
+  "gds": null,
+  "area": null,
+  "rung": "below-T1",
+  "rung_source": "manifests/gf180-opamp.signoff.json"
+}

@@ -156,3 +156,79 @@ guardrail that ratification precedes measurement.
 - [`spec/decision-records/0003-target-spec-ratification.md`](decision-records/0003-target-spec-ratification.md) — the ratification record itself (issue #24): the per-row dispositions that flipped this table DRAFT → RATIFIED (partial), the three sizing-grounded target bounds (GBW, slew rate, quiescent power) and the phase-margin bound, the rejected conditional-45° escape, and the residual register behind every open row.
 - [`design/opamp_sizing.md`](../design/opamp_sizing.md) — the committed sizing pass (issue #17 / PR #21) whose design point and predictions ground the `[DR-3]` GBW, slew-rate, and quiescent-power targets.
 - [`sg13g2-opamp`/`sky130-opamp` twins](https://github.com/2AMLogic/sg13g2-opamp) — the three-foundry twin target-specs this table's ratification aligns with in shape: the `sg13g2-opamp` twin's DR-0002 partial-ratification (measured rows ratified, residuals registered) is the precedent [0003](decision-records/0003-target-spec-ratification.md) mirrors; the `sky130-opamp` twin's sizing-estimate `[P]` conventions and DR-001/DR-002 records are its still-DRAFT counterpart.
+
+## Consumers (non-normative)
+
+This section is **non-normative context**: it names the fleet blocks that
+consume this one and carries the requirement rows they impose, so the
+question *"can `gf180-ldo` / `gf180-bandgap` use this block?"* is answerable
+from this repo rather than by reading four. It asserts **no new target and
+changes no row value** — [0003](decision-records/0003-target-spec-ratification.md)'s
+per-row dispositions are untouched, and no `meets` verdict below is a claim
+that this block **meets its own targets**: this table's rows are ratified
+design-to bounds with no circuit-level PVT evidence yet, so every verdict is
+a *target-vs-requirement* comparison only. `unknown` marks rows resting on
+this table's open residuals. The structured integrator view (top cell, port
+list, netlist/GDS paths, area, maturity rung) is published as data at a
+fixed path — [`manifests/integrator.json`](../manifests/integrator.json) —
+not as prose here.
+
+**Source of truth for the consumer list**:
+[`2AMLogic/2am` `repos.yml`](https://github.com/2AMLogic/2am/blob/main/repos.yml)
+`consumes:` map — as of 2026-09-22 it records exactly two consumers of
+`gf180-opamp`:
+
+- `gf180-bandgap` → `consumes: [gf180-opamp]` — no slot named.
+- `gf180-ldo` → `consumes: [gf180-opamp, gf180-bandgap]`, annotated *"error
+  amp; VREF is a top-level port (its DR-0021) a bandgap plugs into"* — the
+  `error amp` clause is this block's slot; the `VREF` clause describes
+  `gf180-bandgap`'s.
+
+A **new `consumes:` entry in `repos.yml` is the update trigger** for this
+section — a consumer not named there gets no row here. Findings about a
+consumer's own embedded block belong on **that consumer's tracker**, not
+here: see [`porting-plan.md`](porting-plan.md) §5.
+
+### `gf180-ldo` — error-amp slot
+
+`gf180-ldo` embeds its own error amplifier today
+([`error_amp.sch`](https://github.com/2AMLogic/gf180-ldo/blob/main/design/error_amp.sch)):
+**not the same block** — a host-loop amplifier sized to its regulation
+loop's needs, carrying no amplifier-level GBW/PM/slew/CMRR rows of its own;
+the shape argument is recorded once in
+[`porting-plan.md`](porting-plan.md) §2, not re-derived here. Notably, its
+own [`spec/architecture-survey.md`](https://github.com/2AMLogic/gf180-ldo/blob/main/spec/architecture-survey.md)
+§5 shortlists a **two-stage Miller-compensated OTA** (its candidate 3,
+~10–15 µA bias allocation) as a primary option for exactly this slot — the
+shape this block is.
+
+| Requirement row | `gf180-ldo` imposes | This block's ratified spec | Verdict | Basis |
+|---|---|---|---|---|
+| Port list | error-amp slot: reference input + feedback-divider-tap input, pass-FET-gate output, single supply (survey §2 rows 1–2, §3.1) | `vdd`, `vss` (inout); `vinp`, `vinn` (in); `vout` (out); `ibias` (in) — recorded as data in [`manifests/integrator.json`](../manifests/integrator.json) | **meets** (shape only — the ratified table carries no port row, so this is a structural match against the committed port list, not a spec verdict) | [`manifests/integrator.json`](../manifests/integrator.json) vs survey §2/§3.1 |
+| Rails | 3.3 V ±10% single supply (survey row 1); its 5 V input stretch flags an amplifier-headroom question still open (survey §3.4) | VDD **3.3 V ±10%** [DR-3]; 5 V stretch row **named-not-opened** [P] | **meets** (3.3 V, same ratified row); **unknown** (5 V — not opened) | §1 VDD rows; opening 5 V requires its own decision record, never a consumer row |
+| Input range | inputs sit at VREF (`gf180-bandgap`'s 1.20 V output) and the divider tap ≈ VREF (survey §2 row 2) | no input-common-mode row exists — neither ratified nor held open in the residual register | **unknown** | flagging the gap here does not open a row; a future input-CM row goes through `spec/` like any other |
+| Speed | no amplifier-level GBW row; loop UGBW estimated in the tens-to-low-hundreds of kHz (survey §2 row 5) | GBW **≥ 10 MHz** into CL = 2 pF [DR-3]; slew **≥ 10 V/µs** [DR-3] | **meets** (ratified target ≥ 10 MHz ≫ ~0.1 MHz loop need) | §2 GBW row — target-vs-requirement comparison only; the row's own "not met" status is unchanged |
+| Offset | no numeric amplifier-level row; load-reg < 1% is system-level (survey §2 row 7) | **[TBD] open** | **unknown** | §2 offset row, open [DR-3 residual e2] |
+| Noise | no amplifier-level row | **[TBD] open** | **unknown** | §2 noise row, open [DR-3 residual e1] |
+| Area budget | whole-regulator < 0.1 mm² ex pad ring (survey row 8); no amplifier carve-out stated | **[TBD] open** | **unknown** | §2 area row, open [DR-3 residual e5] |
+
+### `gf180-bandgap` — amplifier slot (unspecified)
+
+`gf180-bandgap` embeds its own amplifier
+([`bandgap_amp.sch`](https://github.com/2AMLogic/gf180-bandgap/blob/main/design/bandgap_amp.sch)):
+**not the same block** — a low-bandwidth reference-loop error amplifier, per
+the same [`porting-plan.md`](porting-plan.md) §2 argument. Its ratified spec
+rows (output reference, PSRR, output noise, Iq) are all **system-level**
+quantities at the bandgap's output-reference node; none imposes an
+amplifier-level requirement on this block, so most rows below are `Unknown`
+by the consumer's own omission — named, not silently dropped.
+
+| Requirement row | `gf180-bandgap` imposes | This block's ratified spec | Verdict | Basis |
+|---|---|---|---|---|
+| Port list | no amplifier-level port requirement stated (its amplifier is an internal host-loop sub-block) | port list as recorded in [`manifests/integrator.json`](../manifests/integrator.json) | **unknown** | [`porting-plan.md`](porting-plan.md) §2 — no amplifier-level rows exist to impose |
+| Rails | supply 3.3 V ±10%, "also 5 V flavor" named (its ratified spec table) | VDD **3.3 V ±10%** [DR-3]; 5 V stretch row **named-not-opened** [P] | **meets** (3.3 V, same ratified row); **unknown** (5 V — not opened) | §1 VDD rows; opening 5 V requires its own decision record |
+| Input range | no amplifier-level row | no input-common-mode row exists | **unknown** | no requirement to compare; nothing opened |
+| Speed | no amplifier-level speed row (its PSRR row is at the output-reference node, DC–1 kHz) | GBW/slew rows as above | **unknown** (no requirement to compare) | [`porting-plan.md`](porting-plan.md) §2–§3 |
+| Offset | no amplifier-level row (output-reference ±2% is system-level) | **[TBD] open** | **unknown** | §2 offset row, open [DR-3 residual e2] |
+| Noise | no amplifier-level row (output-noise row is at the output-reference node, band TBD) | **[TBD] open** | **unknown** | §2 noise row, open [DR-3 residual e1] |
+| Area budget | whole-block < 0.05 mm²; no amplifier carve-out | **[TBD] open** | **unknown** | §2 area row, open [DR-3 residual e5] |
