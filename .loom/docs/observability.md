@@ -148,6 +148,9 @@ Select it with `observability.exporter = "otlp"`
 (`LOOM_OBSERVABILITY_EXPORTER` env override; **env > config > default**,
 default `"https"`). Published artifacts include OTLP; local default Cargo builds
 still omit the optional feature. Export remains disabled until explicitly enabled.
+See [execution traces](tracing.md) for persisted trace identity, correlated logs,
+completed-span export, and bounded shutdown.
+
 See [OTLP transport and artifact verification](otlp-transport.md) for response
 classification, per-signal counters, retry/drop policy and the real Collector
 canary. Mapping details remain in `observability/otlp/mapping.rs`.
@@ -432,6 +435,8 @@ capture, and why) so you can produce the equivalent for your own instance.
 | Doc | Covers |
 |---|---|
 | [`.loom/docs/telemetry-schema.md`](telemetry-schema.md) | Wire envelope, record kinds, visibility contract, local journal |
+| [`.loom/docs/telemetry-fixtures.md`](telemetry-fixtures.md) | Offline synthetic graphs, expected query manifest, and live-comparison limits |
+| [`.loom/docs/telemetry-overhead.md`](telemetry-overhead.md) | What lifecycle instrumentation costs on a representative run, realised attribute/event bounds, and what the measurement excludes |
 | `dashboard/docs/deploy-runbook.md` | Deploy your own Cloudflare backend end to end |
 | `dashboard/docs/cloudflare-access.md` | Gating the authenticated view behind SSO; single-URL fallback |
 | `dashboard/docs/query-api.md` | `/api/*` vs `/public/*` routes, redaction policy, live tail |

@@ -8,10 +8,13 @@ so that Loom can drive Claude Code, OpenAI Codex CLI, Amp, oh-my-pi (omp), and
 future tools through **one** interface instead of a growing pile of per-runtime
 special cases.
 
-Pi and OpenCode have experimental **native Rust** adapters behind the same
-worker entry point. Harness selection, model profiles and trial evidence are
-separate: see [Native harness and model trials](runtime-model-trials.md).
-Guarded issue roles and sweeps: [native guardrail parity](guardrail-parity-native.md).
+Pi, OpenCode and Kimi Code CLI have experimental **native Rust** adapters
+behind the same worker entry point. Harness selection, model profiles and
+trial evidence are separate: see [Native harness and model
+trials](runtime-model-trials.md). Guarded issue roles and sweeps: [native
+guardrail parity](guardrail-parity-native.md) — Kimi is not covered there yet:
+it has no guarded `loom_*` tool binding (#8562), so it is admitted only for
+roles with no `runtimeRequirements`.
 
 > **Path convention.** This doc lives at `defaults/docs/runtime-adapters.md` in
 > the Loom source repo and cites `defaults/` paths throughout. A consumer
@@ -72,6 +75,7 @@ them but does not decide them.
 | Claude Code | `defaults/scripts/spawn-claude.sh` | **1** (default) | n/a — Loom's guards *are* the Claude implementation | the whole existing suite | Zero-regression default; no `LOOM_RUNTIME` needed. |
 | OpenAI Codex CLI | `defaults/scripts/spawn-codex.sh` | **2** | [`guardrail-parity-codex.md`](guardrail-parity-codex.md) | `codex-adapter-smoke` in `.github/workflows/ci.yml` (mocked; no live calls) | **Shipped** by epic #4167 Phase 2 (#4468), ported from the gpeyton fork. Requires Codex CLI ≥ 0.146.0. Capability manifest `defaults/runtimes/codex.json` declares `worktreeIsolation: partial`, so `check-runtime-capabilities.sh` fails Builder+codex closed while Judge+codex passes. |
 | Amp, oh-my-pi (omp), … | — | — | — | — | Not started (tier-2 candidates; still need a parity doc + CI leg). |
+| Pi, OpenCode, Kimi Code CLI | native Rust, `loom-daemon/src/worker_spawn/harness.rs` | **2** | [`guardrail-parity-native.md`](guardrail-parity-native.md) (Pi/OpenCode only — Kimi is not covered) | none dedicated (`worker_spawn.rs`/`worker_spawn_kimi.rs` integration tests) | Setup, model profiles and live-canary evidence live in [`runtime-model-trials.md`](runtime-model-trials.md), not here. Kimi (#8561) declares every `defaults/runtimes/kimi.json` capability `"no"` — no guarded `loom_*` tool binding exists yet (#8562) — so it is admitted only for roles with no `runtimeRequirements` (Curator, Guide, Auditor); Pi/OpenCode's `worktreeIsolation`/`loomControl` are `"yes"`. |
 | Aider ([aider.chat](https://aider.chat)) | `defaults/scripts/spawn-aider.sh` (thin wrapper over `defaults/scripts/spawn-generic.sh`) | **3** (generic passthrough, unverified) | n/a — tier-3 does not require one | none (no CI leg is required for tier-3; the checker assertion below is a plain `test-*.sh`, not an adapter-admission gate) | **Worked example** for issue #4780 — proves the tier-3 mechanism end-to-end, not a vetted integration. Capability manifest `defaults/runtimes/aider.json` declares every capability `"no"`, including `worktreeIsolation: "no"` EXPLICITLY (not `"partial"`). |
 
 ### Tier 3: generic passthrough
@@ -368,6 +372,13 @@ to mark an account bad or merely re-select. Durable cost recovery comes from the
 runtime's per-session **transcript** (Claude Code writes per-message `usage` +
 `model` to a JSONL transcript; the #3726 archiver and #3725 harvest read it).
 
+OpenCode's equivalent is its own SQLite session store, wired up in #8507 —
+along with first-class `runtime`/`provider`/`profile` fields on every outcome
+record, so a non-Claude completion is identifiable even with no usage numbers
+at all. See [`native-runtime-usage-attribution.md`](native-runtime-usage-attribution.md)
+for the reader, its credential-isolation contract, and the
+`loom-daemon opencode-usage` backfill path.
+
 An adapter must expose the equivalent for its runtime: a way to attribute a
 session to an account, a limit/exhaustion signal (via the error categories
 above), and — for tier-1 cost parity — a transcript or usage stream with
@@ -384,6 +395,21 @@ reauthenticates, quarantines, and purges named Codex profiles, while automatic
 ranking/rotation remains deferred to #4493. The lifecycle CLI treats
 `auth.json` as opaque mutable canonical state, enforces `0700`/`0600`
 permissions, and emits only bounded secret-free diagnostics.
+
+**Kimi (#8563).** Like Pi/OpenCode, Kimi has no transcript this layer reads —
+usage accounting for its Moonshot-platform API-key route rides the same
+`api_keys_pool` signals every other API-key provider uses: the `# LOOM_LAUNCH`
+record's `credentialProvider`/`credentialAccount` identify the session, and
+`api_keys_pool::ingest` classifies the retained launch log after the fact
+(`classify.rs`'s two live-captured Kimi rows — a no-credential failure and an
+exhausted in-process rate-limit ladder, see
+[`token-pool.md` § Kimi's Moonshot-platform API-key route](token-pool.md#kimis-moonshot-platform-api-key-route-8563))
+to decide whether to bad-mark the account. No per-message token/model stream
+exists for this route, so cost fidelity is the aggregate-log tier. Kimi's
+**other** credential shape — the OAuth subscription (`kimi login`, a
+per-account `KIMI_CODE_HOME`) — has no usage-accounting story yet at all; it
+needs its own account-lifecycle foundation first (an `AccountProvider::Kimi`
+analogous to the Codex paragraph above), tracked as follow-up #8628.
 
 ### 5. Instruction format
 
@@ -1107,6 +1133,16 @@ ids and with completely different economics, so `modelProfile` is what
 distinguishes them. A bare runtime name is shorthand for "that runtime with
 whatever profile it would have chosen anyway".
 
+> **A `modelProfile` currently gates but does not pin.** Availability is read
+> against exactly the named profile's provider and credential pool, but nothing
+> carries the name to the launched child — the launch resolves whatever profile
+> that runtime would have used anyway, so for two profiles on *different*
+> providers the tap that ran is not the tap whose pool was checked. Bare-runtime
+> entries are unaffected (their profile is that default resolution). Pinning it
+> needs `LOOM_MODEL_PROFILE` set at the same launch sites #8599 has to touch, so
+> it is tracked behind that in #8602; until it lands, prefer bare entries unless
+> the named profile *is* the runtime's default.
+
 **Resolution, per launch**: walk the list and take the first tap that is
 **(a)** admitted for the role and **(b)** has a spawnable credential right now.
 `rolePreference.<role>` outranks `preference`; an empty list means "unset, fall
@@ -1136,9 +1172,9 @@ process that wrote the change. Use `rolePreference.judge` to keep Judge on a
 different tap from the one that built it; prefer that over relying on the
 fleet-wide order.
 
-**One sweep, one runtime.** Fall-through is decided at **dispatch**, never
-mid-sweep (see `guardrail-parity-native.md`). A sweep that exhausts its runtime
-in flight fails and is re-dispatched, where it re-resolves. Hysteresis follows
+**One sweep, one runtime.** A sweep uses one runtime throughout, so
+fall-through is decided at **dispatch**, never mid-sweep. A sweep that exhausts
+its runtime in flight fails and is re-dispatched, where it re-resolves. Hysteresis follows
 for free: once a higher-preference pool recovers, new spawns return to it while
 in-flight backstop sweeps finish where they are. No pinning mechanism exists or
 is needed.
@@ -1155,12 +1191,25 @@ crash-signal reader takes the entire rest of that line as the runtime name, so
 appending to it would report a runtime called `"opencode tier=2"`. "How much work
 is going to the backstop" reduces to counting markers whose `tier` is not `0`.
 
-> **Status.** As of this writing the resolver, its shared credential-availability
-> mapping, and config parsing/validation are implemented
-> (`loom-daemon/src/runtime_preference/`), but **dispatch is not yet wired to
-> it** — neither the work finder nor the role runner calls it, so no launch
-> changes until the wiring lands. The metered-tier concurrency ceiling is
-> likewise still to come. See the follow-up issues on #8436.
+Today each dispatch seam emits that marker to the **daemon log**
+(`loom-daemon logs`), which is where all three resolve. Writing it into the
+per-sweep launch record, beside that record's own `# LOOM_RUNTIME_RESOLVED`
+line, additionally requires teaching `crash_signals::log_has_progress` not to
+read it as child progress — tracked in #8599 rather than done half-way.
+
+> **Status.** The resolver, its shared credential-availability mapping, config
+> parsing/validation, and the dispatch wiring (issue #8554) are all implemented,
+> so a configured `runtimes.preference` changes real launches at three seams:
+> sweep dispatch resolves the sweep's runtime through the list
+> (`sweep_registry::dispatch`), the work finder's #7708 pool-exhaustion hold
+> arms only when the *whole* list is unavailable (`work_finder::pool_preflight`),
+> and a role tick's runtime is chosen by the list with the #6201/#8408 pre-spawn
+> gate kept as its fail-closed reporter (`role_runner::runtime_preflight`).
+> Still to come: the metered-tier concurrency ceiling; carrying the chosen tier
+> into the `role_tick.outcome`/launch-record surfaces (#8599 — today the chosen
+> tier is logged by the daemon, not written into the per-sweep log); and the
+> `modelProfile` launch pin noted above (#8602), which shares those same sites.
+> See also the other follow-up issues on #8436.
 
 ### Adding a runtime adapter
 

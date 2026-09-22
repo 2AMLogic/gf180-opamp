@@ -2005,7 +2005,9 @@ Several sections, one line each (or the full structured payload with `--json`);
 the table below is not exhaustive — `peer_coordination` (#6157), `stale_sweeps`
 (#7529), `auto_update` (#7584), `worktree_reaper` (#7590), `pool_hold`
 (#7708/#7990), and `transcript_ingest` (#8477) also always render, each
-documented at its own point in this file:
+documented at its own point in this file. `tmpfs_visibility` (#8572, split
+from #8512) is **conditional** — see "tmpfs/`shared`-RAM + OOM-kill
+visibility" below:
 
 | section | what it reports | source |
 |---------|-----------------|--------|
@@ -2691,8 +2693,17 @@ api` read):
 
 - **Safe** (child issue not `loom:building`): invokes
   `./.loom/scripts/reconcile-stack.sh <child-pr> feature/issue-<parent>`
-  (`git rebase --onto <default> <parent-branch> <child-branch>` +
-  `--force-with-lease` + `gh pr edit --base <default>`).
+  (`git rebase --onto <the FETCHED default-branch commit> <parent-ref>
+  <child-branch>` + `--force-with-lease` + `gh pr edit --base <default>`).
+  The destination is the commit that run fetched from the remote, never the
+  local branch of the same name: the local default branch is normally stale at
+  exactly this moment (the parent merged on the forge), and rebasing onto it
+  silently dropped the just-merged parent's implementation whenever the child's
+  files did not overlap the parent's (#8583). That resolution — fetch, pin,
+  route to the worktree holding the child branch, resolve the parent ref with
+  the #7982 pin fallback and its #8010 ancestry check, then rebase — is
+  `loom-daemon reconcile-stack`; a failed fetch or an unresolvable target
+  refuses (exit 1, nothing mutated) rather than degrading to the stale branch.
 - **Unsafe** (child issue still `loom:building`): a live Builder likely holds
   the child branch checked out, so the auto-rebase is **skipped** and a comment
   is posted on the child PR flagging deferred reconciliation. A later
@@ -5903,6 +5914,136 @@ image for this reaper to reclaim on its next tick, or run `docker image prune
 -f` for immediate reclaim — it only removes dangling (untagged) images and is
 not gated by the guard.
 
+#### tmpfs scratch reclaim (#8512)
+
+**The leak this doesn't share with either pass above.** Both reclaim passes so
+far free **disk**. A build or agent that redirects its scratch onto a
+RAM-backed mount — `CARGO_TARGET_DIR=/dev/shm/cargo-target-<issue>`,
+`TMPDIR=/dev/shm/tmp-issue<N>` — is instead consuming **memory**, and nothing
+in-tree had ever looked at `/dev/shm` or any other `tmpfs`/`ramfs` mount. A
+fleet worker measured **6.2 GB pinned in RAM for 2.5 days** after the owning
+worktree was removed (2026-09-19 → 21): `free` reported `shared 6487 MB` on a
+15.7 GiB host with no swap, and the kernel OOM-killed unrelated `rustc`/
+`pytest` processes on a loop — every one of them a sweep that failed for a
+reason unrelated to its own issue. `df`/`du` over the repo tree showed nothing
+wrong, because the bytes never touched disk.
+
+**Why nothing existing could reclaim it.** The per-worktree cargo-target
+reclaim (#7239, see `troubleshooting.md` → "Redirected cargo target dirs are
+reclaimed with their worktree") deliberately **never** deletes on a
+name/pattern match: a `CARGO_TARGET_DIR` exported only inside a build
+environment cannot be proven to belong to the worktree being removed. That
+invariant is load-bearing and stays — but it is exactly why an orphan whose
+worktree is already gone has nothing left to attribute it to.
+
+**What it does.** As a third sibling pass from the same reaper tick, the daemon
+enumerates every `tmpfs`/`ramfs` mount from `/proc/mounts` (never a hardcoded
+`/dev/shm` prefix), lists the **direct children** of each one whose name
+matches a recognized Loom scratch pattern (`cargo-target-*`, `tmp-issue*`), and
+removes those that satisfy **all four** signals:
+
+1. a recognized Loom scratch-name pattern (a symlink never qualifies — only a
+   real directory),
+2. a mount this pass already classified `tmpfs`/`ramfs`,
+3. no live process holding a file open underneath it (the same
+   `find_processes_using_directory` evidence check the worktree reaper uses),
+   and
+4. a newest recursive mtime at least `stalenessSecs` (default 6h) old.
+
+Failing to establish any one of them keeps the directory. An unreadable
+`/proc/mounts` (non-Linux host, unusual sandbox) yields an empty mount list —
+a clean no-op, never an error. Like the Docker pass, the `minIntervalSecs`
+cooldown is **host-wide**, since a tmpfs mount is not scoped to any one
+registered repo.
+
+**Manual/cron front-end** — `loom-daemon tmpfs-scratch-gc`, which resolves the
+same config the reaper does (so a manual run can never act on a broader
+pattern set than the configured automatic one):
+
+```bash
+loom-daemon tmpfs-scratch-gc --dry-run          # report candidates + sizes, delete nothing
+loom-daemon tmpfs-scratch-gc --dry-run --json   # same, machine-readable
+loom-daemon tmpfs-scratch-gc                    # the real run
+```
+
+```json
+{
+  "autonomous": {
+    "tmpfsScratchGc": {
+      "enabled": true,
+      "stalenessSecs": 21600,
+      "minIntervalSecs": 1800,
+      "namePatterns": ["cargo-target-*", "tmp-issue*"]
+    }
+  }
+}
+```
+
+| Env var | Config key | Precedence | Default |
+|---------|-----------|------------|---------|
+| `LOOM_TMPFS_SCRATCH_GC` | `autonomous.tmpfsScratchGc.enabled` | env > config > default | `true` (on) |
+| `LOOM_TMPFS_SCRATCH_GC_STALENESS_SECS` | `autonomous.tmpfsScratchGc.stalenessSecs` | env > config > default | `21600` (6h) |
+| `LOOM_TMPFS_SCRATCH_GC_MIN_INTERVAL_SECS` | `autonomous.tmpfsScratchGc.minIntervalSecs` | env > config > default | `1800` (30 min) |
+| — | `autonomous.tmpfsScratchGc.namePatterns` | config > default | `cargo-target-*`, `tmp-issue*` |
+
+**This is a backstop, not a licence.** The fix for the underlying behaviour is
+to not park build scratch in RAM at all — see `troubleshooting.md` →
+"tmpfs/ramfs scratch reclaim" for the sanctioned on-disk location. See
+`loom-daemon/src/tmpfs_reclaim.rs`.
+
+#### tmpfs/`shared`-RAM + OOM-kill visibility (#8572, split from #8512)
+
+**The gap this closes.** The #8512 incident above was invisible for 2.5 days
+to every signal the fleet already had: `health` reported a low RAM-headroom
+number with no attribution, the work finder's `ram=` budget looked exactly
+like a smaller host, and nothing counted `Out of memory: Killed process …`.
+[`loom_daemon::tmpfs_visibility`] is the read-only counterpart to the reclaim
+pass above — it never deletes anything, it only surfaces the two numbers that
+would have named the problem immediately: `Shmem` from `/proc/meminfo` (the
+same figure `free -h`'s `shared` column reports) and the cumulative kernel
+OOM-kill count from `/proc/vmstat`'s `oom_kill` line.
+
+**`loom-daemon health` gains a conditional `tmpfs_visibility` section** — a
+memory-detail line with total/available/`shared` bytes, the per-mount tmpfs
+breakdown (reusing [`crate::tmpfs_reclaim::ram_backed_mount_points`] rather
+than re-parsing `/proc/mounts`, filtered to mounts holding at least 64 MiB),
+and the OOM-kill count. Degrades **silently** — no section at all, never a
+fabricated `0` — on a host with nothing measurable (macOS, which has no
+`/proc` at all); a `Degraded` verdict fires only on a non-zero cumulative
+OOM-kill count, the single most diagnostic number in the #8512 incident.
+
+**The work finder emits a bounded, non-spammy `WARN`** when `shmem / total`
+crosses a configured fraction (default 15%), naming the largest offending
+mount and the `tmpfs-scratch-gc --dry-run` recipe. **Warning only — it never
+gates dispatch**, unlike the disk/RAM headroom axes above: a host with a
+legitimately large tmpfs (a shared-memory-heavy workload) must not be starved
+of work, and the reclaim pass already removes the Loom-caused case on its own.
+A process-global cooldown (`LOOM_TMPFS_VISIBILITY_WARN_INTERVAL_SECS`, default
+1800s, host-wide like the reclaim pass's own cooldown) bounds the repeat rate
+independent of the 60s work-finder tick interval.
+
+```json
+{
+  "autonomous": {
+    "tmpfsVisibility": {
+      "warnEnabled": true,
+      "warnFractionPercent": 15
+    }
+  }
+}
+```
+
+| Env var | Config key | Precedence | Default |
+|---------|-----------|------------|---------|
+| `LOOM_TMPFS_VISIBILITY_WARN` | `autonomous.tmpfsVisibility.warnEnabled` | env > config > default | `true` (on) — gates the work-finder warning only; `health`'s memory-detail line is unconditional |
+| `LOOM_TMPFS_VISIBILITY_WARN_FRACTION_PERCENT` | `autonomous.tmpfsVisibility.warnFractionPercent` | env > config > default | `15` (percent) |
+| `LOOM_TMPFS_VISIBILITY_WARN_INTERVAL_SECS` | — | env > default | `1800` (30 min) — repeat-rate cooldown, not exposed as a config knob (there is no legitimate reason to want a *noisier* warning) |
+| `LOOM_TMPFS_VISIBILITY_MEMINFO_FILE` / `LOOM_TMPFS_VISIBILITY_VMSTAT_FILE` | — | env only | `/proc/meminfo` / `/proc/vmstat` — test-fixture overrides, mirrors `tmpfs_reclaim`'s own `LOOM_TMPFS_RECLAIM_MOUNTS_FILE` |
+
+See `loom-daemon/src/tmpfs_visibility.rs`,
+`loom-daemon/src/health/tmpfs_visibility_section.rs`, and
+`loom-daemon/src/work_finder/tmpfs_warning.rs`.
+
 #### Eager (out-of-cycle) reclaim from the dispatch loop (#7512)
 
 **The gap this closes.** Every reclaim pass above runs on the **worktree
@@ -8728,7 +8869,7 @@ seams):
 | Variable | Purpose |
 |----------|---------|
 | `LOOM_DAEMON_UPDATE_FETCH` | `1`/`true`/`yes` ⇒ force (`--fetch`); `0`/`false`/`no` ⇒ off (`--no-fetch`); unset ⇒ auto |
-| `LOOM_DAEMON_UPDATE_GH_REPO` | Override the `owner/repo` slug used for release resolution (default: parsed from the `origin` remote) |
+| `LOOM_DAEMON_UPDATE_GH_REPO` | Override the `owner/repo` slug used for release resolution. Highest priority in the daemon's resolution order (see [Which repo's releases are queried](#artifact-first-auto-update-ticks-7609)); this script itself otherwise parses its own `origin` remote |
 | `LOOM_DAEMON_UPDATE_TARGET` | Override the detected release target triple |
 | `LOOM_DAEMON_UPDATE_COSIGN_PUBKEY` | Path to the cosign public key used to verify a **key-signed** Linux `.sig` (one published without a `.pem`) |
 | `LOOM_DAEMON_UPDATE_COSIGN_IDENTITY` | Pin one exact expected keyless signer identity instead of the derived regexp |
@@ -8970,8 +9111,40 @@ consulted on this path at all**:
 | artifact version **>** installed version | fetch the artifact (never `cargo build`) | `artifact 0.19.24 > installed 0.19.21 → fetching` |
 | artifact version **==** installed, published sha256 **≠** installed binary's | fetch the artifact (converge onto the released bytes) | `artifact 0.19.24 == installed 0.19.24 but sha differs (published … vs installed …) → fetching` |
 | artifact version **==** installed, sha matches | nothing to do | `artifact 0.19.24: artifact == installed, sha matches → up to date` |
-| latest release is **older** than installed | nothing to do | `artifact 0.19.20: latest release … is OLDER than the installed … → up to date` |
+| latest release is **older** than installed | nothing to fetch, but **WARN** — a probable wrong-repo resolution (#8513) | `resolved release 0.1.0 from <owner/repo> is OLDER than the installed 0.19.24 — probable wrong-repo resolution (queried <owner/repo>); nothing to fetch` |
 | **no** artifact resolves at all | fall through to the source path below, unchanged | `no artifact (<reason>) → source path: <source reason>` |
+
+**Which repo's releases are queried (#8513).** The daemon binary is released
+from exactly one project, so the *workspace's* `origin` remote — whatever repo
+this daemon happens to be managing — is the **last** resort, not the default:
+
+1. `LOOM_DAEMON_UPDATE_GH_REPO`
+2. the `origin` of `LOOM_MACHINE_CHECKOUT`, when set
+3. the repo **compiled into the binary** at build time (Cargo's `repository`
+   field — the checkout the release was actually built from)
+4. the workspace's own `origin`
+
+The incident behind the order: a host deliberately running with its workspace
+pointed at a *consumer* repo asked **that** project for `loom-daemon-<target>`
+assets, found none (its own latest release was `v0.11.0`), and logged the soft
+"no artifact for this platform" every tick for hours — one release short of a
+feature it needed, with nothing escalating. Two consequences fall out of it:
+
+- Every "no artifact" reason **names the repo it queried**
+  (`release v0.11.0 of owner/repo has no artifact for target …`), so a wrong
+  repository can no longer read like an unbuilt platform.
+- A release **older** than the installed version is logged at **WARN**, not
+  folded into the soft "up to date" line, and after
+  3 consecutive such ticks `loom-daemon health` reports the
+  `auto_update` section `degraded` with
+  `auto_update has made no progress for N ticks — the release resolved from
+  <owner/repo> is OLDER than the installed version`. The streak and the repo
+  are also in `loom-daemon status --json` /
+  `health --json` as `auto_update_stale_repo_ticks` /
+  `auto_update_stale_repo`.
+- The roll itself is pinned to the same answer: the artifact fetch exports the
+  resolved repo to `loom-daemon-update.sh` as `LOOM_DAEMON_UPDATE_GH_REPO`, so
+  the download can never target a different project than the resolution did.
 
 Why: on a four-host fleet on 2026-09-13 the source gate was shut on *every*
 host — two for "no source checkout / staleness undecidable" (a
