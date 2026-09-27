@@ -1,6 +1,5 @@
 // Renovate configuration for 2AMLogic/gf180-opamp
 // Docs: https://docs.renovatebot.com/configuration-options/
-// Pipeline docs: docs/ops/dependency-security-pipeline.md
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
 
@@ -31,7 +30,8 @@
   // Never auto-merge. Agents review, humans merge.
   "automerge": false,
 
-  // Create PRs as drafts — consistent with AGENTS.md PR policy
+  // Create PRs as drafts, so a dependency bump never lands without a human
+  // deliberately marking it ready for review.
   "draftPR": true,
 
   // --- Schedule ---
@@ -44,6 +44,10 @@
   "timezone": "UTC",
 
   // --- Python (uv) ---
+
+  // Inert until a pyproject.toml / uv.lock lands in this repo; kept for
+  // forward-compatibility. Loose .py scripts under design/ and sim/ are not
+  // Renovate-managed.
 
   // Update lockfile without widening pyproject.toml version ranges.
   // Renovate detects uv.lock natively.
@@ -82,9 +86,11 @@
       "matchUpdateTypes": ["major"]
     },
 
-    // Group all GitHub Actions SHA updates into one PR
-    // AGENTS.md mandates SHA pinning with inline version comments (# vX.Y.Z)
-    // Renovate preserves these comments natively when updating digests
+    // Group all GitHub Actions version/digest updates into one PR.
+    // This repo currently pins actions by tag (see .github/workflows/signoff.yml);
+    // digest pinning is an aspiration here, not a ratified rule. If we do adopt
+    // SHA pins with inline version comments (# vX.Y.Z), Renovate preserves
+    // those comments natively when updating digests.
     {
       "groupName": "github-actions",
       "matchManagers": ["github-actions"],
@@ -105,7 +111,8 @@
 
   // --- Ignored paths ---
 
-  // Don't touch vendored dependencies (submodules)
+  // Don't touch vendored dependencies (submodules). Only .claude/** exists
+  // today; vendor/** and infra/pulumi/** are forward-compatible defaults.
   "ignorePaths": [
     "vendor/**",
     ".claude/**",
