@@ -20,6 +20,9 @@ Target specification and decision records. Spec changes require a decision recor
   [`0001-topology-and-cl.md`](decision-records/0001-topology-and-cl.md)
   (input-pair polarity, output-stage class, cascode-or-not, and `CL`),
   [`0002-performance-target-bounds.md`](decision-records/0002-performance-target-bounds.md)
-  (recommended bounds for the performance rows), and
+  (recommended bounds for the performance rows),
   [`0003-target-spec-ratification.md`](decision-records/0003-target-spec-ratification.md)
-  (the ratification record and its residual register).
+  (the ratification record and its residual register), and
+  [`0004-ngspice-reltol-policy.md`](decision-records/0004-ngspice-reltol-policy.md)
+  (the ngspice solver-tolerance convention, mirroring `sg13g2-opamp`'s
+  DR-0005; sets no spec row).
