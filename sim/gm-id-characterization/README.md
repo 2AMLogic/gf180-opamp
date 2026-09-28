@@ -121,3 +121,18 @@ or deleted, only added to.
   script has no dependency on that repo's harness library (PDK discovery,
   corner grid, record formatting are all reimplemented locally, scoped to
   this one experiment) — see issue #10's own guidance on this point.
+- **Solver tolerance**: this bench reads `gm`/`gds`/`id`/`cgg`/`vth`
+  directly off BSIM4's own operating-point accessors, not via a
+  finite-difference derivative (see the header comment in
+  `testbench/tb_gmid.spice`), and runs at ngspice's default tolerance — no
+  `reltol`/`abstol`/`vntol` override. The `sg13g2-opamp` twin's equivalent
+  study *does* derive its `gds`/`gm_gds` via finite difference and has
+  measured a ~20% cross-host spread on those columns at default tolerance,
+  documented as a reading rule in its own README rather than pinned away
+  by a tighter solver setting
+  (`spec/decision-records/0004-ngspice-reltol-policy.md`, mirroring that
+  twin's DR-0005). This bench has not observed, and by its different
+  extraction method may not exhibit, the same spread — if a future run
+  here ever does, document it here as a reading rule following that
+  template rather than tightening the tolerance without first running
+  DR-0005's screen.

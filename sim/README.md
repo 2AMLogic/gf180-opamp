@@ -12,6 +12,15 @@ ngspice testbenches and append-only results.
 Mirrors `gf180-comparator`'s `characterize.sh`/`selftest.sh` split. See
 `gain-gbw-pm/README.md` for what each currently drives.
 
+## Solver tolerance convention
+
+Every deck under `sim/` runs at ngspice's default solver tolerance — no
+`reltol`, `abstol`, or `vntol` override line in any `.spice` file or
+`.spiceinit`. See
+[`spec/decision-records/0004-ngspice-reltol-policy.md`](../spec/decision-records/0004-ngspice-reltol-policy.md)
+(mirrors `sg13g2-opamp`'s DR-0005) for the rationale and the screen any
+future tightening proposal must clear before a deck may add one.
+
 ## Experiments
 
 - [`gm-id-characterization/`](gm-id-characterization/README.md) — gf180mcu
