@@ -17,8 +17,14 @@ reversed that convention in favor of one shared module under `sim/`, this
 one. Per REUSE.md (rule 9) no fleet-level harness master exists to take by
 pinned reference -- `gf180-bandgap/sim/harness` is a single-consumer
 in-tree harness and no `reuse.lock.json` in the fleet pins it -- so this
-repo's module is the master, and the twin opamp repos (`sg13g2-opamp`,
-`sky130-opamp`) take stamped copies under their identical-structure rule.
+repo's module is the master. A fact-check for stamped copies in the twin
+repos found none to stamp: neither twin carries these helpers
+(`sky130-opamp` already extracted its own stdlib-only harness,
+`sim/lib/spice_harness.py`, from its two runners; `sg13g2-opamp` drives
+its sweeps from shell and has no Python PDK-discovery layer), and the
+PDK-discovery core here is gf180mcu/volare-specific -- per REUSE.md's
+two-PDKs rule, per-PDK harness material is per-repo by design, not
+duplication.
 
 The canonical variants kept here resolve the recorded drift: the pinned
 `find_pdk` failure message (carrying the cold-start `volare enable`

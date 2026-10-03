@@ -29,8 +29,11 @@ classic-row testbench. The canonical variants kept in `harness.py` resolve
 both recorded drifts. Per REUSE.md (rule 9) no fleet-level harness master
 exists to take by pinned reference (`gf180-bandgap/sim/harness` is
 single-consumer in-tree; no `reuse.lock.json` pins it), so this repo's
-module is the master and the twin opamp repos (`sg13g2-opamp`,
-`sky130-opamp`) take stamped copies under their identical-structure rule.
+module is the master — and a fact-check for stamped copies in the twin
+repos found none to stamp: `sky130-opamp` already extracted its own
+`sim/lib/spice_harness.py`, `sg13g2-opamp` has no Python PDK-discovery
+layer, and the PDK-discovery core is gf180mcu-specific (per-PDK harness
+material is per-repo by design under REUSE.md's two-PDKs rule).
 
 ## Solver tolerance convention
 
