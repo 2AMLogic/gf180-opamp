@@ -117,10 +117,15 @@ or deleted, only added to.
   interchangeable: that study answers "what does this device's Vth measure
   as", this one answers "what gm/ID do I get at a given overdrive above
   wherever Vth is right now".
-- Fresh implementation, not vendored from `gf180-bandgap/sim/harness`: this
-  script has no dependency on that repo's harness library (PDK discovery,
-  corner grid, record formatting are all reimplemented locally, scoped to
-  this one experiment) — see issue #10's own guidance on this point.
+- Not vendored from `gf180-bandgap/sim/harness` (and still not depending on
+  it): the cross-experiment helpers (PDK discovery, record-id allocation,
+  the per-corner executor) are shared via this repo's own master module,
+  `sim/harness.py`, since issue #30's operator ruling (2026-10-02)
+  reversed the earlier copy-not-import convention this study's runners
+  originally followed — the corner grid, deck composition, extraction and
+  record formatting for *this* experiment remain implemented locally,
+  scoped to it. Per REUSE.md (rule 9) no fleet-level harness master exists
+  to take by pinned reference, so this repo's module is the master.
 - **Solver tolerance**: this bench reads `gm`/`gds`/`id`/`cgg`/`vth`
   directly off BSIM4's own operating-point accessors, not via a
   finite-difference derivative (see the header comment in

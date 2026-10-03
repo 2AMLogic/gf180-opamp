@@ -164,8 +164,12 @@ this pattern and is still run directly per its own README).
 - **No mismatch/Monte Carlo, no noise, no CMRR/PSRR.** This experiment is
   scoped to the single AC sweep that yields gain/GBW/PM together; every
   other classic row (`CLAUDE.md`'s list) needs its own future testbench.
-- **Fresh implementation, not vendored from any sibling repo's harness.**
-  Mirrors `sim/gm-id-characterization/run_gmid.py`'s structure (PDK
-  discovery code is copied, not imported, keeping each experiment
-  self-contained per that study's own convention) rather than depending on
-  a shared harness library.
+- **Not vendored from any sibling repo's harness.** The cross-experiment
+  helpers (PDK discovery, record-id allocation, the per-corner executor)
+  come from this repo's own master module, `sim/harness.py` — one shared
+  copy per issue #30's operator ruling (2026-10-02), which reversed this
+  study's original "copied, not imported" convention after the copies
+  drifted — while this experiment's deck composition, extraction and
+  plotting stay local. Still no dependency on a shared harness *library*
+  from any sibling repo: per REUSE.md (rule 9) no fleet-level harness
+  master exists to take by pinned reference.
