@@ -27,20 +27,17 @@ Usage:
 
 PDK resolution (first hit wins): $GF180_PDK_PATH (a gf180mcu variant dir
 containing libs.tech/), else $PDK_ROOT (+ $PDK, default gf180mcuD), else the
-default volare install path ~/.volare/gf180mcuD. Reuses
-`sim/gm-id-characterization/run_gmid.py`'s PDK-discovery code (copied, not
-imported, to keep each experiment self-contained per that study's own
-convention).
+default volare install path ~/.volare/gf180mcuD -- shared implementation in
+`sim/harness.py` (issue #30's operator ruling, 2026-10-02, replaced this
+runner's copied PDK-discovery code with the one master module).
 """
 
 from __future__ import annotations
 
 import math
-import os
-import subprocess
 import sys
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
 
 import matplotlib
@@ -51,75 +48,15 @@ import numpy as np  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[1]
+sys.path.insert(0, str(REPO_ROOT / "sim"))
 
-# --------------------------------------------------------------------------
-# PDK discovery (identical to sim/gm-id-characterization/run_gmid.py)
-# --------------------------------------------------------------------------
-
-DEFAULT_VARIANT = "gf180mcuD"
-
-
-class PdkNotFound(RuntimeError):
-    pass
-
-
-@dataclass(frozen=True)
-class Pdk:
-    path: Path
-    variant: str
-    source: str
-
-    @property
-    def design_include(self) -> Path:
-        return self.path / "libs.tech" / "ngspice" / "design.ngspice"
-
-    @property
-    def model_lib(self) -> Path:
-        return self.path / "libs.tech" / "ngspice" / "sm141064.ngspice"
-
-    @property
-    def version(self) -> str:
-        sources = self.path / "SOURCES"
-        if sources.is_file():
-            for line in sources.read_text().splitlines():
-                parts = line.split()
-                if len(parts) >= 2 and parts[0] == "open_pdks":
-                    return parts[1]
-        return "unknown"
-
-
-def _valid(path: Path) -> bool:
-    return (path / "libs.tech" / "ngspice" / "sm141064.ngspice").is_file()
-
-
-def find_pdk() -> Pdk:
-    direct = os.environ.get("GF180_PDK_PATH")
-    if direct:
-        path = Path(os.path.expanduser(direct))
-        if _valid(path):
-            return Pdk(path=path, variant=path.name, source="GF180_PDK_PATH")
-        raise PdkNotFound(f"GF180_PDK_PATH={direct} is not a valid gf180mcu variant dir")
-
-    variant = os.environ.get("PDK", DEFAULT_VARIANT)
-    pdk_root = os.environ.get("PDK_ROOT")
-    if pdk_root:
-        path = Path(os.path.expanduser(pdk_root)) / variant
-        if _valid(path):
-            return Pdk(path=path, variant=variant, source="PDK_ROOT")
-
-    # volare default install layout: ~/.volare/gf180mcuD -> a symlink into
-    # ~/.volare/volare/gf180mcu/versions/<hash>/gf180mcuD
-    volare_default = Path(os.path.expanduser(f"~/.volare/{variant}"))
-    if _valid(volare_default):
-        return Pdk(path=volare_default, variant=variant, source="volare-default")
-
-    raise PdkNotFound(
-        "gf180mcu PDK not found. Install with volare:\n"
-        "    pip install volare\n"
-        "    volare enable --pdk gf180mcu <version-hash>\n"
-        "or point at an existing install with GF180_PDK_PATH=/path/to/gf180mcuD"
-    )
-
+from harness import (  # noqa: E402
+    Pdk,
+    allocate_record_id,
+    find_pdk,
+    ngspice_version,
+    run_corner,
+)
 
 # --------------------------------------------------------------------------
 # Corner / temperature grid (DR-0001-ratified: spec/target-spec.md Sec.1)
@@ -158,28 +95,6 @@ def compose_deck(pdk: Pdk, corner: str, temp_c: float) -> str:
         ".end",
     ]
     return "\n".join(lines)
-
-
-def run_corner(pdk: Pdk, corner: str, temp_c: float, workdir: Path) -> tuple[str, np.ndarray]:
-    """Run one (corner, temperature) point. `workdir` is scratch space for the
-    composed deck + raw `wrdata` file -- neither is committed under that
-    name; the caller copies the parsed result into `corners/<record>/*`.
-    """
-    datfile = workdir / f"{corner}_{temp_c:g}c.dat"
-    deck = compose_deck(pdk, corner, temp_c).replace("@@DATFILE@@", str(datfile))
-    deckfile = workdir / f"{corner}_{temp_c:g}c.spice"
-    deckfile.write_text(deck)
-    result = subprocess.run(
-        ["ngspice", "-b", str(deckfile)],
-        capture_output=True,
-        text=True,
-        timeout=120,
-    )
-    log = result.stdout + result.stderr
-    if not datfile.is_file():
-        raise RuntimeError(f"ngspice produced no data for {corner}@{temp_c}C:\n{log}")
-    data = np.loadtxt(datfile)
-    return log, data
 
 
 # --------------------------------------------------------------------------
@@ -258,37 +173,8 @@ def extract(data: np.ndarray) -> AcResult:
 
 
 # --------------------------------------------------------------------------
-# Record / provenance helpers
+# Plot / record rendering
 # --------------------------------------------------------------------------
-
-
-def git_short_sha(root: Path) -> str:
-    try:
-        out = subprocess.run(
-            ["git", "rev-parse", "--short=7", "HEAD"],
-            cwd=root,
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return out.stdout.strip()
-    except Exception:
-        return "0000000"
-
-
-def allocate_record_id(root: Path) -> tuple[str, datetime]:
-    stamp = datetime.now(timezone.utc)
-    sha = git_short_sha(root)
-    return f"{stamp:%Y%m%d-%H%M%S}-{sha}", stamp
-
-
-def ngspice_version() -> str:
-    try:
-        out = subprocess.run(["ngspice", "-v"], capture_output=True, text=True, check=True)
-        first = out.stdout.splitlines()[1] if len(out.stdout.splitlines()) > 1 else out.stdout.splitlines()[0]
-        return first.strip().lstrip("*").strip()
-    except Exception:
-        return "unknown"
 
 
 def build_plot(results: dict, plot_dir: Path) -> str:
@@ -465,7 +351,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.smoke:
         print(f"smoke test: (typical, 27C) only, PDK={pdk.path}")
         with tempfile.TemporaryDirectory(prefix="gainpm-smoke-") as scratch:
-            _log, data = run_corner(pdk, "typical", 27.0, Path(scratch))
+            _log, data = run_corner(
+                compose_deck(pdk, "typical", 27.0), "typical", 27.0, Path(scratch)
+            )
             result = extract(data)
         print(
             f"  typical_27c: gain={result.dc_gain_db:.2f}dB "
@@ -490,7 +378,9 @@ def main(argv: list[str] | None = None) -> int:
         scratch_dir = Path(scratch)
         for corner in CORNERS:
             for temp in TEMPS_C:
-                log, data = run_corner(pdk, corner, temp, scratch_dir)
+                log, data = run_corner(
+                    compose_deck(pdk, corner, temp), corner, temp, scratch_dir
+                )
                 result = extract(data)
                 results[(corner, temp)] = result
 

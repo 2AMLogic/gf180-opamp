@@ -15,9 +15,10 @@ writes no record.
 
 What it does:
 
-1. Resolves the gf180mcu PDK by the same rules, in the same order, as
-   `sim/gm-id-characterization/run_gmid.py` (GF180_PDK_PATH, then
-   PDK_ROOT+PDK, then ~/.volare/<variant>).
+1. Resolves the gf180mcu PDK via the shared `sim/harness.py` module
+   (`find_pdk`: GF180_PDK_PATH, then PDK_ROOT+PDK, then ~/.volare/<variant>
+   -- one master copy shared with the `sim/` runners since issue #30's
+   operator ruling, 2026-10-02).
 2. Turns `design/netlist/opamp_two_stage.spice` -- the xschem export,
    committed exactly as xschem writes it -- into an includable subcircuit.
    xschem exports a *top-level* schematic with its own port list commented
@@ -41,7 +42,6 @@ from __future__ import annotations
 
 import argparse
 import math
-import os
 import re
 import subprocess
 import sys
@@ -51,6 +51,10 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 NETLIST = HERE / "netlist" / "opamp_two_stage.spice"
+
+sys.path.insert(0, str(HERE.parent / "sim"))
+
+from harness import Pdk, find_pdk, ngspice_version  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Nominal operating conditions (spec/target-spec.md Sec.1; CL per DR-0001)
@@ -65,72 +69,6 @@ CORNER_SECTIONS = ("typical", "res_typical", "mimcap_typical")
 
 #: Saturation margin demanded of every MOSFET: |Vds| - |Vdsat|.
 VDS_MARGIN_V = 0.05
-
-# ---------------------------------------------------------------------------
-# PDK discovery -- mirrors sim/gm-id-characterization/run_gmid.py::find_pdk
-# ---------------------------------------------------------------------------
-
-DEFAULT_VARIANT = "gf180mcuD"
-
-
-class PdkNotFound(RuntimeError):
-    pass
-
-
-@dataclass(frozen=True)
-class Pdk:
-    path: Path
-    variant: str
-    source: str
-
-    @property
-    def design_include(self) -> Path:
-        return self.path / "libs.tech" / "ngspice" / "design.ngspice"
-
-    @property
-    def model_lib(self) -> Path:
-        return self.path / "libs.tech" / "ngspice" / "sm141064.ngspice"
-
-    @property
-    def version(self) -> str:
-        sources = self.path / "SOURCES"
-        if sources.is_file():
-            for line in sources.read_text().splitlines():
-                parts = line.split()
-                if len(parts) >= 2 and parts[0] == "open_pdks":
-                    return parts[1]
-        return "unknown"
-
-
-def _valid(path: Path) -> bool:
-    return (path / "libs.tech" / "ngspice" / "sm141064.ngspice").is_file()
-
-
-def find_pdk() -> Pdk:
-    direct = os.environ.get("GF180_PDK_PATH")
-    if direct:
-        path = Path(os.path.expanduser(direct))
-        if _valid(path):
-            return Pdk(path=path, variant=path.name, source="GF180_PDK_PATH")
-        raise PdkNotFound(f"GF180_PDK_PATH={direct} is not a valid gf180mcu variant dir")
-
-    variant = os.environ.get("PDK", DEFAULT_VARIANT)
-    pdk_root = os.environ.get("PDK_ROOT")
-    if pdk_root:
-        path = Path(os.path.expanduser(pdk_root)) / variant
-        if _valid(path):
-            return Pdk(path=path, variant=variant, source="PDK_ROOT")
-
-    volare_default = Path(os.path.expanduser(f"~/.volare/{variant}"))
-    if _valid(volare_default):
-        return Pdk(path=volare_default, variant=variant, source="volare-default")
-
-    raise PdkNotFound(
-        "gf180mcu PDK not found. Install with volare:\n"
-        "    pip install volare\n"
-        "    volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b\n"
-        "or point at an existing install with GF180_PDK_PATH=/path/to/gf180mcuD"
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -256,15 +194,6 @@ def run(deck: str, keep: Path | None) -> tuple[str, dict[str, float]]:
             except ValueError:
                 pass
     return log, values
-
-
-def ngspice_version() -> str:
-    try:
-        out = subprocess.run(["ngspice", "-v"], capture_output=True, text=True, check=True)
-        lines = out.stdout.splitlines()
-        return (lines[1] if len(lines) > 1 else lines[0]).strip().lstrip("*").strip()
-    except (OSError, IndexError, subprocess.SubprocessError):
-        return "unknown"
 
 
 def main() -> int:
