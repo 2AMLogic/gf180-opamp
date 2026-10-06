@@ -1357,6 +1357,9 @@ The rest of the identity is shared: `loom.repo`, `loom.issue`, `loom.role`,
 `.sequence` / `.event_id`. An attended run's `loom.repo` is the claim
 checkout's `origin` remote, never the transcript's `cwd`. A payload queued
 before #10116 carries no `launch` and decodes as `daemon`, which is what it was.
+A record already exported before #10116 has no `loom.session.output.launch`
+attribute at all; it too came from the daemon, so a consumer filtering on
+`launch = daemon` should treat an absent attribute as `daemon`.
 The attended tailer refuses to start in a process tree the daemon launched
 (`LOOM_WORK_ORIGIN=autonomous`, `LOOM_SWEEP_ID`), so one run never appears
 under both values.
@@ -2222,7 +2225,10 @@ daemon-derived id.
 
 One OTLP-only log record per role tick and per work-finder tick (Issue #10212):
 the ranked candidate list (capped at 50, with `candidates_total`), the items
-acted on, and a closed-set reason code per skipped candidate. Empty ticks still
+acted on, and a closed-set reason code per skipped candidate. Role ticks record
+the queue the agent actually consumed (`pr-queue`, or Curator's listings) and
+the writes it issued, via a per-tick pick journal (#10432); `candidate_source`
+and `decisions_observed` say what was seen. Empty ticks still
 emit, so per-host service cadence is measurable. Full field reference, the
 SigNoz rank-at-instant query and the rows/day volume:
 [`telemetry-kind-pick-decision.md`](telemetry-kind-pick-decision.md).
