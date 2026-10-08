@@ -44,6 +44,7 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#7**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
+- **#38**: T1 item 5: run gain, GBW and phase margin on the committed sized schematic across the full PVT grid *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -63,7 +64,7 @@ _None._
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 1 |
+| Curated | 2 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
