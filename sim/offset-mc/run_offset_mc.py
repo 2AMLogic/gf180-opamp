@@ -118,8 +118,9 @@ OFFSET_VALID_ABS_V = 0.25
 TIE_TOL_V = 1e-6
 #: The offset is `vos_v`, ngspice's own `v(vout)-v(vinp)` (full precision);
 #: it must agree with the difference of the two single-node measurements,
-#: which ngspice prints to only 7 significant digits of ~1.65 V (~2e-6 V).
-XCHK_TOL_V = 5e-6
+#: which ngspice prints to only 6 significant digits of ~1.65 V (+/- 5e-6 V
+#: each; a 1e-5 V tolerance covers the rounding and nothing physical).
+XCHK_TOL_V = 1e-5
 
 SIM_SOURCE = "Ibias"
 SIM_ARGS = "Ibias 10u 11u 1u"
@@ -830,8 +831,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ERROR: the Monte Carlo request could not be run; NO RECORD WRITTEN (result NOT RUN).\n{exc}", file=sys.stderr)
             return 2
         wall_s = time.monotonic() - t0
+        # Keep the fleet result outside the repo so a post-processing failure
+        # never throws away a completed grid (the repo record is append-only
+        # and only written for a clean run).
+        keep = Path(tempfile.gettempdir()) / f"offset-mc-{record}-grid-report.json"
+        keep.write_text(json.dumps(sanitise_report(report), separators=(",", ":")))
         ex = extract_samples(report, CORNERS, MC_N)
         if ex.problems:
+            print(f"(raw grid report kept at {keep})", file=sys.stderr)
             print("ERROR: the Monte Carlo grid did not complete cleanly; NO RECORD WRITTEN:", file=sys.stderr)
             for p in ex.problems[:30]:
                 print(f"  - {p}", file=sys.stderr)
