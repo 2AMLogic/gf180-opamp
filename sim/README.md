@@ -15,6 +15,40 @@ ngspice testbenches and append-only results.
 Mirrors `gf180-comparator`'s `characterize.sh`/`selftest.sh` split. See
 `gain-gbw-pm/README.md` for what each currently drives.
 
+## CI selftest
+
+`.github/workflows/selftest.yml` runs `./selftest.sh` on every push to `main`
+and every PR: ngspice (apt, `ubuntu-24.04` = ngspice 42), the selftest klt and
+the pinned gf180mcu PDK are provisioned, `ci_prereqs.py` fails naming any
+missing tool (`klt`, `ngspice`) or the PDK with every path searched, and
+`SIM_REQUIRE_PREREQS=1` turns the suites' skip-when-unavailable paths (PDK /
+klt / ngspice / committed gain dataset) into failures; local runs without the
+variable still skip. `ci_regression_check.sh` then breaks a copy of the
+gain-bench source guard and extraction on purpose and requires the unit suite
+to fail. The job fails if it leaves any file modified or created (no
+`records/`). It never runs a PVT/Monte Carlo grid and needs no credentials.
+
+**Two distinct klt pins** (do not conflate):
+
+| Where | Pin | Role |
+|---|---|---|
+| `selftest.yml` `SELFTEST_KLT_VERSION` | `klayout-tools==0.7.0` | client that runs the smoke simulations |
+| `signoff.yml` | `klayout-tools==0.5.0` | grader whose output must reproduce `manifests/gf180-opamp.signoff.json` |
+
+Bump each independently; the signoff pin moves only with a regenerated record
+(`manifests/README.md`). The PDK pin is `GF180_PDK_REV` (the revision
+`harness.py` documents).
+
+Reproduce locally (needs `klt`, `ngspice`, numpy/matplotlib, and the PDK):
+
+```bash
+volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b
+python3 sim/ci_prereqs.py
+SIM_REQUIRE_PREREQS=1 sim/selftest.sh
+sim/ci_regression_check.sh
+git status --porcelain   # must be empty
+```
+
 ## Shared harness module
 
 `harness.py` is the one master copy of the cross-experiment sim-harness

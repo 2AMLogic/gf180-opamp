@@ -108,6 +108,25 @@ def find_pdk() -> Pdk:
     )
 
 
+def require_prereqs() -> bool:
+    """True when the CI-strict switch (SIM_REQUIRE_PREREQS=1) is on.
+
+    Local developers keep the skip-when-unavailable behavior; CI sets this so
+    a missing klt / ngspice / PDK (or a missing committed dataset) fails the
+    test instead of silently skipping it.
+    """
+    return os.environ.get("SIM_REQUIRE_PREREQS", "") not in ("", "0")
+
+
+def skip_or_fail(case, reason: str) -> None:
+    """Skip `case` (a unittest.TestCase or class) locally; fail under CI-strict."""
+    import unittest
+
+    if require_prereqs():
+        raise AssertionError(f"required prerequisite missing (SIM_REQUIRE_PREREQS=1): {reason}")
+    raise unittest.SkipTest(reason)
+
+
 def ngspice_version() -> str:
     try:
         out = subprocess.run(["ngspice", "-v"], capture_output=True, text=True, check=True)

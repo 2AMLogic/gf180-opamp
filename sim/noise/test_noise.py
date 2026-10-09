@@ -25,7 +25,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_noise as r  # noqa: E402
-from harness import PdkNotFound, find_pdk  # noqa: E402
+from harness import PdkNotFound, find_pdk, skip_or_fail  # noqa: E402
 
 
 def grid(ppd: int = r.PPD) -> np.ndarray:
@@ -165,7 +165,7 @@ class SweepAndExtractTests(unittest.TestCase):
         s = synth()
         gdir = r.latest_gain_dir()
         if gdir is None:
-            self.skipTest("no committed gain-bench dataset")
+            skip_or_fail(self, "no committed gain-bench dataset")
         dev, bad = r.gain_crosscheck(r.NOMINAL, s, gdir)  # synthetic gain differs from the real one
         self.assertTrue(bad)
 
@@ -205,11 +205,11 @@ class SimControlTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if shutil.which("klt") is None or shutil.which("ngspice") is None:
-            raise unittest.SkipTest("klt/ngspice not available")
+            skip_or_fail(cls, "klt/ngspice not available")
         try:
             cls.pdk = find_pdk()
         except PdkNotFound:
-            raise unittest.SkipTest("gf180mcu PDK not available")
+            skip_or_fail(cls, "gf180mcu PDK not available")
 
     def test_nominal_point_is_consistent_and_shows_flicker(self):
         with tempfile.TemporaryDirectory() as d:

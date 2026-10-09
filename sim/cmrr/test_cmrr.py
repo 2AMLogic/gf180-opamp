@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_cmrr as r  # noqa: E402
-from harness import PdkNotFound, find_pdk  # noqa: E402
+from harness import PdkNotFound, find_pdk, skip_or_fail  # noqa: E402
 
 FREQ = np.logspace(math.log10(r.AC_FSTART), math.log10(r.AC_FSTOP), r.N_FREQ)
 S = 1j * FREQ
@@ -349,7 +349,7 @@ class RequestAndMaterialiseTests(unittest.TestCase):
         try:
             pdk = find_pdk()
         except PdkNotFound:
-            self.skipTest("PDK not available")
+            skip_or_fail(self, "PDK not available")
         with tempfile.TemporaryDirectory() as d:
             tb = r.materialise(Path(d), pdk, r.with_servo(r.MODES["cm"]))
             got = tb.read_text().splitlines()
@@ -391,11 +391,11 @@ class SimTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if shutil.which("klt") is None or shutil.which("ngspice") is None:
-            raise unittest.SkipTest("klt/ngspice not available")
+            skip_or_fail(cls, "klt/ngspice not available")
         try:
             cls.pdk = find_pdk()
         except PdkNotFound:
-            raise unittest.SkipTest("gf180mcu PDK not available")
+            skip_or_fail(cls, "gf180mcu PDK not available")
 
     def test_nominal_pair_is_valid_with_equal_drive(self):
         with tempfile.TemporaryDirectory() as d:
