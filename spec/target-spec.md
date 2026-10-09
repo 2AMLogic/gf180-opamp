@@ -7,12 +7,10 @@
   (issue #24; reviewed through this repo's two-key pipeline — Judge review
   plus Champion/operator merge). That record disposes **every row of this
   table individually**: each row below is **ratified as a target** (a
-  design-to bound — **never "met"**: no circuit-level PVT evidence exists
-  in this repo yet; the only AC-shaped data is the provisional,
-  hand-built, schematic-disconnected
-  [`sim/gain-gbw-pm/`](../sim/gain-gbw-pm/README.md) sweep that its own
-  record disclaims, which this ratification does not cite) or **explicitly
-  open** in [0003](decision-records/0003-target-spec-ratification.md)'s
+  design-to bound — **never "met"** by the ratification act itself, which
+  cited no circuit-level PVT evidence; the ratification-time snapshot is
+  [0003](decision-records/0003-target-spec-ratification.md)'s Context,
+  unchanged) or **explicitly open** in [0003](decision-records/0003-target-spec-ratification.md)'s
   residual register. [DR-1] and [DR-2] are carried into force with the
   same act. The **sole remaining `[P]`** value is §1's deliberately
   un-opened 5 V stretch row (opening requires its own decision record per
@@ -41,7 +39,13 @@ the sizing pass and schematic (issue #17 / PR #21,
 record have landed — every value below is now either **ratified as a
 target** `[DR-n]` or **explicitly open** `[TBD]` with its reason named
 in-row and in [0003](decision-records/0003-target-spec-ratification.md)'s
-residual register.
+residual register. Three things are kept distinct throughout: *target
+ratification* (this table's dispositions), *measurement availability*
+(committed records under `sim/`) and *measured compliance* (a verdict
+against a ratified bound). Schematic-level, passives-at-typical PVT
+measurements now exist for gain, GBW, phase margin, noise, CMRR and PSRR
+(45-point grid), and for offset mismatch (five process corners at 27 °C /
+3.30 V only); they are cited per row in §2 and are not repeated here.
 
 ## How to read this table
 
@@ -54,24 +58,27 @@ proposal at a glance:
 |---|---|
 | **[DR-n]** | Carried unchanged from decision record `n`, **and ratified** — carried into force by [0003](decision-records/0003-target-spec-ratification.md), the ratification act for this whole table. `[DR-1]` = [`spec/decision-records/0001-topology-and-cl.md`](decision-records/0001-topology-and-cl.md). `[DR-2]` = [`spec/decision-records/0002-performance-target-bounds.md`](decision-records/0002-performance-target-bounds.md). `[DR-3]` = [`spec/decision-records/0003-target-spec-ratification.md`](decision-records/0003-target-spec-ratification.md) (the ratification record itself). |
 | **[P]** | **Proposed, not ratified** — an engineering placeholder. Post-ratification the **only** `[P]` value left is §1's deliberately un-opened 5 V stretch row: its non-opening is structural (`CLAUDE.md` requires its own decision record to open), so it stays `[P]` rather than being ratified or removed — the same shape the `sg13g2-opamp` twin's post-ratification table uses for its own HV row. |
-| **[TBD]** | Deliberately unset and **explicitly open** — [0003](decision-records/0003-target-spec-ratification.md)'s residual register names the exact missing evidence per row (never a silent open). Filled in once the missing evidence lands (mismatch MC, noise bench, CM/PSRR testbenches, layout). Tracked collectively under the gap-to-T1 tracker, [#7](https://github.com/2AMLogic/gf180-opamp/issues/7) (item 5, "Full PVT corner simulation vs a ratified spec"), rather than one issue per row — no per-row characterization issue has been filed yet. |
+| **[TBD]** | Deliberately unset and **explicitly open** — [0003](decision-records/0003-target-spec-ratification.md)'s residual register names the exact missing evidence per row (never a silent open). Filled in by a decision record once the open bound can be argued from evidence — for noise, offset, CMRR and PSRR the measurements now exist (§2) and only the ratified bound/band is missing; for area, layout is still missing. Tracked collectively under the gap-to-T1 tracker, [#7](https://github.com/2AMLogic/gf180-opamp/issues/7) (item 5, "Full PVT corner simulation vs a ratified spec"), rather than one issue per row — no per-row characterization issue has been filed yet. |
 
 **Status** column values in use: `Ratified [DR-3] as target — not met` (the
-row's bound is a ratified design-to target; **nothing is ratified as met**
-— no circuit-level PVT evidence exists yet, per
-[0003](decision-records/0003-target-spec-ratification.md) Context); `Open
-[DR-3] — <reason>` (a `[TBD]` row held open by the residual register's
-named missing evidence). The pre-ratification vocabulary (`not started`)
+row's bound is a ratified design-to target and no committed bench has
+measured it, so it is not met; **nothing is ratified as met**);
+`Ratified [DR-3] as target — measured: PASS/FAIL …` (a committed record
+judged the bound, cited in-row); `Open [DR-3] — <reason>` (a `[TBD]` row
+held open by the residual register's named missing evidence, with any
+measurement that already exists cited in-row but issuing no verdict). The pre-ratification vocabulary (`not started`)
 described the same rows before the [0003](decision-records/0003-target-spec-ratification.md)
 pass.
 
 **Binding corner** — the corner at which a row's hard edge is expected to
 bind, reasoned from the topology's *generic* behavior (a two-stage
-Miller-compensated op-amp) since no schematic exists yet to simulate. This is
-a **prediction**, not a measurement — CLAUDE.md's "no claim without a
-testbench" applies to any future *pass/fail* verdict on these rows, not to
-this placeholder prediction of where the number will eventually bind. A
-`sim/` record's full PVT grid supersedes the prediction once it exists.
+Miller-compensated op-amp) at ratification time, before the schematic was
+simulated. This is a **prediction**, not a measurement — CLAUDE.md's "no
+claim without a testbench" applies to any *pass/fail* verdict on these rows.
+A `sim/` record's full PVT grid supersedes the prediction where one exists:
+the gain, GBW and phase-margin records name measured worst corners in the
+Status column (which differ from the predictions for GBW and phase margin),
+and the other rows' predictions stand until measured.
 
 ## 1. Global operating conditions
 
@@ -91,20 +98,25 @@ this placeholder prediction of where the number will eventually bind. A
 | GBW (into stated CL = 2 pF [DR-1] above) | **≥ 10 MHz [DR-3]** — sized design point: `gm1 = 60.3 µS` (as-simulated 58.64 µS) with `CC = 0.619 pF` gives ≈ 15.5 MHz predicted nominal ([`design/opamp_sizing.md`](../design/opamp_sizing.md) §4, §6); target set ≈ 35% below the prediction for PVT margin ([DR-3](decision-records/0003-target-spec-ratification.md) §(b)) | — | — | SS / −40 °C / low VDD (slowest devices) | **Ratified [DR-3] as target — measured: PASS at all 45 PVT points** (worst 10.42 MHz at SS / 125 °C / 2.97 V; [record `20261009-055759-2524b3e`](../sim/gain-gbw-pm/records/20261009-055759-2524b3e.md)) |
 | Phase margin (at GBW, same CL) | **≥ 60° [DR-3]** | — (the pre-ratification conditional "≥ 45° at FF/hot if unreachable" escape was rejected by [DR-3](decision-records/0003-target-spec-ratification.md) §(d) as a pre-authorized relaxation; a genuine future impossibility goes through a superseding DR, never the table) | — (deterministic corner-worst-case) | FF / 125 °C (fastest devices, most peaking risk) | **Ratified [DR-3] as target — measured: FAIL, 15/45 PVT points pass** (worst 57.34° at FS / 125 °C / 2.97 V; typical / 27 °C / 3.30 V is 59.49°; [record `20261009-055759-2524b3e`](../sim/gain-gbw-pm/records/20261009-055759-2524b3e.md); RZ PVT-tracking quantification is the row's verification obligation — [DR-3](decision-records/0003-target-spec-ratification.md) §(d)) |
 | Slew rate | **≥ 10 V/µs [DR-3]** — sized prediction `Itail/CC = 10 µA / 0.619 pF ≈ 16.2 V/µs` ([`design/opamp_sizing.md`](../design/opamp_sizing.md) §6); target ≈ 38% below it ([DR-3](decision-records/0003-target-spec-ratification.md) §(b)) | — | — | SS / −40 °C / low VDD (lowest tail-current headroom) | **Ratified [DR-3] as target — not met** |
-| Input-referred noise | **[TBD]** — **Open [DR-3]**, residual (e1): a ratifiable bound is a *full-band* figure; the sizing pass's chosen `gm1` discharges [DR-2] §(c)'s bias-current half, but no flicker (`1/f`) model exists in this PDK's committed device data and the integration band is unchosen — a thermal-floor-only number would not rate this row | — | n/a until a band is set | n/a | Open [DR-3] — no noise bench, no band (see [DR-3](decision-records/0003-target-spec-ratification.md) §(e1)) |
-| Input-referred offset | **[TBD]** — **Open [DR-3]**, residual (e2): numeric 3σ target needs a mismatch Monte-Carlo pass or PDK mismatch-model data, neither committed (the `3σ` basis itself is ratified — see the statistical-basis column); see [DR-3](decision-records/0003-target-spec-ratification.md) §(e2) | — | **3σ, mismatch MC N≥300 + process corners [DR-2]** — ratified by [DR-2], carried into force by [DR-3]; matching `gf180-bandgap`'s ratified convention and the same convention independently proposed by the `sg13g2-opamp`/`sky130-opamp` twins; sample count not yet re-derived for this topology | to be determined once a topology is drawn — likely SS/FF split-corner pairing on the input differential pair | Open [DR-3] — MC pass not run |
-| CMRR | **[TBD]** — **Open [DR-3]**, residual (e3): needs a schematic and a common-mode AC testbench; the committed gm/ID sweep characterizes each device in isolation with no shared tail node or common-mode stimulus; see [DR-3](decision-records/0003-target-spec-ratification.md) §(e3) | — | — (deterministic corner-worst-case) | to be determined | Open [DR-3] — no CM AC bench |
-| PSRR | **[TBD]** — **Open [DR-3]**, residual (e4): needs a schematic and a supply-injection AC testbench; the committed gm/ID sweep has no supply-voltage axis at all (stated directly in its own record); see [DR-3](decision-records/0003-target-spec-ratification.md) §(e4) | — | — (deterministic corner-worst-case) | to be determined | Open [DR-3] — no supply-injection bench |
+| Input-referred noise | **[TBD]** — **Open [DR-3]**, residual (e1): a ratifiable bound is a *full-band* figure; the sizing pass's chosen `gm1` discharges [DR-2] §(c)'s bias-current half, the integration band remains unchosen, and a noise measurement now exists (candidate bands only) — a thermal-floor-only number would not rate this row | — | n/a until a band is set | n/a | Open [DR-3] — measured, no verdict: 45-point `.noise` grid, highest 62.90 µV rms over 100 Hz–1 MHz at SS / 125 °C / 3.63 V, candidate bands only ([record `20261009-082007-68b4567`](../sim/noise/records/20261009-082007-68b4567.md)); no ratified band or bound (see [DR-3](decision-records/0003-target-spec-ratification.md) §(e1)) |
+| Input-referred offset | **[TBD]** — **Open [DR-3]**, residual (e2) as of ratification: a numeric 3σ target needed a mismatch Monte-Carlo pass or PDK mismatch-model data; the pass has since been committed but no bound is ratified (the `3σ` basis itself is ratified — see the statistical-basis column); see [DR-3](decision-records/0003-target-spec-ratification.md) §(e2) | — | **3σ, mismatch MC N≥300 + process corners [DR-2]** — ratified by [DR-2], carried into force by [DR-3]; matching `gf180-bandgap`'s ratified convention and the same convention independently proposed by the `sg13g2-opamp`/`sky130-opamp` twins; sample count not yet re-derived for this topology | to be determined once a topology is drawn — likely SS/FF split-corner pairing on the input differential pair | Open [DR-3] — measured, no verdict: mismatch MC, five process corners × N = 300 at 27 °C / 3.30 V only (no temperature or supply axis); σ 4.34–5.01 mV, worst \|mean\| + 3σ 15.64 mV at SF ([record `20261009-072205-96bf3cc`](../sim/offset-mc/records/20261009-072205-96bf3cc.md)); no numeric bound ratified |
+| CMRR | **[TBD]** — **Open [DR-3]**, residual (e3) as of ratification: needed a schematic and a common-mode AC testbench (the gm/ID sweep characterizes each device in isolation); the bench has since been committed, the bound remains unratified; see [DR-3](decision-records/0003-target-spec-ratification.md) §(e3) | — | — (deterministic corner-worst-case) | to be determined | Open [DR-3] — measured, no verdict: 45-point grid, systematic-only (perfectly matched devices; mismatch-limited CMRR not covered), lowest DC-plateau 95.42 dB at SS / 125 °C / 2.97 V ([record `20261009-105631-30ec86d`](../sim/cmrr/records/20261009-105631-30ec86d.md)); no ratified bound |
+| PSRR | **[TBD]** — **Open [DR-3]**, residual (e4) as of ratification: needed a schematic and a supply-injection AC testbench (the gm/ID sweep has no supply-voltage axis); the bench has since been committed, the bound remains unratified; see [DR-3](decision-records/0003-target-spec-ratification.md) §(e4) | — | — (deterministic corner-worst-case) | to be determined | Open [DR-3] — measured, no verdict: 45-point grid, systematic-only, lowest PSRR+ DC-plateau 98.45 dB at FS / −40 °C / 2.97 V, falling to 0.86 dB at the differential unity-gain frequency (SF / −40 °C / 2.97 V) ([record `20261009-105929-30ec86d`](../sim/psrr/records/20261009-105929-30ec86d.md)); no ratified bound |
 | Output swing | **≥ 2.3 Vpp (≈78% of VDD,min) [DR-2]** | ≥ 2.6 Vpp (≈88%) [DR-2] | — | low VDD / worst output-stage headroom corner | **Ratified [DR-3] as target — not met** (see [DR-3](decision-records/0003-target-spec-ratification.md) §(b)) |
 | Quiescent power | **≤ 350 µW worst-case corner [DR-3]** — as-simulated nominal 80.70 µA × 3.3 V = 266.3 µW; worst-case edge derived via the same-topology twin's measured ×1.2 corner-current spread (`sg13g2-opamp`, 99.9→119.7 µA) at the max rail: ≈ 351 µW, target set just under it ([DR-3](decision-records/0003-target-spec-ratification.md) §(b); [`design/opamp_sizing.md`](../design/opamp_sizing.md) §7) | — | — (deterministic corner-worst-case) | FF / 125 °C / 3.63 V (leakage + fastest devices) — matches `gf180-bandgap`'s ratified Iq binding-corner convention | **Ratified [DR-3] as target — not met** |
 | Area | **[TBD]** — **Open [DR-3]**, residual (e5): a post-layout quantity; no `layout/` content exists yet beyond a placeholder ([DR-3](decision-records/0003-target-spec-ratification.md) §(e5)) | — | n/a (not a PVT line) | n/a | Open [DR-3] — no layout |
+
+Slew rate, output swing and quiescent power have no committed bench and remain
+"not met" (unmeasured); area and post-layout verification depend on layout,
+which has no committed evidence. All measured results above are
+schematic-level with passives at typical only.
 
 Every `[TBD]` row above is deliberately left **open** rather than
 guessed — an explicit
 [DR-3](decision-records/0003-target-spec-ratification.md) open-verdict with
 its residual-register entry, never a silent one — per `CLAUDE.md`'s "no
 claim without a testbench." Every ratified target above is a **design-to
-bound, not a met result**: the [DR-2] bounds (DC gain, output swing) were
+bound, not a met result** (three have now been judged by a committed record: gain and GBW pass, phase margin fails): the [DR-2] bounds (DC gain, output swing) were
 argued from the committed gm/ID device data and [DR-1]'s topology/`CL`
 choices without any new amplifier-sizing decision; the remaining
 [DR-3](decision-records/0003-target-spec-ratification.md) §(b) bounds
@@ -112,8 +124,8 @@ choices without any new amplifier-sizing decision; the remaining
 pass's design point and predictions
 ([`design/opamp_sizing.md`](../design/opamp_sizing.md)), which is why they
 could be set without originating any new sizing decision. Confirming or
-revising any ratified target requires the PVT-cornered testbench suite
-tracked by gap-to-T1 tracker
+revising any ratified target requires the remaining PVT-cornered benches
+(slew, swing, power) and layout evidence tracked by gap-to-T1 tracker
 [#7](https://github.com/2AMLogic/gf180-opamp/issues/7) item 5 — per
 `CLAUDE.md`'s "gm/ID first, committed to `sim/` before sizing" and the
 guardrail that ratification precedes measurement.
@@ -129,16 +141,18 @@ guardrail that ratification precedes measurement.
   conditions and the §2 target rows are **ratified as targets**, and the
   five open rows are held in [0003](decision-records/0003-target-spec-ratification.md)'s
   residual register with their missing evidence named. **No row is ratified
-  as met** — no circuit-level PVT evidence exists yet, and the provisional
-  hand-built [`sim/gain-gbw-pm/`](../sim/gain-gbw-pm/README.md) sweep is
-  explicitly not evidence toward any row.
+  as met.** The ratification act cited no circuit-level evidence; the
+  provisional hand-built early sweep it disclaimed has been superseded by
+  the committed schematic-level
+  [`sim/gain-gbw-pm/`](../sim/gain-gbw-pm/README.md) record cited in §2.
 - **Not a commitment that every open row will end up non-trivial.** The
   corner grid and load capacitance rows were determined jointly with the
   topology decision — see [decision record 0001](decision-records/0001-topology-and-cl.md).
   The DC gain and output swing rows carry their bounds from
   [decision record 0002](decision-records/0002-performance-target-bounds.md).
-  The open rows (noise, offset target, CMRR, PSRR, area) each name exactly
-  what evidence is missing, per [DR-3](decision-records/0003-target-spec-ratification.md) §(e).
+  The open rows (noise, offset target, CMRR, PSRR, area) each name what
+  is still missing (for the first four, a ratified bound rather than a
+  measurement; for area, layout), per [DR-3](decision-records/0003-target-spec-ratification.md) §(e).
 - **Not opening the 5 V stretch row.** It is named, not scoped in — and the
   [0003](decision-records/0003-target-spec-ratification.md) ratification
   ratifies that closure.
@@ -166,8 +180,9 @@ from this repo rather than by reading four. It asserts **no new target and
 changes no row value** — [0003](decision-records/0003-target-spec-ratification.md)'s
 per-row dispositions are untouched, and no `meets` verdict below is a claim
 that this block **meets its own targets**: this table's rows are ratified
-design-to bounds with no circuit-level PVT evidence yet, so every verdict is
-a *target-vs-requirement* comparison only. `unknown` marks rows resting on
+design-to bounds (measured status per row in §2: phase margin currently fails
+its own target), so every verdict is a *target-vs-requirement* comparison
+only. `unknown` marks rows resting on
 this table's open residuals. The structured integrator view (top cell, port
 list, netlist/GDS paths, area, maturity rung) is published as data at a
 fixed path — [`manifests/integrator.json`](../manifests/integrator.json) —
@@ -207,7 +222,7 @@ shape this block is.
 | Port list | error-amp slot: reference input + feedback-divider-tap input, pass-FET-gate output, single supply (survey §2 rows 1–2, §3.1) | `vdd`, `vss` (inout); `vinp`, `vinn` (in); `vout` (out); `ibias` (in) — recorded as data in [`manifests/integrator.json`](../manifests/integrator.json) | **meets** (shape only — the ratified table carries no port row, so this is a structural match against the committed port list, not a spec verdict) | [`manifests/integrator.json`](../manifests/integrator.json) vs survey §2/§3.1 |
 | Rails | 3.3 V ±10% single supply (survey row 1); its 5 V input stretch flags an amplifier-headroom question still open (survey §3.4) | VDD **3.3 V ±10%** [DR-3]; 5 V stretch row **named-not-opened** [P] | **meets** (3.3 V, same ratified row); **unknown** (5 V — not opened) | §1 VDD rows; opening 5 V requires its own decision record, never a consumer row |
 | Input range | inputs sit at VREF (`gf180-bandgap`'s 1.20 V output) and the divider tap ≈ VREF (survey §2 row 2) | no input-common-mode row exists — neither ratified nor held open in the residual register | **unknown** | flagging the gap here does not open a row; a future input-CM row goes through `spec/` like any other |
-| Speed | no amplifier-level GBW row; loop UGBW estimated in the tens-to-low-hundreds of kHz (survey §2 row 5) | GBW **≥ 10 MHz** into CL = 2 pF [DR-3]; slew **≥ 10 V/µs** [DR-3] | **meets** (ratified target ≥ 10 MHz ≫ ~0.1 MHz loop need) | §2 GBW row — target-vs-requirement comparison only; the row's own "not met" status is unchanged |
+| Speed | no amplifier-level GBW row; loop UGBW estimated in the tens-to-low-hundreds of kHz (survey §2 row 5) | GBW **≥ 10 MHz** into CL = 2 pF [DR-3]; slew **≥ 10 V/µs** [DR-3] | **meets** (ratified target ≥ 10 MHz ≫ ~0.1 MHz loop need) | §2 GBW row — target-vs-requirement comparison only; the GBW row's own measured status (PASS at 45/45 points) is cited in §2 and is not altered by this comparison |
 | Offset | no numeric amplifier-level row; load-reg < 1% is system-level (survey §2 row 7) | **[TBD] open** | **unknown** | §2 offset row, open [DR-3 residual e2] |
 | Noise | no amplifier-level row | **[TBD] open** | **unknown** | §2 noise row, open [DR-3 residual e1] |
 | Area budget | whole-regulator < 0.1 mm² ex pad ring (survey row 8); no amplifier carve-out stated | **[TBD] open** | **unknown** | §2 area row, open [DR-3 residual e5] |

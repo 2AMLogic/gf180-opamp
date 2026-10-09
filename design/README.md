@@ -88,11 +88,23 @@ than by design.
 
 This is a **smoke check, not characterization** — one corner, no AC
 analysis, and it deliberately writes no `sim/` record. PVT-cornered
-verification against `spec/target-spec.md`'s performance rows needs a real
-testbench under `sim/` and is tracked by the gap-to-T1 tracker,
-[#7](https://github.com/2AMLogic/gf180-opamp/issues/7) item 5. Every
-small-signal number quoted in `opamp_sizing.md` is a gm/ID prediction until
-that bench exists.
+characterization of this schematic lives under `sim/` instead: gain, GBW and
+phase margin
+([`sim/gain-gbw-pm/records/20261009-055759-2524b3e.md`](../sim/gain-gbw-pm/records/20261009-055759-2524b3e.md)),
+noise
+([`20261009-082007-68b4567`](../sim/noise/records/20261009-082007-68b4567.md)),
+offset mismatch Monte Carlo
+([`20261009-072205-96bf3cc`](../sim/offset-mc/records/20261009-072205-96bf3cc.md)),
+CMRR
+([`20261009-105631-30ec86d`](../sim/cmrr/records/20261009-105631-30ec86d.md))
+and PSRR
+([`20261009-105929-30ec86d`](../sim/psrr/records/20261009-105929-30ec86d.md)).
+The small-signal numbers quoted in `opamp_sizing.md` are the original gm/ID
+predictions, kept as the sizing record; where a measured value exists the
+`sim/` record, not the prediction, is the evidence (phase margin in particular
+measures below its 60 degree target at 30 of 45 points). Slew, swing and
+power benches are not yet committed; the remaining gap is tracked by
+[#7](https://github.com/2AMLogic/gf180-opamp/issues/7).
 
 ## Prerequisites
 

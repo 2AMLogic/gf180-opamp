@@ -80,7 +80,9 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   3.3 V MOS (`nfet_03v3`, `pfet_03v3`) gm/ID, gm/gds and fT vs overdrive,
   across the `typical/ff/ss/fs/sf` process corners at −40/27/125 °C. The
   first characterization study for this block (`CLAUDE.md`'s "gm/ID first"
-  ordering, issue #10) — feeds the future topology/sizing decision and
+  ordering, issue #10) — fed the topology/sizing decisions
+  ([DR-0001](../spec/decision-records/0001-topology-and-cl.md),
+  [`design/opamp_sizing.md`](../design/opamp_sizing.md)) and
   `spec/target-spec.md` §1's corner-grid row. (Predates
   `characterize.sh`/`selftest.sh`; still run directly per its own README.)
 - [`gain-gbw-pm/`](gain-gbw-pm/README.md) — open-loop DC gain, GBW and phase
@@ -92,7 +94,10 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   binding corner against the ratified bounds in `spec/target-spec.md` §2, a
   feedback-isolation study and deterministic negative controls. The repo's
   first circuit-level spec-row evidence (issues #19, #38; tracker #7
-  items 5 and 9).
+  items 5 and 9). Selected record
+  [`20261009-055759-2524b3e`](gain-gbw-pm/records/20261009-055759-2524b3e.md):
+  gain and GBW pass at 45/45 points, phase margin fails its 60 degree target
+  (15/45 pass, worst 57.34 degrees).
 - [`offset-mc/`](offset-mc/README.md) — mismatch Monte Carlo of the
   **input offset** of the committed sized schematic (unity follower, DC):
   `typical/ff/ss/fs/sf` × N = 300 at 27 °C / 3.30 V, one `klt sim`
@@ -121,3 +126,15 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   driven, the same summaries and worst-case corners, output feedthrough
   reported separately, rail-to-output feedthrough negative controls. Measured,
   no verdict (issue #39; DR-3 residual (e4)).
+
+## Coverage and gaps
+
+As of the records selected in `report/selection.json`, benches exist for gain,
+GBW, phase margin, noise, offset (mismatch Monte Carlo), CMRR and PSRR. Common
+limitations: passives (RZ/CC) are at typical only; offset covers five process
+corners x 300 samples at 27 C / 3.30 V only (no temperature or supply axis);
+CMRR and PSRR are systematic-only (matched devices). Noise, offset, CMRR and
+PSRR are measured without a verdict because their numeric bounds are not
+ratified. No bench is committed yet for slew rate, output swing or quiescent
+power, and there is no layout or post-layout evidence. The 5 V stretch row is
+not opened. These records are schematic-level evidence below the T1 tier.

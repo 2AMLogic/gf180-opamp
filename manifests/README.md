@@ -27,15 +27,23 @@ tracker (#7) points here as the verdict of record.
 Miller-compensated op-amp with no digital or mixed-signal partition — not
 assumed from the issue that requested the manifest.
 
-The `evidence` map is **deliberately empty**. As of this manifest the repo
-contains no `klt` evidence envelopes at all: no layout (so no `klt drc`, no
-`klt lvs`, no `klt pex` reports), no `klt sim` corner runs, no `klt yield`
-campaign — the committed `sim/` records are raw ngspice results, which are
-not `klt` envelopes. Per the issue #23 framing, an all-`unmet` manifest with
+The `evidence` map is **deliberately empty** — an empty *citation map*, which
+is not the same as an absence of evidence files. The repo does track `klt sim`
+report JSON under the experiment directories (for example
+[`sim/gain-gbw-pm/corners/20261009-055759-2524b3e/klt-report.json`](../sim/gain-gbw-pm/corners/20261009-055759-2524b3e/klt-report.json)
+and the `klt-report*.json` files under `sim/noise/`, `sim/offset-mc/`,
+`sim/cmrr/` and `sim/psrr/` `corners/`), retained as part of those
+append-only records. None is cited here: each must first be validated against
+the pinned grader (envelope kind, `content_hash` pinning, and the
+analog-column item 5 rules) before citation, and citation itself is a
+separate change that also regenerates the record. There is still no layout
+(so no `klt drc`, no `klt lvs`, no `klt pex` reports) and no `klt yield`
+campaign. The committed `sim/` Markdown records are the narrative evidence
+and are not `klt` envelopes. Per the issue #23 framing, an all-`unmet` manifest with
 `reason: no_evidence` on every item is the **correct** honest state: it
 replaces hand-written prose that goes stale with a mechanical read that
-cannot. Every row currently renders `unmet`/`no_evidence`, `tier` is
-`null`, and the command exits `3` — that is the point, not a failure.
+cannot. Every row currently renders `unmet`/`no_evidence` because nothing is cited, `tier` is
+`null` (the verdict is below T1), and the command exits `3` — that is the point, not a failure.
 
 ## The integrator view (`integrator.json`)
 
@@ -112,8 +120,9 @@ one PR — mirroring how the pinned klt version is bumped (below).
 
 ## Citing evidence in the manifest
 
-When a real `klt` evidence envelope lands in this repo — a `klt drc` report,
-`klt lvs`, `klt sim`, `klt yield`, `klt pex` — add it to the `evidence` map
+When a validated `klt` evidence envelope exists in this repo — a `klt drc` report,
+`klt lvs`, `klt sim`, `klt yield`, `klt pex`; the retained `klt sim` reports
+noted above are candidates, not yet cited — add it to the `evidence` map
 and regenerate the record in the same change. Rules the grader enforces,
 restated from the [upstream contract](https://github.com/2AMLogic/klayout-tools/blob/main/docs/cli/signoff.md):
 

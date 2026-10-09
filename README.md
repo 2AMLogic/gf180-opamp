@@ -5,14 +5,42 @@ A two-stage Miller-compensated operational amplifier on GF180MCU on
 [klayout-tools](https://github.com/2AMLogic/klayout-tools) and the
 open-source xschem + ngspice flow.
 
-**Status: schematic entry.** The 3.3 V gm/ID device-characterization study is
-committed ([`sim/gm-id-characterization/`](sim/gm-id-characterization/README.md)),
-the topology is decided
-([DR-0001](spec/decision-records/0001-topology-and-cl.md)), and a gm/ID-sized
-schematic of that topology exists in [`design/`](design/README.md) with a
-passing nominal DC operating-point check. No AC, PVT or post-layout evidence
-exists yet, so every performance row in the target spec is still `[TBD]`. The
-5 V device flavors remain surveyed but not characterized.
+**Status: schematic-level characterization, below T1.** The 3.3 V gm/ID
+device-characterization study is committed
+([`sim/gm-id-characterization/`](sim/gm-id-characterization/README.md)), the
+topology is decided ([DR-0001](spec/decision-records/0001-topology-and-cl.md)),
+and a gm/ID-sized schematic of that topology exists in
+[`design/`](design/README.md). The target spec is **partially ratified**
+([DR-0003](spec/decision-records/0003-target-spec-ratification.md)): the
+ratified rows are design-to targets, five rows are held open, and nothing is
+ratified as met. Target ratification, measurement availability and measured
+compliance are three different things, as of the committed records named
+below:
+
+- **Measured against a ratified bound (45-point PVT grid, schematic level):**
+  DC gain and GBW pass at 45/45 points (worst 93.79 dB and 10.42 MHz, both at
+  SS / 125 C / 2.97 V); phase margin **fails** its 60 degree target, passing
+  at only 15/45 points (worst 57.34 degrees at FS / 125 C / 2.97 V). Record:
+  [`20261009-055759-2524b3e`](sim/gain-gbw-pm/records/20261009-055759-2524b3e.md).
+  The circuit repair is tracked in [#42](https://github.com/2AMLogic/gf180-opamp/issues/42).
+- **Measured, bound still open (no verdict):** input-referred noise
+  ([`20261009-082007-68b4567`](sim/noise/records/20261009-082007-68b4567.md),
+  45 points), input offset mismatch Monte Carlo
+  ([`20261009-072205-96bf3cc`](sim/offset-mc/records/20261009-072205-96bf3cc.md),
+  five process corners x 300 samples at 27 C / 3.30 V only), CMRR
+  ([`20261009-105631-30ec86d`](sim/cmrr/records/20261009-105631-30ec86d.md))
+  and PSRR
+  ([`20261009-105929-30ec86d`](sim/psrr/records/20261009-105929-30ec86d.md)),
+  both systematic-only (matched devices, 45 points). Their numeric bounds are
+  not ratified.
+- **Not yet measured:** slew rate, output swing and quiescent power (ratified
+  targets, no committed bench), and post-layout verification (no layout
+  evidence; area is open).
+
+All circuit results use typical passives only. The `klt signoff` verdict of
+record ([`manifests/`](manifests/README.md)) is still below T1; no T1 claim
+is made. The 5 V device flavors remain surveyed but not characterized, and
+the 5 V stretch row stays unopened.
 
 **Built agent-native.** Every specification, decision record, testbench, and
 line of documentation here is produced by AI agents working from a ratified
@@ -38,16 +66,18 @@ The block is also deliberate bench infrastructure: LDO error amplifiers,
 ADC drivers, and filter stages across the gf180 canaries embed op-amps that
 have never been standalone-characterized on this PDK.
 
-## Target specification (DRAFT — engineering to ratify)
+## Target specification (RATIFIED, partial)
 
 Same row structure as the twins, at 3.3 V primary (5 V flavor as a labelled
-stretch row pending a decision record). Rows filled only from committed
-benches at PVT corners.
+stretch row pending a decision record). Targets are design-to bounds ratified
+by [DR-0003](spec/decision-records/0003-target-spec-ratification.md); rows
+whose evidence was missing at ratification stay `[TBD]`.
 
-The full per-row table, with per-row value tags (`[P]`/`[TBD]`) and binding
-corners, lives in [`spec/target-spec.md`](spec/target-spec.md) — every
-performance row is currently `[TBD]`, since no gm/ID device characterization
-or PVT-cornered simulation exists in this repo yet. See
+The full per-row table, with per-row value tags, status and binding corners,
+lives in [`spec/target-spec.md`](spec/target-spec.md) — the noise, offset,
+CMRR, PSRR and area rows are still `[TBD]` (open bounds), although noise,
+offset, CMRR and PSRR now have committed measurements (see the status above).
+See
 [`spec/porting-plan.md`](spec/porting-plan.md) for what carries over from
 this block's nearest same-PDK siblings (`gf180-bandgap`, `gf180-ldo`) and
 `sg13g2-bandgap`'s amp-characterization testbench shape, and the

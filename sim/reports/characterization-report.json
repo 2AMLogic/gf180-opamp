@@ -652,7 +652,7 @@
   },
   "spec": {
     "path": "spec/target-spec.md",
-    "sha256": "ae35af8332e259292c7abc0b20523e06daa9f790eb3c9d00f6df5f827bb20b68"
+    "sha256": "99277fdb676d10eab39474c08ac5c4449257a48a1bd9c0881e93c5d9728efeff"
   },
   "summary": {
     "fail": 1,
