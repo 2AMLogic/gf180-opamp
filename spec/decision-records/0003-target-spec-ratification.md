@@ -1,6 +1,6 @@
 # 0003: Target-spec ratification (partial) — targets ratified ahead of measurement, residuals explicitly open
 
-- **Status**: `proposed` — **but read this line through**: per the
+- **Status**: **ratified** (merged PR #26; the text below was written while `proposed`) — **but read this line through**: per the
   ratification-via-PR standing policy
   ([2AMLogic/2am#357](https://github.com/2AMLogic/2am/issues/357)), the
   operator's approval of the PR that carries this record **is the

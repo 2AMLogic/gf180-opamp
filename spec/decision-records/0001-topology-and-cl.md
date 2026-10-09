@@ -1,6 +1,6 @@
 # 0001: Two-stage topology (input-pair polarity, output stage, cascode) and CL target
 
-- **Status**: proposed (input to a future spec-ratification issue; this
+- **Status**: ratified via DR-0003 / PR #26 (originally proposed; input to a future spec-ratification issue; this
   repo has no ratified spec yet — `spec/target-spec.md` itself is still
   DRAFT, matching the identical "proposed, not ratified" posture of
   `sg13g2-opamp`'s own DR-0001) — **carried into force by
