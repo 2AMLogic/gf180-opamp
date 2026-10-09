@@ -66,10 +66,21 @@ HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[1]
 sys.path.insert(0, str(REPO_ROOT / "sim"))
 
-from harness import Pdk, allocate_record_id, find_pdk, ngspice_version  # noqa: E402
+from harness import (  # noqa: E402
+    KltError,
+    Pdk,
+    allocate_record_id,
+    claim_record_paths,
+    find_pdk,
+    klt_version,
+    load_dut_text,
+    ngspice_version,
+    sanitise_report,
+)
 
 # The CMRR driver owns the servo bench guards, excitation checks, rejection
-# summaries, klt plumbing and evidence writers; reuse them unchanged.
+# summaries, grid-request runner and evidence writers; reuse them unchanged
+# (the klt wrapper itself is in `harness`).
 if "cmrr_driver" in sys.modules:
     C = sys.modules["cmrr_driver"]
 else:
@@ -504,8 +515,8 @@ def main(argv: list[str] | None = None) -> int:
 
     want = C.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = G.claim_record_paths(HERE, record)
-    ngspice, kver = ngspice_version(), G.klt_version()
+    paths = claim_record_paths(HERE, record)
+    ngspice, kver = ngspice_version(), klt_version()
     gdir = C.latest_gain_dir()
     print(f"record {record}: 3 excitations x {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
@@ -513,7 +524,7 @@ def main(argv: list[str] | None = None) -> int:
         work = Path(scratch)
         try:
             reports, reqs, walls = C.run_grid_modes(pdk, work, args, MODES, testbench=TESTBENCH, guard=guard_testbench)
-        except C.KltError as exc:
+        except KltError as exc:
             print(f"ERROR: a grid request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
             return 2
         per_mode, problems = {}, []
@@ -563,7 +574,7 @@ def main(argv: list[str] | None = None) -> int:
         for mode in MODES:
             for k, a in per_mode[mode].items():
                 C.save_mode_point(corners_dir, k, mode, a, NEED)
-            (corners_dir / f"klt-report.{mode}.json").write_text(json.dumps(G.sanitise_report(reports[mode]), indent=1))
+            (corners_dir / f"klt-report.{mode}.json").write_text(json.dumps(sanitise_report(reports[mode]), indent=1))
         for k, p in points.items():
             np.savetxt(corners_dir / f"{point_stem(k)}.psrr.dat",
                        np.column_stack([p.freq, db(p.ad), db(p.asup["vdd"]), db(p.asup["vss"]),
@@ -571,7 +582,7 @@ def main(argv: list[str] | None = None) -> int:
                        header="freq_hz Ad_dB Avdd_dB Avss_dB PSRRplus_dB PSRRminus_dB (Asupply clamped at the floor)")
         C.save_local_runs(corners_dir / "controls", studies.runs)
 
-        dut_sha = hashlib.sha256(C.load_dut_text().encode()).hexdigest()
+        dut_sha = hashlib.sha256(load_dut_text().encode()).hexdigest()
         paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
         deck0 = Path(per_mode["dm"][NOMINAL]["deck"]).read_text() if per_mode["dm"][NOMINAL].get("deck") else ""
         C.write_snapshot(paths["snapshot"], record, "issue #39", TESTBENCH, reqs, deck0)

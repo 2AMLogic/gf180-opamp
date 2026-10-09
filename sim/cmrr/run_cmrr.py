@@ -73,7 +73,6 @@ import math
 import os
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
@@ -88,10 +87,24 @@ REPO_ROOT = HERE.parents[1]
 sys.path.insert(0, str(REPO_ROOT / "sim"))
 sys.path.insert(0, str(REPO_ROOT / "design"))
 
-from harness import Pdk, allocate_record_id, find_pdk, ngspice_version  # noqa: E402
+from harness import (  # noqa: E402
+    KltError,
+    Pdk,
+    allocate_record_id,
+    batch_block,
+    claim_record_paths,
+    find_pdk,
+    klt_version,
+    load_dut_text,
+    ngspice_version,
+    remote_of,
+    run_klt,
+    run_klt_retrying,
+    sanitise_report,
+)
 
-# The gain driver owns the committed-DUT guards, the klt plumbing and the grid
-# bookkeeping; reuse them unchanged so the benches stay structurally identical.
+# The gain driver owns the committed-DUT guards, the request shape and the grid
+# bookkeeping (the klt wrapper itself is in `harness`); reuse them unchanged so the benches stay structurally identical.
 if "gain_gbw_pm_driver" in sys.modules:
     G = sys.modules["gain_gbw_pm_driver"]
 else:
@@ -111,7 +124,6 @@ SUPPLIES_V = G.SUPPLIES_V
 NOMINAL = G.NOMINAL
 DEVICES = G.DEVICES
 Key = G.Key
-KltError = G.KltError
 fmt_key = G.fmt_key
 point_key = G.point_key
 point_stem = G.point_stem
@@ -235,10 +247,6 @@ def param_line(keys: list[str], params: dict[str, float]) -> str:
     return ".param " + " ".join(f"{k}={params[k]:.12g}" for k in keys)
 
 
-def load_dut_text() -> str:
-    return G.load_dut_text()
-
-
 def mutate_instance(dut_text: str, inst: str, param: str, old: str, new: str) -> str:
     """A control DUT: one parameter of one device changed, nothing else.
 
@@ -308,7 +316,7 @@ def materialise(
 
 
 # --------------------------------------------------------------------------
-# klt request / run
+# klt requests (run via `harness.run_klt` / `harness.run_klt_retrying`)
 # --------------------------------------------------------------------------
 
 
@@ -339,45 +347,6 @@ def local_env(scratch: Path) -> dict[str, str]:
     env = dict(os.environ)
     env["HOME"] = str(home)
     return env
-
-
-def run_klt(request: dict, outdir: Path, backend: str | None, workdir: Path, env: dict | None = None) -> dict:
-    """`klt sim` on a request dict; returns its JSON report (see the gain driver)."""
-    outdir = outdir.resolve()
-    outdir.mkdir(parents=True, exist_ok=True)
-    req_path = workdir / f"{outdir.name}.request.json"
-    req_path.write_text(json.dumps(request, indent=2))
-    cmd = ["klt", "sim", str(req_path), "-o", str(outdir), "--format", "json"]
-    if backend:
-        cmd += ["--backend", backend]
-    proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
-    try:
-        report = json.loads(proc.stdout)
-    except json.JSONDecodeError as exc:
-        raise KltError(
-            f"klt sim produced no JSON report (exit {proc.returncode}):\n"
-            f"{proc.stdout[-1500:]}\n{proc.stderr[-1500:]}"
-        ) from exc
-    if "error" in report and "corners" not in report:
-        raise KltError(f"klt sim error: {report['error']}")
-    report["_exit_code"] = proc.returncode
-    return report
-
-
-def run_klt_retrying(request, outdir, backend, workdir, *, retries: int, wait_s: float) -> dict:
-    """Re-submit only when the BATCH submit was refused for capacity (nothing
-    ran); never changes backend. Any other error propagates."""
-    for attempt in range(retries + 1):
-        try:
-            return run_klt(request, outdir, backend, workdir)
-        except KltError as exc:
-            msg = str(exc)
-            if attempt < retries and any(t in msg for t in G._TRANSIENT_SUBMIT):
-                print(f"  batch submit refused ({attempt + 1}/{retries + 1}); retrying in {wait_s:g}s: {msg[-160:]}", flush=True)
-                time.sleep(wait_s)
-                continue
-            raise
-    raise AssertionError("unreachable")
 
 
 # --------------------------------------------------------------------------
@@ -915,10 +884,6 @@ def fmt_db(v: float, lb: bool = False) -> str:
     return (">= " if lb else "") + f"{v:.2f}"
 
 
-def remote_of(report: dict) -> dict:
-    return (report.get("environment") or {}).get("remote") or {}
-
-
 def klt_pdk_version(report: dict) -> str:
     return ((report.get("provenance") or {}).get("pdk") or {}).get("version", "n/a")
 
@@ -1362,7 +1327,7 @@ def run_grid_modes(pdk, work, args, modes: dict[str, dict], *, testbench=TESTBEN
     for mode, mp in modes.items():
         tb = materialise(work / mode, pdk, with_servo(mp), testbench=testbench, guard=guard)
         req = ac_request(tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V)
-        req["batch"] = G.batch_block(args)
+        req["batch"] = batch_block(args)
         print(f"  submitting `{mode}` grid ({len(CORNERS) * len(TEMPS_C) * len(SUPPLIES_V)} points)...", flush=True)
         t0 = time.time()
         reports[mode] = run_klt_retrying(req, work / mode / "out", args.backend, work / mode,
@@ -1431,11 +1396,11 @@ def main(argv: list[str] | None = None) -> int:
 
     want = expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = G.claim_record_paths(HERE, record)
+    paths = claim_record_paths(HERE, record)
     ctl_snap = HERE / "netlist-snapshots" / f"{record}-controls.spice"
     if ctl_snap.exists():
         raise FileExistsError(f"{ctl_snap} already exists; evidence is append-only")
-    ngspice, kver = ngspice_version(), G.klt_version()
+    ngspice, kver = ngspice_version(), klt_version()
     gdir = latest_gain_dir()
     print(f"record {record}: 2 excitations x {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
@@ -1494,7 +1459,7 @@ def main(argv: list[str] | None = None) -> int:
         for mode in MODES:
             for k, a in per_mode[mode].items():
                 save_mode_point(corners_dir, k, mode, a, need)
-            (corners_dir / f"klt-report.{mode}.json").write_text(json.dumps(G.sanitise_report(reports[mode]), indent=1))
+            (corners_dir / f"klt-report.{mode}.json").write_text(json.dumps(sanitise_report(reports[mode]), indent=1))
         for k, p in points.items():
             np.savetxt(corners_dir / f"{point_stem(k)}.cmrr.dat",
                        np.column_stack([p.freq, db(p.ad), db(p.acm), p.cmrr.curve_db]), fmt="%.8e",

@@ -10,9 +10,12 @@ the committed testbench / DUT text in memory.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import math
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -22,6 +25,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_gain_gbw_pm as r  # noqa: E402
+import harness  # noqa: E402  (on sys.path via the driver)
 
 FREQ = np.logspace(math.log10(r.AC_FSTART), math.log10(r.AC_FSTOP), 201)
 
@@ -316,6 +320,87 @@ class AppendOnlyTests(unittest.TestCase):
         recs = {p.name for p in (HERE / "records").glob("*.md")}
         self.assertIn("20260915-221407-1bb9a74.md", recs)
         self.assertIn("20261003-030340-7bd8071.md", recs)
+
+    def test_record_paths_without_plots(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            with_plots = r.claim_record_paths(root, "rid")
+            self.assertEqual(list(with_plots), ["record", "plots", "snapshot", "corners"])
+            self.assertEqual(list(harness.claim_record_paths(root, "rid", plots=False)), ["record", "snapshot", "corners"])
+
+
+class SharedKltWrapperTests(unittest.TestCase):
+    """The `klt sim` wrapper lives once in sim/harness.py (issue #58)."""
+
+    def setUp(self):
+        self._run_klt = harness.run_klt
+        self._sleep = harness.time.sleep
+        self._subrun = harness.subprocess.run
+        harness.time.sleep = lambda s: None
+
+    def tearDown(self):
+        harness.run_klt = self._run_klt
+        harness.time.sleep = self._sleep
+        harness.subprocess.run = self._subrun
+
+    def _scripted(self, errors):
+        calls = []
+
+        def fake(request, outdir, backend, workdir):
+            calls.append(backend)
+            if len(calls) <= len(errors):
+                raise harness.KltError(errors[len(calls) - 1])
+            return {"corners": []}
+
+        harness.run_klt = fake
+        return calls
+
+    def test_driver_uses_the_shared_helpers(self):
+        for name in ("KltError", "run_klt", "run_klt_retrying", "claim_record_paths", "klt_version",
+                     "batch_block", "sanitise_report", "load_dut_text"):
+            self.assertIs(getattr(r, name), getattr(harness, name), name)
+
+    def test_retry_only_on_capacity_refusal_and_same_backend(self):
+        calls = self._scripted(["klt sim error: batch_no_capacity", "BATCH_MAX_CONCURRENT_INSTANCES reached"])
+        with contextlib.redirect_stdout(io.StringIO()):
+            rep = harness.run_klt_retrying({}, Path("o"), "batch", Path("w"), retries=2, wait_s=0)
+        self.assertEqual(rep, {"corners": []})
+        self.assertEqual(calls, ["batch", "batch", "batch"])
+
+    def test_other_errors_and_exhausted_retries_propagate(self):
+        calls = self._scripted(["klt sim error: bad netlist"])
+        with self.assertRaises(harness.KltError):
+            harness.run_klt_retrying({}, Path("o"), "batch", Path("w"), retries=3, wait_s=0)
+        self.assertEqual(len(calls), 1)
+        calls = self._scripted(["no capacity"] * 5)
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(harness.KltError):
+            harness.run_klt_retrying({}, Path("o"), "batch", Path("w"), retries=1, wait_s=0)
+        self.assertEqual(len(calls), 2)
+
+    def test_run_klt_passes_env_and_backend(self):
+        seen = {}
+
+        def fake_run(cmd, **kw):
+            seen.update(cmd=cmd, env=kw.get("env"))
+            return types.SimpleNamespace(returncode=0, stdout='{"corners": []}', stderr="")
+
+        harness.subprocess.run = fake_run
+        with tempfile.TemporaryDirectory() as d:
+            rep = harness.run_klt({"x": 1}, Path(d) / "out", "local", Path(d), env={"HOME": d})
+            self.assertTrue((Path(d) / "out.request.json").is_file())
+        self.assertEqual(seen["env"], {"HOME": d})
+        self.assertEqual(seen["cmd"][-2:], ["--backend", "local"])
+        self.assertEqual(rep["_exit_code"], 0)
+
+    def test_sanitise_and_remote(self):
+        rep = {"_exit_code": 0, "corners": [{"artifacts": {"log": "/abs/host/p/corner.log", "raw": None}}],
+               "environment": {"remote": {"provider": "batch"}}}
+        clean = harness.sanitise_report(rep)
+        self.assertNotIn("_exit_code", clean)
+        self.assertEqual(clean["corners"][0]["artifacts"], {"log": "corner.log", "raw": None})
+        self.assertEqual(rep["corners"][0]["artifacts"]["log"], "/abs/host/p/corner.log")  # input untouched
+        self.assertEqual(harness.remote_of(rep), {"provider": "batch"})
+        self.assertEqual(harness.remote_of({}), {})
 
 
 if __name__ == "__main__":
