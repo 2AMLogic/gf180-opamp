@@ -7,11 +7,13 @@
 # and each experiment's own README for the cold-start prerequisites (ngspice,
 # the pinned gf180mcu PDK revision, numpy/matplotlib).
 #
-# Currently runs three experiments (sim/gain-gbw-pm/: open-loop gain / GBW /
+# Currently runs five experiments (sim/gain-gbw-pm/: open-loop gain / GBW /
 # phase margin of the committed sized schematic over the full 45-point PVT
 # grid, issues #19 and #38; sim/offset-mc/: mismatch Monte Carlo of the
 # input offset, 5 corners x N=300, issue #45; sim/noise/: input-referred
-# noise over the same 45-point grid, issue #46); sim/gm-id-characterization/ predates this script
+# noise over the same 45-point grid, issue #46; sim/cmrr/ and sim/psrr/:
+# common-mode and supply rejection over the same grid, two and three
+# excitation requests respectively, issue #39); sim/gm-id-characterization/ predates this script
 # and is still run directly (`python3 sim/gm-id-characterization/run_gmid.py`)
 # per its own README, since this script's job is the *one-command driver*
 # acceptance criterion for the newly-added spec-row testbenches, not a
@@ -42,3 +44,9 @@ python3 offset-mc/run_offset_mc.py "$@"
 
 echo "== sim/noise: input-referred noise, full 45-point PVT grid =="
 python3 noise/run_noise.py "$@"
+
+echo "== sim/cmrr: CMRR (differential + common-mode excitations), full 45-point PVT grid =="
+python3 cmrr/run_cmrr.py "$@"
+
+echo "== sim/psrr: PSRR+ / PSRR- (differential, vdd and vss excitations), full 45-point PVT grid =="
+python3 psrr/run_psrr.py "$@"

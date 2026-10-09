@@ -1,0 +1,18 @@
+* klt sim -- generated corner deck, do not edit
+.lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice sf
+.lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_typical
+.lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice mimcap_typical
+.include /var/tmp/eda-job-klt-sim-44ea0fd17cee/inputs/netlist.cir
+.temp 125.0
+.control
+alter vcm=1.65
+alter vdd=3.3
+set filetype=ascii
+ac dec 20 0.1 1e+09
+op
+print v(vout) v(vinp) v(vinn) @m.xdut.xm1.m0[vds] @m.xdut.xm1.m0[vdsat] @m.xdut.xm2.m0[vds] @m.xdut.xm2.m0[vdsat] @m.xdut.xm3.m0[vds] @m.xdut.xm3.m0[vdsat] @m.xdut.xm4.m0[vds] @m.xdut.xm4.m0[vdsat] @m.xdut.xm5.m0[vds] @m.xdut.xm5.m0[vdsat] @m.xdut.xm6.m0[vds] @m.xdut.xm6.m0[vdsat] @m.xdut.xm7.m0[vds] @m.xdut.xm7.m0[vdsat] @m.xdut.xmb1.m0[vds] @m.xdut.xmb1.m0[vdsat]
+setplot ac1
+write /var/tmp/eda-job-klt-sim-44ea0fd17cee/outputs/artifacts/sf_vcm1p650_vdd3p300V_125C/waveform.raw
+quit
+.endc
+.end

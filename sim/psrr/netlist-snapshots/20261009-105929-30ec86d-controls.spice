@@ -1,0 +1,64 @@
+* control snapshot for record 20261009-105929-30ec86d (issue #39) -- NOT the baseline bench
+* The production DUT is unchanged in every PSRR control. Stimulus-fixture controls:
+*   control-feedthrough-vdd: appended line `Rft vdd vout 100000` (all three excitations)
+*   control-feedthrough-vss: appended line `Rft vss vout 100000` (all three excitations)
+*   inadequate isolation: csv=1e-12; isolation study: csv in (10000000.0, 100000000000.0)
+* ---- the baseline testbench these fixtures are appended to ----
+* | * tb_psrr.spice -- supply-injection AC testbench for the committed sized
+* | * schematic (issue #39; spec row: PSRR; DR-3 residual (e4)).
+* | *
+* | * DEVICE UNDER TEST: the committed xschem export
+* | * design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* | * (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* | * FILE. The driver (run_psrr.py) materialises `opamp_two_stage.dut.spice` from
+* | * the committed export by the wrapper normalisation the gain bench uses and
+* | * rewrites the two `.include` targets below to absolute paths of the per-run
+* | * work directory. test_psrr.py guards both includes, the absence of
+* | * transistors and the separately driven `vss` port.
+* | *
+* | * This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* | * `.control` or `.end`. `klt sim` adds the corner's `.lib` cards, `.temp`, the
+* | * supply `alter`s and the `.ac` analysis.
+* | *
+* | * ---- Excitation modes (the driver rewrites ONLY the `.param` line) ----
+* | *   differential : acp = +0.5, acn = -0.5, acdd = acss = 0   -> Ad
+* | *   PSRR+        : acdd = 1, everything else 0                -> Avdd = vout/v(vdd)
+* | *   PSRR-        : acss = 1, everything else 0                -> Avss = vout/v(vss)
+* | * Input-referred PSRR+/- = 20 log10 |Ad / Avdd|, |Ad / Avss| at matching
+* | * frequency and operating point. One rail is driven at a time; the other rail
+* | * and both inputs are AC-quiet.
+* | *
+* | * ---- References (stated, because PSRR depends on them) ----
+* | *   - The DUT's `vss` port is a DRIVEN NODE (`Vss vss 0 dc 0 ac {acss}`), not
+* | *     simulator node 0, so PSRR- injects on the DUT's ground rail only.
+* | *   - Input stimulus, the DC servo, the load capacitor CL and Vdd are all
+* | *     referenced to simulator ground (node 0), NOT to vss. During PSRR- the
+* | *     inputs and load therefore stay still while the DUT's vss moves.
+* | *   - Ibias is an ideal 10 uA source from vdd into `ibias`: zero small-signal
+* | *     current, so bias-generator supply rejection is EXCLUDED (an on-chip
+* | *     reference would add its own supply sensitivity).
+* | *   - CL = 2 pF [DR-1] on vout, to ground. DC input common mode = VDD/2
+* | *     (`Vcm` and `Vdd` are swept together by `klt sim`).
+* | *
+* | * ---- DC servo (identical to sim/cmrr/testbench/tb_cmrr.spice) ----
+* | * Esb buffers vout without loading it; Rsv/Csv low-pass it with
+* | * tau = rsv*csv (1e18 s nominal); Esv adds that DC level to Vnac on vinn. DC:
+* | * the unity-gain-buffer operating point (vinn = vout = VCM). AC: the loop is
+* | * open and v(vinn) = acn (here 0 except in the differential mode).
+* | 
+* | .include 'design.ngspice'
+* | .include 'opamp_two_stage.dut.spice'
+* | 
+* | .param acp=0.5 acn=-0.5 acdd=0 acss=0 rsv=1e9 csv=1e9
+* | 
+* | Vdd vdd 0 dc 3.3 ac {acdd}
+* | Vss vss 0 dc 0 ac {acss}
+* | Vcm vinp 0 dc 1.65 ac {acp}
+* | Ibias vdd ibias dc 10u
+* | Xdut vdd vss vinp vinn vout ibias opamp_two_stage
+* | Esb vsb 0 vout 0 1
+* | Rsv vsb vsv {rsv}
+* | Csv vsv 0 {csv}
+* | Esv vinn vnac vsv 0 1
+* | Vnac vnac 0 dc 0 ac {acn}
+* | CL vout 0 2p
