@@ -44,6 +44,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 DEFAULT_VARIANT = "gf180mcuD"
+# Pinned open_pdks revision of the gf180mcu PDK (full hash). CI's
+# GF180_PDK_REV must equal this; sim/ci_prereqs.py enforces it on the PDK
+# find_pdk() selects.
+PINNED_PDK_REV = "c6d73a35f524070e85faff4a6a9eef49553ebc2b"
 
 
 class PdkNotFound(RuntimeError):
@@ -103,7 +107,7 @@ def find_pdk() -> Pdk:
     raise PdkNotFound(
         "gf180mcu PDK not found. Install with volare:\n"
         "    pip install volare\n"
-        "    volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b\n"
+        f"    volare enable --pdk gf180mcu {PINNED_PDK_REV}\n"
         "or point at an existing install with GF180_PDK_PATH=/path/to/gf180mcuD"
     )
 

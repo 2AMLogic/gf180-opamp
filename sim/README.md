@@ -36,14 +36,23 @@ to fail. The job fails if it leaves any file modified or created (no
 | `signoff.yml` | `klayout-tools==0.5.0` | grader whose output must reproduce `manifests/gf180-opamp.signoff.json` |
 
 Bump each independently; the signoff pin moves only with a regenerated record
-(`manifests/README.md`). The PDK pin is `GF180_PDK_REV` (the revision
-`harness.py` documents).
+(`manifests/README.md`). The PDK pin is `GF180_PDK_REV`, which must equal
+`harness.py`'s `PINNED_PDK_REV`. The `~/.volare` cache is keyed on that
+revision, but the key is not trusted as proof of the contents:
+`ci_prereqs.py` reads the selected PDK's `SOURCES` file and fails, with
+expected/actual hashes, unless its `open_pdks` revision is exactly the
+pinned full hash (a missing `SOURCES` or one without an `open_pdks` line is
+unknown provenance and also fails). `ci_pdk_rev_check.sh` proves that gate
+on scratch fixtures in the volare layout (pinned passes; wrong revision,
+pinned-named dir with wrong contents, and unknown provenance fail) without
+needing the real PDK. volare itself is pinned (`VOLARE_VERSION`).
 
 Reproduce locally (needs `klt`, `ngspice`, numpy/matplotlib, and the PDK):
 
 ```bash
 volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b
 python3 sim/ci_prereqs.py
+sim/ci_pdk_rev_check.sh
 SIM_REQUIRE_PREREQS=1 sim/selftest.sh
 sim/ci_regression_check.sh
 git status --porcelain   # must be empty
