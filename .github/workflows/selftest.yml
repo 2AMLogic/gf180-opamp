@@ -1,0 +1,83 @@
+# Run sim/selftest.sh (extraction + source-guard unit tests plus one nominal
+# local ngspice point per testbench) on every push and PR, with the pinned
+# tools and PDK provisioned and every missing prerequisite a hard failure.
+# No credentials, no PVT/Monte Carlo grid, no evidence records: the job fails
+# if it leaves anything modified or untracked in the checkout. See
+# sim/README.md -> "CI selftest" for the pins and the local reproduction.
+#
+# Two independent klt pins live in this repo; do not unify them by accident:
+#   * this file (SELFTEST_KLT_VERSION)  -- the klt that *runs simulations* for
+#     the smoke points (matches the klt the committed sim records were made with);
+#   * .github/workflows/signoff.yml     -- the klt that *grades* the manifest,
+#     pinned to the version that regenerates manifests/gf180-opamp.signoff.json.
+name: selftest
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  SELFTEST_KLT_VERSION: "0.7.0"
+  # open_pdks revision of the gf180mcu PDK (same hash sim/harness.py documents).
+  # Must equal sim/harness.py PINNED_PDK_REV; sim/ci_prereqs.py fails otherwise.
+  GF180_PDK_REV: "c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  VOLARE_VERSION: "0.20.6"
+  # CI-strict switch: skips for missing klt/ngspice/PDK/dataset become failures.
+  SIM_REQUIRE_PREREQS: "1"
+
+jobs:
+  selftest:
+    # Pinned image (not ubuntu-latest) so the apt ngspice (42) is stable.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
+
+      - name: Install ngspice and Python deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ngspice python3-numpy python3-matplotlib
+          ngspice -v | head -3
+
+      - name: Install the selftest klt
+        run: pipx install "klayout-tools==${SELFTEST_KLT_VERSION}"
+
+      - name: Cache the gf180mcu PDK
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: ~/.volare
+          key: volare-gf180mcu-${{ env.GF180_PDK_REV }}
+
+      # Always run `volare enable`: on a cache miss it downloads the pinned
+      # revision; on a cache hit it re-points ~/.volare/gf180mcuD at the pinned
+      # version dir without downloading. The cache key is not trusted as proof
+      # of the contents -- the next step verifies the selected PDK's SOURCES.
+      - name: Install / select the pinned gf180mcu PDK
+        run: |
+          pipx install "volare==${VOLARE_VERSION}"
+          volare enable --pdk gf180mcu "$GF180_PDK_REV"
+
+      - name: Check prerequisites (klt, ngspice, PDK at the pinned open_pdks revision)
+        run: python3 sim/ci_prereqs.py
+
+      - name: Prove the PDK revision gate rejects a wrong or unknown revision
+        run: sim/ci_pdk_rev_check.sh
+
+      - name: Run the selftest
+        run: sim/selftest.sh
+
+      - name: Prove the selftest can fail (deliberate guard/extraction regressions)
+        run: sim/ci_regression_check.sh
+
+      - name: Require no records or other files were written
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "::error::selftest modified or created files (it must not write evidence records):"
+            git status --porcelain
+            exit 1
+          fi

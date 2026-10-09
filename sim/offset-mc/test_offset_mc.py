@@ -24,7 +24,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_offset_mc as r  # noqa: E402
-from harness import Pdk, PdkNotFound, find_pdk  # noqa: E402
+from harness import Pdk, PdkNotFound, find_pdk, require_prereqs  # noqa: E402
 
 
 def corner(proc: str, idx: int | None, vos: float, *, vinp: float = r.VCM_V, vout: float | None = None,
@@ -320,7 +320,7 @@ def _sim_available() -> bool:
     return True
 
 
-@unittest.skipUnless(_sim_available(), "klt / ngspice / gf180mcu PDK not available")
+@unittest.skipUnless(_sim_available() or require_prereqs(), "klt / ngspice / gf180mcu PDK not available")
 class SimControlTests(unittest.TestCase):
     """Two deterministic single-unit LOCAL runs (no Monte Carlo)."""
 
