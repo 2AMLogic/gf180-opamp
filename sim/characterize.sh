@@ -7,15 +7,19 @@
 # and each experiment's own README for the cold-start prerequisites (ngspice,
 # the pinned gf180mcu PDK revision, numpy/matplotlib).
 #
-# Currently runs one experiment (sim/gain-gbw-pm/: open-loop gain / GBW /
+# Currently runs two experiments (sim/gain-gbw-pm/: open-loop gain / GBW /
 # phase margin of the committed sized schematic over the full 45-point PVT
-# grid, issues #19 and #38); sim/gm-id-characterization/ predates this script
+# grid, issues #19 and #38; sim/offset-mc/: mismatch Monte Carlo of the
+# input offset, 5 corners x N=300, issue #45); sim/gm-id-characterization/ predates this script
 # and is still run directly (`python3 sim/gm-id-characterization/run_gmid.py`)
 # per its own README, since this script's job is the *one-command driver*
 # acceptance criterion for the newly-added spec-row testbenches, not a
 # retroactive wrapper for the pre-existing device study. Future spec-row
 # testbenches should add their own `run_<name>.py --smoke`-shaped driver and
 # a line below.
+#
+# Extra arguments are forwarded to EVERY driver below, so only flags both
+# drivers accept (--backend, --batch-*) belong on the command line.
 #
 # Each run mints a new append-only record under the experiment's own
 # records/ -- nothing here overwrites a previous run.
@@ -31,3 +35,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 echo "== sim/gain-gbw-pm: full 45-point PVT grid (5 MOS corners x 3 T x 3 VDD) =="
 python3 gain-gbw-pm/run_gain_gbw_pm.py "$@"
+
+echo "== sim/offset-mc: mismatch Monte Carlo, 5 MOS corners x N=300 (1500 units) =="
+python3 offset-mc/run_offset_mc.py "$@"

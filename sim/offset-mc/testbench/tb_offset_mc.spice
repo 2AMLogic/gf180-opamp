@@ -1,0 +1,51 @@
+* tb_offset_mc.spice -- unity-follower DC bench for the Monte Carlo input-offset
+* study of the committed sized schematic (issue #45; spec row: input offset,
+* statistical basis; DR-3 residual (e2)).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_offset_mc.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+* test_offset_mc.py guards both includes and the absence of transistors.
+*
+* This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* `.control` or `.end`. `klt sim` adds the corner's `.lib` cards, `.temp`,
+* the supply `alter`s, the Monte Carlo seed cards and the DC analysis.
+*
+* ---- Measurement ----
+* Unity-gain follower: vinn is tied to vout (the Xdut instance below), vinp
+* is driven to VCM = 1.65 V. The static offset is  vout - vinp.  It includes
+* the systematic term (design/opamp_sizing.md Sec.4 balance condition) in
+* its MEAN; the sample-to-sample spread is the mismatch distribution. The
+* follower's closed-loop error vout - vinp = Vos * A/(1+A) differs from the
+* input-referred offset by the 1/A ~ 0.1 % factor (A >= 60 dB), negligible
+* against the quantities reported.
+*
+* ---- Mismatch switch ----
+* The gf180mcu model gates per-instance MOS mismatch with the model-level
+* `.param sw_stat_mismatch` (default 0 in design.ngspice; scales the
+* `delvto`/`mulu0` terms of the plain `nfet_03v3`/`pfet_03v3` subcircuits in
+* the `fets_mm` library section). It is turned on HERE, after the
+* design.ngspice include, so the global process-statistical switch
+* `sw_stat_global` stays 0 (global spread is covered by the five MOS
+* corners, not sampled). The driver rewrites ONLY this line (to 0) for the
+* switch-off control.
+*
+* ---- Bias ----
+* Ibias 10 uA driven INTO `ibias` from vdd (the polarity design/check_dc_op.py
+* uses). No load capacitor: this is a DC measurement. The Ibias source is the
+* swept element of the one-step DC analysis klt adds (10u..11u, the point at
+* 10u is the one measured).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param sw_stat_mismatch=1
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vout vout ibias opamp_two_stage

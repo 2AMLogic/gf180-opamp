@@ -43,8 +43,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-import numpy as np
-
 DEFAULT_VARIANT = "gf180mcuD"
 
 
@@ -139,7 +137,7 @@ def allocate_record_id(root: Path) -> tuple[str, datetime]:
     return f"{stamp:%Y%m%d-%H%M%S}-{sha}", stamp
 
 
-def run_corner(deck: str, corner: str, temp_c: float, workdir: Path) -> tuple[str, np.ndarray]:
+def run_corner(deck: str, corner: str, temp_c: float, workdir: Path) -> "tuple[str, np.ndarray]":
     """Run one (corner, temperature) point against an already-composed deck.
 
     `workdir` is scratch space for the composed deck + raw `wrdata` file --
@@ -147,6 +145,8 @@ def run_corner(deck: str, corner: str, temp_c: float, workdir: Path) -> tuple[st
     result into its `corners/<record>/` directory. The deck's
     `@@DATFILE@@` placeholder is substituted here with the scratch path.
     """
+    import numpy as np  # lazy: only the ngspice-deck executor needs it
+
     datfile = workdir / f"{corner}_{temp_c:g}c.dat"
     deckfile = workdir / f"{corner}_{temp_c:g}c.spice"
     deckfile.write_text(deck.replace("@@DATFILE@@", str(datfile)))
