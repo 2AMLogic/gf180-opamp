@@ -47,6 +47,33 @@ Every deck under `sim/` runs at ngspice's default solver tolerance — no
 (mirrors `sg13g2-opamp`'s DR-0005) for the rationale and the screen any
 future tightening proposal must clear before a deck may add one.
 
+## Characterization report
+
+`report/characterization_report.py` aggregates the committed records into one
+report per spec row (`reports/characterization-report.md` and `.json`). It
+reads only committed Markdown records and `spec/target-spec.md`; it never runs
+a simulator or touches the network, and its output is byte-identical for
+identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
+
+- Selection is explicit: `report/selection.json` lists one record per
+  experiment. A record that a sibling record `**Supersedes**` is rejected
+  (opt in knowingly with `allow_superseded`); records measuring different DUT
+  versions (compared on the 16-hex normalised-netlist prefix) are rejected
+  with exit 2.
+- Every row of `spec/target-spec.md` Sec. 2 appears, plus a post-layout line.
+  Status is `measured-verdict` (ratified bound + a record that judged it),
+  `measured-no-bound` (worst value shown, bound open, never a verdict) or
+  `not-measured` (no committed record). Coverage, limitations, per-source
+  sha256, DUT hash, PDK revision and tool versions are listed.
+- Existing records have no structured sidecars, so the verdict/worst-case
+  lines are extracted from the Markdown (cross-checked against each record's
+  own per-point table); historical records are never modified.
+- Regenerate: `python3 sim/report/characterization_report.py` (after editing
+  `selection.json`); verify the committed copy: `... --check` (exit 1 if
+  stale). `characterize.sh` ends with `--latest --update-manifest`, selecting
+  the newest record of each experiment; `selftest.sh` runs
+  `report/test_report.py` and `--check`.
+
 ## Experiments
 
 - [`gm-id-characterization/`](gm-id-characterization/README.md) — gf180mcu
