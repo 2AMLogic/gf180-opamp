@@ -80,3 +80,17 @@ future tightening proposal must clear before a deck may add one.
   bands, thermal floor and 1/f corner, the PDK flicker-model audit and
   extraction validation against ngspice's totals and the gain bench. Measured
   only: no verdict, no bound or band proposed (issue #46; DR-3 residual (e1)).
+- [`cmrr/`](cmrr/README.md) — **CMRR** of the committed sized schematic across
+  the full 45-point grid: differential and common-mode excitations (two
+  `klt sim` requests) on a DC-servo bench that admits equal AC drive on both
+  inputs, Ad and Acm solved jointly from the actual input phasors, CMRR at the
+  verified 0.1–1 Hz plateau, 1 kHz–1 MHz and at the differential unity-gain
+  frequency, worst-case corner per figure, isolation/numerical-floor studies
+  and a load-mirror-imbalance negative control. Systematic-only (matched
+  devices); measured, no verdict (issue #39; DR-3 residual (e3)).
+- [`psrr/`](psrr/README.md) — **PSRR+ and PSRR−** (input-referred) of the
+  committed sized schematic across the full 45-point grid: differential, `vdd`
+  and `vss` excitations (three `klt sim` requests) with the DUT's `vss` port
+  driven, the same summaries and worst-case corners, output feedthrough
+  reported separately, rail-to-output feedthrough negative controls. Measured,
+  no verdict (issue #39; DR-3 residual (e4)).

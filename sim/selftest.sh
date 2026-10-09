@@ -28,3 +28,15 @@ python3 noise/test_noise.py
 
 echo "== sim/noise: smoke test (typical, 27C, 3.30 V, one local point) =="
 python3 noise/run_noise.py --smoke
+
+echo "== sim/cmrr: extraction + source/request-guard tests (two nominal local pairs run) =="
+python3 cmrr/test_cmrr.py
+
+echo "== sim/cmrr: smoke test (typical, 27C, 3.30 V, both excitations, local) =="
+python3 cmrr/run_cmrr.py --smoke
+
+echo "== sim/psrr: extraction + source/request-guard tests (one nominal local triple runs) =="
+python3 psrr/test_psrr.py
+
+echo "== sim/psrr: smoke test (typical, 27C, 3.30 V, all three excitations, local) =="
+python3 psrr/run_psrr.py --smoke
