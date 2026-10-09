@@ -125,12 +125,18 @@ re-submits an identical one); never commit that directory.
 records/<rid>.md                       headline, intervals per PVT point, explicit 1.20 V table, validity failures, controls
 records/<rid>-plots/*.png              passing intervals of all 45 points; gain/margin vs VCM
 corners/<rid>/samples.csv              every sample: status (1 mV and strict), gain, margins and currents of every MOSFET, reasons
-corners/<rid>/data/<point>.tar.gz      retained rawfile (.raw) and ngspice log (.log) per VCM sample and excitation
+corners/<rid>/data/<point>.tar.gz      retained rawfile (.raw, trimmed to frequency/v(vinp)/v(vinn)/v(vout)) and ngspice log (.log) per VCM sample and excitation
 corners/<rid>/requests/*.json.gz       every klt request (netlist path omitted)
 corners/<rid>/reports/*.json.gz        sanitised klt reports (batch job ids, runner versions)
 corners/<rid>/controls/*.log           local control logs
 netlist-snapshots/<rid>.spice          DUT + testbench + conditions + generated deck
 ```
+
+The committed rawfiles keep only the four vectors the extraction reads (`RAW_KEEP`;
+value lines copied verbatim, so `--recompute` parses bit-identical vectors). klt's
+rawfile also carries every other node voltage and source current (20 vectors);
+committing those for ~12 000 units would be ~135 MB of evidence no figure uses.
+The full ngspice log (with the operating-point print) is kept for every unit.
 
 Every run mints a new record id; a record is never overwritten. Results must be
 regenerated if the DUT changes (for example after #42); each record names the

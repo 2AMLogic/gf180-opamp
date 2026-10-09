@@ -738,6 +738,11 @@ class Plan:
     pairs: list[tuple[int, int]]
 
 
+#: Requests whose report came from the `--keep-work` cache (an identical request
+#: submitted by an earlier invocation); named in the record's execution block.
+REUSED: set[str] = set()
+
+
 def run_requests(plans: list[Plan], pdk: Pdk, work: Path, args, reqs_out: dict, reports_out: dict,
                  walls: dict) -> None:
     """Submit each plan as one `klt sim` corner request (retrying only a
@@ -772,6 +777,7 @@ def _run_plan(p: Plan, pdk: Pdk, work: Path, args, reqs_out: dict, reports_out: 
                                           if (c.get("artifacts") or {}).get("raw")):
             print(f"  reusing cached report for {p.name}", flush=True)
             reports_out[p.name], reqs_out[p.name], walls[p.name] = blob["report"], req, blob["wall"]
+            REUSED.add(p.name)
             return
     n = len(p.pairs) * len(TEMPS_C) * len(p.processes)
     print(f"  submitting {p.name} ({n} units)...", flush=True)
@@ -1114,6 +1120,13 @@ def sample_line(s: Sample | None) -> str:
             f"{fmt_key(s.key)}")
 
 
+def margin_line(s: Sample | None) -> str:
+    if s is None:
+        return "n/a"
+    return (f"{s.limiting_device.upper()} {s.min_margin_v * 1e3:+.1f} mV (plateau gain {s.gain_db:.2f} dB) at "
+            f"{fmt_key(s.key)}")
+
+
 def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, controls: Controls, reports, walls,
                  plans, rounds, plots, dut_sha, n_members, recheck_ok) -> str:
     L: list[str] = []
@@ -1125,7 +1138,9 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include "
         f"`{dut_sha[:16]}`), unchanged; snapshot `netlist-snapshots/{record}.spice`")
     for ln in C.pdk_lines(pdk, reports):
-        add(ln)
+        add(ln.replace("the grid's open-loop response reproduces the committed gain-bench record (see Cross-checks)",
+                       "the scan's midrail samples reproduce the committed CMRR record (see Controls: midrail "
+                       "reproduction)"))
     add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`, numpy `{np.__version__}`")
     n_scan = sum(1 for p in plans if p.name.startswith("scan"))
     n_ref = len(plans) - n_scan
@@ -1134,6 +1149,10 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
         "round(s), one per excitation per round). Per request:")
     for ln in C.execution_lines(reports, walls):
         add(ln)
+    if REUSED:
+        add(f"  - Reports of {', '.join(f'`{n}`' for n in sorted(REUSED))} were reused from the `--keep-work` cache: "
+            "byte-identical requests (netlist path aside) submitted by an earlier invocation of this driver on the "
+            "same work directory; the job ids above are those submissions. Wall times are the original jobs'.")
     add("  - Local single units (controls) run with an empty `HOME` so no user `~/.spiceinit` applies (DR-0004).")
     add("- **Axes**: process " + ", ".join(CORNERS) + "; T " + ", ".join(f"{t:g} C" for t in TEMPS_C) + "; VDD "
         + ", ".join(f"{v:.2f} V" for v in SUPPLIES_V) + "; VCM scanned 0..VDD at <= 50 mV (explicit 1.20 V and "
@@ -1177,11 +1196,11 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
             if st == "fail":
                 add(f"  - fails at {fmt_combo(c)}: {'; '.join(s.reasons())}")
     add(f"- Worst plateau gain at 1.20 V: {sample_line(an.worst_target['gain'])}.")
-    add(f"- Smallest device margin at 1.20 V: {sample_line(an.worst_target['margin'])}.")
+    add(f"- Smallest device margin at 1.20 V: {margin_line(an.worst_target['margin'])}.")
     if comp is not None:
         add(f"- Worst plateau gain inside the 1.20 V component (all 45 points, all samples in it): "
             f"{sample_line(an.worst_component['gain'])}.")
-        add(f"- Smallest device margin inside that component: {sample_line(an.worst_component['margin'])}.")
+        add(f"- Smallest device margin inside that component: {margin_line(an.worst_component['margin'])}.")
     add("")
     add("### Tolerance sensitivity (saturation tolerance 1 mV vs 0 mV)")
     add("")
@@ -1270,8 +1289,9 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
         f"|vout - VCM| > {VOUT_TOL_V * 1e3:g} mV, a device below saturation by more than the tolerance, or zero "
         f"(< {MIN_ID_A:g} A) input-pair/tail current.")
     add("- **Refinement**: every adjacent pass/non-pass pair further apart than 5 mV is filled at 5 mV spacing by "
-        f"additional paired batch requests ({rounds} round(s)); refinement points are requested at every "
-        "temperature of the process corner that needed them, and all returned samples are kept.")
+        f"additional paired batch requests ({rounds} round(s)); each round's request crosses the union of the "
+        "needed (VDD, VCM) pairs with every process corner that needed one and every temperature, and all "
+        "returned samples are kept.")
     add("")
     add("## Controls")
     add("")
