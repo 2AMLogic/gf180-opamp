@@ -4,6 +4,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-09
 
+- **PR #65**: refactor(sim): move duplicated klt sim wrapper helpers into harness.py
+- **PR #64**: T1: cite the characterization report as hash-pinned item-8 evidence
 - **PR #57**: feat(sim): slew-rate, output-swing and quiescent-power testbenches (#44)
 - **PR #56**: ci: run sim/selftest.sh in CI with pinned tools/PDK and strict prerequisites
 - **PR #55**: docs: reconcile current-status prose with committed characterization evidence
@@ -13,6 +15,8 @@ Merged pull requests and closed issues recorded by Guide.
 - **PR #48**: feat(sim): input-referred noise bench and 45-point evidence (#46)
 - **PR #47**: feat(sim): input-offset mismatch Monte Carlo of the committed schematic (#45)
 - **PR #43**: feat(sim): gain/GBW/PM of the committed schematic over the 45-point PVT grid (#38)
+- **Issue #58** (closed): Consolidate duplicated klt sim wrapper helpers into sim/harness.py
+- **Issue #59** (closed): T1: cite the characterization report as hash-pinned item-8 evidence
 - **Issue #44** (closed): T1 item 5: add slew-rate, output-swing and quiescent-power testbenches for the three ratified-but-unmeasured rows
 - **Issue #52** (closed): Run simulation extraction tests and nominal smoke checks in CI
 - **Issue #51** (closed): Reconcile current-status documentation with committed characterization evidence
