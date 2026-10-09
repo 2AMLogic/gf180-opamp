@@ -4,6 +4,11 @@
     "gain-gbw-pm": "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md",
     "noise": "sim/noise/records/20261009-082007-68b4567.md",
     "offset-mc": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
-    "psrr": "sim/psrr/records/20261009-105929-30ec86d.md"
+    "psrr": "sim/psrr/records/20261009-105929-30ec86d.md",
+    "slew-swing-power": {
+      "power": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
+      "slew": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
+      "swing": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md"
+    }
   }
 }

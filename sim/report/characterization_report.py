@@ -36,7 +36,12 @@ DEFAULT_MANIFEST = HERE / "selection.json"
 OUT_DIR_REL = "sim/reports"
 OUT_NAME = "characterization-report"
 
-EXPERIMENTS = ["gain-gbw-pm", "offset-mc", "noise", "cmrr", "psrr"]
+EXPERIMENTS = ["gain-gbw-pm", "offset-mc", "noise", "cmrr", "psrr", "slew-swing-power"]
+#: Experiments whose rows may come from different records: a record may judge
+#: only a subset of the rows (e.g. a single-figure re-run), so the manifest
+#: entry may be an object {row: record path}, naming the record each row is
+#: taken from (rows a record also judged but is not selected for are ignored).
+MULTI_RECORD = {"slew-swing-power": ("power", "slew", "swing")}
 CORNER_ORDER = ["typical", "ff", "ss", "fs", "sf"]
 FULL_GRID = 45
 
@@ -291,8 +296,80 @@ def extract_psrr(text: str, label: str) -> dict:
             "limitations": lim}
 
 
+_SSP_ROW = {"Quiescent power": "power", "Slew rate": "slew", "Output swing": "swing"}
+#: per-point table column holding each row's judged value ("<value> ok|FAIL")
+_SSP_COL = {"power": "Power (uW)", "slew": "Slew min", "swing": "Swing (Vpp)"}
+
+
+def extract_ssp(text: str, label: str) -> dict:
+    """Slew / swing / quiescent power: the ratified rows this record judged.
+
+    A record may judge only a subset of the three rows (`--figures`); rows it
+    did not measure (or could not run) are simply absent. Every judged row's
+    pass count and worst value are re-derived from the record's own per-point
+    table.
+    """
+    prov = parse_provenance(text, label)
+    sec = section(text, "Verdicts")
+    rx = re.compile(r"^\| (Quiescent power|Slew rate[^|]*|Output swing) \| ((?:<=|>=) [^|]+?) \| \*\*(PASS|FAIL)\*\* \| "
+                    r"(\d+)/(\d+) \| ([\d.]+|n/a) (uW|V/us|Vpp) \| ([^|]+?) \|$", re.M)
+    rows = {}
+    for m in rx.finditer(sec):
+        key = _SSP_ROW[m.group(1).split(" (")[0]]
+        rows[key] = {"label": m.group(1), "bound_text": m.group(2).strip(), "verdict": m.group(3),
+                     "pass": int(m.group(4)), "total": int(m.group(5)), "worst": f"{m.group(6)} {m.group(7)}",
+                     "worst_value": float("nan") if m.group(6) == "n/a" else float(m.group(6)),
+                     "worst_corner": m.group(8).strip()}
+    if not rows:
+        raise ReportError(f"{label}: no judged slew / swing / power row (every figure NOT RUN or not measured?)")
+    pt = section(text, "All 45 points")
+    lines = [ln for ln in pt.splitlines() if ln.startswith("|")]
+    if len(lines) < 3:
+        raise ReportError(f"{label}: no per-point table under '## All 45 points'")
+    head = split_cells(lines[0])
+    body = [split_cells(ln) for ln in lines[2:]]
+    for key, r in rows.items():
+        col = _SSP_COL[key]
+        if col not in head:
+            raise ReportError(f"{label}: per-point table has no '{col}' column")
+        i = head.index(col)
+        pts, vals, n_pass = set(), [], 0
+        for c in body:
+            cell = c[i]
+            if cell == "n/a":
+                continue
+            pts.add((c[0].strip("`"), c[1], c[2]))
+            mv = re.match(r"([\d.]+) (ok|FAIL)$", cell)
+            if mv:
+                vals.append(float(mv.group(1)))
+                n_pass += mv.group(2) == "ok"
+        worst = (max if r["bound_text"].startswith("<=") else min)(vals) if vals else float("nan")
+        # an invalid point makes the record's worst value n/a (the row FAILs); only then may it be non-finite
+        worst_ok = (abs(worst - r["worst_value"]) <= 0.006 if r["worst_value"] == r["worst_value"]
+                    else r["verdict"] == "FAIL")
+        if r["total"] != len(pts) or r["pass"] != n_pass or not worst_ok:
+            raise ReportError(
+                f"{label}: {key} verdict table ({r['pass']}/{r['total']}, worst {r['worst_value']}) "
+                f"disagrees with its own per-point table ({n_pass}/{len(pts)}, worst {worst})")
+        r["bound_value"] = float(re.search(r"([\d.]+)", r["bound_text"]).group(1))
+        r["coverage"] = coverage_of(pts)
+        r["limitations"] = common_limitations(text, prov, r["coverage"])
+    stretch = re.search(r"the >= ([\d.]+) Vpp stretch holds at (\d+)/(\d+)", text)
+    if "swing" in rows and stretch:
+        rows["swing"]["stretch"] = (stretch.group(1), f"{stretch.group(2)}/{stretch.group(3)}")
+    if "swing" in rows:
+        if re.search(r"swing re-derivation from the committed `swing/\*\.dat` files .*? (\d+)/\1 points reproduce", text):
+            rows["swing"]["rederived"] = True
+        else:
+            rows["swing"]["limitations"].append(
+                "the per-point swing data in this record holds vin/vout only: the M6/M7 saturation vectors that "
+                "decide the swing edges are not committed, so the verdict cannot be re-derived from the record")
+    cov = next(iter(rows.values()))["coverage"]
+    return {"prov": prov, "coverage": cov, "rows": rows, "limitations": common_limitations(text, prov, cov)}
+
+
 EXTRACTORS = {"gain-gbw-pm": extract_gain, "offset-mc": extract_offset, "noise": extract_noise,
-              "cmrr": extract_cmrr, "psrr": extract_psrr}
+              "cmrr": extract_cmrr, "psrr": extract_psrr, "slew-swing-power": extract_ssp}
 
 
 # --------------------------------------------------------------------------
@@ -310,13 +387,53 @@ def load_manifest(path: Path) -> dict:
     unknown = sorted(set(m["experiments"]) - set(EXPERIMENTS))
     if unknown:
         raise ReportError(f"selection manifest: unknown experiment(s) {unknown}; known: {EXPERIMENTS}")
+    for e, v in m["experiments"].items():
+        if isinstance(v, dict):
+            if e not in MULTI_RECORD:
+                raise ReportError(f"selection manifest: {e} takes one record path, not a per-row object")
+            bad = sorted(set(v) - set(MULTI_RECORD[e]))
+            if bad:
+                raise ReportError(f"selection manifest: {e}: unknown row(s) {bad}; known: {list(MULTI_RECORD[e])}")
+        elif v is not None and not isinstance(v, str):
+            raise ReportError(f"selection manifest: {e}: expected a record path")
     return m
+
+
+def selected_records(exp: str, value) -> list:
+    """A manifest entry as [(record path, rows or None)]; None = every row the record judged."""
+    if not value:
+        return []
+    if isinstance(value, dict):
+        by: dict = {}
+        for row in MULTI_RECORD[exp]:
+            if value.get(row):
+                by.setdefault(value[row], []).append(row)
+        return sorted(by.items())
+    return [(value, None)]
 
 
 def latest_selection(root: Path) -> dict:
     sel = {}
     for exp in EXPERIMENTS:
         recs = sorted((root / "sim" / exp / "records").glob("*.md"))
+        if exp in MULTI_RECORD:
+            # per row, the newest record that judged it; one path when they all agree
+            picked: dict = {}
+            for p in reversed(recs):
+                try:
+                    got = EXTRACTORS[exp](p.read_text(), f"{exp}:{p.stem}")["rows"]
+                except ReportError:
+                    continue
+                for row in got:
+                    picked.setdefault(row, f"sim/{exp}/records/{p.name}")
+            vals = set(picked.values())
+            if not picked:
+                sel[exp] = None
+            elif len(vals) == 1 and set(picked) == set(MULTI_RECORD[exp]):
+                sel[exp] = vals.pop()
+            else:
+                sel[exp] = {r: picked[r] for r in MULTI_RECORD[exp] if r in picked}
+            continue
         sel[exp] = f"sim/{exp}/records/{recs[-1].name}" if recs else None
     return sel
 
@@ -391,7 +508,8 @@ def parse_spec(spec_path: Path) -> list:
 
 
 def bound_in_spec(record_bound: str, spec_target: str) -> bool:
-    b = record_bound.replace(">=", "≥").replace(" deg", "°").strip()
+    b = (record_bound.replace(">=", "≥").replace("<=", "≤").replace(" deg", "°")
+         .replace("V/us", "V/µs").replace(" uW", " µW").strip())
     return b in spec_target.replace("**", "")
 
 
@@ -402,26 +520,39 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md") -> 
     exps = manifest["experiments"]
     allow = set(manifest.get("allow_superseded", []))
     sources, extracted, warnings = {}, {}, []
+    row_source = {}  # multi-record experiments: row key -> source key
     for exp in EXPERIMENTS:
-        rel = exps.get(exp)
-        if not rel:
-            continue
-        p = root / rel
-        if not p.is_file():
-            raise ReportError(f"{exp}: selected record is missing: {rel}")
-        if p.parent.resolve() != (root / "sim" / exp / "records").resolve() or p.suffix != ".md":
-            raise ReportError(f"{exp}: {rel} is not a record under sim/{exp}/records/*.md")
-        w = check_superseded(root, rel, allow)
-        if w:
-            warnings.append(w)
-        text = p.read_text()
-        ex = EXTRACTORS[exp](text, f"{exp}:{p.stem}")
-        if w:
-            ex["limitations"].append(w)
-        ex["text_len"] = len(text)
-        extracted[exp] = ex
-        pv = ex["prov"]
-        sources[exp] = {"record_id": p.stem, "path": posix_rel(p, root), "sha256": sha256_file(p), **pv}
+        rels = selected_records(exp, exps.get(exp))
+        for rel, want_rows in rels:
+            p = root / rel
+            if not p.is_file():
+                raise ReportError(f"{exp}: selected record is missing: {rel}")
+            if p.parent.resolve() != (root / "sim" / exp / "records").resolve() or p.suffix != ".md":
+                raise ReportError(f"{exp}: {rel} is not a record under sim/{exp}/records/*.md")
+            w = check_superseded(root, rel, allow)
+            if w:
+                warnings.append(w)
+            text = p.read_text()
+            ex = EXTRACTORS[exp](text, f"{exp}:{p.stem}")
+            if w:
+                ex["limitations"].append(w)
+                for r_ in ex.get("rows", {}).values():
+                    if isinstance(r_, dict) and "limitations" in r_:
+                        r_["limitations"].append(w)
+            ex["text_len"] = len(text)
+            skey = exp if len(rels) == 1 else f"{exp} ({p.stem})"
+            if exp in MULTI_RECORD:
+                if want_rows is not None:
+                    missing = [rk for rk in want_rows if rk not in ex["rows"]]
+                    if missing:
+                        raise ReportError(f"{exp}: {rel} is selected for {missing} but does not judge "
+                                          f"{'that row' if len(missing) == 1 else 'those rows'}")
+                    ex["rows"] = {rk: ex["rows"][rk] for rk in want_rows}
+                for rk in ex["rows"]:
+                    row_source[rk] = skey
+            extracted[skey] = ex
+            pv = ex["prov"]
+            sources[skey] = {"record_id": p.stem, "path": posix_rel(p, root), "sha256": sha256_file(p), **pv}
     # DUT compatibility: compare on the 16-hex prefix (not all records keep the full hash).
     duts = {}
     for exp, s in sources.items():
@@ -455,7 +586,7 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md") -> 
         glob_lim.append("coverage differs between sources (see each row's coverage; e.g. the offset Monte Carlo is "
                         "5 corner points at nominal T/VDD while the AC rows are full 45-point grids)")
     for exp in EXPERIMENTS:
-        if exp not in sources:
+        if not selected_records(exp, exps.get(exp)):
             glob_lim.append(f"no record selected for {exp}: its rows are reported as not measured")
 
     spec_rows = parse_spec(root / spec_rel)
@@ -470,8 +601,9 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md") -> 
         d.update(kw)
         return d
 
-    def src(exp):
-        s = sources[exp]
+    def src(skey):
+        s = sources[skey]
+        exp = skey.split(" (")[0]
         return {"experiment": exp, "record_id": s["record_id"], "path": s["path"], "sha256": s["sha256"]}
 
     for sr in spec_rows:
@@ -490,6 +622,23 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md") -> 
             if k == "gain" and ex["stretch_gain_70db"]:
                 row["figures"].append({"label": "stretch >= 70 dB (not a mandatory row), points holding",
                                        "value": ex["stretch_gain_70db"], "corner": None})
+        elif k in ("power", "slew", "swing") and k in row_source:
+            skey = row_source[k]
+            ex = extracted[skey]; r = ex["rows"][k]
+            if sr["bound_open"] or not bound_in_spec(r["bound_text"], sr["target_raw"]):
+                raise ReportError(f"slew-swing-power:{sources[skey]['record_id']}: record bound "
+                                  f"'{r['bound_text']}' for {sr['name']} is not the current ratified bound "
+                                  f"in {spec_rel} ('{sr['target']}')")
+            row.update(status="measured-verdict", verdict=r["verdict"], points_pass=r["pass"],
+                       points_total=r["total"], worst=r["worst"], worst_corner=r["worst_corner"],
+                       coverage=r["coverage"], limitations=list(r["limitations"]), source=src(skey))
+            row["spec_bound"] = r["bound_text"].replace(">=", "≥").replace("<=", "≤")
+            if r.get("stretch"):
+                row["figures"].append({"label": f"stretch >= {r['stretch'][0]} Vpp (not a mandatory row), points holding",
+                                       "value": r["stretch"][1], "corner": None})
+            if r.get("rederived"):
+                row["figures"].append({"label": "re-derived from the record's committed per-point data (incl. M6/M7 Vds/Vdsat)",
+                                       "value": "all points reproduce", "corner": None})
         elif k == "noise" and "noise" in extracted:
             ex = extracted["noise"]
             top = ex["spread"][0]

@@ -44,3 +44,9 @@ python3 psrr/test_psrr.py
 
 echo "== sim/psrr: smoke test (typical, 27C, 3.30 V, all three excitations, local) =="
 python3 psrr/run_psrr.py --smoke
+
+echo "== sim/slew-swing-power: extraction + source-guard tests (no simulator) =="
+python3 slew-swing-power/test_slew_swing_power.py
+
+echo "== sim/slew-swing-power: smoke test (typical, 27C, 3.30 V, one local point per figure) =="
+python3 slew-swing-power/run_slew_swing_power.py --smoke

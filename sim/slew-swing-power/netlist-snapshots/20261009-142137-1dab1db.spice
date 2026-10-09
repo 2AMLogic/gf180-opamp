@@ -1,0 +1,492 @@
+* netlist snapshot for record 20261009-142137-1dab1db (issue #44)
+* Reproduces the measured design: DUT contents, testbenches, conditions.
+* ---- conditions: klt sim request (power) ----
+* {
+*  "engine": "ngspice",
+*  "models": {
+*   "pdk": "gf180mcuD",
+*   "lib": "libs.tech/ngspice/sm141064.ngspice"
+*  },
+*  "corners": {
+*   "process": [
+*    {
+*     "name": "typical",
+*     "sections": [
+*      "typical",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ff",
+*     "sections": [
+*      "ff",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ss",
+*     "sections": [
+*      "ss",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "fs",
+*     "sections": [
+*      "fs",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "sf",
+*     "sections": [
+*      "sf",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    }
+*   ],
+*   "supply_v": {
+*    "vdd": [
+*     2.97,
+*     3.3,
+*     3.63
+*    ],
+*    "vcm": [
+*     1.485,
+*     1.65,
+*     1.815
+*    ]
+*   },
+*   "temperature_c": [
+*    -40.0,
+*    27.0,
+*    125.0
+*   ]
+*  },
+*  "analysis": {
+*   "kind": "dc",
+*   "args": "Ibias 1e-05 1.1e-05 1u"
+*  },
+*  "measurements": [
+*   {
+*    "name": "ivdd_a",
+*    "spice": ".meas dc ivdd_a FIND i(vdd) AT=1e-05",
+*    "unit": "A"
+*   },
+*   {
+*    "name": "vout_v",
+*    "spice": ".meas dc vout_v FIND v(vout) AT=1e-05",
+*    "unit": "V"
+*   }
+*  ],
+*  "options": {
+*   "timeout_s": 600,
+*   "keep_artifacts": true,
+*   "waveforms": true
+*  },
+*  "batch": {
+*   "runner_version_check": "warn"
+*  }
+* }
+* ---- conditions: klt sim request (slew) ----
+* {
+*  "engine": "ngspice",
+*  "models": {
+*   "pdk": "gf180mcuD",
+*   "lib": "libs.tech/ngspice/sm141064.ngspice"
+*  },
+*  "corners": {
+*   "process": [
+*    {
+*     "name": "typical",
+*     "sections": [
+*      "typical",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ff",
+*     "sections": [
+*      "ff",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ss",
+*     "sections": [
+*      "ss",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "fs",
+*     "sections": [
+*      "fs",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "sf",
+*     "sections": [
+*      "sf",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    }
+*   ],
+*   "supply_v": {
+*    "vdd": [
+*     2.97,
+*     3.3,
+*     3.63
+*    ],
+*    "vcm": [
+*     1.485,
+*     1.65,
+*     1.815
+*    ]
+*   },
+*   "temperature_c": [
+*    -40.0,
+*    27.0,
+*    125.0
+*   ]
+*  },
+*  "analysis": {
+*   "kind": "tran",
+*   "args": "5e-09 5e-06"
+*  },
+*  "measurements": [
+*   {
+*    "name": "vlo_v",
+*    "spice": ".meas tran vlo_v FIND v(vout) AT=9.9e-07",
+*    "unit": "V"
+*   },
+*   {
+*    "name": "vhi_v",
+*    "spice": ".meas tran vhi_v FIND v(vout) AT=2.99e-06",
+*    "unit": "V"
+*   }
+*  ],
+*  "options": {
+*   "timeout_s": 600,
+*   "keep_artifacts": true,
+*   "waveforms": true
+*  },
+*  "batch": {
+*   "runner_version_check": "warn"
+*  }
+* }
+* ---- conditions: klt sim request (swing) ----
+* {
+*  "engine": "ngspice",
+*  "models": {
+*   "pdk": "gf180mcuD",
+*   "lib": "libs.tech/ngspice/sm141064.ngspice"
+*  },
+*  "corners": {
+*   "process": [
+*    {
+*     "name": "typical",
+*     "sections": [
+*      "typical",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ff",
+*     "sections": [
+*      "ff",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ss",
+*     "sections": [
+*      "ss",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "fs",
+*     "sections": [
+*      "fs",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "sf",
+*     "sections": [
+*      "sf",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    }
+*   ],
+*   "supply_v": {
+*    "vdd": [
+*     2.97,
+*     3.3,
+*     3.63
+*    ],
+*    "vcm": [
+*     1.485,
+*     1.65,
+*     1.815
+*    ]
+*   },
+*   "temperature_c": [
+*    -40.0,
+*    27.0,
+*    125.0
+*   ]
+*  },
+*  "analysis": {
+*   "kind": "dc",
+*   "args": "Vin 0 3.63 0.005"
+*  },
+*  "measurements": [
+*   {
+*    "name": "vout_max_v",
+*    "spice": ".meas dc vout_max_v MAX v(vout)",
+*    "unit": "V"
+*   },
+*   {
+*    "name": "vout_min_v",
+*    "spice": ".meas dc vout_min_v MIN v(vout)",
+*    "unit": "V"
+*   }
+*  ],
+*  "options": {
+*   "timeout_s": 600,
+*   "keep_artifacts": true,
+*   "waveforms": true
+*  },
+*  "batch": {
+*   "runner_version_check": "warn"
+*  }
+* }
+
+* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----
+** sch_path: /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-17/design/opamp_two_stage.sch
+.subckt opamp_two_stage vdd vss vinp vinn vout ibias
+
+*.iopin vdd
+*.iopin vss
+*.iopin vinp
+*.iopin vinn
+*.iopin vout
+*.iopin ibias
+XMB1 ibias ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM5 tail ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM1 n1 vinn tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM2 n2 vinp tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM4 n2 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM6 vout n2 vdd vdd pfet_03v3 L=1u W=72u nf=24 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM7 vout ibias vss vss nfet_03v3 L=2u W=36u nf=12 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XCC n2 nz cap_mim_2f0_m4m5_noshield c_width=17.4u c_length=17.4u m=1
+XRZ vout nz vss ppolyf_u_1k r_width=2u r_length=4u m=1
+.ends
+* ---- testbench: sim/slew-swing-power/testbench/tb_power.spice (verbatim) ----
+* tb_power.spice -- quiescent power, DC operating point (issue #44; spec row: quiescent power).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_slew_swing_power.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+*
+* CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`, `.control` or
+* `.end`; klt adds the corner's `.lib` cards, `.temp`, the supply alters
+* and the analysis. Vdd and Vcm are swept together by index (VCM = VDD/2).
+*
+* Unity-gain follower (vinn = vout) with vinp at VCM: the amplifier
+* self-biases at vout = VCM. Ibias = 10 uA drawn from vdd into `ibias`.
+* NO LOAD of any kind on vout (no CL, no resistive load): the supply current
+* is the amplifier's own quiescent current. Ibias is drawn through Vdd, so
+* -i(Vdd) is the TOTAL supply current including the bias reference branch.
+* The driver reads -i(Vdd) at Ibias = 10 uA (a one-step DC sweep of Ibias,
+* the form every klt runner version supports; there is no `.meas op`).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vout vout ibias opamp_two_stage
+
+* ---- klt-generated deck of the nominal point (power) ----
+* | * klt sim -- generated corner deck, do not edit
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice mimcap_typical
+* | .include /var/tmp/eda-job-klt-sim-e1e0b25a9fb4/inputs/netlist.cir
+* | .temp 27.0
+* | .meas dc ivdd_a FIND i(vdd) AT=1e-05
+* | .meas dc vout_v FIND v(vout) AT=1e-05
+* | .control
+* | alter vcm=1.65
+* | alter vdd=3.3
+* | set filetype=ascii
+* | dc Ibias 1e-05 1.1e-05 1u
+* | write /var/tmp/eda-job-klt-sim-e1e0b25a9fb4/outputs/artifacts/typical_vcm1p650_vdd3p300V_27C/waveform.raw
+* | quit
+* | .endc
+* | .end
+
+* ---- testbench: sim/slew-swing-power/testbench/tb_slew.spice (verbatim) ----
+* tb_slew.spice -- unity-gain follower large-signal step (issue #44; spec row: slew rate).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_slew_swing_power.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+*
+* CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`, `.control` or
+* `.end`; klt adds the corner's `.lib` cards, `.temp`, the supply alters
+* and the analysis. Vdd and Vcm are swept together by index (VCM = VDD/2).
+*
+* Unity-gain follower (vinn = vout), CL = 2 pF [DR-1] on vout, no other load.
+* Input = VCM + a +-0.5 V step (1.0 V peak-to-peak, fixed in volts, centred
+* on VCM = VDD/2 so it tracks the supply through the Vcm alter): the step is
+* far above the ~Itail/gm slewing onset, so the edges are slew-limited.
+* Series construction (Vcm in series with Vstep) keeps the swept quantity a
+* plain DC source, which every klt runner version alters correctly.
+*
+*   t = 0 .. 1 us   input low   (VCM - 0.5 V), output settles
+*   t = 1 us        rising edge  (1 ns)
+*   t = 3 us        falling edge (1 ns)
+*   t = 5 us        end of run (output settled low->high->low)
+*
+* Pulse width 2 us / run 5 us leave >= 2 us after each edge, several tens of
+* closed-loop time constants (GBW >= 10 MHz => tau <= ~16 ns).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+Vdd vdd 0 dc 3.3
+Vcm vcm 0 dc 1.65
+Vstep vinp vcm dc 0 pulse(-0.5 0.5 1u 1n 1n 2u 100u)
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vout vout ibias opamp_two_stage
+CL vout 0 2p
+
+* Only the two nodes the driver reads are saved: a `save all` transient of the
+* full amplifier is ~3.5 MB of ASCII rawfile per point, which the batch fleet
+* converts/returns for all 45 points (see README, "Batch-fleet timing").
+.save v(vinp) v(vout)
+
+* ---- klt-generated deck of the nominal point (slew) ----
+* | * klt sim -- generated corner deck, do not edit
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice mimcap_typical
+* | .include /var/tmp/eda-job-klt-sim-e25ca1c133e3/inputs/netlist.cir
+* | .temp 27.0
+* | .meas tran vlo_v FIND v(vout) AT=9.9e-07
+* | .meas tran vhi_v FIND v(vout) AT=2.99e-06
+* | .control
+* | alter vcm=1.65
+* | alter vdd=3.3
+* | set filetype=ascii
+* | tran 5e-09 5e-06
+* | write /var/tmp/eda-job-klt-sim-e25ca1c133e3/outputs/artifacts/typical_vcm1p650_vdd3p300V_27C/waveform.raw
+* | quit
+* | .endc
+* | .end
+
+* ---- testbench: sim/slew-swing-power/testbench/tb_swing.spice (verbatim) ----
+* tb_swing.spice -- inverting-unity-gain DC transfer sweep (issue #44; spec row: output swing).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_slew_swing_power.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+*
+* CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`, `.control` or
+* `.end`; klt adds the corner's `.lib` cards, `.temp`, the supply alters
+* and the analysis. Vdd and Vcm are swept together by index (VCM = VDD/2).
+*
+* Inverting unity-gain configuration: vinp is held at VCM = VDD/2 and the
+* signal is applied through Rg to vinn with Rf from vout back to vinn
+* (Rf = Rg, ideal closed-loop gain -1). The input common mode therefore
+* stays put at VCM for the whole sweep, so the input-pair / mirror
+* (input-common-mode) limits of a follower do not clip the result: what
+* limits the output is the output stage and the first-stage output headroom
+* feeding it -- the quantity DR-2 section (b) describes. (A follower would
+* cap the swing at its input common-mode range instead.)
+*
+* The driver sweeps `Vin` (0 .. 3.63 V in 5 mV steps, a FIXED range that
+* covers every grid supply; ideal vout = 2*VCM - vin = VDD - vin) and
+* extracts the output levels at which the incremental closed-loop gain
+* |dvout/dvin| has fallen to 1/sqrt(2) (-3 dB) of its mid-range value, on
+* each side of VCM. Rf = Rg = 1 Mohm: the feedback network pulls <= ~1 uA
+* from the output at the rails (vs ~80 uA quiescent), and no capacitor is
+* needed for a DC sweep. No CL.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65
+Vin vin 0 dc 1.65
+Rg vin vinn 1Meg
+Rf vout vinn 1Meg
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vinn vout ibias opamp_two_stage
+
+* Output-stage device quantities for the saturation criterion (README, "Output
+* swing"): the output devices are M6 (PMOS common source) and M7 (NMOS current
+* sink). Saved into the rawfile so the driver can find where either leaves
+* saturation (|Vds| < |Vdsat|); `save all` alone does not keep device internals.
+.save v(vin) v(vout) @m.xdut.xm6.m0[vds] @m.xdut.xm6.m0[vdsat] @m.xdut.xm7.m0[vds] @m.xdut.xm7.m0[vdsat]
+
+* ---- klt-generated deck of the nominal point (swing) ----
+* | * klt sim -- generated corner deck, do not edit
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice mimcap_typical
+* | .include /var/tmp/eda-job-klt-sim-26d68126ed4b/inputs/netlist.cir
+* | .temp 27.0
+* | .meas dc vout_max_v MAX v(vout)
+* | .meas dc vout_min_v MIN v(vout)
+* | .control
+* | alter vcm=1.65
+* | alter vdd=3.3
+* | set filetype=ascii
+* | dc Vin 0 3.63 0.005
+* | write /var/tmp/eda-job-klt-sim-26d68126ed4b/outputs/artifacts/typical_vcm1p650_vdd3p300V_27C/waveform.raw
+* | quit
+* | .endc
+* | .end

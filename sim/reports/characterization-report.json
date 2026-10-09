@@ -5,8 +5,8 @@
     "normalised_sha256_prefix": "81fbd914f8254a49"
   },
   "limitations": [
-    "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), gain-gbw-pm (recorded), noise (recorded), offset-mc (recorded), psrr (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
-    "ngspice versions differ: ngspice 42 <- gain-gbw-pm (local), noise (local), offset-mc (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (klt engine), psrr (local), psrr (klt engine)",
+    "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), gain-gbw-pm (recorded), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (20261009-142137-1dab1db) (recorded), slew-swing-power (20261009-143715-4d5aa43) (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
+    "ngspice versions differ: ngspice 42 <- gain-gbw-pm (local), noise (local), offset-mc (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (klt engine), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)",
     "coverage differs between sources (see each row's coverage; e.g. the offset Monte Carlo is 5 corner points at nominal T/VDD while the AC rows are full 45-point grids)"
   ],
   "manifest_selection": {
@@ -14,7 +14,12 @@
     "gain-gbw-pm": "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md",
     "noise": "sim/noise/records/20261009-082007-68b4567.md",
     "offset-mc": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
-    "psrr": "sim/psrr/records/20261009-105929-30ec86d.md"
+    "psrr": "sim/psrr/records/20261009-105929-30ec86d.md",
+    "slew-swing-power": {
+      "power": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
+      "slew": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
+      "swing": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md"
+    }
   },
   "rows": [
     {
@@ -157,22 +162,46 @@
     },
     {
       "bound_open": false,
-      "coverage": null,
+      "coverage": {
+        "corners": [
+          "typical",
+          "ff",
+          "ss",
+          "fs",
+          "sf"
+        ],
+        "points": 45,
+        "temps_c": [
+          -40,
+          27,
+          125
+        ],
+        "vdd_v": [
+          "2.97",
+          "3.30",
+          "3.63"
+        ]
+      },
       "figures": [],
       "key": "slew",
       "limitations": [
-        "no committed record in sim/ for this row"
+        "passives at typical only: RZ/CC passive corners are not swept",
+        "fleet runner klt version differs from the client's (compatibility mismatch)"
       ],
-      "points_pass": null,
-      "points_total": null,
+      "points_pass": 45,
+      "points_total": 45,
       "row": "Slew rate",
-      "source": null,
-      "spec_bound": "≥ 10 V/µs [DR-3]",
-      "spec_status": "Ratified [DR-3] as target — not met",
-      "status": "not-measured",
-      "verdict": null,
-      "worst": null,
-      "worst_corner": null
+      "source": {
+        "experiment": "slew-swing-power",
+        "path": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
+        "record_id": "20261009-142137-1dab1db",
+        "sha256": "bab53389699eb212e5b7b8c15b292539db6d6659cef3833ec0ebbc430aa3c286"
+      },
+      "spec_bound": "≥ 10 V/us",
+      "status": "measured-verdict",
+      "verdict": "PASS",
+      "worst": "14.51 V/us",
+      "worst_corner": "ss / 125 C / 2.97 V"
     },
     {
       "bound_open": true,
@@ -508,41 +537,100 @@
     },
     {
       "bound_open": false,
-      "coverage": null,
-      "figures": [],
+      "coverage": {
+        "corners": [
+          "typical",
+          "ff",
+          "ss",
+          "fs",
+          "sf"
+        ],
+        "points": 45,
+        "temps_c": [
+          -40,
+          27,
+          125
+        ],
+        "vdd_v": [
+          "2.97",
+          "3.30",
+          "3.63"
+        ]
+      },
+      "figures": [
+        {
+          "corner": null,
+          "label": "stretch >= 2.6 Vpp (not a mandatory row), points holding",
+          "value": "35/45"
+        },
+        {
+          "corner": null,
+          "label": "re-derived from the record's committed per-point data (incl. M6/M7 Vds/Vdsat)",
+          "value": "all points reproduce"
+        }
+      ],
       "key": "swing",
       "limitations": [
-        "no committed record in sim/ for this row"
+        "passives at typical only: RZ/CC passive corners are not swept",
+        "fleet runner klt version differs from the client's (compatibility mismatch)"
       ],
-      "points_pass": null,
-      "points_total": null,
+      "points_pass": 45,
+      "points_total": 45,
       "row": "Output swing",
-      "source": null,
-      "spec_bound": "≥ 2.3 Vpp (≈78% of VDD,min) [DR-2]",
-      "spec_status": "Ratified [DR-3] as target — not met (see DR-3 §(b))",
-      "status": "not-measured",
-      "verdict": null,
-      "worst": null,
-      "worst_corner": null
+      "source": {
+        "experiment": "slew-swing-power",
+        "path": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md",
+        "record_id": "20261009-143715-4d5aa43",
+        "sha256": "badbc0401e0dc014e6eb7a93ba5f086d5714dd57993f11239972793c7e5f741d"
+      },
+      "spec_bound": "≥ 2.3 Vpp",
+      "status": "measured-verdict",
+      "verdict": "PASS",
+      "worst": "2.46 Vpp",
+      "worst_corner": "ss / 125 C / 2.97 V"
     },
     {
       "bound_open": false,
-      "coverage": null,
+      "coverage": {
+        "corners": [
+          "typical",
+          "ff",
+          "ss",
+          "fs",
+          "sf"
+        ],
+        "points": 45,
+        "temps_c": [
+          -40,
+          27,
+          125
+        ],
+        "vdd_v": [
+          "2.97",
+          "3.30",
+          "3.63"
+        ]
+      },
       "figures": [],
       "key": "power",
       "limitations": [
-        "no committed record in sim/ for this row"
+        "passives at typical only: RZ/CC passive corners are not swept",
+        "fleet runner klt version differs from the client's (compatibility mismatch)"
       ],
-      "points_pass": null,
-      "points_total": null,
+      "points_pass": 45,
+      "points_total": 45,
       "row": "Quiescent power",
-      "source": null,
-      "spec_bound": "≤ 350 µW worst-case corner [DR-3]",
-      "spec_status": "Ratified [DR-3] as target — not met",
-      "status": "not-measured",
-      "verdict": null,
-      "worst": null,
-      "worst_corner": null
+      "source": {
+        "experiment": "slew-swing-power",
+        "path": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
+        "record_id": "20261009-142137-1dab1db",
+        "sha256": "bab53389699eb212e5b7b8c15b292539db6d6659cef3833ec0ebbc430aa3c286"
+      },
+      "spec_bound": "≤ 350 uW",
+      "status": "measured-verdict",
+      "verdict": "PASS",
+      "worst": "310.98 uW",
+      "worst_corner": "ff / -40 C / 3.63 V"
     },
     {
       "bound_open": true,
@@ -648,6 +736,32 @@
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
       "record_id": "20261009-105929-30ec86d",
       "sha256": "5e97c2ff265200f6c36afcdfaa008a2cd6e241ee158cbbd682baf19458333f0c"
+    },
+    "slew-swing-power (20261009-142137-1dab1db)": {
+      "backend": "aws-batch-fleet",
+      "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
+      "fleet_runner_mismatch": true,
+      "klt_client": "0.7.0+g4cbdfa769875",
+      "ngspice_engine": "46",
+      "ngspice_local": "42",
+      "path": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
+      "pdk_client_resolved": null,
+      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "record_id": "20261009-142137-1dab1db",
+      "sha256": "bab53389699eb212e5b7b8c15b292539db6d6659cef3833ec0ebbc430aa3c286"
+    },
+    "slew-swing-power (20261009-143715-4d5aa43)": {
+      "backend": "aws-batch-fleet",
+      "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
+      "fleet_runner_mismatch": true,
+      "klt_client": "0.7.0+g4cbdfa769875",
+      "ngspice_engine": "46",
+      "ngspice_local": "42",
+      "path": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md",
+      "pdk_client_resolved": null,
+      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "record_id": "20261009-143715-4d5aa43",
+      "sha256": "badbc0401e0dc014e6eb7a93ba5f086d5714dd57993f11239972793c7e5f741d"
     }
   },
   "spec": {
@@ -657,9 +771,9 @@
   "summary": {
     "fail": 1,
     "measured_no_bound": 4,
-    "not_measured": 5,
-    "pass": 2,
-    "ratified_rows_judged": 3
+    "not_measured": 2,
+    "pass": 5,
+    "ratified_rows_judged": 6
   },
   "title": "gf180-opamp characterization report (generated; not evidence)",
   "warnings": []
