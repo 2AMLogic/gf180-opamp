@@ -160,6 +160,25 @@ class CommittedReport(unittest.TestCase):
         for k in ("slew", "swing", "power"):
             self.assertEqual(r[k]["status"], "measured-verdict", k)
 
+    def test_proposed_row_is_not_graded(self):
+        # DR-5's ICMR row is a proposal: never a verdict, never "no record", never counted as judged
+        rep = cr.build(REPO, cr.load_manifest(MANIFEST))
+        r = rows_by_key(rep)["input-common-mode-range"]
+        self.assertEqual(r["status"], "proposed-not-graded")
+        self.assertIsNone(r["verdict"])
+        self.assertIsNone(r["source"])
+        self.assertIn("20261009-222613-871d1a6", r["spec_status"])
+        s = rep["summary"]
+        self.assertEqual(s["proposed_not_graded"], 1)
+        self.assertEqual(s["ratified_rows_judged"], sum(1 for x in rep["rows"] if x["verdict"]))
+        self.assertEqual(s["not_measured"], sum(1 for x in rep["rows"] if x["status"] == "not-measured"))
+        md = cr.render_md(rep)
+        line = next(l for l in md.splitlines() if l.startswith("| Input common-mode range |"))
+        self.assertIn("proposed, not ratified", line)
+        self.assertNotIn("no record", line)
+        self.assertNotIn("not-measured", line)
+        self.assertIn("1 proposed, not ratified (not graded)", md)
+
     def test_coverage_differs_and_is_reported(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
         r = rows_by_key(rep)
@@ -235,7 +254,8 @@ class Mutations(unittest.TestCase):
 
     def test_empty_selection_still_lists_every_row(self):
         rep = self.build({"experiments": {}})
-        self.assertTrue(all(r["status"] == "not-measured" for r in rep["rows"]))
+        self.assertTrue(all(r["status"] == "not-measured" for r in rep["rows"] if r["key"] != "input-common-mode-range"))
+        self.assertEqual(rows_by_key(rep)["input-common-mode-range"]["status"], "proposed-not-graded")
         self.assertEqual(len(rep["rows"]), len(cr.parse_spec(self.root / "spec/target-spec.md")) + 1)
 
     def test_superseded_gain_record_rejected(self):
@@ -359,6 +379,13 @@ class Mutations(unittest.TestCase):
         self.edit(f"{SSP}{SWING_REC}.md", "| **PASS** | 45/45 | 2.46 Vpp", "| **PASS** | 44/45 | 2.46 Vpp")
         with self.assertRaisesRegex(cr.ReportError, "disagrees with its own per-point table"):
             self.build()
+
+    def test_proposed_classification_follows_the_in_row_tag(self):
+        # without the in-row "proposed, not ratified" tag the row is an ordinary unmeasured row
+        self.edit("spec/target-spec.md", "[DR-5] — proposed, not ratified**", "[DR-5]**")
+        r = rows_by_key(self.build())["input-common-mode-range"]
+        self.assertEqual(r["status"], "not-measured")
+        self.assertEqual(self.build()["summary"]["proposed_not_graded"], 0)
 
     def test_ssp_bound_must_match_spec(self):
         self.edit("spec/target-spec.md", "**≤ 350 µW worst-case corner", "**≤ 340 µW worst-case corner")

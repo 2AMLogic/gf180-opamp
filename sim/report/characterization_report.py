@@ -12,6 +12,12 @@ Status vocabulary (per spec row):
   measured-verdict    a ratified bound exists AND a record judged it
   measured-no-bound   a record exists but the row's bound is open (no verdict)
   not-measured        no committed record ("no record")
+  proposed-not-graded the row's bound is tagged in-row as proposed by a decision
+                      record and not ratified ("proposed, not ratified"); the
+                      report grades ratified rows only, so it issues no verdict
+                      and counts the row neither as judged nor as not measured
+                      (the spec's own status text, which cites any record, is
+                      reproduced verbatim)
 
 Existing records are Markdown only (no structured sidecars), so this module
 carries a narrow, tested extraction of the verdict / worst-case lines and
@@ -484,6 +490,11 @@ def split_cells(line: str) -> list:
     return cells
 
 
+#: In-row tag of a decision-record proposal that is not yet ratified (e.g. the
+#: "[DR-5] — proposed, not ratified" input common-mode range row).
+PROPOSED_RX = re.compile(r"\bproposed,? not ratified\b", re.I)
+
+
 def parse_spec(spec_path: Path) -> list:
     try:
         text = spec_path.read_text()
@@ -501,7 +512,8 @@ def parse_spec(spec_path: Path) -> list:
         key = next((k for pfx, k in SPEC_KEYS if name.startswith(pfx)), None)
         rows.append({"name": name, "key": key or re.sub(r"\W+", "-", name.lower()),
                      "target_raw": c[1], "target": clean_md(c[1]).split(" — ")[0],
-                     "bound_open": "[TBD]" in c[1], "status": clean_md(c[5])})
+                     "bound_open": "[TBD]" in c[1], "status": clean_md(c[5]),
+                     "proposed": bool(PROPOSED_RX.search(clean_md(c[1])))})
     if not rows:
         raise ReportError(f"{spec_path}: no Sec. 2 performance-target table found")
     return rows
@@ -688,6 +700,13 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md") -> 
                 for t in ex["figures"][side]:
                     row["figures"].append({"label": f"{side} {t['figure']}, lowest", "value": f"{t['worst_db']} dB",
                                            "corner": t["worst_corner"]})
+        elif sr["proposed"]:
+            row.update(status="proposed-not-graded")
+            row["limitations"] = ["bound proposed by a decision record and not ratified: this report grades "
+                                  "ratified rows only, so the row is not graded and is counted neither among "
+                                  "the ratified rows judged nor as not measured; see the spec status column "
+                                  "for the evidence it cites"]
+            row["spec_status"] = sr["status"]
         else:
             row["limitations"] = ["no committed record in sim/ for this row"]
             row["spec_status"] = sr["status"]
@@ -712,7 +731,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md") -> 
         "summary": {"ratified_rows_judged": len(verdicts), "pass": verdicts.count("PASS"),
                     "fail": verdicts.count("FAIL"),
                     "not_measured": sum(1 for r in out_rows if r["status"] == "not-measured"),
-                    "measured_no_bound": sum(1 for r in out_rows if r["status"] == "measured-no-bound")},
+                    "measured_no_bound": sum(1 for r in out_rows if r["status"] == "measured-no-bound"),
+                    "proposed_not_graded": sum(1 for r in out_rows if r["status"] == "proposed-not-graded")},
         "rows": out_rows,
         "sources": {e: {k: v for k, v in s.items() if k != "dut_prefix"} for e, s in sorted(sources.items())},
         "limitations": glob_lim,
@@ -743,7 +763,8 @@ def render_md(rep: dict) -> str:
     a(f"- **Spec**: `{rep['spec']['path']}` (sha256 `{rep['spec']['sha256']}`)")
     s = rep["summary"]
     a(f"- **Ratified rows judged**: {s['ratified_rows_judged']} ({s['pass']} PASS, {s['fail']} FAIL); "
-      f"{s['measured_no_bound']} measured with the bound open (no verdict); {s['not_measured']} not measured")
+      f"{s['measured_no_bound']} measured with the bound open (no verdict); {s['not_measured']} not measured"
+      + (f"; {s['proposed_not_graded']} proposed, not ratified (not graded)" if s["proposed_not_graded"] else ""))
     a("")
     a("## Spec rows (spec/target-spec.md Sec. 2)")
     a("")
@@ -757,6 +778,9 @@ def render_md(rep: dict) -> str:
         if r["bound_open"]:
             bound = "open (no ratified bound)" if r["key"] != "post-layout" else r["spec_bound"]
         sc = f"[`{r['source']['record_id']}`]({link_from_reports(r['source']['path'])})" if r["source"] else "no record"
+        if r["status"] == "proposed-not-graded":
+            bound = f"proposed, not ratified: {r['spec_bound']}"
+            sc = "not graded (see spec status)"
         a(f"| {r['row']} | {bound} | {r['status']} | {verdict} | {pts} | {r['worst'] or '-'} | "
           f"{r['worst_corner'] or '-'} | {sc} |")
     a("")

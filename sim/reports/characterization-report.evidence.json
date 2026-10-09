@@ -3,7 +3,7 @@
   "kind": "generic",
   "provenance": {
     "input": {
-      "content_hash": "sha256:4b122d95d5d02a4f814fd24ab2673ca026ef32b93d3600b2c461ca51be1a84e7",
+      "content_hash": "sha256:f5f326593fe552fc9d190ec416e4c09237e720f005afe58f98c3884fd1042046",
       "path": "sim/reports/characterization-report.json"
     }
   },
@@ -16,6 +16,7 @@
     "measured_no_bound": 4,
     "not_measured": 2,
     "pass": 5,
+    "proposed_not_graded": 1,
     "ratified_rows_judged": 6
   },
   "schema_version": 1,
