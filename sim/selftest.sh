@@ -16,3 +16,9 @@ python3 gain-gbw-pm/test_gain_gbw_pm.py
 
 echo "== sim/gain-gbw-pm: smoke test (typical, 27C, 3.30 V, one local point) =="
 python3 gain-gbw-pm/run_gain_gbw_pm.py --smoke
+
+echo "== sim/slew-swing-power: extraction + source-guard tests (no simulator) =="
+python3 slew-swing-power/test_slew_swing_power.py
+
+echo "== sim/slew-swing-power: smoke test (typical, 27C, 3.30 V, one local point per figure) =="
+python3 slew-swing-power/run_slew_swing_power.py --smoke

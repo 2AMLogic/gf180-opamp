@@ -66,3 +66,11 @@ future tightening proposal must clear before a deck may add one.
   feedback-isolation study and deterministic negative controls. The repo's
   first circuit-level spec-row evidence (issues #19, #38; tracker #7
   items 5 and 9).
+- [`slew-swing-power/`](slew-swing-power/README.md) — slew rate (unity-gain
+  follower, CL = 2 pF, slower of rise/fall, 20–80 % slope), output swing
+  (inverting unity gain; first of −3 dB gain collapse or M6/M7 leaving
+  saturation, per DR-2 §(b)) and quiescent power (total supply power, no load)
+  of the **committed sized schematic** across the same 45-point grid, each as
+  one `klt sim` request, with a verdict and binding corner per figure against
+  the ratified bounds (≥ 10 V/µs, ≥ 2.3 Vpp, ≤ 350 µW) (issue #44; tracker #7
+  item 5).

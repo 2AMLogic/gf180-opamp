@@ -7,9 +7,10 @@
 # and each experiment's own README for the cold-start prerequisites (ngspice,
 # the pinned gf180mcu PDK revision, numpy/matplotlib).
 #
-# Currently runs one experiment (sim/gain-gbw-pm/: open-loop gain / GBW /
+# Currently runs two experiments (sim/gain-gbw-pm/: open-loop gain / GBW /
 # phase margin of the committed sized schematic over the full 45-point PVT
-# grid, issues #19 and #38); sim/gm-id-characterization/ predates this script
+# grid, issues #19 and #38; sim/slew-swing-power/: slew rate, output swing and
+# quiescent power over the same grid, issue #44); sim/gm-id-characterization/ predates this script
 # and is still run directly (`python3 sim/gm-id-characterization/run_gmid.py`)
 # per its own README, since this script's job is the *one-command driver*
 # acceptance criterion for the newly-added spec-row testbenches, not a
@@ -31,3 +32,6 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 
 echo "== sim/gain-gbw-pm: full 45-point PVT grid (5 MOS corners x 3 T x 3 VDD) =="
 python3 gain-gbw-pm/run_gain_gbw_pm.py "$@"
+
+echo "== sim/slew-swing-power: slew / swing / quiescent power, full 45-point PVT grid x 3 figures =="
+python3 slew-swing-power/run_slew_swing_power.py "$@"

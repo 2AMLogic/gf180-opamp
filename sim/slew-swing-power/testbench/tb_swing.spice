@@ -1,0 +1,47 @@
+* tb_swing.spice -- inverting-unity-gain DC transfer sweep (issue #44; spec row: output swing).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_slew_swing_power.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+*
+* CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`, `.control` or
+* `.end`; klt adds the corner's `.lib` cards, `.temp`, the supply alters
+* and the analysis. Vdd and Vcm are swept together by index (VCM = VDD/2).
+*
+* Inverting unity-gain configuration: vinp is held at VCM = VDD/2 and the
+* signal is applied through Rg to vinn with Rf from vout back to vinn
+* (Rf = Rg, ideal closed-loop gain -1). The input common mode therefore
+* stays put at VCM for the whole sweep, so the input-pair / mirror
+* (input-common-mode) limits of a follower do not clip the result: what
+* limits the output is the output stage and the first-stage output headroom
+* feeding it -- the quantity DR-2 section (b) describes. (A follower would
+* cap the swing at its input common-mode range instead.)
+*
+* The driver sweeps `Vin` (0 .. 3.63 V in 5 mV steps, a FIXED range that
+* covers every grid supply; ideal vout = 2*VCM - vin = VDD - vin) and
+* extracts the output levels at which the incremental closed-loop gain
+* |dvout/dvin| has fallen to 1/sqrt(2) (-3 dB) of its mid-range value, on
+* each side of VCM. Rf = Rg = 1 Mohm: the feedback network pulls <= ~1 uA
+* from the output at the rails (vs ~80 uA quiescent), and no capacitor is
+* needed for a DC sweep. No CL.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65
+Vin vin 0 dc 1.65
+Rg vin vinn 1Meg
+Rf vout vinn 1Meg
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vinn vout ibias opamp_two_stage
+
+* Output-stage device quantities for the saturation criterion (README, "Output
+* swing"): the output devices are M6 (PMOS common source) and M7 (NMOS current
+* sink). Saved into the rawfile so the driver can find where either leaves
+* saturation (|Vds| < |Vdsat|); `save all` alone does not keep device internals.
+.save v(vin) v(vout) @m.xdut.xm6.m0[vds] @m.xdut.xm6.m0[vdsat] @m.xdut.xm7.m0[vds] @m.xdut.xm7.m0[vdsat]

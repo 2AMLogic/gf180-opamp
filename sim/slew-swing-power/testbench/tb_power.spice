@@ -1,0 +1,29 @@
+* tb_power.spice -- quiescent power, DC operating point (issue #44; spec row: quiescent power).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_slew_swing_power.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+*
+* CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`, `.control` or
+* `.end`; klt adds the corner's `.lib` cards, `.temp`, the supply alters
+* and the analysis. Vdd and Vcm are swept together by index (VCM = VDD/2).
+*
+* Unity-gain follower (vinn = vout) with vinp at VCM: the amplifier
+* self-biases at vout = VCM. Ibias = 10 uA drawn from vdd into `ibias`.
+* NO LOAD of any kind on vout (no CL, no resistive load): the supply current
+* is the amplifier's own quiescent current. Ibias is drawn through Vdd, so
+* -i(Vdd) is the TOTAL supply current including the bias reference branch.
+* The driver reads -i(Vdd) at Ibias = 10 uA (a one-step DC sweep of Ibias,
+* the form every klt runner version supports; there is no `.meas op`).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vout vout ibias opamp_two_stage
