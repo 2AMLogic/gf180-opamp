@@ -99,7 +99,10 @@ a simulator or touches the network, and its output is byte-identical for
 identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 
 - Selection is explicit: `report/selection.json` lists one record per
-  experiment. A record that a sibling record `**Supersedes**` is rejected
+  experiment. `slew-swing-power` may instead name a record per row
+  (`{"power": ..., "slew": ..., "swing": ...}`), because a record of it can
+  judge a subset of its three rows (`--figures`); a record selected for a row
+  it did not judge is an error. A record that a sibling record `**Supersedes**` is rejected
   (opt in knowingly with `allow_superseded`); records measuring different DUT
   versions (compared on the 16-hex normalised-netlist prefix) are rejected
   with exit 2.
@@ -114,7 +117,8 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 - Regenerate: `python3 sim/report/characterization_report.py` (after editing
   `selection.json`); verify the committed copy: `... --check` (exit 1 if
   stale). `characterize.sh` ends with `--latest --update-manifest`, selecting
-  the newest record of each experiment; `selftest.sh` runs
+  the newest record of each experiment (for `slew-swing-power`, the newest
+  record that judged each row); `selftest.sh` runs
   `report/test_report.py` and `--check`.
 
 ## Experiments
@@ -181,11 +185,16 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 ## Coverage and gaps
 
 As of the records selected in `report/selection.json`, benches exist for gain,
-GBW, phase margin, noise, offset (mismatch Monte Carlo), CMRR and PSRR. Common
+GBW, phase margin, slew rate, output swing, quiescent power, noise, offset
+(mismatch Monte Carlo), CMRR and PSRR. Slew rate (worst 14.51 V/us), output
+swing (worst 2.465 Vpp) and quiescent power (worst 310.98 uW) pass their
+ratified bounds at 45/45 points; the slew and power binding corners
+(ss / 125 C / 2.97 V and ff / -40 C / 3.63 V) differ in temperature from the
+spec's predicted SS / -40 C / low VDD and FF / 125 C / 3.63 V (see
+`slew-swing-power/README.md`). Common
 limitations: passives (RZ/CC) are at typical only; offset covers five process
 corners x 300 samples at 27 C / 3.30 V only (no temperature or supply axis);
 CMRR and PSRR are systematic-only (matched devices). Noise, offset, CMRR and
 PSRR are measured without a verdict because their numeric bounds are not
-ratified. No bench is committed yet for slew rate, output swing or quiescent
-power, and there is no layout or post-layout evidence. The 5 V stretch row is
+ratified. There is no layout or post-layout evidence. The 5 V stretch row is
 not opened. These records are schematic-level evidence below the T1 tier.

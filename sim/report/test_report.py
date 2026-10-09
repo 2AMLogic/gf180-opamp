@@ -23,6 +23,9 @@ import characterization_report as cr  # noqa: E402
 
 REPO = HERE.parent.parent
 MANIFEST = HERE / "selection.json"
+FULL_SSP_REC = "20261009-142137-1dab1db"  # power + slew + swing (swing data vin/vout only)
+SWING_REC = "20261009-143715-4d5aa43"  # swing only, with the M6/M7 saturation vectors
+SSP = "sim/slew-swing-power/records/"
 
 
 def make_root(tmp: Path) -> Path:
@@ -81,6 +84,26 @@ class CommittedReport(unittest.TestCase):
         self.assertEqual(rep["dut"]["normalised_sha256_prefix"], "81fbd914f8254a49")
         self.assertEqual(rep["sources"]["gain-gbw-pm"]["record_id"], "20261009-055759-2524b3e")
 
+    def test_slew_swing_power_rows(self):
+        rep = cr.build(REPO, cr.load_manifest(MANIFEST))
+        r = rows_by_key(rep)
+        self.assertEqual((r["slew"]["verdict"], r["slew"]["points_pass"], r["slew"]["worst"], r["slew"]["worst_corner"]),
+                         ("PASS", 45, "14.51 V/us", "ss / 125 C / 2.97 V"))
+        self.assertEqual((r["power"]["verdict"], r["power"]["worst"], r["power"]["worst_corner"]),
+                         ("PASS", "310.98 uW", "ff / -40 C / 3.63 V"))
+        self.assertEqual(r["power"]["spec_bound"], "≤ 350 uW")
+        self.assertEqual((r["swing"]["verdict"], r["swing"]["worst"], r["swing"]["worst_corner"]),
+                         ("PASS", "2.46 Vpp", "ss / 125 C / 2.97 V"))
+        # swing comes from the record whose committed data re-derives it; slew/power from the full run
+        self.assertEqual(r["swing"]["source"]["record_id"], SWING_REC)
+        self.assertEqual(r["slew"]["source"]["record_id"], FULL_SSP_REC)
+        self.assertEqual(r["swing"]["source"]["experiment"], "slew-swing-power")
+        labels = [f["label"] for f in r["swing"]["figures"]]
+        self.assertTrue(any("re-derived" in l for l in labels), labels)
+        self.assertIn({"label": "stretch >= 2.6 Vpp (not a mandatory row), points holding", "value": "35/45",
+                       "corner": None}, r["swing"]["figures"])
+        self.assertFalse(any("cannot be re-derived" in l for l in r["swing"]["limitations"]))
+
     def test_unratified_rows_have_no_verdict(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
         r = rows_by_key(rep)
@@ -104,10 +127,11 @@ class CommittedReport(unittest.TestCase):
         for k in ("gain", "gbw", "pm", "slew", "noise", "offset", "cmrr", "psrr", "swing", "power", "area", "post-layout"):
             self.assertIn(k, keys)
         r = rows_by_key(rep)
-        for k in ("slew", "swing", "power", "area", "post-layout"):
+        for k in ("area", "post-layout"):
             self.assertEqual(r[k]["status"], "not-measured", k)
             self.assertIsNone(r[k]["verdict"], k)
-        self.assertEqual(r["slew"]["spec_bound"], "≥ 10 V/µs [DR-3]")
+        for k in ("slew", "swing", "power"):
+            self.assertEqual(r[k]["status"], "measured-verdict", k)
 
     def test_coverage_differs_and_is_reported(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
@@ -115,7 +139,7 @@ class CommittedReport(unittest.TestCase):
         self.assertEqual(r["offset"]["coverage"]["points"], 5)
         self.assertEqual(r["offset"]["coverage"]["mc_samples_per_corner"], 300)
         self.assertEqual(r["offset"]["coverage"]["temps_c"], [27])
-        for k in ("gain", "noise", "cmrr", "psrr"):
+        for k in ("gain", "noise", "cmrr", "psrr", "slew", "swing", "power"):
             self.assertEqual(r[k]["coverage"]["points"], 45, k)
         self.assertTrue(any("coverage differs" in l for l in rep["limitations"]))
         self.assertTrue(any("PDK revision differs" in l for l in rep["limitations"]))
@@ -245,6 +269,57 @@ class Mutations(unittest.TestCase):
         self.assertEqual(first, [(self.root / "o" / f"{cr.OUT_NAME}{e}").read_bytes() for e in (".md", ".json")])
         (self.root / "o" / f"{cr.OUT_NAME}.md").write_text("stale\n")
         self.assertEqual(cr.main(args + ["--check"]), 1)
+
+    def test_ssp_single_record_for_all_rows(self):
+        # the full run alone: all three rows from it, and its swing is flagged as not re-derivable
+        rep = self.build(manifest(slew_swing_power=f"{SSP}{FULL_SSP_REC}.md"))
+        r = rows_by_key(rep)
+        self.assertEqual({r[k]["source"]["record_id"] for k in ("slew", "swing", "power")}, {FULL_SSP_REC})
+        self.assertTrue(any("cannot be re-derived" in l for l in r["swing"]["limitations"]))
+        self.assertIn("slew-swing-power", rep["sources"])
+
+    def test_ssp_row_from_a_record_that_did_not_judge_it(self):
+        m = manifest(slew_swing_power={"power": f"{SSP}{SWING_REC}.md", "swing": f"{SSP}{SWING_REC}.md"})
+        with self.assertRaisesRegex(cr.ReportError, "does not judge that row"):
+            self.build(m)
+
+    def test_ssp_unselected_row_is_not_measured(self):
+        rep = self.build(manifest(slew_swing_power={"swing": f"{SSP}{SWING_REC}.md"}))
+        r = rows_by_key(rep)
+        self.assertEqual(r["swing"]["verdict"], "PASS")
+        self.assertEqual((r["slew"]["status"], r["power"]["status"]), ("not-measured", "not-measured"))
+
+    def test_ssp_manifest_shape(self):
+        mp = self.root / "m.json"
+        for bad, msg in (({"gain-gbw-pm": {"gain": "x"}}, "not a per-row object"),
+                         ({"slew-swing-power": {"noise": "x"}}, "unknown row"),
+                         ({"slew-swing-power": ["x"]}, "expected a record path")):
+            mp.write_text(json.dumps({"experiments": bad}))
+            with self.assertRaisesRegex(cr.ReportError, msg):
+                cr.load_manifest(mp)
+
+    def test_ssp_verdict_table_must_agree_with_point_table(self):
+        self.edit(f"{SSP}{FULL_SSP_REC}.md", "| **PASS** | 45/45 | 310.98 uW", "| **PASS** | 45/45 | 300.00 uW")
+        with self.assertRaisesRegex(cr.ReportError, "disagrees with its own per-point table"):
+            self.build()
+
+    def test_ssp_failed_point_is_counted(self):
+        self.edit(f"{SSP}{SWING_REC}.md", "| **PASS** | 45/45 | 2.46 Vpp", "| **PASS** | 44/45 | 2.46 Vpp")
+        with self.assertRaisesRegex(cr.ReportError, "disagrees with its own per-point table"):
+            self.build()
+
+    def test_ssp_bound_must_match_spec(self):
+        self.edit("spec/target-spec.md", "**≤ 350 µW worst-case corner", "**≤ 340 µW worst-case corner")
+        with self.assertRaisesRegex(cr.ReportError, "not the current ratified bound"):
+            self.build()
+
+    def test_ssp_not_run_rows_are_never_selected(self):
+        # the earlier records judged power/swing but left slew NOT RUN: slew can never come from them
+        sel = cr.latest_selection(self.root)["slew-swing-power"]
+        self.assertEqual(sel, {"power": f"{SSP}{FULL_SSP_REC}.md", "slew": f"{SSP}{FULL_SSP_REC}.md",
+                               "swing": f"{SSP}{SWING_REC}.md"})
+        ex = cr.extract_ssp((self.root / SSP / "20261009-114727-1dab1db.md").read_text(), "x")
+        self.assertNotIn("slew", ex["rows"])
 
     def test_latest_selection_skips_nothing_superseded(self):
         sel = cr.latest_selection(self.root)

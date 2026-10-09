@@ -64,7 +64,20 @@ the edges are slew-limited — one rising edge (1 µs) and one falling edge
 - slope = `0.6 × (vhi − vlo) / (t80 − t20)` between the first 20 % and 80 %
   crossings, linearly interpolated.
 
-The reported figure is the **slower of the two edges**. The step is a fixed
+The reported figure is the **slower of the two edges**.
+
+**Binding corner vs the spec's prediction.** `spec/target-spec.md` §2
+predicts the slew row binds at **SS / −40 °C / low VDD** (lowest tail-current
+headroom). The measured worst point is **ss / 125 °C / 2.97 V** (14.51 V/µs in
+record `20261009-142137-1dab1db`): the process and supply match, the
+temperature does not. Over the grid the slew spans only 14.51–15.31 V/µs and tracks the
+quiescent current (which is lowest at 125 °C, see the power column), as
+expected for `Itail / CC` with CC held at typical; the −40 °C headroom effect
+the prediction anticipated is not the limiting one at this sizing. This is a
+note on the prediction only — the ratified bound and the spec are unchanged,
+and the row passes at all 45 points either way. (The power row has the
+analogous mismatch: predicted FF / 125 °C / 3.63 V, measured worst
+ff / −40 °C / 3.63 V.) The step is a fixed
 ±0.5 V about VCM (not a fraction of VDD) so the pulse source is a plain
 `pulse(...)` in series with the altered DC `Vcm`; its levels stay within the
 input common-mode range at the 2.97 V / −40 °C corners (checked by the
@@ -112,6 +125,21 @@ linearly between sweep points. A sweep that ends before either condition
 occurs makes the point invalid (the swing is never reported as a lower
 bound). Both devices must be saturated at the VCM operating point.
 
+**Committed swing data (re-derivable verdict).** Each point's
+`corners/<rid>/swing/<point>.dat` holds every sweep sample at full
+precision: `vin_v vout_v` **and** the four vectors the edges are decided on,
+`m6_vds_v m6_vdsat_v m7_vds_v m7_vdsat_v` (ngspice
+`@m.xdut.xm6/xm7.m0[vds|vdsat]`), plus a `# vcm_v=` header line.
+`rederive_swing(<file>)` in the driver re-runs the extraction from that file
+alone; before writing a record the driver re-reads every swing `.dat` it just
+wrote and requires the re-derived swing, both edge levels and the binding
+criterion (gain / M6 / M7) to match the in-memory result exactly, and states
+the count in the record. Records before `20261009-142137-1dab1db` inclusive
+saved only `vin_v vout_v`, so their swing verdict cannot be re-derived from
+committed data (their saturation-bound edges depend on vectors that were not
+kept); the swing row's evidence is therefore the later swing-only record
+listed in "Records" below, and those earlier records are left unedited.
+
 **Why this criterion — check against `spec/decision-records/0002-performance-target-bounds.md`
 section (b).** (The issue text says "section (c)"; in the committed record the
 swing bound is §(b), "Output swing", and §(c) is the list of rows left
@@ -149,7 +177,10 @@ specified in `spec/target-spec.md`); a load current would reduce it.
   is reported; an output that never settles, is clipped or is stuck is
   invalid; a swing sweep that ends before collapse is invalid; verdict
   direction (power is an upper bound) and binding corner; the ratified
-  numbers; the source guards.
+  numbers; the source guards; the swing data file round-trips the M6/M7
+  vectors bit-exactly and re-derives the same swing / edges / cause, while a
+  `vin_v vout_v`-only file cannot re-derive a verdict; a figure outside
+  `--figures` is never a pass.
 
 ## Running
 
@@ -165,7 +196,10 @@ and `numpy` / `matplotlib`. The driver imports
 `../gain-gbw-pm/run_gain_gbw_pm.py` for the shared DUT normalisation, source
 guards and `klt` invocation/retry, so there is one copy of those, not two.
 Useful flags: `--backend local` (force a backend), `--batch-submit-retries N`,
-`--batch-runner-version-check warn`, `--strict` (exit 1 on a spec miss).
+`--batch-runner-version-check warn`, `--strict` (exit 1 on a spec miss),
+`--figures swing` (or any comma-separated subset of `power,slew,swing`: one
+request per chosen figure, a record that judges only those rows and states
+the others as "not measured in this record").
 
 Each run mints a new append-only record id and writes only new files:
 
@@ -179,3 +213,13 @@ corners/<rid>/controls/*
 Records are evidence: the claim line states which rows were measured and
 their pass/fail against the ratified bounds with the worst-case corner per
 figure.
+
+## Records
+
+| Record | Rows judged | Result | Notes |
+|---|---|---|---|
+| [`20261009-114727-1dab1db`](records/20261009-114727-1dab1db.md), [`20261009-121017-1dab1db`](records/20261009-121017-1dab1db.md) | power, swing | power and swing PASS 45/45; slew NOT RUN | fleet per-point timeouts on the slew grid (see "Batch-fleet timing"); kept as history, not selected |
+| [`20261009-142137-1dab1db`](records/20261009-142137-1dab1db.md) | power, slew, swing | all PASS 45/45 | **selected for power and slew**. Its swing data holds `vin_v vout_v` only, so its swing verdict cannot be re-derived from committed files |
+| [`20261009-143715-4d5aa43`](records/20261009-143715-4d5aa43.md) | swing (`--figures swing`, one 45-point fleet request) | swing PASS 45/45, worst 2.465 Vpp at ss / 125 C / 2.97 V; stretch ≥ 2.6 Vpp at 35/45; every edge bound by M6 (upper) / M7 (lower) leaving saturation | **selected for swing**. Its `swing/*.dat` files carry the M6/M7 Vds/Vdsat vectors; 45/45 points re-derive exactly |
+
+`sim/report/selection.json` names the record for each row.
