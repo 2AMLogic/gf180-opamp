@@ -126,8 +126,8 @@ while the pin was 0.5.0, whose bundle predated the checklist's eleventh item —
 [klayout-tools#2025](https://github.com/2AMLogic/klayout-tools/pull/2025)
 commit `428951e` (2026-09-19) — and would have rendered only ten rows. The
 vendored copy is taken verbatim from klayout-tools at tag `v0.7.0` (commit
-`0e2362bd`; the document is identical at the `5e5b5599` build commit the
-0.7.0 wheel reports), pinned so that every report states which checklist
+`0e2362bd`, the commit the PyPI 0.7.0 release wheel reports in the record's
+`build` block), pinned so that every report states which checklist
 revision graded it: the record quotes each item's text, so editing or
 re-vendoring the checklist changes the record and fails CI until the record
 is regenerated in the same change.
@@ -177,8 +177,19 @@ CI installs `klayout-tools==0.7.0` — the same code that produced the
 committed record, whose exit the byte-comparison holds. To bump the pin to a
 newer klayout-tools release: change it in `.github/workflows/signoff.yml`,
 re-vendor the checklist from the matching upstream tag (see above), regenerate
-`gf180-opamp.signoff.json` with
-`uvx --from "klayout-tools==X.Y.Z" klt signoff ...` (the command in
-"Regenerating the record"), and commit all three in the same PR. The separate
+`gf180-opamp.signoff.json` with the **PyPI release wheel** in a fresh
+throwaway venv (the command in "Regenerating the record"):
+
+```bash
+python3 -m venv .venv-klt
+.venv-klt/bin/pip install --no-cache-dir "klayout-tools==X.Y.Z"
+.venv-klt/bin/klt signoff ...   # then delete .venv-klt
+```
+
+and commit all three in the same PR. Before committing, check the record's
+`build` block: `is_release` must be `true`, `git_tag` must be `vX.Y.Z`, and
+`version` must carry no `+g<hash>` local suffix. A cached `uvx` environment can
+resolve a non-release build of the same version, which records a different
+`build` block than the wheel CI installs, so the byte-comparison fails. The separate
 `SELFTEST_KLT_VERSION` pin in `selftest.yml` is independent; leave it alone.
 The record stays exactly reproducible from the pinned release.
