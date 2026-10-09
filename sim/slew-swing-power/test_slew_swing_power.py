@@ -10,6 +10,8 @@ committed testbench text in memory.
 
 from __future__ import annotations
 
+import contextlib
+import io
 import math
 import sys
 import tempfile
@@ -235,6 +237,70 @@ class SwingTests(unittest.TestCase):
         self.assertFalse(r.extract_swing({k: v[::-1] for k, v in vec.items()}, 1.65).valid)
 
 
+class SwingDataTests(unittest.TestCase):
+    """The committed swing/*.dat must carry what decides the verdict (PR #57 review)."""
+
+    def _roundtrip(self, vec, vcm):
+        m = r.extract_swing(vec, vcm)
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "pt.dat"
+            r.save_point_data("swing", m, path, vcm=vcm)
+            text = path.read_text()
+            m2 = r.rederive_swing(path)
+            back, vcm2 = r.load_swing_dat(path)
+        return m, m2, text, back, vcm2
+
+    def test_saturation_columns_are_saved_with_vcm(self):
+        vec = swing_vec(3.3, 0.2, 0.15, sat_loss_hi=0.3, sat_loss_lo=0.25)
+        m, _, text, back, vcm = self._roundtrip(vec, 1.65)
+        header = [ln for ln in text.splitlines() if ln.startswith("#")]
+        self.assertIn("# vcm_v=1.65", header)
+        self.assertIn("# vin_v vout_v m6_vds_v m6_vdsat_v m7_vds_v m7_vdsat_v", header)
+        self.assertEqual(vcm, 1.65)
+        for name in ("v(vin)", "v(vout)", "v(@m.xdut.xm6.m0[vds])", "v(@m.xdut.xm6.m0[vdsat])",
+                     "v(@m.xdut.xm7.m0[vds])", "v(@m.xdut.xm7.m0[vdsat])"):
+            np.testing.assert_array_equal(back[name], vec[name], err_msg=name)  # full precision, every sample
+
+    def test_saturation_bound_verdict_is_rederived_from_the_file(self):
+        vec = swing_vec(2.97, 0.2, 0.15, sat_loss_hi=0.3, sat_loss_lo=0.25)
+        m, m2, *_ = self._roundtrip(vec, 1.485)
+        self.assertTrue(m.valid and m2.valid, (m.reason, m2.reason))
+        self.assertEqual((m2.edge_hi, m2.edge_lo), ("M6", "M7"))
+        self.assertTrue(r.same_swing(m, m2))
+        self.assertEqual(m2.swing_v, m.swing_v)
+
+    def test_gain_bound_verdict_is_rederived_from_the_file(self):
+        m, m2, *_ = self._roundtrip(swing_vec(3.3, 0.2, 0.15), 1.65)
+        self.assertEqual((m2.edge_hi, m2.edge_lo), ("gain", "gain"))
+        self.assertTrue(r.same_swing(m, m2))
+
+    def test_vin_vout_only_file_cannot_rederive(self):
+        # the pre-fix format (vin_v vout_v only) must not silently re-derive a swing
+        m = r.extract_swing(swing_vec(), 1.65)
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "old.dat"
+            np.savetxt(path, np.column_stack([m.x, m.y]), header="vin_v vout_v")
+            with self.assertRaises(ValueError):
+                r.rederive_swing(path)
+            vec, vcm = r.load_swing_dat(path)
+            self.assertFalse(r.extract_swing(vec, 1.65).valid)  # no saturation vectors -> INVALID, not a pass
+
+    def test_same_swing_detects_a_changed_edge_or_level(self):
+        m = r.extract_swing(swing_vec(3.3, 0.2, 0.15, sat_loss_hi=0.3, sat_loss_lo=0.25), 1.65)
+        other = r.extract_swing(swing_vec(3.3, 0.2, 0.15), 1.65)
+        self.assertFalse(r.same_swing(m, other))
+        bad = r.Metrics(fig="swing", valid=False, reason="x")
+        self.assertFalse(r.same_swing(m, bad))
+
+    def test_invalid_point_keeps_its_data_and_reason(self):
+        vec = swing_vec()
+        vec["v(@m.xdut.xm6.m0[vds])"] = np.full_like(vec["v(vin)"], 0.1)
+        m, m2, text, *_ = self._roundtrip(vec, 1.65)
+        self.assertFalse(m.valid)
+        self.assertIn("# INVALID: ", text)
+        self.assertFalse(m2.valid)
+
+
 class RawParserTests(unittest.TestCase):
     RAW = (
         "Title: t\nPlotname: Transient Analysis\nFlags: real\nNo. Variables: 2\nNo. Points: 2\n"
@@ -299,6 +365,17 @@ class VerdictTests(unittest.TestCase):
 
     def test_not_run_is_never_a_pass(self):
         self.assertEqual(r.judge_figure("slew", None).verdict, "NOT RUN")
+
+    def test_not_requested_is_never_a_pass(self):
+        v = r.judge_figure("power", None, requested=False)
+        self.assertEqual((v.verdict, v.n_pass, v.n_total), ("NOT REQUESTED", 0, 0))
+        res, _ = self._res("power", [100.0] * 45)
+        self.assertEqual(r.judge_figure("power", res, requested=False).verdict, "NOT REQUESTED")
+
+    def test_figures_option_rejects_unknown_or_empty(self):
+        for bad in ("gain", "", "swing,bogus"):
+            with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
+                r.main(["--figures", bad])
 
     def test_grid_is_the_full_45_unique_points(self):
         keys = r.g.expected_keys(r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)

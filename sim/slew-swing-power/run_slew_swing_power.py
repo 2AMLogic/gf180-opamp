@@ -30,10 +30,14 @@ Per point it extracts, from the rawfile klt retains:
     the settled output before the edge and just before the next one. The
     reported figure is the SLOWER of the two edges.
   * output swing -- inverting unity-gain configuration (input common mode
-    pinned at VCM), `Vin` swept 0 .. 3.63 V; the swing is the output span
-    between the two points where the incremental gain |dvout/dvin| has fallen
-    to 1/sqrt(2) (-3 dB) of its mid-range value. See the README for why this
-    criterion and how it relates to DR-2 section (b).
+    pinned at VCM), `Vin` swept 0 .. 3.63 V; each output edge is the FIRST of
+    the incremental gain |dvout/dvin| falling to 1/sqrt(2) (-3 dB) of its
+    mid-range value or output device M6 (upper) / M7 (lower) leaving
+    saturation (|Vds| < |Vdsat|); the swing is the span between the two edges.
+    See the README for why this criterion and how it relates to DR-2
+    section (b). The per-point swing data keeps the M6/M7 Vds/Vdsat vectors,
+    so the verdict can be re-derived from the committed files
+    (`rederive_swing()`; the driver does so before writing a record).
 
 Verdicts are checked per point against the ratified bounds in
 `spec/target-spec.md` (slew >= 10 V/us, swing >= 2.3 Vpp, power <= 350 uW
@@ -52,10 +56,13 @@ Usage:
     python3 sim/slew-swing-power/run_slew_swing_power.py              # full grid + record
     python3 sim/slew-swing-power/run_slew_swing_power.py --smoke      # one point, no record
     python3 sim/slew-swing-power/run_slew_swing_power.py --backend local
+    python3 sim/slew-swing-power/run_slew_swing_power.py --figures swing   # one figure, one request
 
 Exit status: 0 when the evidence is complete (every figure ran and the controls
 behave) -- INCLUDING when a spec row misses, because a miss is a result;
 `--strict` makes a spec miss exit 1. A figure that could not be run exits 1.
+Rows outside `--figures` are recorded as "not measured in this record", never
+as a pass.
 """
 
 from __future__ import annotations
@@ -284,6 +291,9 @@ class Metrics:
     sens: dict = field(default_factory=dict)  # {criterion variant: swing_v}
     edge_hi: str = ""  # criterion that bound the upper / lower output edge
     edge_lo: str = ""
+    # swing: the output-device saturation vectors that decide the edges, kept so
+    # the committed per-point data can re-derive the verdict (SAT_COLUMNS order)
+    sat: dict = field(default_factory=dict, repr=False)
     # waveform kept for plots/data
     x: np.ndarray = field(default_factory=lambda: np.array([]), repr=False)
     y: np.ndarray = field(default_factory=lambda: np.array([]), repr=False)
@@ -409,6 +419,12 @@ def _edge(vin: np.ndarray, vout: np.ndarray, quals: dict[str, np.ndarray], i0: i
     return None
 
 
+#: Swing data columns saved per point after vin_v / vout_v: (column name, rawfile vector).
+SAT_COLUMNS = tuple(
+    (f"{d[1:]}_{q}_v", f"v(@m.xdut.{d}.m0[{q}])") for d in ("xm6", "xm7") for q in ("vds", "vdsat")
+)
+
+
 def _sat_margin(vec: dict[str, np.ndarray], dev: str) -> np.ndarray:
     vds, vdsat = f"v(@m.xdut.{dev}.m0[vds])", f"v(@m.xdut.{dev}.m0[vdsat])"
     return np.abs(vec[vds]) - np.abs(vec[vdsat])
@@ -451,7 +467,7 @@ def extract_swing(vec: dict[str, np.ndarray], vcm: float) -> Metrics:
     i0 = int(np.argmin(np.abs(vin - vcm)))
     band = np.abs(vin - vcm) <= SWING_MID_BAND_V
     g_mid = float(np.median(slope[band]))
-    common = dict(mid_gain=g_mid, x=vin, y=vout)
+    common = dict(mid_gain=g_mid, x=vin, y=vout, sat={col: vec[name] for col, name in SAT_COLUMNS})
     if abs(g_mid + 1.0) > SWING_GAIN_TOL:
         return _bad("swing", f"mid-range gain {g_mid:.3f} is not -1 +- {SWING_GAIN_TOL} (wrong polarity/feedback)", **common)
     m6, m7 = _sat_margin(vec, "xm6"), _sat_margin(vec, "xm7")
@@ -519,7 +535,7 @@ class RowVerdict:
     bound: float
     unit: str
     direction: str
-    verdict: str  # "PASS" | "FAIL" | "NOT RUN"
+    verdict: str  # "PASS" | "FAIL" | "NOT RUN" | "NOT REQUESTED" (outside --figures)
     n_pass: int
     n_total: int
     worst_value: float
@@ -528,8 +544,11 @@ class RowVerdict:
     stretch_pass: int | None = None  # swing only
 
 
-def judge_figure(fig: str, results: dict[Key, Metrics] | None) -> RowVerdict:
+def judge_figure(fig: str, results: dict[Key, Metrics] | None, *, requested: bool = True) -> RowVerdict:
     label, attr, bound, unit, direction = ROWS[fig]
+    if not requested:
+        # Outside this run's --figures: no claim either way (the row's evidence is another record).
+        return RowVerdict(fig, label, bound, unit, direction, "NOT REQUESTED", 0, 0, float("nan"), None, 0)
     if results is None:
         return RowVerdict(fig, label, bound, unit, direction, "NOT RUN", 0, 0, float("nan"), None, 0)
     n_pass = sum(point_passes(m, fig) for m in results.values())
@@ -665,7 +684,7 @@ def run_unit(fig: str, name: str, pdk: Pdk, work: Path, ibias_a: float | None):
     return res[NOMINAL], arts[NOMINAL], problems
 
 
-def run_controls(pdk: Pdk, work: Path) -> list[ControlRun]:
+def run_controls(pdk: Pdk, work: Path, figs=FIGURES) -> list[ControlRun]:
     out: list[ControlRun] = []
     for name, desc, ib in (
         ("nominal", "unmodified nominal point (reference for the controls)", None),
@@ -673,7 +692,7 @@ def run_controls(pdk: Pdk, work: Path) -> list[ControlRun]:
         ("ibias-zero", "ibias driven at 0 A (no bias current; all else nominal)", 0.0),
     ):
         cr = ControlRun(name, desc, {})
-        for fig in FIGURES:
+        for fig in figs:
             try:
                 m, a, _ = run_unit(fig, name, pdk, work, ib)
                 cr.metrics[fig] = m
@@ -768,17 +787,74 @@ def build_plots(all_results: dict[str, dict[Key, Metrics] | None], plot_dir: Pat
     return names
 
 
-def save_point_data(fig: str, m: Metrics, path: Path) -> None:
+def save_point_data(fig: str, m: Metrics, path: Path, *, vcm: float | None = None) -> None:
+    """Write one point's data file.
+
+    swing: every sweep sample, full precision, as `vin_v vout_v` followed by the
+    M6/M7 |Vds| and |Vdsat| vectors (SAT_COLUMNS) that decide the swing edges,
+    and a `vcm_v=` header line -- enough for `rederive_swing()` to reproduce
+    the point's swing, edges and binding criterion from the committed file
+    alone.
+    """
     if fig == "power":
         path.write_text(f"# power_uw idd_ua vout_v\n{m.power_uw:.6g} {m.idd_ua:.6g} {m.vout_v:.6g}\n" if m.valid else f"# INVALID: {m.reason}\n")
+    elif fig == "swing" and m.x.size:
+        cols = [m.x, m.y]
+        names = ["vin_v", "vout_v"]
+        if m.sat:
+            cols += [m.sat[c] for c, _ in SAT_COLUMNS]
+            names += [c for c, _ in SAT_COLUMNS]
+        head = ([f"vcm_v={vcm!r}"] if vcm is not None else []) + ([] if m.valid else [f"INVALID: {m.reason}"]) + [" ".join(names)]
+        np.savetxt(path, np.column_stack(cols), header="\n".join(head))
     elif m.x.size:
         x, y = m.x, m.y
         if fig == "slew" and x.size > 1200:  # thin the dense transient; edges stay well resolved
             sel = np.unique(np.concatenate([np.arange(0, x.size, 8), [x.size - 1]]))
             x, y = x[sel], y[sel]
-        np.savetxt(path, np.column_stack([x, y]), header="time_s vout_v" if fig == "slew" else "vin_v vout_v")
+        np.savetxt(path, np.column_stack([x, y]), header="time_s vout_v")
     else:
         path.write_text(f"# INVALID: {m.reason}\n")
+
+
+def load_swing_dat(path: Path) -> tuple[dict[str, np.ndarray], float | None]:
+    """Read a swing data file written by save_point_data() back into the rawfile
+    vector names extract_swing() consumes; returns (vectors, vcm or None)."""
+    vcm, names = None, None
+    for line in path.read_text().splitlines():
+        if not line.startswith("#"):
+            break
+        body = line[1:].strip()
+        if body.startswith("vcm_v="):
+            vcm = float(body.split("=", 1)[1])
+        elif body.startswith("vin_v"):
+            names = body.split()
+    if names is None:
+        raise ValueError(f"{path}: no column header")
+    data = np.loadtxt(path, ndmin=2)
+    if data.shape[1] != len(names):
+        raise ValueError(f"{path}: {data.shape[1]} columns, header names {len(names)}")
+    to_vec = {"vin_v": "v(vin)", "vout_v": "v(vout)", **{c: v for c, v in SAT_COLUMNS}}
+    return {to_vec[n]: data[:, i] for i, n in enumerate(names)}, vcm
+
+
+def rederive_swing(path: Path) -> Metrics:
+    """Re-run the swing extraction on a committed per-point data file."""
+    vec, vcm = load_swing_dat(path)
+    if vcm is None:
+        raise ValueError(f"{path}: no vcm_v header (written before the saturation columns were saved)")
+    return extract_swing(vec, vcm)
+
+
+def same_swing(a: Metrics, b: Metrics) -> bool:
+    """True when two swing extractions agree on validity, swing, edges and causes."""
+    if a.valid != b.valid:
+        return False
+    if not a.valid:
+        return True
+    return (a.edge_hi, a.edge_lo) == (b.edge_hi, b.edge_lo) and all(
+        math.isclose(getattr(a, f), getattr(b, f), rel_tol=0, abs_tol=1e-9)
+        for f in ("swing_v", "vout_hi_v", "vout_lo_v")
+    )
 
 
 # --------------------------------------------------------------------------
@@ -796,11 +872,12 @@ def worst_primary(verdicts) -> str:
 
 def build_record(
     *, record, stamp, pdk, ngspice, klt_version, backend_descs, reports, all_results, verdicts,
-    ctrls, ctrl_bad, plots, dut_sha, not_run, xchk_counts,
+    ctrls, ctrl_bad, plots, dut_sha, not_run, xchk_counts, figs=FIGURES, rederived=None,
 ) -> str:
     L: list[str] = []
     add = L.append
     ran = [f for f in FIGURES if all_results.get(f) is not None]
+    skipped = [f for f in FIGURES if f not in figs]
     add(f"# Record {record}")
     add("")
     add(f"- **Record ID**: {record}")
@@ -813,6 +890,10 @@ def build_record(
     )
     for f in FIGURES:
         v = verdicts[f]
+        if v.verdict == "NOT REQUESTED":
+            add(f"  - **{v.label}: not measured in this record** (outside this run's `--figures "
+                f"{','.join(figs)}`; no claim is made here -- that row's evidence is another record of this experiment).")
+            continue
         if v.verdict == "NOT RUN":
             add(f"  - **{v.label}: NOT RUN** -- {not_run.get(f, 'no result')}.")
             continue
@@ -824,7 +905,7 @@ def build_record(
             f"{g.fmt_key(v.binding) if v.binding else 'n/a'}{extra}."
         )
     add("- **Overall**: " + (
-        "every measured row passes at all 45 points." if all(v.verdict in ("PASS", "NOT RUN") for v in verdicts.values()) and not not_run
+        "every measured row passes at all 45 points." if all(v.verdict in ("PASS", "NOT RUN", "NOT REQUESTED") for v in verdicts.values()) and not not_run
         else "**at least one ratified row MISSES or was NOT RUN** -- recorded as measured; the spec is "
              "untouched, and a miss goes to a design follow-up issue citing this record, not to a "
              "resize or a relaxed target here."
@@ -833,8 +914,10 @@ def build_record(
     envs = {f: (reports[f].get("environment") or {}) for f in reports}
     eng = next(iter(envs.values()), {})
     add(f"- **Tools**: ngspice (local: {ngspice}; engine as run by klt: `{eng.get('engine')} {eng.get('engine_version')}`), klt `{klt_version}`")
-    add("- **Execution**: each figure's 45 points are ONE `klt sim` corner-matrix request (3 requests in all):")
-    for f in FIGURES:
+    add(f"- **Execution**: each figure's 45 points are ONE `klt sim` corner-matrix request ({len(figs)} request"
+        f"{'s' if len(figs) != 1 else ''} in all"
+        + (f"; figures run: {', '.join(figs)} via `--figures`" if skipped else "") + "):")
+    for f in figs:
         add(f"  - {f}: {backend_descs.get(f, 'not run')}")
     add(
         "  - `.meas` cross-checks against the rawfile extraction (power: supply current; slew: pre-edge "
@@ -848,7 +931,8 @@ def build_record(
     add(f"  - Process (MOS): {', '.join(CORNERS)}")
     add("  - Temperature: " + ", ".join(f"{t:g} C" for t in TEMPS_C))
     add("  - Supply VDD: " + ", ".join(f"{v:.2f} V" for v in SUPPLIES_V) + " (VCM tracks VDD/2)")
-    add("  - ibias = 10 uA into `ibias`; power: no load; slew: CL = 2 pF; swing: 1 Mohm feedback network, no CL")
+    add("  - ibias = 10 uA into `ibias`; " + "; ".join(
+        {"power": "power: no load", "slew": "slew: CL = 2 pF", "swing": "swing: 1 Mohm feedback network, no CL"}[f] for f in figs))
     add(
         "- **Passive-section policy**: every MOS corner is paired with the SAME `res_typical` and "
         "`mimcap_typical` sections. The grid varies MOS corner, temperature and supply; it does **not** "
@@ -859,24 +943,32 @@ def build_record(
     add("")
     add("## Extraction methods")
     add("")
-    add("- **Quiescent power** = `-i(Vdd) * VDD` at `Ibias = 10 uA` (first point of a one-step DC sweep, i.e. the operating point), "
-        "follower at VCM, no load. `i(Vdd)` includes the bias reference branch (total supply power). Invalid if the "
-        "supply current is not positive or does not exceed the bias branch current.")
-    add(f"- **Slew rate**: follower, CL = 2 pF, input step {SLEW_STEP_V:g} Vpp about VCM, rising edge at {SLEW_RISE_T * 1e6:g} us and falling edge at "
-        f"{SLEW_FALL_T * 1e6:g} us. Levels `vlo`/`vhi` = vout {SLEW_SAMPLE_BEFORE * 1e9:g} ns before each edge (must equal vinp to "
-        f"{SLEW_LEVEL_TOL_V * 1e3:g} mV, else INVALID); slope = 0.6*(vhi-vlo)/(t80-t20) between the first {SLEW_LO_FRAC:.0%} and {SLEW_HI_FRAC:.0%} "
-        "crossings (linear interpolation); reported = the SLOWER edge.")
-    add(f"- **Output swing**: inverting unity-gain, `Vin` swept 0..{SWING_VIN_STOP_V:g} V in {SWING_VIN_STEP_V * 1e3:g} mV steps; swing = "
-        "vout(upper) - vout(lower), where each edge is the output level at the FIRST of (a) |dvout/dvin| falling below "
-        f"{SWING_FRAC:.3f} (-3 dB) x its mid-range value or (b) output device M6 (upper) / M7 (lower) leaving saturation "
-        "(|Vds| < |Vdsat|), walking outward from VCM. Mid-range gain must be -1 +- "
-        f"{SWING_GAIN_TOL}; both devices must be saturated at VCM; a sweep that ends before either happens is INVALID.")
+    if "power" in figs:
+        add("- **Quiescent power** = `-i(Vdd) * VDD` at `Ibias = 10 uA` (first point of a one-step DC sweep, i.e. the operating point), "
+            "follower at VCM, no load. `i(Vdd)` includes the bias reference branch (total supply power). Invalid if the "
+            "supply current is not positive or does not exceed the bias branch current.")
+    if "slew" in figs:
+        add(f"- **Slew rate**: follower, CL = 2 pF, input step {SLEW_STEP_V:g} Vpp about VCM, rising edge at {SLEW_RISE_T * 1e6:g} us and falling edge at "
+            f"{SLEW_FALL_T * 1e6:g} us. Levels `vlo`/`vhi` = vout {SLEW_SAMPLE_BEFORE * 1e9:g} ns before each edge (must equal vinp to "
+            f"{SLEW_LEVEL_TOL_V * 1e3:g} mV, else INVALID); slope = 0.6*(vhi-vlo)/(t80-t20) between the first {SLEW_LO_FRAC:.0%} and {SLEW_HI_FRAC:.0%} "
+            "crossings (linear interpolation); reported = the SLOWER edge.")
+    if "swing" in figs:
+        add(f"- **Output swing**: inverting unity-gain, `Vin` swept 0..{SWING_VIN_STOP_V:g} V in {SWING_VIN_STEP_V * 1e3:g} mV steps; swing = "
+            "vout(upper) - vout(lower), where each edge is the output level at the FIRST of (a) |dvout/dvin| falling below "
+            f"{SWING_FRAC:.3f} (-3 dB) x its mid-range value or (b) output device M6 (upper) / M7 (lower) leaving saturation "
+            "(|Vds| < |Vdsat|), walking outward from VCM. Mid-range gain must be -1 +- "
+            f"{SWING_GAIN_TOL}; both devices must be saturated at VCM; a sweep that ends before either happens is INVALID.")
+        add("- **Swing data committed per point** (`corners/<rid>/swing/*.dat`): every sweep sample at full precision -- "
+            "`vin_v vout_v` plus the four output-device vectors the edges are decided on, "
+            + ", ".join(f"`{c}`" for c, _ in SAT_COLUMNS) + " (ngspice `@m.xdut.xm6/xm7.m0[vds|vdsat]`), and a `vcm_v=` header "
+            "-- so `rederive_swing()` in the run script reproduces each point's swing, edges and binding criterion from "
+            "the committed file alone.")
     add("")
     add("## Verdicts (ratified rows, `spec/target-spec.md` Sec.2)")
     add("")
     add("| Row | Ratified bound | Verdict | Points passing | Worst value | Binding corner (process / T / VDD) |")
     add("|---|---|---|---|---|---|")
-    for f in FIGURES:
+    for f in figs:
         v = verdicts[f]
         cmp_ = ">=" if v.direction == "min" else "<="
         add(f"| {v.label} | {cmp_} {v.bound:g} {v.unit} | **{v.verdict}** | {v.n_pass}/{v.n_total} | "
@@ -888,14 +980,19 @@ def build_record(
             continue
         n_inv = sum(not m.valid for m in res.values())
         add(f"- {f}: invalid measurements (count as failing the row): {n_inv}/{len(res)}.")
+    if rederived is not None:
+        n_ok, n_all, bad = rederived
+        add(f"- swing re-derivation from the committed `swing/*.dat` files (re-read from disk, extraction re-run): "
+            f"{n_ok}/{n_all} points reproduce the swing, both edge levels and the binding criterion"
+            + (" exactly." if not bad else "; **MISMATCH** at " + "; ".join(bad[:6]) + " (driver exits non-zero)."))
     add("")
     keyorder = lambda k: (CORNERS.index(k[0]), k[2], k[1])  # noqa: E731
     yn = lambda b: "ok" if b else "FAIL"  # noqa: E731
     pres, sres, wres = (all_results.get(f) for f in ("power", "slew", "swing"))
     add("## All 45 points")
     add("")
-    add("| Process | T (C) | VDD (V) | Power (uW) | Idd (uA) | Slew rise (V/us) | Slew fall (V/us) | Slew min | Swing (Vpp) | vout hi (V) | vout lo (V) | note |")
-    add("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    add("| Process | T (C) | VDD (V) | Power (uW) | Idd (uA) | Slew rise (V/us) | Slew fall (V/us) | Slew min | Swing (Vpp) | vout hi (V) | vout lo (V) | swing edge cause (hi / lo) | note |")
+    add("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
     allkeys = sorted({k for r in (pres, sres, wres) if r for k in r}, key=keyorder)
     for k in allkeys:
         p = pres.get(k) if pres else None
@@ -911,6 +1008,7 @@ def build_record(
             f"{_fmt(w.swing_v, '.3f')} {yn(point_passes(w, 'swing'))}" if w else "n/a",
             _fmt(w.vout_hi_v, ".3f") if w else "n/a",
             _fmt(w.vout_lo_v, ".3f") if w else "n/a",
+            f"{w.edge_hi} / {w.edge_lo}" if (w and w.valid) else "n/a",
         ]
         add(f"| `{k[0]}` | {k[1]:g} | {k[2]:.2f} | " + " | ".join(cells) + f" | {'INVALID: ' + '; '.join(notes) if notes else ''} |")
     add("")
@@ -953,7 +1051,9 @@ def build_record(
         notes = []
         for f, attr, fm in (("power", "power_uw", ".1f"), ("slew", "slew_vus", ".2f"), ("swing", "swing_v", ".3f")):
             m = c.metrics.get(f)
-            if m is None:
+            if m is None and f not in figs:
+                cells.append("not requested")
+            elif m is None:
                 cells.append("not simulated")
                 notes.append(f"{f}: {c.errors.get(f, '')[:80]}")
             elif m.valid:
@@ -963,7 +1063,7 @@ def build_record(
                 notes.append(f"{f}: {m.reason[:100]}")
         add(f"| `{c.name}` | {c.description} | " + " | ".join(cells) + f" | {'; '.join(notes)} |")
     add("")
-    add("Required behaviour: ibias-half lowers both power (< 0.75x) and slew (< 0.8x); ibias-zero never passes slew or swing and draws < 0.1x the nominal power.")
+    add("Required behaviour (for the figures run): ibias-half lowers both power (< 0.75x) and slew (< 0.8x); ibias-zero never passes slew or swing and draws < 0.1x the nominal power.")
     if ctrl_bad:
         add("")
         add("**CONTROL PROBLEMS** (driver exits non-zero):")
@@ -977,7 +1077,7 @@ def build_record(
     add("")
     add("## Links")
     add("")
-    add("- Testbenches: `sim/slew-swing-power/testbench/tb_power.spice`, `tb_slew.spice`, `tb_swing.spice`")
+    add("- Testbenches: " + ", ".join(f"`sim/slew-swing-power/testbench/tb_{f}.spice`" for f in figs))
     add("- Run script: `sim/slew-swing-power/run_slew_swing_power.py`; extraction/guard tests: `sim/slew-swing-power/test_slew_swing_power.py`")
     add(f"- Netlist snapshot (DUT + testbenches + conditions): `sim/slew-swing-power/netlist-snapshots/{record}.spice`")
     add(f"- Per-point logs, decks and data, the sanitised klt reports and the control runs: `sim/slew-swing-power/corners/{record}/`")
@@ -1023,7 +1123,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--batch-submit-retries", type=int, default=0,
                     help="re-submit up to N times when the batch submit is refused for fleet capacity (never changes backend)")
     ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    ap.add_argument("--figures", default=",".join(FIGURES),
+                    help="comma-separated subset of power,slew,swing to run (default: all; one klt request per figure). "
+                         "Rows outside the subset are recorded as not measured, never as a pass.")
     args = ap.parse_args(argv)
+    figs = tuple(f for f in FIGURES if f in {x.strip() for x in args.figures.split(",")})
+    unknown = {x.strip() for x in args.figures.split(",")} - set(FIGURES)
+    if unknown or not figs:
+        ap.error(f"--figures: choose from {', '.join(FIGURES)} (got {args.figures!r})")
 
     pdk = find_pdk()
     if args.smoke:
@@ -1034,7 +1141,7 @@ def main(argv: list[str] | None = None) -> int:
     g.claim_record_paths(HERE, record)  # fail early if this id was already used
     ngspice = ngspice_version()
     kver = g.klt_version()
-    print(f"record {record}: {len(want)} points x {len(FIGURES)} figures, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
+    print(f"record {record}: {len(want)} points x {len(figs)} figures ({', '.join(figs)}), PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
     all_results: dict[str, dict[Key, Metrics] | None] = {}
     all_arts: dict[str, dict] = {}
@@ -1046,7 +1153,7 @@ def main(argv: list[str] | None = None) -> int:
 
     with tempfile.TemporaryDirectory(prefix="ssp-") as scratch:
         work = Path(scratch)
-        for fig in FIGURES:
+        for fig in figs:
             tb = materialise(fig, work / fig, pdk)
             req = make_request(fig, tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V)
             req["batch"] = g.batch_block(args)
@@ -1083,9 +1190,9 @@ def main(argv: list[str] | None = None) -> int:
             print("ERROR: no figure could be run; NO RECORD WRITTEN.", file=sys.stderr)
             return 2
 
-        ctrls = run_controls(pdk, work)
+        ctrls = run_controls(pdk, work, figs)
         ctrl_bad = control_failures(ctrls)
-        verdicts = {f: judge_figure(f, all_results.get(f)) for f in FIGURES}
+        verdicts = {f: judge_figure(f, all_results.get(f), requested=f in figs) for f in FIGURES}
 
         corners_dir = HERE / "corners" / record
         corners_dir.mkdir(parents=True, exist_ok=False)
@@ -1098,8 +1205,25 @@ def main(argv: list[str] | None = None) -> int:
                     shutil.copyfile(a["log"], fdir / f"{stem}.log")
                 if a["deck"]:
                     shutil.copyfile(a["deck"], fdir / f"{stem}.cir")
-                save_point_data(fig, all_results[fig][k], fdir / f"{stem}.dat")
+                save_point_data(fig, all_results[fig][k], fdir / f"{stem}.dat", vcm=k[2] / 2)
             (fdir / "klt-report.json").write_text(json.dumps(g.sanitise_report(reports[fig]), indent=1))
+        # Prove the committed swing data is sufficient: re-read every swing .dat
+        # and re-run the extraction; any disagreement is a driver bug and blocks.
+        rederived = None
+        rederive_bad: list[str] = []
+        if all_results.get("swing"):
+            n_ok = 0
+            for k, m in all_results["swing"].items():
+                try:
+                    m2 = rederive_swing(corners_dir / "swing" / f"{g.point_stem(k)}.dat")
+                except (ValueError, OSError) as exc:
+                    rederive_bad.append(f"{g.fmt_key(k)}: {exc}")
+                    continue
+                if same_swing(m, m2):
+                    n_ok += 1
+                else:
+                    rederive_bad.append(f"{g.fmt_key(k)}: {m2.swing_v:.6f} Vpp ({m2.edge_hi}/{m2.edge_lo}) vs {m.swing_v:.6f} Vpp ({m.edge_hi}/{m.edge_lo})")
+            rederived = (n_ok, len(all_results["swing"]), rederive_bad)
         cdir = corners_dir / "controls"
         cdir.mkdir()
         for c in ctrls:
@@ -1116,7 +1240,7 @@ def main(argv: list[str] | None = None) -> int:
             f"* netlist snapshot for record {record} (issue #44)",
             "* Reproduces the measured design: DUT contents, testbenches, conditions.",
         ]
-        for fig in FIGURES:
+        for fig in figs:
             lines += [f"* ---- conditions: klt sim request ({fig}) ----"]
             lines += ["* " + ln for ln in json.dumps({k: v for k, v in reqs[fig].items() if k != "netlist"}, indent=1).splitlines()]
         lines += [
@@ -1124,7 +1248,7 @@ def main(argv: list[str] | None = None) -> int:
             "* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----",
             dut_text,
         ]
-        for fig in FIGURES:
+        for fig in figs:
             lines += [f"* ---- testbench: sim/slew-swing-power/testbench/tb_{fig}.spice (verbatim) ----", TESTBENCH[fig].read_text()]
             a0 = all_arts.get(fig, {}).get(NOMINAL)
             if a0 and a0["deck"]:
@@ -1137,16 +1261,22 @@ def main(argv: list[str] | None = None) -> int:
             record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, klt_version=kver,
             backend_descs=backend_descs, reports=reports, all_results=all_results, verdicts=verdicts,
             ctrls=ctrls, ctrl_bad=ctrl_bad, plots=plots, dut_sha=dut_sha, not_run=not_run, xchk_counts=xchk_counts,
+            figs=figs, rederived=rederived,
         )
         out = HERE / "records" / f"{record}.md"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(md)
 
     print(f"wrote {out}")
-    for f in FIGURES:
+    for f in figs:
         v = verdicts[f]
         print(f"  {v.label}: {v.verdict} ({v.n_pass}/{v.n_total}), worst {v.worst_value:.4g} {v.unit} at {g.fmt_key(v.binding) if v.binding else 'n/a'}")
     rc = 0
+    if rederive_bad:
+        print("SWING RE-DERIVATION MISMATCH:")
+        for s_ in rederive_bad:
+            print(f"  - {s_}")
+        rc = 1
     if ctrl_bad:
         print("CONTROL PROBLEMS:")
         for s in ctrl_bad:
