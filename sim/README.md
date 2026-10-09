@@ -63,8 +63,15 @@ git status --porcelain   # must be empty
 `harness.py` is the one master copy of the cross-experiment sim-harness
 helpers — gf180mcu PDK discovery (`find_pdk`), ngspice version provenance,
 append-only record-id allocation, and the per-corner ngspice deck executor.
-Every runner (`design/check_dc_op.py`, both `sim/<experiment>/run_*.py`)
-imports it; deck composition, extraction and plotting stay per-experiment.
+Since issue #58 it also holds the `klt sim` wrapper every experiment driver
+uses — `KltError`, `run_klt` (optional `env`), `run_klt_retrying` (re-submits
+only a capacity-refused batch submit; never changes backend), `remote_of`,
+`klt_version`, `batch_block`, `sanitise_report` — plus `claim_record_paths`
+(append-only record paths; `plots=False` for an experiment without plots)
+and `load_dut_text` (the committed DUT export, wrapper-normalised).
+Every runner (`design/check_dc_op.py`, every `sim/<experiment>/run_*.py`)
+imports it; deck composition, testbench guards, extraction and plotting stay
+per-experiment.
 
 This **reverses the earlier copy-not-import convention** (each runner
 carrying its own copy of these helpers) per issue #30 and its operator

@@ -66,7 +66,6 @@ import math
 import re
 import shutil
 import statistics
-import subprocess
 import sys
 import tempfile
 import time
@@ -78,10 +77,24 @@ REPO_ROOT = HERE.parents[1]
 sys.path.insert(0, str(REPO_ROOT / "sim"))
 sys.path.insert(0, str(REPO_ROOT / "design"))
 
-from harness import Pdk, allocate_record_id, find_pdk, ngspice_version  # noqa: E402
+from harness import (  # noqa: E402
+    DUT_EXPORT,
+    KltError,
+    Pdk,
+    allocate_record_id,
+    batch_block,
+    claim_record_paths,
+    find_pdk,
+    klt_version,
+    load_dut_text,
+    ngspice_version,
+    remote_of,
+    run_klt,
+    run_klt_retrying,
+    sanitise_report,
+)
 
 TESTBENCH = HERE / "testbench" / "tb_offset_mc.spice"
-DUT_EXPORT = REPO_ROOT / "design" / "netlist" / "opamp_two_stage.spice"
 
 # --------------------------------------------------------------------------
 # Conditions (issue #45 scope decision: nominal T and supply only)
@@ -131,21 +144,9 @@ MEASUREMENTS = [
 ]
 
 
-class KltError(RuntimeError):
-    pass
-
-
 # --------------------------------------------------------------------------
-# DUT: the committed export, wrapper-normalised (shared helper)
+# DUT: the committed export, wrapper-normalised (`harness.load_dut_text`)
 # --------------------------------------------------------------------------
-
-
-def load_dut_text() -> str:
-    """The committed export as an includable subcircuit (shared with
-    `design/check_dc_op.py`: uncomment `**.subckt`/`**.ends`, drop `.end`)."""
-    from check_dc_op import subckt_from_export
-
-    return subckt_from_export(DUT_EXPORT.read_text())
 
 
 def imbalance_dut(dut_text: str) -> str:
@@ -307,7 +308,7 @@ def materialise(
 
 
 # --------------------------------------------------------------------------
-# klt request / run
+# klt requests (run via `harness.run_klt` / `harness.run_klt_retrying`)
 # --------------------------------------------------------------------------
 
 
@@ -335,50 +336,6 @@ def mc_request(netlist: Path, pdk: Pdk, corners: list[str], n: int, seed: int, v
     req = base_request(netlist, pdk, corners)
     req["monte_carlo"] = {"n": n, "seed": seed, "vary": vary}
     return req
-
-
-def run_klt(request: dict, outdir: Path, backend: str | None, workdir: Path) -> dict:
-    """Run `klt sim` on a request dict and return its JSON report. `outdir`
-    must be absolute (klt launches ngspice with it as cwd)."""
-    outdir = outdir.resolve()
-    outdir.mkdir(parents=True, exist_ok=True)
-    req_path = workdir / f"{outdir.name}.request.json"
-    req_path.write_text(json.dumps(request, indent=2))
-    cmd = ["klt", "sim", str(req_path), "-o", str(outdir), "--format", "json"]
-    if backend:
-        cmd += ["--backend", backend]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    try:
-        report = json.loads(proc.stdout)
-    except json.JSONDecodeError as exc:
-        raise KltError(
-            f"klt sim produced no JSON report (exit {proc.returncode}):\n"
-            f"{proc.stdout[-1500:]}\n{proc.stderr[-1500:]}"
-        ) from exc
-    if "error" in report and "corners" not in report:
-        raise KltError(f"klt sim error: {report['error']}")
-    report["_exit_code"] = proc.returncode
-    return report
-
-
-_TRANSIENT_SUBMIT = ("BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity")
-
-
-def run_klt_retrying(request, outdir, backend, workdir, *, retries: int, wait_s: float) -> dict:
-    """`run_klt`, re-submitting when the BATCH submit was refused for fleet
-    capacity or the shared concurrency cap (nothing ran). Never changes
-    backend; any other error, or exhausted retries, propagates."""
-    for attempt in range(retries + 1):
-        try:
-            return run_klt(request, outdir, backend, workdir)
-        except KltError as exc:
-            msg = str(exc)
-            if attempt < retries and any(t in msg for t in _TRANSIENT_SUBMIT):
-                print(f"  batch submit refused ({attempt + 1}/{retries + 1}); retrying in {wait_s:g}s: {msg[-160:]}", flush=True)
-                time.sleep(wait_s)
-                continue
-            raise
-    raise AssertionError("unreachable")
 
 
 # --------------------------------------------------------------------------
@@ -561,17 +518,6 @@ def mosfet_active(report: dict) -> bool | None:
     return None
 
 
-def sanitise_report(report: dict) -> dict:
-    """Drop absolute host paths from a klt report before committing it."""
-    rep = json.loads(json.dumps({k: v for k, v in report.items() if not k.startswith("_")}))
-    for c in rep.get("corners", []):
-        arts = c.get("artifacts") or {}
-        for name, path in list(arts.items()):
-            if path:
-                arts[name] = Path(path).name
-    return rep
-
-
 # --------------------------------------------------------------------------
 # Single-unit controls (local: a single deterministic unit is host-rule safe)
 # --------------------------------------------------------------------------
@@ -627,40 +573,6 @@ def run_mc_control(name: str, vary: str, mismatch: int, pdk: Pdk, work: Path, ar
 
 def mv(x: float) -> str:
     return f"{x * 1e3:+.3f}"
-
-
-def claim_record_paths(base: Path, record: str) -> dict[str, Path]:
-    """Output paths for one record under `base`. Raises FileExistsError if ANY
-    already exists: evidence is append-only; a re-run mints a new id."""
-    paths = {
-        "record": base / "records" / f"{record}.md",
-        "snapshot": base / "netlist-snapshots" / f"{record}.spice",
-        "corners": base / "corners" / record,
-    }
-    for p in paths.values():
-        if p.exists():
-            raise FileExistsError(f"{p} already exists; evidence is append-only")
-    return paths
-
-
-def klt_version() -> str:
-    try:
-        return subprocess.run(["klt", "--version"], capture_output=True, text=True, check=True).stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        return "unknown"
-
-
-def batch_block(args) -> dict:
-    block: dict = {}
-    if args.batch_runner_version_check:
-        block["runner_version_check"] = args.batch_runner_version_check
-    if args.batch_capacity_wait_s is not None:
-        block["capacity_wait_s"] = args.batch_capacity_wait_s
-    return block
-
-
-def remote_of(report: dict) -> dict:
-    return (report.get("environment") or {}).get("remote") or {}
 
 
 def build_record(*, record, stamp, pdk, ngspice, kver, report, stats, worst, stats_problems,
@@ -813,7 +725,7 @@ def main(argv: list[str] | None = None) -> int:
         return smoke(pdk)
 
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record)
+    paths = claim_record_paths(HERE, record, plots=False)
     ngspice, kver = ngspice_version(), klt_version()
     n_units = len(CORNERS) * MC_N
     print(f"record {record}: {len(CORNERS)} corners x N={MC_N} = {n_units} units, seed {MC_SEED}, PDK={pdk.path}, klt {kver}")

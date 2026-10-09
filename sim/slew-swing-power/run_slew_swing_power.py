@@ -86,15 +86,29 @@ REPO_ROOT = HERE.parents[1]
 sys.path.insert(0, str(REPO_ROOT / "sim"))
 sys.path.insert(0, str(REPO_ROOT / "design"))
 
-from harness import Pdk, allocate_record_id, find_pdk, ngspice_version  # noqa: E402
+from harness import (  # noqa: E402
+    KltError,
+    Pdk,
+    allocate_record_id,
+    batch_block,
+    claim_record_paths,
+    find_pdk,
+    klt_version,
+    load_dut_text,
+    ngspice_version,
+    run_klt,
+    run_klt_retrying,
+    sanitise_report,
+)
 
 
 def _load_sibling():
     """Import the gain/GBW/PM driver by path (its directory name has a hyphen).
 
     Reused unchanged so the two experiments share ONE copy of the DUT
-    normalisation, source guards, klt invocation/retry and report sanitising,
-    instead of a second copy that could drift.
+    source guards and grid bookkeeping, instead of a second copy that could
+    drift. (The klt invocation/retry, report sanitising and DUT loading are
+    in `harness`.)
     """
     if "run_gain_gbw_pm" in sys.modules:
         return sys.modules["run_gain_gbw_pm"]
@@ -171,7 +185,7 @@ def materialise(fig: str, work: Path, pdk: Pdk, *, ibias_a: float | None = None)
         raise RuntimeError(f"{TESTBENCH[fig].name} guard failed:\n  " + "\n  ".join(errs))
     work.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(pdk.design_include, work / "design.ngspice")
-    dut = g.load_dut_text()
+    dut = load_dut_text()
     derrs = g.guard_dut(dut)
     if derrs:
         raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(derrs))
@@ -675,12 +689,12 @@ def run_unit(fig: str, name: str, pdk: Pdk, work: Path, ibias_a: float | None):
     tb = materialise(fig, wd, pdk, ibias_a=ibias_a)
     proc, temp, vdd = NOMINAL
     req = make_request(fig, tb, pdk, [proc], [temp], [vdd], ibias_a=IBIAS_A if ibias_a is None else ibias_a)
-    rep = g.run_klt(req, wd / "out", "local", wd)
+    rep = run_klt(req, wd / "out", "local", wd)
     res, arts, problems = analyse_report(
         fig, rep, [NOMINAL], IBIAS_A if ibias_a is None else ibias_a
     )
     if problems and NOMINAL not in res:
-        raise g.KltError("; ".join(problems))
+        raise KltError("; ".join(problems))
     return res[NOMINAL], arts[NOMINAL], problems
 
 
@@ -697,7 +711,7 @@ def run_controls(pdk: Pdk, work: Path, figs=FIGURES) -> list[ControlRun]:
                 m, a, _ = run_unit(fig, name, pdk, work, ib)
                 cr.metrics[fig] = m
                 cr.files[fig] = {"log": a["log"], "deck": a["deck"]}
-            except (g.KltError, KeyError, RuntimeError) as exc:
+            except (KltError, KeyError, RuntimeError) as exc:
                 cr.errors[fig] = str(exc)[:300]
         out.append(cr)
     return out
@@ -1098,7 +1112,7 @@ def smoke(pdk: Pdk) -> int:
         for fig in FIGURES:
             try:
                 m, _, problems = run_unit(fig, "smoke", pdk, Path(scratch), None)
-            except (g.KltError, RuntimeError) as exc:
+            except (KltError, RuntimeError) as exc:
                 print(f"SMOKE TEST FAILED ({fig}): {exc}")
                 return 1
             if not m.valid or problems:
@@ -1138,9 +1152,9 @@ def main(argv: list[str] | None = None) -> int:
 
     want = g.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)
-    g.claim_record_paths(HERE, record)  # fail early if this id was already used
+    claim_record_paths(HERE, record)  # fail early if this id was already used
     ngspice = ngspice_version()
-    kver = g.klt_version()
+    kver = klt_version()
     print(f"record {record}: {len(want)} points x {len(figs)} figures ({', '.join(figs)}), PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
     all_results: dict[str, dict[Key, Metrics] | None] = {}
@@ -1156,14 +1170,14 @@ def main(argv: list[str] | None = None) -> int:
         for fig in figs:
             tb = materialise(fig, work / fig, pdk)
             req = make_request(fig, tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V)
-            req["batch"] = g.batch_block(args)
+            req["batch"] = batch_block(args)
             reqs[fig] = req
             try:
-                report = g.run_klt_retrying(
+                report = run_klt_retrying(
                     req, work / fig / "out", args.backend, work / fig,
                     retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s,
                 )
-            except g.KltError as exc:
+            except KltError as exc:
                 not_run[fig] = f"the klt request could not be run: {str(exc)[-400:]}"
                 print(f"ERROR: {fig}: {not_run[fig]}", file=sys.stderr)
                 all_results[fig] = None
@@ -1206,7 +1220,7 @@ def main(argv: list[str] | None = None) -> int:
                 if a["deck"]:
                     shutil.copyfile(a["deck"], fdir / f"{stem}.cir")
                 save_point_data(fig, all_results[fig][k], fdir / f"{stem}.dat", vcm=k[2] / 2)
-            (fdir / "klt-report.json").write_text(json.dumps(g.sanitise_report(reports[fig]), indent=1))
+            (fdir / "klt-report.json").write_text(json.dumps(sanitise_report(reports[fig]), indent=1))
         # Prove the committed swing data is sufficient: re-read every swing .dat
         # and re-run the extraction; any disagreement is a driver bug and blocks.
         rederived = None
@@ -1232,7 +1246,7 @@ def main(argv: list[str] | None = None) -> int:
                     if src and Path(src).is_file():
                         shutil.copyfile(src, cdir / f"{c.name}-{fig}.{'log' if kind == 'log' else 'cir'}")
 
-        dut_text = g.load_dut_text()
+        dut_text = load_dut_text()
         dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()
         snap = HERE / "netlist-snapshots"
         snap.mkdir(parents=True, exist_ok=True)

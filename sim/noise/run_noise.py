@@ -99,10 +99,23 @@ REPO_ROOT = HERE.parents[1]
 sys.path.insert(0, str(REPO_ROOT / "sim"))
 sys.path.insert(0, str(REPO_ROOT / "design"))
 
-from harness import Pdk, allocate_record_id, find_pdk, ngspice_version  # noqa: E402
+from harness import (  # noqa: E402
+    KltError,
+    Pdk,
+    allocate_record_id,
+    batch_block,
+    find_pdk,
+    klt_version,
+    load_dut_text,
+    ngspice_version,
+    remote_of,
+    run_klt,
+    run_klt_retrying,
+    sanitise_report,
+)
 
-# The gain driver owns the committed-DUT guards, the klt plumbing and the grid
-# bookkeeping; reuse them unchanged so both benches stay structurally identical.
+# The gain driver owns the committed-DUT guards, the request shape and the grid
+# bookkeeping (the klt wrapper itself is in `harness`); reuse them unchanged so both benches stay structurally identical.
 _spec = importlib.util.spec_from_file_location(
     "gain_gbw_pm_driver", REPO_ROOT / "sim" / "gain-gbw-pm" / "run_gain_gbw_pm.py"
 )
@@ -118,7 +131,6 @@ TEMPS_C = G.TEMPS_C
 SUPPLIES_V = G.SUPPLIES_V
 NOMINAL = G.NOMINAL
 Key = G.Key
-KltError = G.KltError
 fmt_key = G.fmt_key
 point_key = G.point_key
 point_stem = G.point_stem
@@ -191,7 +203,7 @@ def materialise(work: Path, pdk: Pdk, *, lfb: float | None = None, dut_text: str
         raise RuntimeError("testbench guard failed:\n  " + "\n  ".join(errs))
     work.mkdir(parents=True, exist_ok=True)
     shutil.copyfile(pdk.design_include, work / "design.ngspice")
-    dut = G.load_dut_text() if dut_text is None else dut_text
+    dut = load_dut_text() if dut_text is None else dut_text
     derrs = G.guard_dut(dut)
     if derrs:
         raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(derrs))
@@ -605,7 +617,7 @@ def run_local_control(name: str, desc: str, pdk: Pdk, work: Path, *, ppd: int = 
         wd = work / name
         tb = materialise(wd, pdk, lfb=lfb)
         req = noise_request(tb, pdk, [NOMINAL[0]], [NOMINAL[1]], [NOMINAL[2]], ppd=ppd)
-        rep = G.run_klt(req, wd / "out", "local", wd)
+        rep = run_klt(req, wd / "out", "local", wd)
         run.report = rep
         cs = rep.get("corners", [])
         if len(cs) != 1:
@@ -718,10 +730,6 @@ def build_plots(arts: dict[Key, dict], results: dict[Key, PointResult], plot_dir
 # --------------------------------------------------------------------------
 # Record
 # --------------------------------------------------------------------------
-
-
-def remote_of(report: dict) -> dict:
-    return (report.get("environment") or {}).get("remote") or {}
 
 
 def worst_best(results: dict[Key, PointResult], getter):
@@ -958,7 +966,7 @@ def main(argv: list[str] | None = None) -> int:
         if sub.exists():
             print(f"ERROR: {sub} already exists; evidence is append-only", file=sys.stderr)
             return 2
-    ngspice, kver = ngspice_version(), G.klt_version()
+    ngspice, kver = ngspice_version(), klt_version()
     gdir = latest_gain_dir()
     print(f"record {record}: {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
@@ -966,10 +974,10 @@ def main(argv: list[str] | None = None) -> int:
         work = Path(scratch)
         tb = materialise(work / "grid", pdk)
         req = noise_request(tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V)
-        req["batch"] = G.batch_block(args)
+        req["batch"] = batch_block(args)
         t0 = time.time()
         try:
-            report = G.run_klt_retrying(
+            report = run_klt_retrying(
                 req, work / "grid" / "out", args.backend, work / "grid",
                 retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s,
             )
@@ -1003,7 +1011,7 @@ def main(argv: list[str] | None = None) -> int:
             s = a["spec"]
             np.savetxt(corners_dir / f"{stem}.dat", np.column_stack([s.freq, s.inoise, s.onoise]),
                        header="freq_hz inoise_V_per_rtHz onoise_V_per_rtHz")
-        (corners_dir / "klt-report.json").write_text(json.dumps(G.sanitise_report(report), indent=1))
+        (corners_dir / "klt-report.json").write_text(json.dumps(sanitise_report(report), indent=1))
         cdir = corners_dir / "controls"
         cdir.mkdir()
         for r in [dense, *iso]:
@@ -1014,7 +1022,7 @@ def main(argv: list[str] | None = None) -> int:
                 np.savetxt(cdir / f"{r.name}.dat", np.column_stack([r.spec.freq, r.spec.inoise, r.spec.onoise]),
                            header="freq_hz inoise_V_per_rtHz onoise_V_per_rtHz")
 
-        dut_text = G.load_dut_text()
+        dut_text = load_dut_text()
         dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()
         snap = HERE / "netlist-snapshots"
         snap.mkdir(parents=True, exist_ok=True)
