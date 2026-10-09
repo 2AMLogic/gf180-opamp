@@ -80,6 +80,7 @@ import sys
 import tarfile
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -741,34 +742,50 @@ def run_requests(plans: list[Plan], pdk: Pdk, work: Path, args, reqs_out: dict, 
                  walls: dict) -> None:
     """Submit each plan as one `klt sim` corner request (retrying only a
     capacity-refused batch submit; never changing backend). A report cached in
-    the work directory for an IDENTICAL request is reused (`--keep-work` re-runs)."""
-    for p in plans:
-        wd = work / p.name
-        tb = C.materialise(wd, pdk, C.with_servo(MODES[p.mode]), testbench=TESTBENCH, guard=C.guard_testbench)
-        req = icmr_request(tb, pdk, p.processes, TEMPS_C, p.pairs)
-        req["batch"] = batch_block(args)
-        cache = work / f"{p.name}.cached-report.json"
-        rq = json.dumps({k: v for k, v in req.items() if k != "netlist"}, sort_keys=True)
-        if cache.is_file():
-            blob = json.loads(cache.read_text())
-            if blob["request"] == rq and all(Path(c["artifacts"]["raw"]).is_file() for c in blob["report"]["corners"]
-                                              if (c.get("artifacts") or {}).get("raw")):
-                print(f"  reusing cached report for {p.name}", flush=True)
-                reports_out[p.name], reqs_out[p.name], walls[p.name] = blob["report"], req, blob["wall"]
-                continue
-        n = len(p.pairs) * len(TEMPS_C) * len(p.processes)
-        print(f"  submitting {p.name} ({n} units)...", flush=True)
-        t0 = time.time()
-        rep = run_klt_retrying(req, wd / "out", args.backend, wd,
-                               retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
-        walls[p.name] = time.time() - t0
-        reports_out[p.name], reqs_out[p.name] = rep, req
-        if not any(str(d.get("code", "")).startswith("batch_") for c in rep.get("corners", [])
-                   for d in c.get("diagnostics", [])):  # never cache a failed JOB
-            cache.write_text(json.dumps({"request": rq, "report": rep, "wall": walls[p.name]}))
-        r = remote_of(rep)
-        print(f"    done in {walls[p.name]:.0f} s (job {r.get('job_id', 'local')}, "
-              f"{rep.get('passed', '?')}/{rep.get('corner_count', '?')} units passed)", flush=True)
+    the work directory for an IDENTICAL request is reused (`--keep-work` re-runs).
+
+    The plans of one phase (one per excitation) are independent off-host jobs,
+    so they are submitted concurrently; this host only waits on them. A
+    `KltError` from any of them propagates (no record is written)."""
+    with ThreadPoolExecutor(max_workers=max(1, len(plans))) as pool:
+        futs = [pool.submit(_run_plan, p, pdk, work, args, reqs_out, reports_out, walls) for p in plans]
+        errs = []
+        for f in futs:
+            try:
+                f.result()
+            except KltError as exc:
+                errs.append(exc)
+        if errs:
+            raise errs[0]
+
+
+def _run_plan(p: Plan, pdk: Pdk, work: Path, args, reqs_out: dict, reports_out: dict, walls: dict) -> None:
+    wd = work / p.name
+    tb = C.materialise(wd, pdk, C.with_servo(MODES[p.mode]), testbench=TESTBENCH, guard=C.guard_testbench)
+    req = icmr_request(tb, pdk, p.processes, TEMPS_C, p.pairs)
+    req["batch"] = batch_block(args)
+    cache = work / f"{p.name}.cached-report.json"
+    rq = json.dumps({k: v for k, v in req.items() if k != "netlist"}, sort_keys=True)
+    if cache.is_file():
+        blob = json.loads(cache.read_text())
+        if blob["request"] == rq and all(Path(c["artifacts"]["raw"]).is_file() for c in blob["report"]["corners"]
+                                          if (c.get("artifacts") or {}).get("raw")):
+            print(f"  reusing cached report for {p.name}", flush=True)
+            reports_out[p.name], reqs_out[p.name], walls[p.name] = blob["report"], req, blob["wall"]
+            return
+    n = len(p.pairs) * len(TEMPS_C) * len(p.processes)
+    print(f"  submitting {p.name} ({n} units)...", flush=True)
+    t0 = time.time()
+    rep = run_klt_retrying(req, wd / "out", args.backend, wd,
+                           retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
+    walls[p.name] = time.time() - t0
+    reports_out[p.name], reqs_out[p.name] = rep, req
+    if not any(str(d.get("code", "")).startswith("batch_") for c in rep.get("corners", [])
+               for d in c.get("diagnostics", [])):  # never cache a failed JOB
+        cache.write_text(json.dumps({"request": rq, "report": rep, "wall": walls[p.name]}))
+    r = remote_of(rep)
+    print(f"    done in {walls[p.name]:.0f} s (job {r.get('job_id', 'local')}, "
+          f"{rep.get('passed', '?')}/{rep.get('corner_count', '?')} units passed)", flush=True)
 
 
 def phase_plans(phase: str, processes: list[str], pairs: list[tuple[int, int]]) -> list[Plan]:
