@@ -2,6 +2,27 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-09
+
+- **PR #57**: feat(sim): slew-rate, output-swing and quiescent-power testbenches (#44)
+- **PR #56**: ci: run sim/selftest.sh in CI with pinned tools/PDK and strict prerequisites
+- **PR #55**: docs: reconcile current-status prose with committed characterization evidence
+- **PR #54**: chore(ratification): install ee-key and market-key reviewer trees (#41)
+- **PR #53**: feat(sim): aggregate T1 characterization report from committed records
+- **PR #49**: feat(sim): CMRR and PSRR testbenches and 45-point records (#39)
+- **PR #48**: feat(sim): input-referred noise bench and 45-point evidence (#46)
+- **PR #47**: feat(sim): input-offset mismatch Monte Carlo of the committed schematic (#45)
+- **PR #43**: feat(sim): gain/GBW/PM of the committed schematic over the 45-point PVT grid (#38)
+- **Issue #44** (closed): T1 item 5: add slew-rate, output-swing and quiescent-power testbenches for the three ratified-but-unmeasured rows
+- **Issue #52** (closed): Run simulation extraction tests and nominal smoke checks in CI
+- **Issue #51** (closed): Reconcile current-status documentation with committed characterization evidence
+- **Issue #41** (closed): Install ratification/ee-key and ratification/market-key reviewer trees (product#151)
+- **Issue #50** (closed): T1 item 8: generate a consolidated characterization report from selected evidence
+- **Issue #39** (closed): T1 items 5 and 9: add CMRR and PSRR testbenches on the committed schematic so the two open spec rows can be given bounds
+- **Issue #46** (closed): T1 item 5: add input-referred noise experiment to discharge residual (e1)
+- **Issue #45** (closed): T1 item 5: add mismatch Monte Carlo input-offset experiment to discharge residual (e2)
+- **Issue #38** (closed): T1 item 5: run gain, GBW and phase margin on the committed sized schematic across the full PVT grid
+
 ### 2026-10-03
 
 - **PR #36**: refactor: consolidate sim-harness helpers into sim/harness.py
