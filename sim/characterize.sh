@@ -21,6 +21,10 @@
 # testbenches should add their own `run_<name>.py --smoke`-shaped driver and
 # a line below.
 #
+# After all drivers succeed (set -e), the last step regenerates the aggregate
+# characterization report (sim/reports/) from the NEWEST record of each
+# experiment (issue #50); it runs no simulator and takes no driver flags.
+#
 # Extra arguments are forwarded to EVERY driver below, so only flags both
 # drivers accept (--backend, --batch-*) belong on the command line.
 #
@@ -50,3 +54,6 @@ python3 cmrr/run_cmrr.py "$@"
 
 echo "== sim/psrr: PSRR+ / PSRR- (differential, vdd and vss excitations), full 45-point PVT grid =="
 python3 psrr/run_psrr.py "$@"
+
+echo "== sim/report: aggregate characterization report from the newly minted records =="
+python3 report/characterization_report.py --latest --update-manifest

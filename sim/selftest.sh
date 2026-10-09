@@ -11,6 +11,10 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+echo "== sim/report: characterization report generator tests + staleness check (no simulator) =="
+python3 report/test_report.py
+python3 report/characterization_report.py --check
+
 echo "== sim/gain-gbw-pm: extraction + source-guard tests (no simulator) =="
 python3 gain-gbw-pm/test_gain_gbw_pm.py
 
