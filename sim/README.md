@@ -188,6 +188,15 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   one `klt sim` request, with a verdict and binding corner per figure against
   the ratified bounds (≥ 10 V/µs, ≥ 2.3 Vpp, ≤ 350 µW) (issue #44; tracker #7
   item 5).
+- [`input-common-mode/`](input-common-mode/README.md) — **follower-biased input
+  common-mode range** of the committed sized schematic: a VCM scan 0..VDD
+  (≤ 50 mV, refined to 5 mV at transitions) inside each of the 45 PVT points on
+  the CMRR bench's DC-servo, Ad/Acm solved from the actual input phasors,
+  per-device saturation margins from the retained operating-point log, every
+  contiguous passing interval per point, the 45-point intersection and the
+  explicit 1.20 V sample. Two `klt sim` requests per scan/refinement round
+  (paired `vdd`/`vcm` axes on the batch fleet); measured evidence for the ICMR
+  row proposed by decision record 0005 (issue #60).
 
 ## Coverage and gaps
 

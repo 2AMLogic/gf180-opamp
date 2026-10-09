@@ -1,0 +1,42 @@
+* tb_input_common_mode.spice -- follower-biased input-common-mode-range (ICMR)
+* testbench for the committed sized schematic (issue #60).
+*
+* This is the CMRR bench's circuit body (sim/cmrr/testbench/tb_cmrr.spice) with
+* the same device-under-test, ideal 10 uA bias, CL = 2 pF [DR-1] and buffered
+* DC servo; only the DC input common mode differs in use. `klt sim`'s
+* `corners.supply_v` pairs `vdd` and `vcm` BY INDEX, so a request repeats each
+* VDD for each of its VCM samples; VCM is then a scan axis (0..VDD), not VDD/2.
+* NO TRANSISTOR IS DECLARED IN THIS FILE: the driver materialises
+* `opamp_two_stage.dut.spice` from the committed export exactly as the gain,
+* CMRR and PSRR benches do, and rewrites the two `.include` targets.
+*
+* ---- What the servo is for here ----
+* The DC loop is a unity-gain follower (vinn follows vout through the ideal
+* buffer/low-pass `Esb`/`Rsv`/`Csv`), so at each VCM the DC operating point is
+* the follower-biased one: vout settles near VCM only while the input pair, tail
+* and output stage can support it. The servo's tau = rsv*csv = 1e18 s makes it
+* DC-only, so at every AC frequency (0.1 Hz and up) the amplifier is OPEN loop
+* and the two excitations (differential: acp=+0.5/acn=-0.5; common mode:
+* acp=acn=1) solve for Ad and Acm from the ACTUAL input phasors, as in
+* sim/cmrr/run_cmrr.py. The measured gain is the open-loop DC-plateau gain
+* (0.1-1 Hz), NOT the closed-loop follower gain.
+*
+* This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* `.control` or `.end`. The `.param` line is the ONLY line the driver rewrites
+* (per excitation mode and for the servo-isolation study).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param acp=0.5 acn=-0.5 rsv=1e9 csv=1e9
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65 ac {acp}
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vinn vout ibias opamp_two_stage
+Esb vsb 0 vout 0 1
+Rsv vsb vsv {rsv}
+Csv vsv 0 {csv}
+Esv vinn vnac vsv 0 1
+Vnac vnac 0 dc 0 ac {acn}
+CL vout 0 2p
