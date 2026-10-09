@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.967",
-  "loom_commit": "cc9c6cf61d1aebc3153cd1588ca304445a6b9ced",
+  "loom_version": "0.19.972",
+  "loom_commit": "113c7f31d7d16f75d30c470023e0b65b29b1fe94",
   "install_date": "2026-09-05",
   "loom_source_remote": "https://github.com/rjwalters/loom.git",
   "installed_files": [
@@ -516,7 +516,8 @@
     ".loom/scripts/tests/test-script-helper-version-floor.sh",
     ".loom/scripts/tests/test-spawn-claude-ambient-scrub.sh",
     ".loom/scripts/tests/test-spawn-claude-credential-proxy.sh",
-    ".loom/scripts/tests/test-worktree-stale-closed-branch.sh"
+    ".loom/scripts/tests/test-worktree-stale-closed-branch.sh",
+    ".loom/docs/telemetry-replay.md"
   ],
   "last_resync": "2026-10-09",
   "requires_daemon": "0.19.772"
