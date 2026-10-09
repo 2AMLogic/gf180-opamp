@@ -19,13 +19,14 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#58**: Consolidate duplicated klt sim wrapper helpers into sim/harness.py
+_None._
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#60**: spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown
+- **#61**: spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4)
 
 ## PRs Awaiting Review
 
@@ -44,12 +45,11 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#7**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
+- **#60**: spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown *(curated)*
+- **#61**: spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4) *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#59**: T1: cite the committed sim records as klt evidence so the signoff manifest stops grading everything no_evidence *(architect)*
-- **#60**: spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown *(architect)*
-- **#61**: spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4) *(architect)*
 - **#62**: spec: ratify noise band/bound and offset 3-sigma bound via a decision record (DR-3 residuals e1, e2) *(architect)*
 
 ## Epics
@@ -62,11 +62,11 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 0 |
+| Ready (`loom:issue`) | 0 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 1 |
-| Architect / Hermit proposals | 4 |
+| Curated | 3 |
+| Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
