@@ -19,6 +19,13 @@ jobs:
 
       # klt pin — bump together with a regenerated manifests/gf180-opamp.signoff.json
       # (same PR), per manifests/README.md -> "The klt pin".
+      # The item-8 citation pins the report JSON bytes; fail early if the report,
+      # its Markdown, or the generic sidecar is stale vs. the committed records.
+      - name: Check characterization report and evidence sidecar freshness
+        run: |
+          python3 sim/report/characterization_report.py --check
+          python3 sim/report/test_report.py
+
       - name: Install the pinned klt
         run: pipx install "klayout-tools==0.5.0"
 

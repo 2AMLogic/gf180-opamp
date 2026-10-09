@@ -804,6 +804,36 @@ def render_json(rep: dict) -> str:
     return json.dumps(rep, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
 
 
+def report_hash(report_json: str) -> str:
+    """sha256 of the exact UTF-8 bytes of the report JSON (final newline included)."""
+    return "sha256:" + hashlib.sha256(report_json.encode("utf-8")).hexdigest()
+
+
+def render_evidence(report_json: str) -> str:
+    """Generic evidence wrapper (klt signoff item 8) for the report JSON.
+
+    ``status: pass`` asserts only that the aggregated report was produced and
+    verified against its selected records; it does NOT assert that every spec
+    row passes.  Per-row verdicts and limitations live in the report itself.
+    Only called after build() succeeded, so a generator error never yields a
+    passing wrapper.
+    """
+    rep = json.loads(report_json)
+    ev = {
+        "kind": "generic",
+        "status": "pass",
+        "schema_version": 1,
+        "subject": "characterization-report",
+        "claim": "The aggregated characterization report was generated from its selected committed "
+                 "records and verified; this is not a claim that every spec row passes.",
+        "report": {"path": f"{OUT_DIR_REL}/{OUT_NAME}.json", "markdown": f"{OUT_DIR_REL}/{OUT_NAME}.md"},
+        "report_summary": rep["summary"],
+        "provenance": {"input": {"path": f"{OUT_DIR_REL}/{OUT_NAME}.json",
+                                 "content_hash": report_hash(report_json)}},
+    }
+    return json.dumps(ev, indent=2, sort_keys=True, ensure_ascii=False) + "\n"
+
+
 # --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
@@ -839,9 +869,10 @@ def main(argv=None) -> int:
     if a.stdout:
         sys.stdout.write(md)
         return 0
-    targets = {out_dir / f"{OUT_NAME}.md": md, out_dir / f"{OUT_NAME}.json": js}
+    targets = {out_dir / f"{OUT_NAME}.md": md, out_dir / f"{OUT_NAME}.json": js,
+               out_dir / f"{OUT_NAME}.evidence.json": render_evidence(js)}
     if a.check:
-        bad = [str(p) for p, c in targets.items() if not p.is_file() or p.read_text() != c]
+        bad = [str(p) for p, c in targets.items() if not p.is_file() or p.read_bytes() != c.encode("utf-8")]
         if bad:
             print("characterization_report: --check: committed output is stale or missing: " + ", ".join(bad) +
                   "\n  regenerate with: python3 sim/report/characterization_report.py", file=sys.stderr)

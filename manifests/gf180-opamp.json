@@ -1,5 +1,10 @@
 {
   "block": "gf180-opamp",
   "kind": "analog",
-  "evidence": {}
+  "evidence": {
+    "8": {
+      "file": "sim/reports/characterization-report.evidence.json",
+      "content_hash": "sha256:4b122d95d5d02a4f814fd24ab2673ca026ef32b93d3600b2c461ca51be1a84e7"
+    }
+  }
 }

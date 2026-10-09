@@ -8,6 +8,7 @@ spec (never the originals).
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 import shutil
@@ -63,6 +64,32 @@ class CommittedReport(unittest.TestCase):
         self.assertEqual((out / f"{cr.OUT_NAME}.md").read_text(), a[0], "committed report.md is stale")
         self.assertEqual((out / f"{cr.OUT_NAME}.json").read_text(), a[1], "committed report.json is stale")
         self.assertEqual(cr.main(["--check"]), 0)
+
+    def test_evidence_sidecar_binds_report_bytes(self):
+        out = REPO / cr.OUT_DIR_REL
+        raw = (out / f"{cr.OUT_NAME}.json").read_bytes()
+        want = "sha256:" + hashlib.sha256(raw).hexdigest()
+        ev = json.loads((out / f"{cr.OUT_NAME}.evidence.json").read_text())
+        self.assertEqual(ev["kind"], "generic")
+        self.assertEqual(ev["status"], "pass")
+        self.assertEqual(ev["report"]["path"], "sim/reports/characterization-report.json")
+        self.assertEqual(ev["provenance"]["input"]["content_hash"], want)
+        man = json.loads((REPO / "manifests/gf180-opamp.json").read_text())
+        self.assertEqual(man["evidence"]["8"], {"file": "sim/reports/characterization-report.evidence.json",
+                                                "content_hash": want})
+        # honest wrapper: failures stay visible in the report, not hidden by 'pass'
+        rep = json.loads(raw)
+        self.assertGreater(rep["summary"]["fail"], 0)
+        self.assertEqual(ev["report_summary"], rep["summary"])
+        self.assertNotIn("/home/", json.dumps(ev))
+        self.assertIsNone(re.search(r"\d{4}-\d\d-\d\dT", json.dumps(ev)))
+
+    def test_evidence_deterministic_two_dirs(self):
+        with tempfile.TemporaryDirectory() as a, tempfile.TemporaryDirectory() as b:
+            self.assertEqual(cr.main(["--out-dir", a]), 0)
+            self.assertEqual(cr.main(["--out-dir", b]), 0)
+            for e in (".md", ".json", ".evidence.json"):
+                self.assertEqual((Path(a) / f"{cr.OUT_NAME}{e}").read_bytes(), (Path(b) / f"{cr.OUT_NAME}{e}").read_bytes())
 
     def test_no_timestamps_hosts_or_absolute_paths(self):
         md, js = cr.generate(REPO, MANIFEST)
@@ -264,11 +291,36 @@ class Mutations(unittest.TestCase):
         self.assertEqual(cr.main(args + ["--check"]), 1)  # nothing committed yet
         self.assertEqual(cr.main(args), 0)
         self.assertEqual(cr.main(args + ["--check"]), 0)
-        first = [(self.root / "o" / f"{cr.OUT_NAME}{e}").read_bytes() for e in (".md", ".json")]
+        exts = (".md", ".json", ".evidence.json")
+        first = [(self.root / "o" / f"{cr.OUT_NAME}{e}").read_bytes() for e in exts]
         self.assertEqual(cr.main(args), 0)
-        self.assertEqual(first, [(self.root / "o" / f"{cr.OUT_NAME}{e}").read_bytes() for e in (".md", ".json")])
+        self.assertEqual(first, [(self.root / "o" / f"{cr.OUT_NAME}{e}").read_bytes() for e in exts])
         (self.root / "o" / f"{cr.OUT_NAME}.md").write_text("stale\n")
         self.assertEqual(cr.main(args + ["--check"]), 1)
+        self.assertEqual(cr.main(args), 0)
+        ev = self.root / "o" / f"{cr.OUT_NAME}.evidence.json"
+        ev.write_text(ev.read_text().replace('"pass"', '"fail"'))
+        self.assertEqual(cr.main(args + ["--check"]), 1)
+        ev.unlink()
+        self.assertEqual(cr.main(args + ["--check"]), 1)
+
+    def test_evidence_regenerates_after_source_mutation(self):
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        args = ["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(self.root / "o")]
+        self.assertEqual(cr.main(args), 0)
+        rec = self.root / "sim/cmrr/records/20261009-105631-30ec86d.md"
+        rec.write_text(rec.read_text() + "\nextra line\n")
+        self.assertEqual(cr.main(args + ["--check"]), 1)
+
+    def test_no_passing_sidecar_on_generator_error(self):
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        args = ["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(self.root / "o")]
+        (self.root / "sim/cmrr/records/20261009-105631-30ec86d.md").unlink()
+        self.assertEqual(cr.main(args), 2)
+        self.assertFalse((self.root / "o").exists())
+        self.assertEqual(cr.main(args + ["--check"]), 2)
 
     def test_ssp_single_record_for_all_rows(self):
         # the full run alone: all three rows from it, and its swing is flagged as not re-derivable
