@@ -1,0 +1,169 @@
+* netlist snapshot for record 20261009-222613-871d1a6 (issue #60)
+* Reproduces the measured design: DUT contents, testbench, conditions.
+* ---- conditions: klt sim request `scan-cm` (one of 4; the others differ only in process corner, excitation and the paired vdd/vcm samples) ----
+* {
+*  "engine": "ngspice",
+*  "models": {
+*   "pdk": "gf180mcuD",
+*   "lib": "libs.tech/ngspice/sm141064.ngspice"
+*  },
+*  "corners": {
+*   "process": [
+*    {
+*     "name": "typical",
+*     "sections": [
+*      "typical",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ff",
+*     "sections": [
+*      "ff",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ss",
+*     "sections": [
+*      "ss",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "fs",
+*     "sections": [
+*      "fs",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "sf",
+*     "sections": [
+*      "sf",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    }
+*   ],
+*   "supply_v": {
+*    "vdd": "<204 entries>",
+*    "vcm": "<204 entries>"
+*   },
+*   "temperature_c": [
+*    -40.0,
+*    27.0,
+*    125.0
+*   ]
+*  },
+*  "analysis": {
+*   "kind": "ac",
+*   "args": "dec 20 0.1 10\nop\nprint v(vout) v(vinp) v(vinn) @m.xdut.xm1.m0[vds] @m.xdut.xm1.m0[vdsat] @m.xdut.xm1.m0[id] @m.xdut.xm2.m0[vds] @m.xdut.xm2.m0[vdsat] @m.xdut.xm2.m0[id] @m.xdut.xm3.m0[vds] @m.xdut.xm3.m0[vdsat] @m.xdut.xm3.m0[id] @m.xdut.xm4.m0[vds] @m.xdut.xm4.m0[vdsat] @m.xdut.xm4.m0[id] @m.xdut.xm5.m0[vds] @m.xdut.xm5.m0[vdsat] @m.xdut.xm5.m0[id] @m.xdut.xm6.m0[vds] @m.xdut.xm6.m0[vdsat] @m.xdut.xm6.m0[id] @m.xdut.xm7.m0[vds] @m.xdut.xm7.m0[vdsat] @m.xdut.xm7.m0[id] @m.xdut.xmb1.m0[vds] @m.xdut.xmb1.m0[vdsat] @m.xdut.xmb1.m0[id]\nsetplot ac1"
+*  },
+*  "measurements": [],
+*  "options": {
+*   "timeout_s": 300,
+*   "keep_artifacts": true,
+*   "waveforms": true
+*  },
+*  "batch": {
+*   "runner_version_check": "warn"
+*  }
+* }
+
+* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----
+** sch_path: /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-17/design/opamp_two_stage.sch
+.subckt opamp_two_stage vdd vss vinp vinn vout ibias
+
+*.iopin vdd
+*.iopin vss
+*.iopin vinp
+*.iopin vinn
+*.iopin vout
+*.iopin ibias
+XMB1 ibias ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM5 tail ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM1 n1 vinn tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM2 n2 vinp tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM4 n2 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM6 vout n2 vdd vdd pfet_03v3 L=1u W=72u nf=24 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM7 vout ibias vss vss nfet_03v3 L=2u W=36u nf=12 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XCC n2 nz cap_mim_2f0_m4m5_noshield c_width=17.4u c_length=17.4u m=1
+XRZ vout nz vss ppolyf_u_1k r_width=2u r_length=4u m=1
+.ends
+* ---- testbench: sim/input-common-mode/testbench/tb_input_common_mode.spice (verbatim; the driver rewrites only its .param line) ----
+* tb_input_common_mode.spice -- follower-biased input-common-mode-range (ICMR)
+* testbench for the committed sized schematic (issue #60).
+*
+* This is the CMRR bench's circuit body (sim/cmrr/testbench/tb_cmrr.spice) with
+* the same device-under-test, ideal 10 uA bias, CL = 2 pF [DR-1] and buffered
+* DC servo; only the DC input common mode differs in use. `klt sim`'s
+* `corners.supply_v` pairs `vdd` and `vcm` BY INDEX, so a request repeats each
+* VDD for each of its VCM samples; VCM is then a scan axis (0..VDD), not VDD/2.
+* NO TRANSISTOR IS DECLARED IN THIS FILE: the driver materialises
+* `opamp_two_stage.dut.spice` from the committed export exactly as the gain,
+* CMRR and PSRR benches do, and rewrites the two `.include` targets.
+*
+* ---- What the servo is for here ----
+* The DC loop is a unity-gain follower (vinn follows vout through the ideal
+* buffer/low-pass `Esb`/`Rsv`/`Csv`), so at each VCM the DC operating point is
+* the follower-biased one: vout settles near VCM only while the input pair, tail
+* and output stage can support it. The servo's tau = rsv*csv = 1e18 s makes it
+* DC-only, so at every AC frequency (0.1 Hz and up) the amplifier is OPEN loop
+* and the two excitations (differential: acp=+0.5/acn=-0.5; common mode:
+* acp=acn=1) solve for Ad and Acm from the ACTUAL input phasors, as in
+* sim/cmrr/run_cmrr.py. The measured gain is the open-loop DC-plateau gain
+* (0.1-1 Hz), NOT the closed-loop follower gain.
+*
+* This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* `.control` or `.end`. The `.param` line is the ONLY line the driver rewrites
+* (per excitation mode and for the servo-isolation study).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param acp=0.5 acn=-0.5 rsv=1e9 csv=1e9
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65 ac {acp}
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vinn vout ibias opamp_two_stage
+Esb vsb 0 vout 0 1
+Rsv vsb vsv {rsv}
+Csv vsv 0 {csv}
+Esv vinn vnac vsv 0 1
+Vnac vnac 0 dc 0 ac {acn}
+CL vout 0 2p
+
+* ---- klt-generated deck of the first unit (corner.cir) ----
+* | * klt sim -- generated corner deck, do not edit
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice mimcap_typical
+* | .include /var/tmp/eda-job-klt-sim-20c7b31c53a5/inputs/netlist.cir
+* | .temp -40.0
+* | .control
+* | alter vcm=0.0
+* | alter vdd=2.97
+* | set filetype=ascii
+* | ac dec 20 0.1 10
+* | op
+* | print v(vout) v(vinp) v(vinn) @m.xdut.xm1.m0[vds] @m.xdut.xm1.m0[vdsat] @m.xdut.xm1.m0[id] @m.xdut.xm2.m0[vds] @m.xdut.xm2.m0[vdsat] @m.xdut.xm2.m0[id] @m.xdut.xm3.m0[vds] @m.xdut.xm3.m0[vdsat] @m.xdut.xm3.m0[id] @m.xdut.xm4.m0[vds] @m.xdut.xm4.m0[vdsat] @m.xdut.xm4.m0[id] @m.xdut.xm5.m0[vds] @m.xdut.xm5.m0[vdsat] @m.xdut.xm5.m0[id] @m.xdut.xm6.m0[vds] @m.xdut.xm6.m0[vdsat] @m.xdut.xm6.m0[id] @m.xdut.xm7.m0[vds] @m.xdut.xm7.m0[vdsat] @m.xdut.xm7.m0[id] @m.xdut.xmb1.m0[vds] @m.xdut.xmb1.m0[vdsat] @m.xdut.xmb1.m0[id]
+* | setplot ac1
+* | write /var/tmp/eda-job-klt-sim-20c7b31c53a5/outputs/artifacts/typical_vcm0p000_vdd2p970V_n40C/waveform.raw
+* | quit
+* | .endc
+* | .end
