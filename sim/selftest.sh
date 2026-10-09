@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # sim/selftest.sh -- fast smoke check: confirm each sim/ testbench still
 # converges to a sane (typical, 27C) operating point, without running the
-# full 15-point PVT grid or writing any append-only record.
+# full 45-point PVT grid or writing any append-only record.
 #
 # Mirrors gf180-comparator's sim/selftest.sh (the fast counterpart to
 # sim/characterize.sh's full run). Intended for a quick "did I break the
@@ -11,5 +11,8 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-echo "== sim/gain-gbw-pm: smoke test (typical, 27C only) =="
+echo "== sim/gain-gbw-pm: extraction + source-guard tests (no simulator) =="
+python3 gain-gbw-pm/test_gain_gbw_pm.py
+
+echo "== sim/gain-gbw-pm: smoke test (typical, 27C, 3.30 V, one local point) =="
 python3 gain-gbw-pm/run_gain_gbw_pm.py --smoke

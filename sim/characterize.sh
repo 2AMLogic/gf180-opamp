@@ -7,8 +7,9 @@
 # and each experiment's own README for the cold-start prerequisites (ngspice,
 # the pinned gf180mcu PDK revision, numpy/matplotlib).
 #
-# Currently runs one experiment (sim/gain-gbw-pm/, issue #19 -- the repo's
-# first spec-row testbench); sim/gm-id-characterization/ predates this script
+# Currently runs one experiment (sim/gain-gbw-pm/: open-loop gain / GBW /
+# phase margin of the committed sized schematic over the full 45-point PVT
+# grid, issues #19 and #38); sim/gm-id-characterization/ predates this script
 # and is still run directly (`python3 sim/gm-id-characterization/run_gmid.py`)
 # per its own README, since this script's job is the *one-command driver*
 # acceptance criterion for the newly-added spec-row testbenches, not a
@@ -18,9 +19,15 @@
 #
 # Each run mints a new append-only record under the experiment's own
 # records/ -- nothing here overwrites a previous run.
+#
+# Where the 45-point grid executes is `klt sim`'s decision (the request's
+# backend, or $KLT_SIM_BACKEND -- the Spot batch fleet on a dispatch worker).
+# Extra arguments are forwarded to the driver, e.g.
+#   ./characterize.sh --backend local
+#   ./characterize.sh --batch-submit-retries 40 --batch-runner-version-check warn
 
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
-echo "== sim/gain-gbw-pm: full 15-point PVT sweep =="
-python3 gain-gbw-pm/run_gain_gbw_pm.py
+echo "== sim/gain-gbw-pm: full 45-point PVT grid (5 MOS corners x 3 T x 3 VDD) =="
+python3 gain-gbw-pm/run_gain_gbw_pm.py "$@"

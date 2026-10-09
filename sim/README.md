@@ -5,9 +5,12 @@ ngspice testbenches and append-only results.
 ## One-command driver
 
 - `./characterize.sh` — regenerates every testbench's full PVT-cornered
-  evidence (mints new append-only records).
-- `./selftest.sh` — fast smoke check (no records written), confirming each
-  testbench still converges to a sane operating point.
+  evidence (mints new append-only records). Multi-corner grids go through
+  `klt sim`, so they run on whichever backend `klt` selects (the Spot batch
+  fleet on a dispatch worker via `KLT_SIM_BACKEND=batch`); never hand-loop
+  `ngspice -b` over a grid.
+- `./selftest.sh` — fast check (no records written): the extraction and
+  source-guard unit tests plus a single local nominal point.
 
 Mirrors `gf180-comparator`'s `characterize.sh`/`selftest.sh` split. See
 `gain-gbw-pm/README.md` for what each currently drives.
@@ -54,9 +57,12 @@ future tightening proposal must clear before a deck may add one.
   `spec/target-spec.md` §1's corner-grid row. (Predates
   `characterize.sh`/`selftest.sh`; still run directly per its own README.)
 - [`gain-gbw-pm/`](gain-gbw-pm/README.md) — open-loop DC gain, GBW and phase
-  margin of a **provisional, smoke-level** two-stage Miller-compensated
-  op-amp netlist (DR-0001 topology), via the "big resistor" open-loop AC
-  testbench, across the same `typical/ff/ss/fs/sf` × −40/27/125 °C grid. The
-  repo's first **circuit-level** spec-row testbench (issue #19) — evidence
-  pending a real sizing pass and spec ratification, not a pass/fail
-  verdict.
+  margin of the **committed sized schematic**
+  (`design/netlist/opamp_two_stage.spice`, instantiated as
+  `opamp_two_stage`; the testbench declares no transistor) across the full
+  ratified grid — `typical/ff/ss/fs/sf` × −40/27/125 °C × 2.97/3.30/3.63 V,
+  45 points expressed as one `klt sim` request — with a per-row verdict and
+  binding corner against the ratified bounds in `spec/target-spec.md` §2, a
+  feedback-isolation study and deterministic negative controls. The repo's
+  first circuit-level spec-row evidence (issues #19, #38; tracker #7
+  items 5 and 9).
