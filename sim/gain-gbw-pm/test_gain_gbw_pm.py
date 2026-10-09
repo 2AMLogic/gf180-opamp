@@ -13,6 +13,7 @@ from __future__ import annotations
 import contextlib
 import io
 import math
+import re
 import sys
 import tempfile
 import types
@@ -480,6 +481,49 @@ class PassiveCornerTests(unittest.TestCase):
         self.assertIn("Passive-section policy (swept)", md)
         self.assertIn("res_ss", md)
         self.assertIn("**FAIL**", md)  # PM 57 at RZ best misses the unchanged 60 deg bound
+
+    def test_verdict_counts_are_pass_counts_labelled_as_such(self):
+        """Issue #70 review: the header printed the PASS count after FAIL."""
+        keys = r.passive_expected_keys()
+        results = {}
+        for i, k in enumerate(keys):  # 7 cells meet PM, 3 cells miss GBW
+            results[k] = r.Metrics(valid=True, dc_gain_db=90.0,
+                                   pm_deg=61.0 if i < 7 else 55.0,
+                                   gbw_hz=9.5e6 if i >= 24 else 11e6)
+        pm, gbw = r.passive_verdict_lines(results)
+        self.assertIn("**FAIL** -- passes at 7/27 study cells (fails at 20/27)", pm)
+        self.assertIn("**FAIL** -- passes at 24/27 study cells (fails at 3/27)", gbw)
+        self.assertNotRegex(pm + gbw, r"FAIL\*\* at \d")
+        # all cells meeting the bound -> PASS, zero failures
+        ok = {k: r.Metrics(valid=True, pm_deg=65.0, gbw_hz=12e6) for k in keys}
+        pm, gbw = r.passive_verdict_lines(ok)
+        self.assertIn("**PASS** -- passes at 27/27 study cells (fails at 0/27)", pm)
+        # an INVALID cell counts as failing
+        ok[keys[0]] = r.Metrics(valid=False, reason="x")
+        pm, _ = r.passive_verdict_lines(ok)
+        self.assertIn("**FAIL** -- passes at 26/27 study cells (fails at 1/27)", pm)
+
+    def test_recompute_from_committed_record(self):
+        """`--recompute-passive` re-derives the committed record without a simulator:
+        tables/findings byte-identical, header counts agree with the table columns."""
+        src = "20261009-233341-95dfc2a"
+        if not (r.HERE / "corners" / src / "klt-report.json").is_file():
+            self.skipTest("committed passive-corner data not present")
+        from datetime import datetime, timezone
+        rid, md = r.recompute_passive(src, now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        old = (r.HERE / "records" / f"{src}.md").read_text()
+        body = lambda t: t.split("## Conditions", 1)[1].split("## Artifacts", 1)[0]  # noqa: E731
+        self.assertEqual(body(md), body(old))
+        self.assertIn(f"- **Supersedes**: `{src}`", md)
+        self.assertIn("passes at 7/27 study cells (fails at 20/27)", md)
+        self.assertIn("passes at 24/27 study cells (fails at 3/27)", md)
+        # the header counts must match the per-cell PASS/FAIL columns
+        rows = [ln.split("|") for ln in md.splitlines() if re.match(r"^\| (typical|best|worst) \|", ln)]
+        self.assertEqual(len(rows), 27)
+        self.assertEqual(sum(c[8].strip() == "PASS" for c in rows), 7)
+        self.assertEqual(sum(c[9].strip() == "FAIL" for c in rows), 3)
+        self.assertIn(f"`sim/gain-gbw-pm/corners/{src}/`", md)
+        self.assertIn(f"netlist-snapshots/{src}.spice", md)
 
 
 if __name__ == "__main__":

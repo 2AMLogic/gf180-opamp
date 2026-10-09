@@ -1276,37 +1276,69 @@ def passive_summary(results: dict[Key, Metrics], points=PASSIVE_POINTS) -> dict:
     return out
 
 
+def _passive_lab(k: Key) -> str:
+    mos, r, c = split_passive_key(k)
+    return f"{mos} / {k[1]:g} C / {k[2]:.2f} V, RZ {r}, CC {c}"
+
+
+def passive_verdict_lines(results: dict[Key, Metrics]) -> list[str]:
+    """The record's PM / GBW verdict bullets.
+
+    The verdict word covers the whole study (PASS only if every cell meets
+    the bound); the counts are spelled out as "passes at n/N (fails at N-n)"
+    so a pass count is never printed next to the word FAIL (issue #70
+    review: the first passive record's header read "FAIL at 7/27" where 7
+    was the number of PASSING cells). An INVALID cell counts as failing.
+    """
+    out: list[str] = []
+    allm = [(k, m) for k, m in results.items() if m.valid]
+    if not allm:
+        return out
+    total = len(results)
+    worst_pm = min(allm, key=lambda t: t[1].pm_deg)
+    best_pm = max(allm, key=lambda t: t[1].pm_deg)
+    worst_gbw = min(allm, key=lambda t: t[1].gbw_hz)
+    n_pm = sum(m.valid and m.pm_deg >= PM_MIN_DEG for m in results.values())
+    n_gbw = sum(m.valid and m.gbw_hz >= GBW_MIN_HZ for m in results.values())
+
+    def counts(n: int) -> str:
+        return f"**{'PASS' if n == total else 'FAIL'}** -- passes at {n}/{total} study cells (fails at {total - n}/{total})"
+
+    out.append(f"  - Phase margin >= {PM_MIN_DEG:g} deg: {counts(n_pm)}; "
+               f"worst {worst_pm[1].pm_deg:.2f} deg at {_passive_lab(worst_pm[0])}; "
+               f"best {best_pm[1].pm_deg:.2f} deg at {_passive_lab(best_pm[0])}.")
+    out.append(f"  - GBW >= {GBW_MIN_HZ / 1e6:g} MHz: {counts(n_gbw)}; "
+               f"worst {fmt_hz(worst_gbw[1].gbw_hz)} at {_passive_lab(worst_gbw[0])}.")
+    return out
+
+
 def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_desc, report,
-                         results, dut_sha, base_record) -> str:
+                         results, dut_sha, base_record, supersedes: str | None = None,
+                         supersede_note: str = "", findings: str = "") -> str:
+    """Markdown for a passive-corner record.
+
+    `supersedes` (with `supersede_note`) marks a record regenerated from an
+    earlier record's committed data (`--recompute-passive`): the corner data
+    and netlist snapshot stay under the superseded id and are referenced, not
+    copied. `findings` is appended verbatim before the Artifacts section.
+    """
     L: list[str] = []
     add = L.append
     remote = (report.get("environment") or {}).get("remote") or {}
     summ = passive_summary(results)
-    allm = [(k, m) for k, m in results.items() if m.valid]
     pm_ok = all(m.valid and m.pm_deg >= PM_MIN_DEG for m in results.values())
     gbw_ok = all(m.valid and m.gbw_hz >= GBW_MIN_HZ for m in results.values())
-    worst_pm = min(allm, key=lambda t: t[1].pm_deg) if allm else None
-    worst_gbw = min(allm, key=lambda t: t[1].gbw_hz) if allm else None
-    best_pm = max(allm, key=lambda t: t[1].pm_deg) if allm else None
-
-    def lab(k):
-        mos, r, c = split_passive_key(k)
-        return f"{mos} / {k[1]:g} C / {k[2]:.2f} V, RZ {r}, CC {c}"
+    data_id = supersedes or record
 
     add(f"# gain/GBW/PM passive-corner study (RZ x CC) -- record {record}")
     add("")
     add(f"- **Date (UTC)**: {stamp:%Y-%m-%d %H:%M:%S}")
+    if supersedes:
+        add(f"- **Supersedes**: `{supersedes}` -- {supersede_note}")
     add("- **Issue**: #70 (DR-3 section (d) RZ PVT-tracking quantification; tracker #7 item 5)")
     add(f"- **Measured against**: the committed sized schematic; the default 45-point grid record is `{base_record}` (unchanged, typical passives)")
     add("- **Verdict (spec bounds NOT edited here)**:")
-    if worst_pm:
-        n = sum(m.valid and m.pm_deg >= PM_MIN_DEG for m in results.values())
-        add(f"  - Phase margin >= {PM_MIN_DEG:g} deg: **{'PASS' if pm_ok else 'FAIL'}** at {n}/{len(results)} study cells; "
-            f"worst {worst_pm[1].pm_deg:.2f} deg at {lab(worst_pm[0])}; best {best_pm[1].pm_deg:.2f} deg at {lab(best_pm[0])}.")
-    if worst_gbw:
-        n = sum(m.valid and m.gbw_hz >= GBW_MIN_HZ for m in results.values())
-        add(f"  - GBW >= {GBW_MIN_HZ / 1e6:g} MHz: **{'PASS' if gbw_ok else 'FAIL'}** at {n}/{len(results)} study cells; "
-            f"worst {fmt_hz(worst_gbw[1].gbw_hz)} at {lab(worst_gbw[0])}.")
+    L.extend(passive_verdict_lines(results))
     add("  - Slew = Itail/CC: Itail is set by the 10 uA bias mirror (passive-independent to first order), "
         "so slew scales as 1/CC: CC worst (x1.10) -> slew x0.909; CC best (x0.90) -> slew x1.111 "
         "(column `slew rel.` below; an analytic scaling, not a transient measurement -- the slew "
@@ -1322,7 +1354,7 @@ def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_de
     add(f"- **Execution**: {backend_desc}")
     if remote:
         add(f"  - environment.remote: `{json.dumps(remote, sort_keys=True)}`")
-    add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (normalised sha256 `{dut_sha}`); snapshot `netlist-snapshots/{record}.spice`")
+    add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (normalised sha256 `{dut_sha}`); snapshot `netlist-snapshots/{data_id}.spice`")
     add("- **Points**: " + "; ".join(f"{m} / {t:g} C / {v:.2f} V" for m, t, v in PASSIVE_POINTS)
         + f", each x 3 RZ levels x 3 CC levels = {len(results)} cells; ibias = 10 uA, CL = 2 pF, same `.ac` and extraction as the 45-point grid.")
     add("- **Passive-section policy (swept)**: RZ (`ppolyf_u_1k`) uses `res_typical` / `res_ff` (best, 1000-200 ohm = 0.8x) / "
@@ -1359,10 +1391,15 @@ def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_de
             f"{g('typical','best','d_pm')} / {g('typical','worst','d_pm')} | "
             f"{g('typical','best','d_gbw_pct')} / {g('typical','worst','d_gbw_pct')} |")
     add("")
+    if findings:
+        add(findings.rstrip("\n"))
+        add("")
     add("## Artifacts")
     add("")
     add("- Runner: `sim/gain-gbw-pm/run_gain_gbw_pm.py --passive-corners`; tests: `sim/gain-gbw-pm/test_gain_gbw_pm.py`")
-    add(f"- Per-cell logs, decks, data and the sanitised klt report: `sim/gain-gbw-pm/corners/{record}/`")
+    if supersedes:
+        add(f"- Regenerated without a simulator: `sim/gain-gbw-pm/run_gain_gbw_pm.py --recompute-passive {supersedes}`")
+    add(f"- Per-cell logs, decks, data and the sanitised klt report: `sim/gain-gbw-pm/corners/{data_id}/`")
     add("")
     return "\n".join(L)
 
@@ -1437,6 +1474,90 @@ def run_passive(pdk: Pdk, args) -> int:
     return 0
 
 
+def _record_field(md: str, pattern: str, what: str) -> re.Match:
+    m = re.search(pattern, md, re.M)
+    if not m:
+        raise ValueError(f"superseded record has no {what} line")
+    return m
+
+
+def recompute_passive(source: str, *, root: Path = HERE, now=None) -> tuple[str, str]:
+    """Rebuild a passive-corner record from a committed record's evidence.
+
+    No simulator and no network: per-cell metrics are re-extracted from the
+    committed `corners/<source>/*.dat` (the same `extract_metrics` the live
+    run uses), cross-checked against ngspice's `.meas` values in the
+    committed `klt-report.json`, and the conditions (PDK, tool versions,
+    execution, DUT hash, base record) plus the analyst `## Findings` section
+    are carried over verbatim from the superseded record. Returns
+    (new record id, markdown); the caller writes it.
+    """
+    old_md = (root / "records" / f"{source}.md").read_text()
+    cdir = root / "corners" / source
+    report = json.loads((cdir / "klt-report.json").read_text())
+    want = passive_expected_keys()
+    seen = {point_key(c): c for c in report.get("corners", [])}
+    if set(seen) != set(want):
+        raise ValueError(f"{source}: klt-report.json cells do not match the passive study grid")
+    results: dict[Key, Metrics] = {}
+    problems: list[str] = []
+    for k in want:
+        a = np.loadtxt(cdir / f"{point_stem(k)}.dat")
+        freq, h, vdiff = a[:, 0], a[:, 1] + 1j * a[:, 2], a[:, 3] + 1j * a[:, 4]
+        m = extract_metrics(freq, h)
+        vals = {x["name"]: x.get("value") for x in seen[k].get("measurements", [])}
+        if m.valid:
+            problems += crosscheck(k, vals, h[0] * vdiff[0], m)
+        results[k] = m
+    if problems:
+        raise ValueError("cross-check against the committed .meas values failed: " + "; ".join(problems))
+
+    cond = _record_field(old_md, r"^- \*\*PDK\*\*: (.+) \(open_pdks (\S+)\); ngspice (.+); klt (.+)$", "PDK")
+    pdk = argparse.Namespace(path=cond.group(1), version=cond.group(2))
+    backend_desc = _record_field(old_md, r"^- \*\*Execution\*\*: (.+)$", "Execution").group(1)
+    dut_sha = _record_field(old_md, r"normalised sha256 `([0-9a-f]{64})`", "DUT hash").group(1)
+    closure = {e.get("sha256") for e in (report.get("environment") or {}).get("netlist_closure", [])}
+    if dut_sha not in closure:
+        raise ValueError(f"{source}: DUT sha256 in the record is not in klt-report.json's netlist closure")
+    base_record = _record_field(old_md, r"default 45-point grid record is `([^`]+)`", "base record").group(1)
+    fm = re.search(r"^## Findings.*?(?=^## )", old_md, re.M | re.S)
+    findings = fm.group(0) if fm else ""
+
+    if now is None:
+        record, stamp = allocate_record_id(REPO_ROOT)
+    else:  # tests: deterministic id, no git call
+        stamp = now
+        record = f"{stamp:%Y%m%d-%H%M%S}-test"
+    note = (f"regenerated with NO new simulation from `{source}`'s committed `corners/{source}/` data "
+            f"(`.dat` per cell + `klt-report.json`, fleet job "
+            f"`{((report.get('environment') or {}).get('remote') or {}).get('job_id', 'n/a')}`, "
+            f"measured {old_md.split('**Date (UTC)**: ', 1)[1].split(chr(10), 1)[0]} UTC). "
+            f"Only the Verdict header changes: `{source}` printed the PASSING-cell count after the word "
+            f"FAIL (\"FAIL at 7/27\" / \"FAIL at 24/27\"); every table, sensitivity and Findings number "
+            f"is unchanged. Corner data and the netlist snapshot stay under `{source}`.")
+    md = build_passive_record(
+        record=record, stamp=stamp, pdk=pdk, ngspice=cond.group(3), klt_version=cond.group(4),
+        backend_desc=backend_desc, report=report, results=results, dut_sha=dut_sha,
+        base_record=base_record, supersedes=source, supersede_note=note, findings=findings,
+    )
+    return record, md
+
+
+def run_recompute_passive(source: str) -> int:
+    try:
+        record, md = recompute_passive(source)
+    except (OSError, ValueError) as exc:
+        print(f"ERROR: cannot regenerate from {source}; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
+        return 2
+    out = HERE / "records" / f"{record}.md"
+    if out.exists():
+        print(f"ERROR: {out} already exists; evidence is append-only", file=sys.stderr)
+        return 2
+    out.write_text(md)
+    print(f"wrote {out}")
+    return 0
+
+
 def smoke(pdk: Pdk) -> int:
     print(f"smoke test: {NOMINAL} only, local, PDK={pdk.path}")
     with tempfile.TemporaryDirectory(prefix="gainpm-smoke-") as scratch:
@@ -1462,6 +1583,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="opt-in: RZ x CC passive-corner study (3x3 independent poly-resistor / "
                     "MIM-cap sections at fs/125C/2.97V, ss/125C/2.97V and nominal) as ONE klt sim "
                     "request; the default 45-point grid is unchanged")
+    ap.add_argument("--recompute-passive", metavar="RECORD",
+                    help="no simulator: write a new record superseding passive-corner RECORD, "
+                    "regenerated from its committed corners/RECORD/ data")
     ap.add_argument("--strict", action="store_true", help="exit 1 when a ratified row misses")
     ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None,
                     help="forward batch.runner_version_check (only meaningful on the batch backend)")
@@ -1474,6 +1598,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
     args = ap.parse_args(argv)
 
+    if args.recompute_passive:
+        return run_recompute_passive(args.recompute_passive)
     pdk = find_pdk()
     if args.smoke:
         return smoke(pdk)
