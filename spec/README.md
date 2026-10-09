@@ -25,4 +25,8 @@ Target specification and decision records. Spec changes require a decision recor
   (the ratification record and its residual register), and
   [`0004-ngspice-reltol-policy.md`](decision-records/0004-ngspice-reltol-policy.md)
   (the ngspice solver-tolerance convention, mirroring `sg13g2-opamp`'s
-  DR-0005; sets no spec row).
+  DR-0005; sets no spec row), and
+  [`0005-input-common-mode-range-row.md`](decision-records/0005-input-common-mode-range-row.md)
+  (**proposed**, issue #60: adds the input common-mode range row from the
+  measured 45-point follower-biased ICMR; not ratified before the operator's
+  approval of its carrying PR).
