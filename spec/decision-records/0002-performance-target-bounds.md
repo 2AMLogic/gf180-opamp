@@ -1,6 +1,6 @@
 # 0002: Recommended bounds for `target-spec.md` §2's `[TBD]` performance rows
 
-- **Status**: proposed (input to a future spec-ratification act; per the
+- **Status**: ratified via DR-0003 / PR #26 (originally proposed; input to a future spec-ratification act; per the
   2am#357 ratification-via-PR policy, the operator's approval of the PR
   that lands this record *is* the ratification act — this record does not
   itself flip `spec/target-spec.md`'s `Status` field, which remains
