@@ -1,175 +1,189 @@
 # `sim/gain-gbw-pm/` — open-loop DC gain / GBW / phase margin
 
-The repo's **first circuit-level spec-row testbench** under `sim/` (issue
-#19), following `sim/gm-id-characterization/`'s device-level study. Measures
-open-loop DC gain, gain-bandwidth product (GBW) and phase margin — three
-numbers from one `.ac` sweep — against a **provisional, smoke-level**
-two-stage Miller-compensated op-amp netlist, across the DR-0001-ratified
-`typical/ff/ss/fs/sf` process corners at −40/27/125 °C.
+Spec-row evidence for three ratified rows of `spec/target-spec.md` §2 —
+**open-loop DC gain** (≥ 60 dB, stretch ≥ 70 dB), **GBW** (≥ 10 MHz into
+CL = 2 pF) and **phase margin** (≥ 60°) — measured on the **committed sized
+schematic** across the full ratified grid (issue #38; tracker #7 items 5 and
+9). It replaces the earlier hand-built, schematic-disconnected testbench of
+issue #19; those two records stay in `records/` unchanged (append-only) and
+are superseded as evidence by the newest record here.
 
-**This is evidence, not a spec verdict.** No `design/` schematic exists yet
-for this block (`spec/decision-records/0001-topology-and-cl.md` is
-*proposed*, not ratified) and `spec/target-spec.md`'s phase-margin row is
-`[P]` (proposed, unratified) with every other performance row `[TBD]`. Every
-number this experiment records is measured data pending a real sizing pass
-and spec ratification — see each record's "Claim" field for the exact
-wording.
+## What is measured
 
-## What was measured
+- **Device under test**: `design/netlist/opamp_two_stage.spice`, the xschem
+  export of `design/opamp_two_stage.sch`, instantiated as
+  `Xdut vdd 0 vinp vinn vout ibias opamp_two_stage`. The testbench declares
+  **no transistor**: every device, including the committed Miller cap `CC`
+  and nulling resistor `RZ`, comes from the export. The export is consumed
+  through `subckt_from_export()` in `design/check_dc_op.py` (uncomment
+  xschem's `**.subckt`/`**.ends`, drop `.end`; nothing else), so the DC
+  operating-point check and this bench read the design through one
+  conversion.
+- **Bias and load**: 10 µA driven *into* `ibias` (the polarity
+  `check_dc_op.py` uses), `CL = 2 pF` on `vout`, input common mode tracking
+  VDD/2.
+- **Grid (45 points)**: MOS process `typical, ff, ss, fs, sf` × temperature
+  −40, 27, 125 °C × supply 2.97, 3.30, 3.63 V (±10 %). One small-signal
+  `.ac` sweep per point, `0.1 Hz – 1 GHz`, 20 points/decade.
+- **Passive-section policy**: every MOS corner is paired with the same
+  `res_typical` and `mimcap_typical` sections (what the nominal DC check
+  uses). The grid varies MOS corner, temperature and supply. It does **not**
+  claim independent corners of `RZ` or `CC`; that coverage was not run. The
+  committed `RZ`/`CC` are used as drawn and never retuned here — their
+  phase-margin consequence is simply part of the measurement.
 
-- **Topology** (DR-0001): NMOS input differential pair with a PMOS
-  current-mirror load (first stage), PMOS common-source gain device (second
-  stage), Miller compensation cap `Cc` between the two stages, `CL = 2 pF`
-  at the output (`spec/target-spec.md` §1, `[DR-1]`).
-- **Bias simplification (explicit)**: the tail current and the second-stage
-  bias current are **ideal SPICE current sources**, not a self-biased
-  mirror/reference network. This factors out bias-generator design — a real
-  engineering task for a future sizing issue — and keeps the netlist robust
-  across all 15 PVT points, since an ideal current source's infinite output
-  impedance never degrades either stage's intrinsic gain the way a real
-  mirror transistor's own finite `rds` would.
-- **Device sizing (illustrative only, not a sizing pass)**: input pair at
-  `L = 0.28 µm` (short channel, chosen for `fT` — `nfet_03v3` `fT ≈ 25.12
-  GHz` at `L=0.28µm`, `Vov=200mV`, `typical` corner,
-  `sim/gm-id-characterization/records/20260909-052956-79c6a45.md`, the same
-  figure DR-0001 cites for its own input-pair decision). Second-stage PMOS
-  at `L = 4 µm` (long channel, chosen for `gm/gds` — `pfet_03v3` `gm/gds ≈
-  2122.7` at `L=4µm`, `Vov=200mV`, same record/corner, the same figure
-  DR-0001 cites for its own output-stage decision). Exact `W`, bias
-  currents and `Cc` were tuned empirically (see
-  `testbench/tb_gain_gbw_pm.spice`'s header) to converge to a sane
-  small-signal operating point — this is **not** a gm/ID-driven sizing
-  pass.
-- **Testbench technique**: the standard "big resistor" open-loop AC trick —
-  a `Rfb = 1e15 Ω` resistor from the output back to the inverting input
-  DC-closes the loop (self-biases the whole amplifier) while being AC-open
-  (negligible admittance at any swept frequency vs. the gate capacitance it
-  competes with), letting a single `.ac` sweep of the non-inverting input
-  yield the true open-loop transfer function directly as `Vout/Vip`.
+## Measurement technique
 
-## PVT corner grid
+**DC-closed, AC-open loop.** A huge inductor `Lfb` (1e9 H) from `vout` to
+`vinn` closes the loop at DC — the amplifier self-biases as a unity-gain
+buffer at `vinn = vout = VCM`, the operating point `check_dc_op.py`
+verifies — while 2π·f·`Lfb` ≥ ~6e8 Ω even at the sweep's 0.1 Hz start, far
+above the output resistance, so the loop is open at every swept frequency. A
+huge `Cfb` (1e9 F) from `vinn` to ground makes `vinn` an AC ground; the AC
+stimulus (1 V) sits on `vinp` only. A *small* `Lfb` would load the output
+and show up as a gain that rises with frequency — the failure the plateau
+check below exists to catch.
 
-`typical, ff, ss, fs, sf` (DR-0001-ratified MOS corner grid) × −40/27/125 °C
-— 15 points per run, at the fixed nominal 3.3 V supply (no ±10 % supply
-sweep in this pass). See `sim/gm-id-characterization/corners/README.md` for
-the grid's own derivation; DR-0001 ratified it for reuse by future
-PVT-cornered testbenches, which this experiment is the first to do.
+**Gain** is `v(vout) / (v(vinp) − v(vinn))`, using the actual differential
+input phasor, not an assumed 1.
 
-## Cold-start: reproducing every record
+**Extraction** (`extract_metrics()` in `run_gain_gbw_pm.py`):
 
-Requires `ngspice` and the pinned gf180mcu PDK revision, plus Python 3 with
-`numpy` and `matplotlib`.
+1. *Validation*: ≥ 20 finite points, positive strictly increasing
+   frequency, non-zero magnitude.
+2. *DC gain = low-frequency plateau*, not the peak. The lowest decade
+   (0.1–1 Hz) must be flat to within 0.10 dB and have a phase within 10° of 0
+   (this also verifies input polarity: `vinp` is the non-inverting input). The
+   DC gain is the mean dB over that band.
+3. *Phase*: `numpy.unwrap` over the whole sweep, referenced to the plateau
+   phase, so a response that passes −180° is not folded back.
+4. *GBW*: the **first descending** 0 dB crossing (`dB[i] ≥ 0 > dB[i+1]`),
+   interpolated linearly in (log₁₀ f, dB). *Phase margin* = 180° + the
+   unwrapped phase interpolated at that frequency.
+5. *Never passes*: a missing crossing (sweep ends above 0 dB, or starts
+   below it), any further 0 dB crossing (gain peaking back above 0 dB), a
+   non-flat plateau, wrong polarity, malformed or non-finite data, or a
+   failed simulation. An invalid point fails **every** row.
 
-**Pinned PDK revision**: gf180mcu (`gf180mcuD` variant) at open_pdks commit
-`c6d73a35f524070e85faff4a6a9eef49553ebc2b`, installed via
-[volare](https://github.com/efabless/volare):
+**Verdicts** are per point and per row against the ratified bound; each
+row's *binding corner* is the worst point (an invalid point binds first).
+The 70 dB gain stretch is reported separately and is not a mandatory row.
+
+**Feedback-isolation study.** The nominal point is re-measured with
+`Lfb = Cfb` ∈ {1e8, 1e9, 1e10} (gain stays within 0.10 dB, PM within
+0.5°, GBW within 0.5 %), plus a deliberately inadequate 1e4 that the plateau
+check must reject.
+
+**Negative controls**, deterministic, recorded separately from the grid:
+the Miller capacitor `XCC` removed from the DUT, and `ibias` driven at 0 A.
+Each simulates successfully and the checks must fail; if a control passes
+every row the driver exits non-zero.
+
+**Operating point.** A separate `op` analysis of the same testbench (same
+grid) flags `|vout − VCM| > 100 mV` and, where the executing runner returns
+`expr` measurements, any DUT MOSFET out of saturation; a local single `op`
+unit records the nominal device-level bias. Flags are recorded, not spec
+rows.
+
+## Execution: one `klt sim` request
+
+The 45-point grid is **one `klt sim` corner-matrix request** (process bundle
+× `supply_v` × `temperature_c`), not a loop of `ngspice` runs. Which backend
+runs it is `klt`'s decision — `--backend`, the request, or
+`$KLT_SIM_BACKEND` (the Spot batch fleet on a dispatch worker). Outputs come
+back in the klt report; the batch job id is in `environment.remote` and is
+copied into the record. If a batch submit fails the driver reports the error
+and writes **no record** — it never falls back to a local grid. Only
+single-unit runs (the nominal `op`, the isolation study, the negative
+controls, `--smoke`) run locally.
+
+`vdd` and `vcm` are swept together by index so VCM tracks VDD/2. The process
+axis uses gf180mcu's bundle form: `{name: ff, sections: [ff, res_typical,
+mimcap_typical]}`.
+
+The testbench `.include`s the PDK's `design.ngspice` (global parameters) and
+`opamp_two_stage.dut.spice`; the driver materialises both into a per-run work
+directory (a copy of the PDK file and the wrapper-normalised export) and
+rewrites only those two include paths, so klt stages them as the netlist's
+include closure.
+
+## Cold start
+
+Requires `ngspice`, `klt`, Python 3 with `numpy` and `matplotlib`, and the
+pinned gf180mcu PDK revision:
 
 ```bash
 pip install volare
 volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b
 ```
 
-Then, from a clean checkout:
+PDK resolution (first hit wins): `$GF180_PDK_PATH` (a gf180mcu variant
+directory with `libs.tech/`), else `$PDK_ROOT` (+ `$PDK`, default
+`gf180mcuD`), else `~/.volare/gf180mcuD`.
 
 ```bash
-# Full 15-point PVT sweep -- mints a new append-only record.
+# Full 45-point grid + studies — mints a new append-only record.
 python3 sim/gain-gbw-pm/run_gain_gbw_pm.py
-# or, via the repo-level one-command driver:
-./sim/characterize.sh
+./sim/characterize.sh                  # same, via the repo-level driver
 
-# Fast sanity check (typical/27C only, no record written):
+# Useful flags (all forwarded to klt):
+#   --backend local|batch|...          override klt's backend choice
+#   --batch-submit-retries N --batch-retry-wait-s S
+#                                      re-submit when the shared fleet's
+#                                      concurrency cap refuses the submit
+#   --batch-runner-version-check warn  run on a fleet runner older than the
+#                                      client (see the record for what ran)
+#   --strict                           exit 1 when a ratified row misses
+
+# Fast checks, no record written:
+python3 sim/gain-gbw-pm/test_gain_gbw_pm.py   # extraction + source guards
 python3 sim/gain-gbw-pm/run_gain_gbw_pm.py --smoke
-# or:
-./sim/selftest.sh
+./sim/selftest.sh                      # both of the above
 ```
 
-The full run mints a new `<record-id>` (`<YYYYMMDD-HHMMSS>-<git-sha>`), runs
-the 15-point corner grid, and writes:
+Exit status: 0 when the evidence is complete — 45 valid simulations, the
+negative controls fail as they must, the isolation study is stable —
+**including when a spec row misses** (a miss is a result; `--strict` makes it
+exit 1). A failed submit or an incomplete grid exits 2 with no record.
 
-- `corners/<record-id>/<corner>_<temp>c.{log,dat}` — raw ngspice transcripts
-  and `wrdata` (frequency, real, imaginary) output, one pair per PVT point;
-- `netlist-snapshots/<record-id>.spice` — a frozen copy of
-  `testbench/tb_gain_gbw_pm.spice`, the DUT fragment used;
-- `records/<record-id>.md` — the append-only summary record (a
-  corner/temperature table of DC gain / GBW / phase margin, a sanity flag
-  per point, and a link to the Bode plot below);
-- `records/<record-id>-plots/bode_typical_27c.png` — magnitude and phase
-  vs. frequency at the nominal (`typical`, 27 °C) corner, with the extracted
-  GBW marked.
+Each run writes, under a fresh `<record-id>` (`<YYYYMMDD-HHMMSS>-<git-sha>`);
+the driver refuses to overwrite an existing id:
 
-PDK resolution order (first hit wins): `$GF180_PDK_PATH` (a gf180mcu variant
-directory containing `libs.tech/`), else `$PDK_ROOT` (+ `$PDK`, default
-`gf180mcuD`), else the default volare install path `~/.volare/gf180mcuD`.
+- `corners/<id>/<process>_<T>c_<vdd>v.{log,cir,dat}` — klt's ngspice log, the
+  generated corner deck, and `freq, Re/Im(vout/vdiff), Re/Im(vdiff)` for each
+  of the 45 points (supply is in the name, so all 45 survive);
+- `corners/<id>/klt-report.json`, `klt-op-report.json` — sanitised klt
+  reports (environment, job id, per-corner status); `corners/<id>/controls/`
+  — the isolation and negative-control runs;
+- `netlist-snapshots/<id>.spice` — the request (conditions), the **DUT
+  contents**, the testbench and the nominal klt deck: enough to reproduce the
+  measured design after the schematic changes;
+- `records/<id>.md` and `records/<id>-plots/*.png` — the per-row verdicts,
+  binding corners, all 45 points, operating-point and polarity checks,
+  isolation study, controls, and the PDK revision used.
 
-Re-running mints a new record rather than overwriting the previous one —
-`sim/`'s append-only evidence convention: nothing under `corners/`,
-`netlist-snapshots/` or `records/` is ever edited or deleted, only added to.
+## Guards
 
-## One-command driver
+`test_gain_gbw_pm.py` (stdlib `unittest`; no simulator) covers:
 
-`sim/characterize.sh` (full PVT sweep, mints a record) and `sim/selftest.sh`
-(fast `--smoke` check, no record written) live at the `sim/` root, mirroring
-`gf180-comparator`'s `characterize.sh`/`selftest.sh` split — chosen over a
-per-testbench-only script so the pattern is already in place at the `sim/`
-root for the next testbench to extend, even though this experiment is
-currently the only one they drive (`sim/gm-id-characterization/` predates
-this pattern and is still run directly per its own README).
+- extraction against synthetic responses with analytically known crossover
+  and phase (two-pole), phase wrapping through −180°, an absent crossing,
+  peaking / multiple crossings, a rising low-frequency response, wrong
+  polarity, non-finite and malformed data;
+- the source guard: the testbench must `.include` the design-derived DUT and
+  the PDK design file, declare no MOSFET or PDK device, instantiate
+  `opamp_two_stage` exactly once, and stay a circuit body (no
+  `.lib/.temp/.control/.end`); the materialised DUT must contain every
+  device line of the committed export unchanged, with no duplicates. The
+  driver runs the same guards before every simulation;
+- verdict aggregation / binding corners, the 45 unique points and
+  filenames, and append-only record paths.
 
-## What this feeds
+## Limitations
 
-- `spec/target-spec.md` §2's `Open-loop DC gain`, `GBW` and `Phase margin`
-  rows — all currently `[TBD]` or `[P]` (phase margin only). This study is
-  the first evidence against any of the three, but does **not** flip any
-  tag itself (ratification is a separate, future decision-record issue,
-  per this issue's own scope, same convention
-  `sim/gm-id-characterization/README.md` follows for its own contribution
-  to `target-spec.md`).
-- The future schematic-entry and sizing-pass issues — this experiment
-  establishes the `sim/<name>/` structure, harness shape, and one-command
-  driver pattern (`characterize.sh`/`selftest.sh`) that those issues'
-  eventual real testbenches can reuse directly, once a real `design/`
-  schematic and a gm/ID-driven sizing pass exist to simulate.
-- The gap-to-T1 tracker, [#7](https://github.com/2AMLogic/gf180-opamp/issues/7),
-  items 5, 9 and 11 ("first spec-row testbench... with a one-command
-  driver").
-
-## Design notes / limitations
-
-- **Provisional netlist, not a sizing pass.** Device widths, lengths and
-  bias currents were chosen to converge to sane small-signal behaviour, not
-  derived from a gm/ID-driven sizing methodology against a target gain/
-  bandwidth/power point. A future sizing issue should supersede this
-  netlist entirely once `design/` has a real schematic to simulate.
-- **Ideal bias current sources.** `Itail` and `Ibias2` are SPICE `I`
-  elements, not a real mirror/reference network — see
-  `testbench/tb_gain_gbw_pm.spice`'s header. This is a deliberate
-  simplification to factor out bias-generator design; it also means this
-  testbench cannot yet speak to quiescent power (a future spec row) since
-  no real bias-generator current is modeled.
-- **No supply-voltage corner.** Only the nominal 3.3 V is simulated; the
-  ±10 % supply axis (`spec/target-spec.md` §1) is not yet exercised by this
-  testbench.
-- **"DC gain" is the swept response's peak magnitude, not a literal `f→0`
-  sample.** This netlist's inverting-input gate capacitance is small enough
-  (short-channel input pair) that the "big resistor" feedback trick's own
-  low-frequency artifact (an R-C zero from `Rfb` loading that small gate
-  capacitance) sits within a few hundred Hz of DC rather than far below it
-  — visible as the low-frequency rise-then-peak shape in the Bode plot
-  before the real single-pole roll-off. The *peak* value was verified to
-  converge (to within ~0.3 dB, scanning `Rfb` from `1e13`–`1e20` Ω) and is
-  reported as "open-loop DC gain"; GBW and phase margin are extracted from
-  the roll-off region well above the peak, which is insensitive to `Rfb`'s
-  exact value. See `run_gain_gbw_pm.py`'s `extract()` docstring and each
-  record's own "Extraction method" field.
-- **No mismatch/Monte Carlo, no noise, no CMRR/PSRR.** This experiment is
-  scoped to the single AC sweep that yields gain/GBW/PM together; every
-  other classic row (`CLAUDE.md`'s list) needs its own future testbench.
-- **Not vendored from any sibling repo's harness.** The cross-experiment
-  helpers (PDK discovery, record-id allocation, the per-corner executor)
-  come from this repo's own master module, `sim/harness.py` — one shared
-  copy per issue #30's operator ruling (2026-10-02), which reversed this
-  study's original "copied, not imported" convention after the copies
-  drifted — while this experiment's deck composition, extraction and
-  plotting stay local. Still no dependency on a shared harness *library*
-  from any sibling repo: per REUSE.md (rule 9) no fleet-level harness
-  master exists to take by pinned reference.
+- Deterministic corners only — no mismatch / Monte Carlo (offset has its own
+  future testbench), no noise, CMRR/PSRR (#39), slew, swing or power.
+- Passive corners are not independently exercised (see the policy above).
+- GBW and phase margin are defined by the first 0 dB crossing of the
+  small-signal response with `CL = 2 pF` on the output and the committed
+  `RZ`/`CC`; no external compensation is added.
