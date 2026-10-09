@@ -19,7 +19,7 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#58**: Consolidate duplicated klt sim wrapper helpers into sim/harness.py
 
 ## In Progress
 
@@ -44,11 +44,13 @@ _None._
 Issues carrying `loom:curated`.
 
 - **#7**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
-- **#38**: T1 item 5: run gain, GBW and phase margin on the committed sized schematic across the full PVT grid *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-_None._
+- **#59**: T1: cite the committed sim records as klt evidence so the signoff manifest stops grading everything no_evidence *(architect)*
+- **#60**: spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown *(architect)*
+- **#61**: spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4) *(architect)*
+- **#62**: spec: ratify noise band/bound and offset 3-sigma bound via a decision record (DR-3 residuals e1, e2) *(architect)*
 
 ## Epics
 
@@ -60,11 +62,11 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Operator priority | 0 |
-| Ready (`loom:issue`) | 0 |
+| Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 2 |
-| Architect / Hermit proposals | 0 |
+| Curated | 1 |
+| Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
