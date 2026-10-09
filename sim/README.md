@@ -33,7 +33,7 @@ to fail. The job fails if it leaves any file modified or created (no
 | Where | Pin | Role |
 |---|---|---|
 | `selftest.yml` `SELFTEST_KLT_VERSION` | `klayout-tools==0.7.0` | client that runs the smoke simulations |
-| `signoff.yml` | `klayout-tools==0.5.0` | grader whose output must reproduce `manifests/gf180-opamp.signoff.json` |
+| `signoff.yml` | `klayout-tools==0.7.0` | grader whose output must reproduce `manifests/gf180-opamp.signoff.json` |
 
 Bump each independently; the signoff pin moves only with a regenerated record
 (`manifests/README.md`). The PDK pin is `GF180_PDK_REV`, which must equal

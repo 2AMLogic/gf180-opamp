@@ -27,7 +27,7 @@ jobs:
           python3 sim/report/test_report.py
 
       - name: Install the pinned klt
-        run: pipx install "klayout-tools==0.5.0"
+        run: pipx install "klayout-tools==0.7.0"
 
       - name: Re-run the block signoff fresh
         run: |
