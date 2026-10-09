@@ -31,7 +31,8 @@ are superseded as evidence by the newest record here.
   claim independent corners of `RZ` or `CC` -- the default grid never does. The
   opt-in `--passive-corners` mode (issue #70) sweeps `res_{typical,ff,ss}` x
   `mimcap_{typical,ff,ss}` independently at fs/125 C/2.97 V, ss/125 C/2.97 V and
-  nominal as ONE `klt sim` request (see record `20261009-233341-95dfc2a`). The
+  nominal as ONE `klt sim` request (see record `20261009-234014-55b400c`, which
+  supersedes `20261009-233341-95dfc2a` with a corrected verdict header from the same data). The
   committed `RZ`/`CC` are used as drawn and never retuned here — their
   phase-margin consequence is simply part of the measurement.
 

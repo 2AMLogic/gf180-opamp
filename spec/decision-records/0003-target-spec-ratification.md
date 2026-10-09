@@ -174,7 +174,9 @@ redesign path — never a weakening of the 60° bound.
 
 *Addendum (issue #70, append-only; no bound or ratified text above changed).*
 The RZ/CC passive-corner quantification this section names is recorded in
-[`sim/gain-gbw-pm/records/20261009-233341-95dfc2a.md`](../../sim/gain-gbw-pm/records/20261009-233341-95dfc2a.md):
+[`sim/gain-gbw-pm/records/20261009-234014-55b400c.md`](../../sim/gain-gbw-pm/records/20261009-234014-55b400c.md)
+(it supersedes `20261009-233341-95dfc2a`, regenerated from the same committed fleet data
+without simulation to correct that record's verdict-header counts):
 all nine independent poly-resistor x MIM-cap corner combinations at
 FS / 125 °C / 2.97 V, SS / 125 °C / 2.97 V and nominal, on the committed
 schematic. Phase margin spans 53.63°–63.17° (7/27 cells meet ≥ 60°);

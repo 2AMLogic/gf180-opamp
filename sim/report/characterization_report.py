@@ -48,6 +48,11 @@ EXPERIMENTS = ["gain-gbw-pm", "offset-mc", "noise", "cmrr", "psrr", "slew-swing-
 #: entry may be an object {row: record path}, naming the record each row is
 #: taken from (rows a record also judged but is not selected for are ignored).
 MULTI_RECORD = {"slew-swing-power": ("power", "slew", "swing")}
+#: Side-study records that live beside an experiment's grid records but never
+#: judge its spec rows (matched on the record's title line), so `--latest`
+#: must not select them: the gain-gbw-pm RZ x CC passive-corner study
+#: (`run_gain_gbw_pm.py --passive-corners`, issue #70).
+STUDY_TITLES = {"gain-gbw-pm": ("# gain/GBW/PM passive-corner study",)}
 CORNER_ORDER = ["typical", "ff", "ss", "fs", "sf"]
 FULL_GRID = 45
 
@@ -422,6 +427,8 @@ def latest_selection(root: Path) -> dict:
     sel = {}
     for exp in EXPERIMENTS:
         recs = sorted((root / "sim" / exp / "records").glob("*.md"))
+        recs = [p for p in recs
+                if not p.read_text().lstrip().startswith(STUDY_TITLES.get(exp, ()) or ("\0",))]
         if exp in MULTI_RECORD:
             # per row, the newest record that judged it; one path when they all agree
             picked: dict = {}
