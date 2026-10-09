@@ -1,0 +1,183 @@
+* netlist snapshot for record 20261009-072205-96bf3cc (issue #45)
+* Reproduces the measured design: DUT contents, testbench, conditions.
+* ---- conditions: klt sim request (grid) ----
+* {
+*  "engine": "ngspice",
+*  "models": {
+*   "pdk": "gf180mcuD",
+*   "lib": "libs.tech/ngspice/sm141064.ngspice"
+*  },
+*  "corners": {
+*   "process": [
+*    {
+*     "name": "typical",
+*     "sections": [
+*      "typical",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ff",
+*     "sections": [
+*      "ff",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ss",
+*     "sections": [
+*      "ss",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "fs",
+*     "sections": [
+*      "fs",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "sf",
+*     "sections": [
+*      "sf",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    }
+*   ],
+*   "supply_v": {
+*    "vdd": [
+*     3.3
+*    ],
+*    "vcm": [
+*     1.65
+*    ]
+*   },
+*   "temperature_c": [
+*    27.0
+*   ]
+*  },
+*  "analysis": {
+*   "kind": "dc",
+*   "args": "Ibias 10u 11u 1u"
+*  },
+*  "measurements": [
+*   {
+*    "name": "vout_v",
+*    "spice": ".meas dc vout_v FIND v(vout) AT=10u",
+*    "unit": "V"
+*   },
+*   {
+*    "name": "vinp_v",
+*    "spice": ".meas dc vinp_v FIND v(vinp) AT=10u",
+*    "unit": "V"
+*   },
+*   {
+*    "name": "vos_v",
+*    "spice": ".meas dc vos_v FIND par('v(vout)-v(vinp)') AT=10u",
+*    "unit": "V"
+*   }
+*  ],
+*  "options": {
+*   "timeout_s": 300,
+*   "keep_artifacts": true
+*  },
+*  "monte_carlo": {
+*   "n": 300,
+*   "seed": 45,
+*   "vary": "mismatch"
+*  },
+*  "batch": {
+*   "runner_version_check": "warn"
+*  }
+* }
+
+* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----
+** sch_path: /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-17/design/opamp_two_stage.sch
+.subckt opamp_two_stage vdd vss vinp vinn vout ibias
+
+*.iopin vdd
+*.iopin vss
+*.iopin vinp
+*.iopin vinn
+*.iopin vout
+*.iopin ibias
+XMB1 ibias ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM5 tail ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM1 n1 vinn tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM2 n2 vinp tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM4 n2 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM6 vout n2 vdd vdd pfet_03v3 L=1u W=72u nf=24 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM7 vout ibias vss vss nfet_03v3 L=2u W=36u nf=12 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XCC n2 nz cap_mim_2f0_m4m5_noshield c_width=17.4u c_length=17.4u m=1
+XRZ vout nz vss ppolyf_u_1k r_width=2u r_length=4u m=1
+.ends
+* ---- testbench: sim/offset-mc/testbench/tb_offset_mc.spice (verbatim) ----
+* tb_offset_mc.spice -- unity-follower DC bench for the Monte Carlo input-offset
+* study of the committed sized schematic (issue #45; spec row: input offset,
+* statistical basis; DR-3 residual (e2)).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_offset_mc.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+* test_offset_mc.py guards both includes and the absence of transistors.
+*
+* This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* `.control` or `.end`. `klt sim` adds the corner's `.lib` cards, `.temp`,
+* the supply `alter`s, the Monte Carlo seed cards and the DC analysis.
+*
+* ---- Measurement ----
+* Unity-gain follower: vinn is tied to vout (the Xdut instance below), vinp
+* is driven to VCM = 1.65 V. The static offset is  vout - vinp.  It includes
+* the systematic term (design/opamp_sizing.md Sec.4 balance condition) in
+* its MEAN; the sample-to-sample spread is the mismatch distribution. The
+* follower's closed-loop error vout - vinp = Vos * A/(1+A) differs from the
+* input-referred offset by the 1/A ~ 0.1 % factor (A >= 60 dB), negligible
+* against the quantities reported.
+*
+* ---- Mismatch switch ----
+* The gf180mcu model gates per-instance MOS mismatch with the model-level
+* `.param sw_stat_mismatch` (default 0 in design.ngspice; scales the
+* `delvto`/`mulu0` terms of the plain `nfet_03v3`/`pfet_03v3` subcircuits in
+* the `fets_mm` library section). It is turned on HERE, after the
+* design.ngspice include, so the global process-statistical switch
+* `sw_stat_global` stays 0 (global spread is covered by the five MOS
+* corners, not sampled). The driver rewrites ONLY this line (to 0) for the
+* switch-off control.
+*
+* ---- Bias ----
+* Ibias 10 uA driven INTO `ibias` from vdd (the polarity design/check_dc_op.py
+* uses). No load capacitor: this is a DC measurement. The Ibias source is the
+* swept element of the one-step DC analysis klt adds (10u..11u, the point at
+* 10u is the one measured).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param sw_stat_mismatch=1
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vout vout ibias opamp_two_stage
+
+* ---- imbalance control: the ONLY DUT line that differs (snapshot copy; committed netlist untouched) ----
+* XM1 n1 vinn tail vss nfet_03v3 L=1u W=3.96u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'

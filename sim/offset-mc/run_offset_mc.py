@@ -751,7 +751,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, report, stats, worst, sta
     add("")
     add("## Extraction validation")
     add("")
-    add("Every sample was required to have finite `vout_v`/`vinp_v`/`vos_v`; `vinp = {VCM_V}` V; the independently measured `vos_v = v(vout)-v(vinp)` to agree with "
+    add(f"Every sample was required to have finite `vout_v`/`vinp_v`/`vos_v`; `vinp = {VCM_V}` V; the independently measured `vos_v = v(vout)-v(vinp)` to agree with "
         f"`vout_v - vinp_v` within {XCHK_TOL_V:g} V; and |offset| < {OFFSET_VALID_ABS_V} V. "
         f"Each corner had to contribute exactly N={MC_N} samples with distinct indices.")
     if stats_problems:
