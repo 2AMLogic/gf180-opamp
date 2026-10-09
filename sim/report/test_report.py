@@ -405,6 +405,13 @@ class Mutations(unittest.TestCase):
         self.assertEqual(sel["gain-gbw-pm"], "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md")
         self.assertEqual(sel, json.loads(MANIFEST.read_text())["experiments"])
 
+    def test_latest_selection_ignores_side_study_records(self):
+        # a newer passive-corner study record (issue #70) is not a grid record
+        rec = self.root / "sim/gain-gbw-pm/records/29991231-235959-0000000.md"
+        rec.write_text("# gain/GBW/PM passive-corner study (RZ x CC) -- record 29991231-235959-0000000\n")
+        self.assertEqual(cr.latest_selection(self.root)["gain-gbw-pm"],
+                         "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md")
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

@@ -128,7 +128,8 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   `selection.json`); verify the committed copy: `... --check` (exit 1 if
   stale). `characterize.sh` ends with `--latest --update-manifest`, selecting
   the newest record of each experiment (for `slew-swing-power`, the newest
-  record that judged each row); `selftest.sh` runs
+  record that judged each row; side-study records such as the gain-gbw-pm
+  `--passive-corners` study are never selected); `selftest.sh` runs
   `report/test_report.py` and `--check`.
 
 ## Experiments

@@ -785,7 +785,7 @@
   },
   "spec": {
     "path": "spec/target-spec.md",
-    "sha256": "0b8e7fac56e52a69ef97bbc4bd2c2b34d52727e58c304f84d5c532a1d04d3b39"
+    "sha256": "79b49050069da925289f4786b718bf33bb0593da4da5b9791f14ec2705a4dfbf"
   },
   "summary": {
     "fail": 1,

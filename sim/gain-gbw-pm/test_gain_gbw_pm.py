@@ -13,6 +13,7 @@ from __future__ import annotations
 import contextlib
 import io
 import math
+import re
 import sys
 import tempfile
 import types
@@ -401,6 +402,128 @@ class SharedKltWrapperTests(unittest.TestCase):
         self.assertEqual(rep["corners"][0]["artifacts"]["log"], "/abs/host/p/corner.log")  # input untouched
         self.assertEqual(harness.remote_of(rep), {"provider": "batch"})
         self.assertEqual(harness.remote_of({}), {})
+
+
+class PassiveCornerTests(unittest.TestCase):
+    """Opt-in RZ x CC passive-corner axis (issue #70); default grid untouched."""
+
+    def test_default_grid_unchanged(self):
+        self.assertEqual(len(r.expected_keys(r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)), 45)
+        self.assertEqual(r.PASSIVE_SECTIONS, ("res_typical", "mimcap_typical"))
+        ax = r.process_axis(["fs"])
+        self.assertEqual(ax, [{"name": "fs", "sections": ["fs", "res_typical", "mimcap_typical"]}])
+
+    def test_section_names_exist_in_pdk(self):
+        try:
+            lib = (harness.find_pdk().path / r.MODEL_LIB).read_text()
+        except Exception:
+            self.skipTest("PDK not installed")
+        for res in r.PASSIVE_LEVELS:
+            for mim in r.PASSIVE_LEVELS:
+                for sec in r.passive_sections(res, mim):
+                    self.assertRegex(lib, rf"(?im)^\.lib {sec}\s*$")
+
+    def test_sections_map_independently(self):
+        self.assertEqual(r.passive_sections("best", "worst"), ("res_ff", "mimcap_ss"))
+        self.assertEqual(r.passive_sections("worst", "typical"), ("res_ss", "mimcap_typical"))
+        self.assertEqual(len(r.passive_combos()), 9)
+
+    def test_request_is_one_matrix_with_exactly_the_study_points(self):
+        req = r.passive_ac_request(Path("/x/tb.spice"), types.SimpleNamespace(variant="gf180mcuD"))
+        axis = req["corners"]["process"]
+        self.assertEqual(len(axis), 27)
+        by = {a["name"]: a["sections"] for a in axis}
+        self.assertEqual(by[r.passive_name("ss", "worst", "best")], ["ss", "res_ss", "mimcap_ff"])
+        # emulate klt: cross product minus exclude entries
+        sup = req["corners"]["supply_v"]
+        cells = set()
+        for a in axis:
+            for vdd in sup["vdd"]:
+                for t in req["corners"]["temperature_c"]:
+                    e = {"process": a["name"], "temperature_c": t, "supply_v": {"vdd": vdd}}
+                    if e not in req["exclude"]:
+                        cells.add((a["name"], float(t), float(vdd)))
+        self.assertEqual(cells, set(r.passive_expected_keys()))
+        self.assertEqual(len(cells), 27)
+
+    def test_request_expansion_matches_klt(self):
+        try:
+            from klayout_tools import sim as ksim
+            expand = ksim._expand_corners
+        except Exception:
+            self.skipTest("klt expander not importable")
+        req = r.passive_ac_request(Path("/x/tb.spice"), types.SimpleNamespace(variant="gf180mcuD"))
+        pts = expand(req["corners"], req["exclude"])
+        got = {(p.process if isinstance(p.process, str) else p.process["name"], p.temperature_c, p.supply_v["vdd"])
+               for p in pts}
+        self.assertEqual(got, set(r.passive_expected_keys()))
+
+    def test_summary_and_record_report_sensitivity(self):
+        def m(pm, gbw):
+            return r.Metrics(valid=True, dc_gain_db=90.0, gbw_hz=gbw, pm_deg=pm)
+
+        results = {}
+        for (mos, t, v) in r.PASSIVE_POINTS:
+            for rl, cl in r.passive_combos():
+                pm = 60.0 + (5.0 if rl == "worst" else -3.0 if rl == "best" else 0.0)
+                gbw = 12e6 / r.MIM_FACTOR[cl]
+                results[(r.passive_name(mos, rl, cl), t, v)] = m(pm, gbw)
+        summ = r.passive_summary(results)
+        row = summ[("fs", 125.0, 2.97)][("worst", "typical")]
+        self.assertAlmostEqual(row["d_pm"], 5.0)
+        self.assertAlmostEqual(row["slew_rel"], 1.0)
+        self.assertAlmostEqual(summ[("fs", 125.0, 2.97)][("typical", "worst")]["slew_rel"], 1 / 1.1)
+        self.assertAlmostEqual(summ[("fs", 125.0, 2.97)][("typical", "worst")]["d_gbw_pct"], 100 * (1 / 1.1 - 1))
+        from datetime import datetime, timezone
+        md = r.build_passive_record(
+            record="X", stamp=datetime.now(timezone.utc), pdk=types.SimpleNamespace(path="/p", version="v"),
+            ngspice="n", klt_version="k", backend_desc="b", report={}, results=results, dut_sha="0", base_record="B")
+        self.assertIn("Passive-section policy (swept)", md)
+        self.assertIn("res_ss", md)
+        self.assertIn("**FAIL**", md)  # PM 57 at RZ best misses the unchanged 60 deg bound
+
+    def test_verdict_counts_are_pass_counts_labelled_as_such(self):
+        """Issue #70 review: the header printed the PASS count after FAIL."""
+        keys = r.passive_expected_keys()
+        results = {}
+        for i, k in enumerate(keys):  # 7 cells meet PM, 3 cells miss GBW
+            results[k] = r.Metrics(valid=True, dc_gain_db=90.0,
+                                   pm_deg=61.0 if i < 7 else 55.0,
+                                   gbw_hz=9.5e6 if i >= 24 else 11e6)
+        pm, gbw = r.passive_verdict_lines(results)
+        self.assertIn("**FAIL** -- passes at 7/27 study cells (fails at 20/27)", pm)
+        self.assertIn("**FAIL** -- passes at 24/27 study cells (fails at 3/27)", gbw)
+        self.assertNotRegex(pm + gbw, r"FAIL\*\* at \d")
+        # all cells meeting the bound -> PASS, zero failures
+        ok = {k: r.Metrics(valid=True, pm_deg=65.0, gbw_hz=12e6) for k in keys}
+        pm, gbw = r.passive_verdict_lines(ok)
+        self.assertIn("**PASS** -- passes at 27/27 study cells (fails at 0/27)", pm)
+        # an INVALID cell counts as failing
+        ok[keys[0]] = r.Metrics(valid=False, reason="x")
+        pm, _ = r.passive_verdict_lines(ok)
+        self.assertIn("**FAIL** -- passes at 26/27 study cells (fails at 1/27)", pm)
+
+    def test_recompute_from_committed_record(self):
+        """`--recompute-passive` re-derives the committed record without a simulator:
+        tables/findings byte-identical, header counts agree with the table columns."""
+        src = "20261009-233341-95dfc2a"
+        if not (r.HERE / "corners" / src / "klt-report.json").is_file():
+            self.skipTest("committed passive-corner data not present")
+        from datetime import datetime, timezone
+        rid, md = r.recompute_passive(src, now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        old = (r.HERE / "records" / f"{src}.md").read_text()
+        body = lambda t: t.split("## Conditions", 1)[1].split("## Artifacts", 1)[0]  # noqa: E731
+        self.assertEqual(body(md), body(old))
+        self.assertIn(f"- **Supersedes**: `{src}`", md)
+        self.assertIn("passes at 7/27 study cells (fails at 20/27)", md)
+        self.assertIn("passes at 24/27 study cells (fails at 3/27)", md)
+        # the header counts must match the per-cell PASS/FAIL columns
+        rows = [ln.split("|") for ln in md.splitlines() if re.match(r"^\| (typical|best|worst) \|", ln)]
+        self.assertEqual(len(rows), 27)
+        self.assertEqual(sum(c[8].strip() == "PASS" for c in rows), 7)
+        self.assertEqual(sum(c[9].strip() == "FAIL" for c in rows), 3)
+        self.assertIn(f"`sim/gain-gbw-pm/corners/{src}/`", md)
+        self.assertIn(f"netlist-snapshots/{src}.spice", md)
 
 
 if __name__ == "__main__":
