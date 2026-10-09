@@ -191,6 +191,23 @@ def fmt_key(k: Key) -> str:
     return f"{fmt_combo(k[:3])} / VCM {k[3] / 1000:.3f} V"
 
 
+#: An unsigned decimal (with optional exponent). Signs and range dashes such as
+#: "0.1-1 Hz" are left in the text, so masked reasons stay readable.
+_NUM_RX = re.compile(r"\d+(?:\.\d+)?(?:[eE][-+]?\d+)?")
+
+
+def validity_groups(inv: list) -> list[tuple[int, str, Key, str]]:
+    """Group invalid samples by their first reason with every number masked as
+    `N`; return (count, masked pattern, first sample's key, its verbatim reason),
+    most frequent first. The verbatim example keeps the rendered line concrete."""
+    groups: dict[str, list] = {}
+    for s in inv:
+        pat = _NUM_RX.sub("N", s.invalid_reasons[0])[:110]
+        g = groups.setdefault(pat, [0, s.key, s.invalid_reasons[0]])
+        g[0] += 1
+    return [(n, pat, k, r) for pat, (n, k, r) in sorted(groups.items(), key=lambda kv: (-kv[1][0], kv[0]))]
+
+
 def combo_stem(c: Combo) -> str:
     return f"{c[0]}_{c[1]:g}c_{c[2] / 1000:.2f}v"
 
@@ -743,11 +760,54 @@ class Plan:
 REUSED: set[str] = set()
 
 
+_INCLUDE_RX = re.compile(r"^\s*\.(?:include|inc|lib)\s+['\"]?([^'\"\s]+)", re.M | re.I)
+
+
+def netlist_fingerprint(netlist: Path) -> str:
+    """sha256 over the materialised netlist and every file it `.include`s / `.lib`s
+    that exists on disk (recursively, each file once, in first-reference order).
+
+    Part of the `--keep-work` cache key: the request JSON names the netlist only
+    by path, so without its CONTENT a changed DUT or bench would silently reuse
+    a stale fleet report. Missing targets (e.g. PDK-relative model names the
+    request resolves itself) are hashed by name only."""
+    h = hashlib.sha256()
+    seen: set[Path] = set()
+
+    def walk(f: Path) -> None:
+        f = f.resolve()
+        if f in seen:
+            return
+        seen.add(f)
+        data = f.read_bytes()
+        h.update(f"file {f.name} {len(data)}\n".encode())
+        h.update(data)
+        for m in _INCLUDE_RX.finditer(data.decode(errors="replace")):
+            tgt = Path(m.group(1))
+            tgt = tgt if tgt.is_absolute() else f.parent / tgt
+            if tgt.is_file():
+                walk(tgt)
+            else:
+                h.update(f"missing {m.group(1)}\n".encode())
+
+    walk(netlist)
+    return h.hexdigest()
+
+
+def request_cache_key(req: dict, netlist: Path) -> str:
+    """`--keep-work` cache key: the request minus its (path-only) `netlist`
+    field, plus the content fingerprint of the netlist and its includes."""
+    body = {k: v for k, v in req.items() if k != "netlist"}
+    body["netlist_sha256"] = netlist_fingerprint(netlist)
+    return json.dumps(body, sort_keys=True)
+
+
 def run_requests(plans: list[Plan], pdk: Pdk, work: Path, args, reqs_out: dict, reports_out: dict,
                  walls: dict) -> None:
     """Submit each plan as one `klt sim` corner request (retrying only a
     capacity-refused batch submit; never changing backend). A report cached in
-    the work directory for an IDENTICAL request is reused (`--keep-work` re-runs).
+    the work directory for an IDENTICAL request is reused (`--keep-work` re-runs);
+    identity includes the content of the materialised netlist and its includes.
 
     The plans of one phase (one per excitation) are independent off-host jobs,
     so they are submitted concurrently; this host only waits on them. A
@@ -770,7 +830,7 @@ def _run_plan(p: Plan, pdk: Pdk, work: Path, args, reqs_out: dict, reports_out: 
     req = icmr_request(tb, pdk, p.processes, TEMPS_C, p.pairs)
     req["batch"] = batch_block(args)
     cache = work / f"{p.name}.cached-report.json"
-    rq = json.dumps({k: v for k, v in req.items() if k != "netlist"}, sort_keys=True)
+    rq = request_cache_key(req, tb)
     if cache.is_file():
         blob = json.loads(cache.read_text())
         if blob["request"] == rq and all(Path(c["artifacts"]["raw"]).is_file() for c in blob["report"]["corners"]
@@ -1259,12 +1319,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
     inv = sorted((s for s in table.values() if not s.valid), key=lambda s: s.key)
     add(f"- {len(inv)} invalid sample(s) of {an.n_samples}. Invalid samples are never passing and never bridged; they "
         "are listed in `corners/<rid>/samples.csv` with their reasons.")
-    kinds: dict[str, int] = {}
-    for s in inv:
-        key = re.sub(r"[-+]?\d+(\.\d+)?", "#", s.invalid_reasons[0])[:110]
-        kinds[key] = kinds.get(key, 0) + 1
-    for k, n in sorted(kinds.items(), key=lambda kv: -kv[1])[:12]:
-        add(f"  - {n} x {k}")
+    for n, pattern, ex_key, ex_reason in validity_groups(inv)[:12]:
+        add(f"  - {n} x {pattern} (e.g. {fmt_key(ex_key)}: {ex_reason})")
     add("")
     add("## Method")
     add("")

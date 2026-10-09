@@ -379,6 +379,92 @@ class GuardTests(unittest.TestCase):
         self.assertTrue(m.C.guard_testbench(self.text.replace("CL vout 0 2p", "CL vout 0 3p")))
 
 
+class ValidityGroupTests(unittest.TestCase):
+    def test_grouping_masks_numbers_readably_and_keeps_a_verbatim_example(self):
+        mk = lambda v, r: m.Sample(key(v), False, [r])  # noqa: E731
+        inv = [mk(100, "no Ad plateau over 0.1-1 Hz: varies by 3.214 dB (> 0.1 dB)"),
+               mk(150, "no Ad plateau over 0.1-1 Hz: varies by 0.512 dB (> 0.1 dB)"),
+               mk(50, "Ad plateau phase -179.9 deg is not ~0 (wrong polarity)")]
+        g = m.validity_groups(inv)
+        self.assertEqual(g[0], (2, "no Ad plateau over N-N Hz: varies by N dB (> N dB)", key(100),
+                                "no Ad plateau over 0.1-1 Hz: varies by 3.214 dB (> 0.1 dB)"))
+        self.assertEqual(g[1][:2], (1, "Ad plateau phase -N deg is not ~N (wrong polarity)"))
+        self.assertEqual(g[1][3], "Ad plateau phase -179.9 deg is not ~0 (wrong polarity)")
+        for _n, pat, _k, _r in g:
+            self.assertNotIn("#", pat)
+
+
+class KeepWorkCacheTests(unittest.TestCase):
+    """The `--keep-work` report cache must be keyed on netlist CONTENT (DUT and
+    bench), not only on the request JSON, which names the netlist by path."""
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.work = Path(self._t.name)
+        self.dut_text = "* dut v1\n.subckt opamp a b\n.ends\n"
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def _materialise(self, wd: Path, *_a, **_k) -> Path:
+        wd.mkdir(parents=True, exist_ok=True)
+        (wd / "design.ngspice").write_text("* design include\n")
+        (wd / "opamp_two_stage.dut.spice").write_text(self.dut_text)
+        tb = wd / "tb.spice"
+        tb.write_text(f".include '{wd / 'design.ngspice'}'\n.include '{wd / 'opamp_two_stage.dut.spice'}'\n.end\n")
+        return tb
+
+    def test_fingerprint_follows_included_dut_content(self):
+        tb = self._materialise(self.work / "a")
+        req = {"netlist": str(tb), "corners": {"process": ["typical"]}}
+        k1 = m.request_cache_key(req, tb)
+        self.assertEqual(k1, m.request_cache_key(dict(req, netlist="/elsewhere/tb.spice"), tb))
+        (tb.parent / "opamp_two_stage.dut.spice").write_text("* dut v2\n")
+        self.assertNotEqual(k1, m.request_cache_key(req, tb))
+
+    def test_fingerprint_follows_bench_content(self):
+        tb = self._materialise(self.work / "a")
+        f1 = m.netlist_fingerprint(tb)
+        tb.write_text(tb.read_text() + "* bench edit\n")
+        self.assertNotEqual(f1, m.netlist_fingerprint(tb))
+
+    def test_changed_netlist_invalidates_the_cached_report(self):
+        calls = []
+
+        def fake_klt(req, out, backend, wd, **_k):
+            calls.append(req)
+            return {"corners": [], "passed": 0, "corner_count": 0}
+
+        class Args:
+            backend = "batch"
+            batch_submit_retries = 0
+            batch_retry_wait_s = 0
+            batch_runner_version_check = None
+            batch_capacity_wait_s = None
+
+        saved = (m.C.materialise, m.icmr_request, m.run_klt_retrying)
+        m.C.materialise = self._materialise
+        m.icmr_request = lambda tb, *a, **k: {"netlist": str(tb), "corners": {"process": ["typical"]}}
+        m.run_klt_retrying = fake_klt
+        try:
+            plan = m.Plan("scan-dm", "dm", ["typical"], [(3300, 1200)])
+            run = lambda: m._run_plan(plan, None, self.work, Args(), {}, {}, {})  # noqa: E731
+            m.REUSED.discard(plan.name)
+            run()
+            self.assertEqual(len(calls), 1)
+            run()  # identical request AND identical netlist content: reused
+            self.assertEqual(len(calls), 1)
+            self.assertIn(plan.name, m.REUSED)
+            m.REUSED.discard(plan.name)
+            self.dut_text = "* dut v2 (resized)\n.subckt opamp a b\n.ends\n"
+            run()  # same request JSON, changed DUT: must re-submit
+            self.assertEqual(len(calls), 2)
+            self.assertNotIn(plan.name, m.REUSED)
+        finally:
+            m.C.materialise, m.icmr_request, m.run_klt_retrying = saved
+            m.REUSED.discard("scan-dm")
+
+
 class EvidenceTests(unittest.TestCase):
     def test_archive_roundtrip(self):
         ret = {}

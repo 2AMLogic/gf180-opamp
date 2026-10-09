@@ -115,8 +115,11 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   with exit 2.
 - Every row of `spec/target-spec.md` Sec. 2 appears, plus a post-layout line.
   Status is `measured-verdict` (ratified bound + a record that judged it),
-  `measured-no-bound` (worst value shown, bound open, never a verdict) or
-  `not-measured` (no committed record). Coverage, limitations, per-source
+  `measured-no-bound` (worst value shown, bound open, never a verdict),
+  `not-measured` (no committed record) or `proposed-not-graded` (the row's
+  bound is tagged in-row "proposed, not ratified" by a decision record, e.g.
+  DR-5's input common-mode range; no verdict, counted neither as judged nor as
+  not measured, the spec's status text is reproduced verbatim). Coverage, limitations, per-source
   sha256, DUT hash, PDK revision and tool versions are listed.
 - Existing records have no structured sidecars, so the verdict/worst-case
   lines are extracted from the Markdown (cross-checked against each record's

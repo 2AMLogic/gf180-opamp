@@ -90,12 +90,20 @@ Contiguous passing intervals are never bridged across a non-passing sample.
 | Passing intervals | exactly one contiguous interval at every one of the 45 points |
 | **45-point intersection** | **[1.185, 2.705] V**, one component, which contains 1.20 V |
 | Low endpoint | 1.185 V, set by SS / −40 °C / 2.97 V. The limit is the tail XM5's headroom (VCM ≥ VGS,pair + Vdsat,tail). The adjacent sample at 1.180 V fails with XM5 −2.8 mV, so the bracket is 5 mV. At 1.185 V itself XM5 is +0.6 mV. |
-| High endpoint | 2.705 V, set by FS / 125 °C / 2.97 V. The limit is the output stage XM6's headroom: in the follower, vout = VCM, so XM6 runs out of VSD as VCM nears VDD. Plateau gain there is 60.93 dB. The adjacent sample at 2.710 V fails at 59.73 dB, so the bracket is 5 mV. |
+| High endpoint | 2.705 V, set by FS / 125 °C / 2.97 V. The failing criterion is **gain**, not saturation: in the follower, vout = VCM, so XM6's VSD shrinks as VCM nears VDD and the plateau gain collapses as XM6 approaches the edge of saturation (62.09 / 60.93 / 59.73 dB at 2.700 / 2.705 / 2.710 V). The adjacent sample at 2.710 V fails at 59.73 dB while XM6 is still saturated (+19.8 mV), so the bracket is 5 mV. |
 | **1.20 V explicit sample** | **passes at 45/45** combinations: 0 fail, 0 invalid |
 | Worst plateau gain at 1.20 V | 94.22 dB (SS / 125 °C / 2.97 V) |
 | Smallest device margin at 1.20 V | XM5 **+11.1 mV** (SS / −40 °C / 2.97 V). Across all nine SS points it is +11.1 to +12.9 mV, and at SF it is +36.6 to +41.2 mV. |
 | Tolerance sensitivity | With 0 mV instead of the 1 mV tolerance, the intersection and the 1.20 V verdict are unchanged. Fifteen per-point endpoints sit inside the tolerance band; none of them sets an intersection endpoint. |
 | Controls | Midrail samples reproduce the committed CMRR record's Ad plateau at 45/45 points (max deviation 0.0000 dB). Servo-isolation change ≤ 0.00001 dB (limit 0.01 dB). An inadequate servo (tau = 1 ms) and unequal CM drive are both rejected. A local nominal unit reproduces the grid's nominal sample. |
+
+**Retained rawfiles are trimmed.** The committed `.raw` files keep only the
+vectors the extraction reads (`frequency`, `v(vinp)`, `v(vinn)`, `v(vout)`,
+value lines copied verbatim); every ngspice `.log`, including the full
+operating-point print, is kept whole. `--recompute` works from these. The
+record's own evidence line does not say so; the disclosure is in its
+append-only
+[addendum](../../sim/input-common-mode/records/20261009-222613-871d1a6-addendum/ADDENDUM.md).
 
 An independent re-derivation from the committed archives gave the same
 1.20 V verdict and the same two endpoint brackets. It used a separate
@@ -153,12 +161,19 @@ gain criterion is the ratified [DR-2] gain bound, used only as the
 in-range test. The row's **measured status** is that it is covered at 45/45
 PVT points (record above). Its **binding corners** are SS / −40 °C / 2.97 V
 for the low edge (tail headroom) and FS / 125 °C / 2.97 V for the high edge
-(output-stage headroom in the follower).
+(gain collapse below 60 dB as the follower's output stage XM6 approaches the
+edge of saturation; XM6 itself is still saturated at the first failing
+sample).
 
 **Flagged, not hidden: the low edge is thin.** At SS and 1.20 V the tail
 device has only +11 to +13 mV of saturation margin, and the measured edge
 is only 15 mV below 1.20 V. The unmodelled effects above (mismatch and
-offset, a bias-current tolerance) could consume that margin. This record
+offset, a bias-current tolerance) could consume that margin. For scale, the
+committed offset Monte Carlo puts the worst |mean| + 3σ input-referred
+offset at 15.64 mV (SF, 27 °C / 3.30 V only;
+[record `20261009-072205-96bf3cc`](../../sim/offset-mc/records/20261009-072205-96bf3cc.md)),
+the same order as the 11.1 mV margin. The "meets" below is therefore a
+nominal, systematic-only statement. This record
 does not claim they will not. If the operator wants guard-band at 1.20 V,
 the response is a design change to tail headroom, which is outside #60's
 scope. It is not a looser row.
@@ -221,5 +236,8 @@ scope. It is not a looser row.
 - The 5 V stretch rail.
 - Any change to existing bounds (gain, GBW, PM, slew, swing, power) or to
   the open rows (noise, offset, CMRR, PSRR, area).
-- Adding ICMR to the aggregate characterization report
-  (`sim/report/characterization_report.py`). That is a separate follow-up.
+- Grading ICMR in the aggregate characterization report
+  (`sim/report/characterization_report.py`). The report lists this row as
+  `proposed-not-graded`, keeps it out of the ratified-row counts and quotes
+  the spec's status text. Teaching the report to read ICMR records is a
+  separate follow-up.

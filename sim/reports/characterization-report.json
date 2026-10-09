@@ -537,6 +537,25 @@
     },
     {
       "bound_open": false,
+      "coverage": null,
+      "figures": [],
+      "key": "input-common-mode-range",
+      "limitations": [
+        "bound proposed by a decision record and not ratified: this report grades ratified rows only, so the row is not graded and is counted neither among the ratified rows judged nor as not measured; see the spec status column for the evidence it cites"
+      ],
+      "points_pass": null,
+      "points_total": null,
+      "row": "Input common-mode range",
+      "source": null,
+      "spec_bound": "1.20 V ≤ VCM ≤ 2.70 V at all PVT points [DR-5]",
+      "spec_status": "Proposed [DR-5] — measured: covered at all 45 PVT points (conservative 45-point intersection [1.185, 2.705] V at 5 mV brackets; 1.20 V passes 45/45, smallest margin XM5 +11.1 mV at SS / −40 °C / 2.97 V — a thin low edge; record 20261009-222613-871d1a6)",
+      "status": "proposed-not-graded",
+      "verdict": null,
+      "worst": null,
+      "worst_corner": null
+    },
+    {
+      "bound_open": false,
       "coverage": {
         "corners": [
           "typical",
@@ -766,13 +785,14 @@
   },
   "spec": {
     "path": "spec/target-spec.md",
-    "sha256": "99277fdb676d10eab39474c08ac5c4449257a48a1bd9c0881e93c5d9728efeff"
+    "sha256": "b6b419e42068c1422e0763d45a446845c182be2bdfb6f4f84d196a56968f7dc0"
   },
   "summary": {
     "fail": 1,
     "measured_no_bound": 4,
     "not_measured": 2,
     "pass": 5,
+    "proposed_not_graded": 1,
     "ratified_rows_judged": 6
   },
   "title": "gf180-opamp characterization report (generated; not evidence)",

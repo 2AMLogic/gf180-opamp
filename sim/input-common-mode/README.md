@@ -117,13 +117,17 @@ writes no record. A capacity refusal is retried (same backend) by
 `--batch-submit-retries`. Only single-unit controls and the smoke test run
 locally. `--keep-work DIR` keeps all klt output and caches each report, so
 re-running with the same directory re-uses finished requests (and never
-re-submits an identical one); never commit that directory.
+re-submits an identical one); never commit that directory. A request is
+identical only if its JSON (minus the path-only `netlist` field) AND the sha256
+of the materialised netlist plus every file it includes (DUT and design
+include) match, so a changed DUT or bench never reuses a stale report.
 
 ## Evidence layout (append-only)
 
 ```
 records/<rid>.md                       headline, intervals per PVT point, explicit 1.20 V table, validity failures, controls
 records/<rid>-plots/*.png              passing intervals of all 45 points; gain/margin vs VCM
+records/<rid>-addendum/ADDENDUM.md     later disclosures / presentation corrections to a committed record (the record file itself is never edited)
 corners/<rid>/samples.csv              every sample: status (1 mV and strict), gain, margins and currents of every MOSFET, reasons
 corners/<rid>/data/<point>.tar.gz      retained rawfile (.raw, trimmed to frequency/v(vinp)/v(vinn)/v(vout)) and ngspice log (.log) per VCM sample and excitation
 corners/<rid>/requests/*.json.gz       every klt request (netlist path omitted)
@@ -138,6 +142,11 @@ rawfile also carries every other node voltage and source current (20 vectors);
 committing those for ~12 000 units would be ~135 MB of evidence no figure uses.
 The full ngspice log (with the operating-point print) is kept for every unit.
 
-Every run mints a new record id; a record is never overwritten. Results must be
+Every run mints a new record id; a record is never overwritten. A disclosure or
+presentation correction found after a record is committed goes into an
+append-only `records/<rid>-addendum/ADDENDUM.md` beside it (a directory, like
+`-plots/`, so `records/*.md` still lists only records): see
+[`20261009-222613-871d1a6-addendum`](records/20261009-222613-871d1a6-addendum/ADDENDUM.md)
+(rawfile trimming, the garbled validity-failure group text, the cache key). Results must be
 regenerated if the DUT changes (for example after #42); each record names the
 DUT sha256 it measured.
