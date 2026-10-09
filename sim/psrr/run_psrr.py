@@ -312,9 +312,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; commit `{record.rsplit('-', 1)[-1]}`; issue #39")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include `{dut_sha[:16]}`), "
         f"unchanged; snapshot `netlist-snapshots/{record}.spice`")
-    add(f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (harness `find_pdk`, via {pdk.source}; the local "
-        "units are pinned to it); klt-reported grid PDK: "
-        + ", ".join(f"`{m}` `{C.klt_pdk_version(r)}`" for m, r in reports.items()))
+    for ln in C.pdk_lines(pdk, reports):
+        add(ln)
     add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`, numpy `{np.__version__}`")
     add("- **Execution**: three `klt sim` corner requests (one per excitation), 45 points each:")
     for ln in C.execution_lines(reports, walls):
@@ -348,6 +347,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
         add("")
         add(f"- Plateau verified at {sum(r.plateau_ok for r in vals.values())}/{len(vals)} points; lower bounds "
             f"(numerical floor): {sum(r.lower_bound for r in vals.values())}/{len(vals)}.")
+        for ln in C.cancellation_notes(vals, LABEL[rail], f"A{rail}"):
+            add(ln)
         fts = [(p.feedthrough_db[rail], k) for k, p in points.items()]
         add(f"- Output supply feedthrough -20 log10 |A{rail}| at the plateau (NOT PSRR): {min(fts)[0]:.2f} dB "
             f"({fmt_key(min(fts)[1])}) .. {max(fts)[0]:.2f} dB ({fmt_key(max(fts)[1])}).")

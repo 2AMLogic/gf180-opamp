@@ -538,6 +538,8 @@ class Rejection:
     fu_hz: float
     lower_bound: bool  # some reported value is limited by the numerical floor
     floor: float
+    err_phase_deg: float = float("nan")  # phase of A_err at the lowest frequency
+    err_low_mag: float = float("nan")  # |A_err| at the lowest frequency (V/V)
     curve_db: np.ndarray = field(repr=False, default_factory=lambda: np.array([]))
     err_db: np.ndarray = field(repr=False, default_factory=lambda: np.array([]))
 
@@ -590,6 +592,7 @@ def summarise_rejection(freq: np.ndarray, ad: np.ndarray, a_err: np.ndarray, fu_
         plateau_ok=ok, dc_db=float(np.mean(curve[band])) if ok else float("nan"),
         plateau_spread_db=max(spread, err_spread), low_db=float(curve[0]), spot_db=spots,
         at_fu_db=at_fu, fu_hz=fu_hz, lower_bound=lb, floor=floor, curve_db=curve, err_db=db(err_eff),
+        err_phase_deg=float(np.angle(a_err[0], deg=True)), err_low_mag=float(mag_err[0]),
     )
 
 
@@ -920,6 +923,21 @@ def klt_pdk_version(report: dict) -> str:
     return ((report.get("provenance") or {}).get("pdk") or {}).get("version", "n/a")
 
 
+def pdk_lines(pdk: Pdk, reports: dict[str, dict]) -> list[str]:
+    """PDK provenance, stating exactly what each source does and does not say."""
+    client = sorted({f"{klt_pdk_version(r)} ({((r.get('provenance') or {}).get('pdk') or {}).get('source', '?')})"
+                     for r in reports.values()})
+    return [
+        f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (harness `find_pdk`, via {pdk.source}); the "
+        "local single units are pinned to it (`models.pdk_root`).",
+        f"  - klt's `provenance.pdk` and `environment.models_lib_sha256` in the grid reports are resolved on the "
+        f"SUBMITTING CLIENT ({'; '.join(client)}), not on the fleet runner, which uses its own install and (klt "
+        "0.5.0) does not report its revision. The fleet library is tied to the pinned revision indirectly: the "
+        "local pinned units reproduce the grid's nominal point, and the grid's open-loop response reproduces the "
+        "committed gain-bench record (see Cross-checks).",
+    ]
+
+
 def execution_lines(reports: dict[str, dict], walls: dict[str, float]) -> list[str]:
     L = []
     for mode, rep in reports.items():
@@ -930,11 +948,10 @@ def execution_lines(reports: dict[str, dict], walls: dict[str, float]) -> list[s
                      f"{'Spot ' if r.get('spot') else ''}{r.get('instance_type', '')}, state `{r.get('state')}`, "
                      f"runner klt `{r.get('runner_klt_version')}` vs client `{r.get('client_klt_version')}` "
                      f"(compatibility `{r.get('runner_compatibility')}`); engine `{env.get('engine')} "
-                     f"{env.get('engine_version')}`; klt PDK `{klt_pdk_version(rep)}`; wall {walls.get(mode, 0):.0f} s")
+                     f"{env.get('engine_version')}`; wall {walls.get(mode, 0):.0f} s")
         else:
             L.append(f"  - `{mode}`: `klt sim` local backend (no `environment.remote`); engine "
-                     f"`{env.get('engine')} {env.get('engine_version')}`; klt PDK `{klt_pdk_version(rep)}`; "
-                     f"wall {walls.get(mode, 0):.0f} s")
+                     f"`{env.get('engine')} {env.get('engine_version')}`; wall {walls.get(mode, 0):.0f} s")
     return L
 
 
@@ -948,23 +965,33 @@ def save_mode_point(corners_dir: Path, k: Key, mode: str, a: dict, cols: tuple[s
     shutil.copyfile(a["log"], corners_dir / f"{stem}.log")
     if a.get("deck"):
         shutil.copyfile(a["deck"], corners_dir / f"{stem}.cir")
-    vec = a["vec"]
+    save_mode_point_vec(corners_dir / f"{stem}.dat", a["vec"], cols)
+
+
+SAVED_VECTORS = ("v(vout)", "v(vinp)", "v(vinn)", "v(vdd)", "v(vss)")
+
+
+def save_local_runs(cdir: Path, runs: list[LocalRun]) -> None:
+    """Log + klt deck of every local unit, and its node phasors as `.dat`
+    (the same layout as the grid points; the full rawfile is not kept)."""
+    cdir.mkdir(parents=True, exist_ok=True)
+    for r in runs:
+        for kind in ("log", "deck"):
+            src = r.files.get(kind)
+            if src and Path(src).is_file():
+                shutil.copyfile(src, cdir / f"{r.name}.{'cir' if kind == 'deck' else 'log'}")
+        if r.vec is not None:
+            cols = tuple(c for c in SAVED_VECTORS if c in r.vec)
+            save_mode_point_vec(cdir / f"{r.name}.dat", r.vec, cols)
+
+
+def save_mode_point_vec(path: Path, vec: dict, cols: tuple[str, ...]) -> None:
     data = [vec["frequency"].real]
     hdr = ["freq_hz"]
     for c in cols:
         data += [vec[c].real, vec[c].imag]
         hdr += [f"re{c}", f"im{c}"]
-    np.savetxt(corners_dir / f"{stem}.dat", np.column_stack(data), fmt="%.12e", header=" ".join(hdr))
-
-
-def save_local_runs(cdir: Path, runs: list[LocalRun]) -> None:
-    cdir.mkdir(parents=True, exist_ok=True)
-    for r in runs:
-        for kind, src in r.files.items():
-            if src and Path(src).is_file():
-                # `.raw` is gitignored repo-wide; keep the ASCII rawfile as evidence.
-                ext = {"raw": "ac.rawascii", "log": "log", "deck": "cir"}[kind]
-                shutil.copyfile(src, cdir / f"{r.name}.{ext}")
+    np.savetxt(path, np.column_stack(data), fmt="%.12e", header=" ".join(hdr))
 
 
 def request_comment(req: dict) -> list[str]:
@@ -1035,6 +1062,46 @@ def build_plots_rejection(freq_by_key: dict[Key, np.ndarray], curves: dict[str, 
     return out
 
 
+CANCEL_EXCESS_DB = 20.0
+
+
+def cancellation_notes(values: dict[Key, Rejection], name: str, err_name: str) -> list[str]:
+    """Flag low-frequency figures that come from a near-cancellation.
+
+    If the plateau phase of the error transfer (Acm, Asupply) flips between
+    0 and 180 deg across the grid, that transfer passes through zero somewhere
+    in PVT and the rejection near the flip is a cancellation. Points of the
+    minority sign, and points more than CANCEL_EXCESS_DB above the grid median,
+    are listed. Their numerical resolution (|A| over the floor) is stated."""
+    if not values:
+        return []
+    pos = {k: math.cos(math.radians(r.err_phase_deg)) >= 0 for k, r in values.items()}
+    n_pos = sum(pos.values())
+    minority = n_pos < len(pos) / 2
+    flipped = sorted(k for k, v in pos.items() if v == minority) if 0 < n_pos < len(pos) else []
+    lows = [r.low_db for r in values.values()]
+    med = float(np.median(lows))
+    high = sorted(k for k, r in values.items() if r.low_db > med + CANCEL_EXCESS_DB)
+    if not flipped and not high:
+        return [f"- {err_name} keeps one sign (plateau phase ~{'0' if n_pos else '180'} deg) at all {len(values)} points; "
+                f"no {name} value exceeds the grid median ({med:.1f} dB) by more than {CANCEL_EXCESS_DB:g} dB."]
+    out = []
+    if flipped:
+        out.append(f"- **{err_name} changes sign across the grid**: its plateau phase is ~"
+                   f"{'0' if not minority else '180'} deg at {len(values) - len(flipped)} points and ~"
+                   f"{'0' if minority else '180'} deg at {len(flipped)} ({', '.join(fmt_key(k) for k in flipped[:8])}"
+                   f"{' ...' if len(flipped) > 8 else ''}). The systematic {err_name} passes through zero somewhere in "
+                   "PVT, so near the flip the low-frequency " + name + " is a cancellation.")
+    for k in high:
+        r = values[k]
+        out.append(f"  - {fmt_key(k)}: {name} {r.low_db:.1f} dB at 0.1 Hz, {r.low_db - med:.1f} dB above the grid "
+                   f"median; |{err_name}| = {r.err_low_mag:.3g} V/V, {math.log10(r.err_low_mag / r.floor):.1f} decades "
+                   "above the numerical floor (numerically resolved).")
+    out.append(f"- Such values are numerically real for the matched schematic but are NOT design margin: a "
+               "mismatch-sized perturbation of the cancelling terms removes them. Use the worst-case figure.")
+    return out
+
+
 def figure_table(add, values: dict[Key, Rejection], title: str) -> None:
     add(f"| point | {title} DC | " + " | ".join(lbl for w, lbl in FIGURES[1:-1]) + " | at f_u | f_u (MHz) | note |")
     add("|---|---|" + "---|" * (len(FIGURES) - 2) + "---|---|---|")
@@ -1098,9 +1165,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; commit `{record.rsplit('-', 1)[-1]}`; issue #39")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include `{dut_sha[:16]}`), "
         f"unchanged; snapshot `netlist-snapshots/{record}.spice`")
-    add(f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (harness `find_pdk`, via {pdk.source}; the local "
-        f"units are pinned to it); klt-reported grid PDK: "
-        + ", ".join(f"`{m}` `{klt_pdk_version(r)}`" for m, r in reports.items()))
+    for ln in pdk_lines(pdk, reports):
+        add(ln)
     add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`, numpy `{np.__version__}`")
     add("- **Execution**: two `klt sim` corner requests (one per excitation), 45 points each:")
     for ln in execution_lines(reports, walls):
@@ -1132,6 +1198,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     n_lb = sum(r.lower_bound for r in values.values())
     add(f"- Low-frequency plateau verified at {n_plateau}/{len(values)} points; lower bounds (numerical floor): "
         f"{n_lb}/{len(values)}.")
+    for ln in cancellation_notes(values, "CMRR", "Acm"):
+        add(ln)
     v, k, _ = worst_case({kk: p.cmrr for kk, p in points.items()}, "dc")
     add(f"- f_u (differential unity-gain frequency) over the grid: {min(p.fu_hz for p in points.values()) / 1e6:.3f} .. "
         f"{max(p.fu_hz for p in points.values()) / 1e6:.3f} MHz; Ad plateau "

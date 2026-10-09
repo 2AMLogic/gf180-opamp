@@ -191,6 +191,18 @@ class ExtractionTests(unittest.TestCase):
             self.assertIsNone(r.gain_bench_dev_db(gdir, ("ss", 27.0, 3.3), FREQ, ad))
             self.assertIsNone(r.gain_bench_dev_db(gdir, k, FREQ[:-1], ad[:-1]))
 
+    def test_sign_flip_of_error_transfer_is_flagged(self):
+        ad = ad_true()
+        vals = {}
+        for i, c0 in enumerate((0.6, 0.5, 0.4, -1e-4)):  # the last one has flipped sign and nearly cancels
+            vals[(r.CORNERS[i], 27.0, 3.3)] = r.summarise_rejection(FREQ, ad, acm_true(c0), 1e7, FLOOR)
+        notes = "\n".join(r.cancellation_notes(vals, "CMRR", "Acm"))
+        self.assertIn("changes sign", notes)
+        self.assertIn(r.fmt_key((r.CORNERS[3], 27.0, 3.3)), notes)
+        self.assertIn("NOT design margin", notes)
+        same = {k: v for k, v in vals.items() if k[0] != r.CORNERS[3]}
+        self.assertIn("keeps one sign", "\n".join(r.cancellation_notes(same, "CMRR", "Acm")))
+
     def test_floor_must_be_positive(self):
         with self.assertRaises(r.ExtractionError):
             r.summarise_rejection(FREQ, ad_true(), acm_true(), 1e7, 0.0)
