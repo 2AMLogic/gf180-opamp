@@ -16,3 +16,9 @@ python3 gain-gbw-pm/test_gain_gbw_pm.py
 
 echo "== sim/gain-gbw-pm: smoke test (typical, 27C, 3.30 V, one local point) =="
 python3 gain-gbw-pm/run_gain_gbw_pm.py --smoke
+
+echo "== sim/offset-mc: statistics + extraction + source-guard tests (one control pair runs locally) =="
+python3 offset-mc/test_offset_mc.py
+
+echo "== sim/offset-mc: smoke test (typical, 27C, 3.30 V, one deterministic local unit) =="
+python3 offset-mc/run_offset_mc.py --smoke

@@ -66,3 +66,10 @@ future tightening proposal must clear before a deck may add one.
   feedback-isolation study and deterministic negative controls. The repo's
   first circuit-level spec-row evidence (issues #19, #38; tracker #7
   items 5 and 9).
+- [`offset-mc/`](offset-mc/README.md) — mismatch Monte Carlo of the
+  **input offset** of the committed sized schematic (unity follower, DC):
+  `typical/ff/ss/fs/sf` × N = 300 at 27 °C / 3.30 V, one `klt sim`
+  `monte_carlo` request (1500 units on the batch fleet), per-corner mean,
+  sigma, 3 sigma and worst corner, with a switch-off control, an imbalance
+  control and the PDK mismatch-model audit. Statistical basis for the offset
+  row; proposes no bound (issue #45; DR-3 residual (e2)).
