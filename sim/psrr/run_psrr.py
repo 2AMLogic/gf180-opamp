@@ -315,7 +315,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     add(f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (harness `find_pdk`, via {pdk.source}; the local "
         "units are pinned to it); klt-reported grid PDK: "
         + ", ".join(f"`{m}` `{C.klt_pdk_version(r)}`" for m, r in reports.items()))
-    add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`")
+    add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`, numpy `{np.__version__}`")
     add("- **Execution**: three `klt sim` corner requests (one per excitation), 45 points each:")
     for ln in C.execution_lines(reports, walls):
         add(ln)
@@ -380,8 +380,10 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
         f"{max(p.input_quiet for p in points.values()):.3g} V; max input-leak fraction "
         f"{max(p.leak_frac for p in points.values()):.3g}.")
     if gdev:
-        add(f"- **Ad vs the gain bench** (`sim/gain-gbw-pm/corners/{gdir.name}`), all {len(gdev)} points: max deviation "
-            f"{max(gdev.values()):.4f} dB (tolerance {C.TOL_GAIN_BENCH_DB} dB).")
+        add(f"- **Ad vs the gain bench** (`sim/gain-gbw-pm/corners/{gdir.name}`), all {len(gdev)} points, 0.1 Hz to "
+            f"f_u: max deviation {max(gdev.values()):.2e} dB (tolerance {C.TOL_GAIN_BENCH_DB} dB). The gain bench "
+            "drives vinp alone, so its response is Ad + Acm/2; below f_u the Acm/2 term is negligible (the CMRR "
+            "record compares the exact Ad + Acm/2 over the whole sweep).")
     else:
         add("- **Ad vs the gain bench**: committed gain-bench data not available; NOT CHECKED.")
     if local_vs_grid is not None:
@@ -494,6 +496,10 @@ def main(argv: list[str] | None = None) -> int:
     pdk = find_pdk()
     if args.smoke:
         return smoke(pdk)
+    err = C.require_plotting()
+    if err:
+        print(f"ERROR: {err}", file=sys.stderr)
+        return 2
 
     want = C.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)
@@ -502,7 +508,7 @@ def main(argv: list[str] | None = None) -> int:
     gdir = C.latest_gain_dir()
     print(f"record {record}: 3 excitations x {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
-    with tempfile.TemporaryDirectory(prefix="psrr-") as scratch:
+    with C.work_dir(args, "psrr-") as scratch:
         work = Path(scratch)
         try:
             reports, reqs, walls = C.run_grid_modes(pdk, work, args, MODES, testbench=TESTBENCH, guard=guard_testbench)
@@ -528,7 +534,7 @@ def main(argv: list[str] | None = None) -> int:
                 problems.append(f"{fmt_key(k)}: invalid: {pt.reason}")
                 continue
             points[k] = pt
-            d = C.gain_bench_dev_db(gdir, k, pt.freq, pt.ad)
+            d = C.gain_bench_dev_db(gdir, k, pt.freq, pt.ad, fmax=pt.fu_hz)
             if gdir is not None:
                 if d is None:
                     problems.append(f"{fmt_key(k)}: gain-bench data missing or on another frequency grid")

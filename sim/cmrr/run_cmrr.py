@@ -703,8 +703,15 @@ def latest_gain_dir() -> Path | None:
     return None
 
 
-def gain_bench_dev_db(gdir: Path | None, k: Key, freq: np.ndarray, ad: np.ndarray) -> float | None:
-    """max | |Ad| - |gain-bench vout/vdiff| | in dB over the sweep, or None."""
+def gain_bench_dev_db(gdir: Path | None, k: Key, freq: np.ndarray, h: np.ndarray,
+                     fmax: float | None = None) -> float | None:
+    """max | |h| - |gain-bench vout/vdiff| | in dB over the sweep (up to
+    `fmax` if given), or None when the committed data is unavailable.
+
+    The gain bench drives vinp alone (vd = 1, vc = 0.5), so its vout/vd is
+    Ad + Acm/2, not Ad: the CMRR driver compares exactly that over the whole
+    sweep; the PSRR driver (no Acm) compares Ad up to f_u, where
+    |Acm/2| <= |Ad| x 1e-3 at every corner."""
     if gdir is None:
         return None
     p = gdir / f"{point_stem(k)}.dat"
@@ -714,7 +721,8 @@ def gain_bench_dev_db(gdir: Path | None, k: Key, freq: np.ndarray, ad: np.ndarra
     if d.shape[0] != len(freq) or np.any(np.abs(d[:, 0] / freq - 1) > 1e-6):
         return None
     ref = d[:, 1] + 1j * d[:, 2]
-    return float(np.max(np.abs(db(ad) - db(ref))))
+    sel = np.ones(freq.shape, bool) if fmax is None else freq <= fmax * (1 + 1e-9)
+    return float(np.max(np.abs(db(h[sel]) - db(ref[sel]))))
 
 
 # --------------------------------------------------------------------------
@@ -1093,7 +1101,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     add(f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (harness `find_pdk`, via {pdk.source}; the local "
         f"units are pinned to it); klt-reported grid PDK: "
         + ", ".join(f"`{m}` `{klt_pdk_version(r)}`" for m, r in reports.items()))
-    add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`")
+    add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`, numpy `{np.__version__}`")
     add("- **Execution**: two `klt sim` corner requests (one per excitation), 45 points each:")
     for ln in execution_lines(reports, walls):
         add(ln)
@@ -1161,9 +1169,12 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     add(f"- Joint solve vs the naive CM ratio vout_cm/vc_cm: max difference {max(p.naive_dev_db for p in points.values()):.2e} dB "
         "over all sweeps (the solve guards against unequal drive; here the drive is equal).")
     if gdev:
-        add(f"- **Ad vs the gain bench** (`sim/gain-gbw-pm/corners/{gdir.name}`, committed |vout/vdiff|, same 201 "
-            f"frequencies), all {len(gdev)} points: max deviation {max(gdev.values()):.4f} dB (tolerance "
-            f"{TOL_GAIN_BENCH_DB} dB). The servo measures the same open-loop gain as the gain bench.")
+        add(f"- **Decomposition vs the gain bench** (`sim/gain-gbw-pm/corners/{gdir.name}`, committed |vout/vdiff|, "
+            "same 201 frequencies): the gain bench drives vinp alone (vd = 1 V, vc = 0.5 V), so its response must "
+            f"equal Ad + Acm/2 from this record's solve. All {len(gdev)} points, whole sweep: max deviation "
+            f"{max(gdev.values()):.2e} dB (tolerance {TOL_GAIN_BENCH_DB} dB). This independently validates the servo "
+            "bench and the joint Ad/Acm solve (comparing Ad alone would differ above f_u, where Acm is no longer "
+            "negligible).")
     else:
         add("- **Ad vs the gain bench**: committed gain-bench data not available; NOT CHECKED.")
     if local_vs_grid is not None:
@@ -1271,6 +1282,9 @@ def add_common_args(ap: argparse.ArgumentParser) -> None:
                     help="re-submit up to N times when the batch submit is refused for fleet capacity "
                     "(never changes backend)")
     ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    ap.add_argument("--keep-work", type=Path, default=None,
+                    help="use this (new) directory as the work dir and keep it: grid reports, rawfiles and logs "
+                    "survive a failed validation for diagnosis (never committed)")
 
 
 def run_grid_modes(pdk, work, args, modes: dict[str, dict], *, testbench=TESTBENCH, guard=guard_testbench):
@@ -1290,6 +1304,31 @@ def run_grid_modes(pdk, work, args, modes: dict[str, dict], *, testbench=TESTBEN
         r = remote_of(reports[mode])
         print(f"  `{mode}` done in {walls[mode]:.0f} s (job {r.get('job_id', 'local')})", flush=True)
     return reports, reqs, walls
+
+
+def require_plotting() -> str | None:
+    """Fail fast, BEFORE any grid is submitted, if matplotlib cannot import
+    (e.g. a user-site numpy 2 shadowing a distro matplotlib built for numpy 1;
+    `python3 -s` skips the user site). Returns an error message or None."""
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot  # noqa: F401
+    except Exception as exc:  # noqa: BLE001 -- any import failure blocks the record
+        return (f"matplotlib is not importable ({type(exc).__name__}: {str(exc)[:200]}); the record's plots "
+                "cannot be written. Fix the Python environment (try `python3 -s ...`) before running the grid.")
+    return None
+
+
+def work_dir(args, prefix: str):
+    """A temporary work directory, or the kept `--keep-work` one."""
+    import contextlib
+
+    if args.keep_work is None:
+        return tempfile.TemporaryDirectory(prefix=prefix)
+    args.keep_work.mkdir(parents=True, exist_ok=False)
+    return contextlib.nullcontext(str(args.keep_work.resolve()))
 
 
 def smoke(pdk: Pdk) -> int:
@@ -1317,6 +1356,10 @@ def main(argv: list[str] | None = None) -> int:
     pdk = find_pdk()
     if args.smoke:
         return smoke(pdk)
+    err = require_plotting()
+    if err:
+        print(f"ERROR: {err}", file=sys.stderr)
+        return 2
 
     want = expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)
@@ -1328,7 +1371,7 @@ def main(argv: list[str] | None = None) -> int:
     gdir = latest_gain_dir()
     print(f"record {record}: 2 excitations x {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
-    with tempfile.TemporaryDirectory(prefix="cmrr-") as scratch:
+    with work_dir(args, "cmrr-") as scratch:
         work = Path(scratch)
         try:
             reports, reqs, walls = run_grid_modes(pdk, work, args, MODES)
@@ -1356,14 +1399,14 @@ def main(argv: list[str] | None = None) -> int:
                 problems.append(f"{fmt_key(k)}: invalid: {pt.reason}")
                 continue
             points[k] = pt
-            d = gain_bench_dev_db(gdir, k, pt.freq, pt.ad)
+            d = gain_bench_dev_db(gdir, k, pt.freq, pt.ad + 0.5 * pt.acm)
             if gdir is not None:
                 if d is None:
                     problems.append(f"{fmt_key(k)}: gain-bench data missing or on another frequency grid")
                 else:
                     gdev[k] = d
                     if d > TOL_GAIN_BENCH_DB:
-                        problems.append(f"{fmt_key(k)}: |Ad| differs from the gain bench by {d:.3f} dB")
+                        problems.append(f"{fmt_key(k)}: |Ad + Acm/2| differs from the gain bench by {d:.3f} dB")
         local_vs_grid = None
         if NOMINAL in points and studies.nominal and studies.nominal.valid:
             a, b = points[NOMINAL].cmrr, studies.nominal.cmrr

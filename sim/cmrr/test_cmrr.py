@@ -179,6 +179,18 @@ class ExtractionTests(unittest.TestCase):
         self.assertFalse(pt.valid)
         self.assertIn("differential response invalid", pt.reason)
 
+    def test_gain_bench_comparison_uses_ad_plus_half_acm(self):
+        ad, acm = ad_true(), acm_true(c0=2e3)  # large Acm: Ad alone would not match
+        k = ("typical", 27.0, 3.3)
+        with tempfile.TemporaryDirectory() as d:
+            gdir = Path(d)
+            ref = ad + 0.5 * acm  # what a vinp-only drive measures
+            np.savetxt(gdir / f"{r.point_stem(k)}.dat", np.column_stack([FREQ, ref.real, ref.imag, FREQ * 0 + 1, FREQ * 0]))
+            self.assertLess(r.gain_bench_dev_db(gdir, k, FREQ, ad + 0.5 * acm), 1e-9)
+            self.assertGreater(r.gain_bench_dev_db(gdir, k, FREQ, ad), r.TOL_GAIN_BENCH_DB)
+            self.assertIsNone(r.gain_bench_dev_db(gdir, ("ss", 27.0, 3.3), FREQ, ad))
+            self.assertIsNone(r.gain_bench_dev_db(gdir, k, FREQ[:-1], ad[:-1]))
+
     def test_floor_must_be_positive(self):
         with self.assertRaises(r.ExtractionError):
             r.summarise_rejection(FREQ, ad_true(), acm_true(), 1e7, 0.0)
