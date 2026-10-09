@@ -22,3 +22,9 @@ python3 offset-mc/test_offset_mc.py
 
 echo "== sim/offset-mc: smoke test (typical, 27C, 3.30 V, one deterministic local unit) =="
 python3 offset-mc/run_offset_mc.py --smoke
+
+echo "== sim/noise: extraction + source-guard tests (one nominal unit runs locally) =="
+python3 noise/test_noise.py
+
+echo "== sim/noise: smoke test (typical, 27C, 3.30 V, one local point) =="
+python3 noise/run_noise.py --smoke

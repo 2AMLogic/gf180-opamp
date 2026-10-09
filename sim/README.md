@@ -73,3 +73,10 @@ future tightening proposal must clear before a deck may add one.
   sigma, 3 sigma and worst corner, with a switch-off control, an imbalance
   control and the PDK mismatch-model audit. Statistical basis for the offset
   row; proposes no bound (issue #45; DR-3 residual (e2)).
+- [`noise/`](noise/README.md) — **input-referred noise** of the committed sized
+  schematic (closed-DC-loop / open-AC-loop, as the gain bench) across the full
+  45-point grid as one `klt sim` `.noise` request: spot densities
+  (10 Hz–100 kHz), integrated rms over 100 Hz–1 MHz and three alternative
+  bands, thermal floor and 1/f corner, the PDK flicker-model audit and
+  extraction validation against ngspice's totals and the gain bench. Measured
+  only: no verdict, no bound or band proposed (issue #46; DR-3 residual (e1)).

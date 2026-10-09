@@ -1,0 +1,41 @@
+* tb_noise.spice -- input-referred noise testbench for the committed sized
+* schematic (issue #46; spec row: input-referred noise; DR-3 residual (e1)).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_noise.py) materialises `opamp_two_stage.dut.spice`
+* from the committed export by the same wrapper normalisation the gain bench
+* uses and rewrites the two `.include` targets below to absolute paths of the
+* per-run work directory. test_noise.py guards both includes and the absence
+* of transistors.
+*
+* This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* `.control` or `.end`. `klt sim` adds the corner's `.lib` cards, `.temp`,
+* the supply `alter`s and the `.noise` analysis.
+*
+* ---- Arrangement (identical to the gain bench tb_gain_gbw_pm.spice) ----
+* Lfb closes the loop at DC (self-biased unity buffer at VCM) and is an AC
+* open; Cfb makes vinn an AC ground. Hence the differential input of the
+* open-loop amplifier is the AC source Vcm on vinp, and ngspice's
+* `.noise v(vout) Vcm` input-referred density (inoise = onoise / |vout/Vcm|)
+* IS the amplifier's differential-input-referred noise. L and the huge C are
+* noiseless in ngspice; the only noise sources are the DUT's devices (MOS
+* thermal + flicker, RZ). The driver independently recomputes
+* inoise = onoise / |H| from the point's own gain (see README).
+*
+* Bias: Ibias 10 uA into `ibias` from vdd; CL = 2 pF on vout [DR-1]; Vcm and
+* Vdd are swept together by klt (vcm tracks VDD/2).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param lfb=1e9 cfb=1e9
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65 ac 1
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vinn vout ibias opamp_two_stage
+Lfb vout vinn {lfb}
+Cfb vinn 0 {cfb}
+CL vout 0 2p
