@@ -1,0 +1,18 @@
+* klt sim -- generated corner deck, do not edit
+.lib /home/ubuntu/.volare/gf180mcuD/libs.tech/ngspice/sm141064.ngspice typical
+.lib /home/ubuntu/.volare/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_typical
+.lib /home/ubuntu/.volare/gf180mcuD/libs.tech/ngspice/sm141064.ngspice mimcap_typical
+.include /tmp/ssp-mfvarjc0/ibias-half-slew/tb.spice
+.temp 27.0
+.meas tran vlo_v FIND v(vout) AT=9.9e-07
+.meas tran vhi_v FIND v(vout) AT=2.99e-06
+.control
+save all
+alter vcm=1.65
+alter vdd=3.3
+set filetype=ascii
+tran 0.5n 5e-06
+write /tmp/ssp-mfvarjc0/ibias-half-slew/out/typical_vcm1p650_vdd3p300V_27C/waveform.raw
+quit
+.endc
+.end

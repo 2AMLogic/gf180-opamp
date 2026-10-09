@@ -7,13 +7,15 @@
 # and each experiment's own README for the cold-start prerequisites (ngspice,
 # the pinned gf180mcu PDK revision, numpy/matplotlib).
 #
-# Currently runs five experiments (sim/gain-gbw-pm/: open-loop gain / GBW /
+# Currently runs six experiments (sim/gain-gbw-pm/: open-loop gain / GBW /
 # phase margin of the committed sized schematic over the full 45-point PVT
 # grid, issues #19 and #38; sim/offset-mc/: mismatch Monte Carlo of the
 # input offset, 5 corners x N=300, issue #45; sim/noise/: input-referred
 # noise over the same 45-point grid, issue #46; sim/cmrr/ and sim/psrr/:
 # common-mode and supply rejection over the same grid, two and three
-# excitation requests respectively, issue #39); sim/gm-id-characterization/ predates this script
+# excitation requests respectively, issue #39; sim/slew-swing-power/: slew
+# rate, output swing and quiescent power over the same grid, one request per
+# figure, issue #44); sim/gm-id-characterization/ predates this script
 # and is still run directly (`python3 sim/gm-id-characterization/run_gmid.py`)
 # per its own README, since this script's job is the *one-command driver*
 # acceptance criterion for the newly-added spec-row testbenches, not a
@@ -25,7 +27,7 @@
 # characterization report (sim/reports/) from the NEWEST record of each
 # experiment (issue #50); it runs no simulator and takes no driver flags.
 #
-# Extra arguments are forwarded to EVERY driver below, so only flags both
+# Extra arguments are forwarded to EVERY driver below, so only flags all
 # drivers accept (--backend, --batch-*) belong on the command line.
 #
 # Each run mints a new append-only record under the experiment's own
@@ -54,6 +56,9 @@ python3 cmrr/run_cmrr.py "$@"
 
 echo "== sim/psrr: PSRR+ / PSRR- (differential, vdd and vss excitations), full 45-point PVT grid =="
 python3 psrr/run_psrr.py "$@"
+
+echo "== sim/slew-swing-power: slew / swing / quiescent power, full 45-point PVT grid x 3 figures =="
+python3 slew-swing-power/run_slew_swing_power.py "$@"
 
 echo "== sim/report: aggregate characterization report from the newly minted records =="
 python3 report/characterization_report.py --latest --update-manifest

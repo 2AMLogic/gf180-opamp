@@ -169,6 +169,14 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   driven, the same summaries and worst-case corners, output feedthrough
   reported separately, rail-to-output feedthrough negative controls. Measured,
   no verdict (issue #39; DR-3 residual (e4)).
+- [`slew-swing-power/`](slew-swing-power/README.md) — slew rate (unity-gain
+  follower, CL = 2 pF, slower of rise/fall, 20–80 % slope), output swing
+  (inverting unity gain; first of −3 dB gain collapse or M6/M7 leaving
+  saturation, per DR-2 §(b)) and quiescent power (total supply power, no load)
+  of the **committed sized schematic** across the same 45-point grid, each as
+  one `klt sim` request, with a verdict and binding corner per figure against
+  the ratified bounds (≥ 10 V/µs, ≥ 2.3 Vpp, ≤ 350 µW) (issue #44; tracker #7
+  item 5).
 
 ## Coverage and gaps
 
