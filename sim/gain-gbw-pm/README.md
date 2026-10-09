@@ -28,7 +28,10 @@ are superseded as evidence by the newest record here.
 - **Passive-section policy**: every MOS corner is paired with the same
   `res_typical` and `mimcap_typical` sections (what the nominal DC check
   uses). The grid varies MOS corner, temperature and supply. It does **not**
-  claim independent corners of `RZ` or `CC`; that coverage was not run. The
+  claim independent corners of `RZ` or `CC` -- the default grid never does. The
+  opt-in `--passive-corners` mode (issue #70) sweeps `res_{typical,ff,ss}` x
+  `mimcap_{typical,ff,ss}` independently at fs/125 C/2.97 V, ss/125 C/2.97 V and
+  nominal as ONE `klt sim` request (see record `20261009-233341-95dfc2a`). The
   committed `RZ`/`CC` are used as drawn and never retuned here — their
   phase-margin consequence is simply part of the measurement.
 

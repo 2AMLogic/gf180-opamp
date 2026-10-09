@@ -103,6 +103,35 @@ TESTBENCH = HERE / "testbench" / "tb_gain_gbw_pm.spice"
 #: not run. See the record's "Passive-section policy".
 CORNERS = ["typical", "ff", "ss", "fs", "sf"]
 PASSIVE_SECTIONS = ("res_typical", "mimcap_typical")
+
+#: Opt-in passive-corner axis (`--passive-corners`, issue #70). Names map to the
+#: PDK's own sections in `sm141064.ngspice` (verified against the installed
+#: PDK: `.LIB res_typical|res_ss|res_ff`, `.LIB mimcap_typical|mimcap_ss|mimcap_ff`).
+#: "worst" = the PDK `_ss` section, "best" = `_ff`. Which is worse for a given
+#: row is a RESULT, not an assumption: the record reports every combination.
+#: res_ss: ppolyf_u_1k = 1000+200 ohm; res_ff = 1000-200. mimcap_ss:
+#: mim_corner_2p0fF = 1.1; mimcap_ff = 0.9 (cap_mim_2f0_m4m5_noshield scales
+#: with mim_corner_2p0fF).
+PASSIVE_LEVELS = ("typical", "best", "worst")
+_LEVEL_SUFFIX = {"typical": "typical", "best": "ff", "worst": "ss"}
+RES_FACTOR = {"typical": 1.0, "best": 0.8, "worst": 1.2}
+MIM_FACTOR = {"typical": 1.0, "best": 0.9, "worst": 1.1}
+
+
+def passive_sections(res: str, mim: str) -> tuple[str, str]:
+    """PDK section names for a (resistor level, MIM level) pair."""
+    return (f"res_{_LEVEL_SUFFIX[res]}", f"mimcap_{_LEVEL_SUFFIX[mim]}")
+
+
+def passive_name(mos: str, res: str, mim: str) -> str:
+    """klt process-axis name encoding the MOS corner and both passive levels."""
+    return f"{mos}__r-{res}__c-{mim}"
+
+
+#: Passive-corner study points (MOS corner, T, VDD): the PM-binding point, the
+#: GBW-binding point (record 20261009-055759-2524b3e) and nominal.
+PASSIVE_POINTS = [("fs", 125.0, 2.97), ("ss", 125.0, 2.97), ("typical", 27.0, 3.30)]
+
 TEMPS_C = [-40.0, 27.0, 125.0]
 SUPPLIES_V = [2.97, 3.30, 3.63]
 MODEL_LIB = "libs.tech/ngspice/sm141064.ngspice"
@@ -1169,6 +1198,245 @@ def build_record(
 # --------------------------------------------------------------------------
 
 
+# --------------------------------------------------------------------------
+# Opt-in passive-corner study (issue #70; DR-3 section (d) obligation)
+# --------------------------------------------------------------------------
+
+
+def passive_combos() -> list[tuple[str, str]]:
+    return [(r, c) for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS]
+
+
+def passive_process_axis(points=PASSIVE_POINTS) -> list[dict]:
+    mos = list(dict.fromkeys(p[0] for p in points))
+    return [
+        {"name": passive_name(m, r, c), "sections": [m, *passive_sections(r, c)]}
+        for m in mos
+        for r, c in passive_combos()
+    ]
+
+
+def passive_expected_keys(points=PASSIVE_POINTS) -> list[Key]:
+    return [
+        (passive_name(m, r, c), float(t), float(v))
+        for (m, t, v) in points
+        for r, c in passive_combos()
+    ]
+
+
+def passive_ac_request(netlist: Path, pdk: Pdk, points=PASSIVE_POINTS) -> dict:
+    """ONE corner-matrix request: MOS x passive-combo x T x VDD, with the
+    cross-product cells that are not study points removed via klt's `exclude`."""
+    temps = sorted({p[1] for p in points})
+    vdds = sorted({p[2] for p in points})
+    req = ac_request(netlist, pdk, [], temps, vdds)
+    req["corners"]["process"] = passive_process_axis(points)
+    req["corners"]["supply_v"] = {"vdd": list(vdds), "vcm": [round(v / 2, 6) for v in vdds]}
+    want = set(points)
+    exclude = []
+    for m in dict.fromkeys(p[0] for p in points):
+        for t in temps:
+            for v in vdds:
+                if (m, t, v) in want:
+                    continue
+                for r, c in passive_combos():
+                    exclude.append({
+                        "process": passive_name(m, r, c),
+                        "temperature_c": t,
+                        "supply_v": {"vdd": v},
+                    })
+    req["exclude"] = exclude
+    return req
+
+
+def split_passive_key(k: Key) -> tuple[str, str, str]:
+    mos, rpart, cpart = k[0].split("__")
+    return mos, rpart.removeprefix("r-"), cpart.removeprefix("c-")
+
+
+def passive_summary(results: dict[Key, Metrics], points=PASSIVE_POINTS) -> dict:
+    """Per study point: metrics by (res, mim) level, deltas vs all-typical
+    passives, and the relative slew factor (Itail / CC ~ 1 / MIM factor)."""
+    out: dict = {}
+    for (m, t, v) in points:
+        rows = {}
+        base = results.get((passive_name(m, "typical", "typical"), t, v))
+        for r, c in passive_combos():
+            mt = results.get((passive_name(m, r, c), t, v))
+            if mt is None:
+                continue
+            ok = base is not None and mt.valid and base.valid
+            rows[(r, c)] = {
+                "metrics": mt,
+                "d_pm": mt.pm_deg - base.pm_deg if ok else float("nan"),
+                "d_gbw_pct": 100 * (mt.gbw_hz / base.gbw_hz - 1) if ok else float("nan"),
+                "slew_rel": 1.0 / MIM_FACTOR[c],
+            }
+        out[(m, t, v)] = rows
+    return out
+
+
+def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_desc, report,
+                         results, dut_sha, base_record) -> str:
+    L: list[str] = []
+    add = L.append
+    remote = (report.get("environment") or {}).get("remote") or {}
+    summ = passive_summary(results)
+    allm = [(k, m) for k, m in results.items() if m.valid]
+    pm_ok = all(m.valid and m.pm_deg >= PM_MIN_DEG for m in results.values())
+    gbw_ok = all(m.valid and m.gbw_hz >= GBW_MIN_HZ for m in results.values())
+    worst_pm = min(allm, key=lambda t: t[1].pm_deg) if allm else None
+    worst_gbw = min(allm, key=lambda t: t[1].gbw_hz) if allm else None
+    best_pm = max(allm, key=lambda t: t[1].pm_deg) if allm else None
+
+    def lab(k):
+        mos, r, c = split_passive_key(k)
+        return f"{mos} / {k[1]:g} C / {k[2]:.2f} V, RZ {r}, CC {c}"
+
+    add(f"# gain/GBW/PM passive-corner study (RZ x CC) -- record {record}")
+    add("")
+    add(f"- **Date (UTC)**: {stamp:%Y-%m-%d %H:%M:%S}")
+    add("- **Issue**: #70 (DR-3 section (d) RZ PVT-tracking quantification; tracker #7 item 5)")
+    add(f"- **Measured against**: the committed sized schematic; the default 45-point grid record is `{base_record}` (unchanged, typical passives)")
+    add("- **Verdict (spec bounds NOT edited here)**:")
+    if worst_pm:
+        n = sum(m.valid and m.pm_deg >= PM_MIN_DEG for m in results.values())
+        add(f"  - Phase margin >= {PM_MIN_DEG:g} deg: **{'PASS' if pm_ok else 'FAIL'}** at {n}/{len(results)} study cells; "
+            f"worst {worst_pm[1].pm_deg:.2f} deg at {lab(worst_pm[0])}; best {best_pm[1].pm_deg:.2f} deg at {lab(best_pm[0])}.")
+    if worst_gbw:
+        n = sum(m.valid and m.gbw_hz >= GBW_MIN_HZ for m in results.values())
+        add(f"  - GBW >= {GBW_MIN_HZ / 1e6:g} MHz: **{'PASS' if gbw_ok else 'FAIL'}** at {n}/{len(results)} study cells; "
+            f"worst {fmt_hz(worst_gbw[1].gbw_hz)} at {lab(worst_gbw[0])}.")
+    add("  - Slew = Itail/CC: Itail is set by the 10 uA bias mirror (passive-independent to first order), "
+        "so slew scales as 1/CC: CC worst (x1.10) -> slew x0.909; CC best (x0.90) -> slew x1.111 "
+        "(column `slew rel.` below; an analytic scaling, not a transient measurement -- the slew "
+        "bench is `sim/slew-swing-power/`).")
+    if not (pm_ok and gbw_ok):
+        add("  - **Reachability**: a ratified row misses at one or more passive corners (see tables). "
+            "No bound is relaxed here; if the miss survives the design repair for the nominal PM failure, "
+            "the remedy is a superseding decision record (DR-3 section (d)).")
+    add("")
+    add("## Conditions")
+    add("")
+    add(f"- **PDK**: {pdk.path} (open_pdks {pdk.version}); ngspice {ngspice}; klt {klt_version}")
+    add(f"- **Execution**: {backend_desc}")
+    if remote:
+        add(f"  - environment.remote: `{json.dumps(remote, sort_keys=True)}`")
+    add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (normalised sha256 `{dut_sha}`); snapshot `netlist-snapshots/{record}.spice`")
+    add("- **Points**: " + "; ".join(f"{m} / {t:g} C / {v:.2f} V" for m, t, v in PASSIVE_POINTS)
+        + f", each x 3 RZ levels x 3 CC levels = {len(results)} cells; ibias = 10 uA, CL = 2 pF, same `.ac` and extraction as the 45-point grid.")
+    add("- **Passive-section policy (swept)**: RZ (`ppolyf_u_1k`) uses `res_typical` / `res_ff` (best, 1000-200 ohm = 0.8x) / "
+        "`res_ss` (worst, 1000+200 ohm = 1.2x); CC (`cap_mim_2f0_m4m5_noshield`) uses `mimcap_typical` / `mimcap_ff` "
+        "(best, mim_corner_2p0fF = 0.9) / `mimcap_ss` (worst, 1.1). All nine RZ x CC combinations are run independently "
+        "at each point. Section names verified in `libs.tech/ngspice/sm141064.ngspice`. \"best\"/\"worst\" are the PDK "
+        "ff/ss labels, not a claim about which is worse for PM; the tables decide.")
+    add("")
+    add("## Results")
+    for (m, t, v), rows in summ.items():
+        add("")
+        add(f"### {m} / {t:g} C / {v:.2f} V")
+        add("")
+        add("| RZ | CC | PM (deg) | dPM vs typ. (deg) | GBW (MHz) | dGBW (%) | slew rel. | PM >= 60 | GBW >= 10 MHz |")
+        add("|---|---|---|---|---|---|---|---|---|")
+        for (r, c), d in rows.items():
+            mt = d["metrics"]
+            if not mt.valid:
+                add(f"| {r} | {c} | INVALID: {mt.reason} | | | | | FAIL | FAIL |")
+                continue
+            add(f"| {r} | {c} | {mt.pm_deg:.2f} | {d['d_pm']:+.2f} | {mt.gbw_hz / 1e6:.3f} | {d['d_gbw_pct']:+.1f} | "
+                f"{d['slew_rel']:.3f} | {'PASS' if mt.pm_deg >= PM_MIN_DEG else 'FAIL'} | "
+                f"{'PASS' if mt.gbw_hz >= GBW_MIN_HZ else 'FAIL'} |")
+    add("")
+    add("## Sensitivity (one passive moved, the other typical; deltas vs both typical)")
+    add("")
+    add("| Point | dPM: RZ best / worst (deg) | dPM: CC best / worst (deg) | dGBW: CC best / worst (%) |")
+    add("|---|---|---|---|")
+    for (m, t, v), rows in summ.items():
+        def g(r, c, f):
+            d = rows.get((r, c))
+            return f"{d[f]:+.2f}" if d and math.isfinite(d[f]) else "n/a"
+        add(f"| {m} / {t:g} C / {v:.2f} V | {g('best','typical','d_pm')} / {g('worst','typical','d_pm')} | "
+            f"{g('typical','best','d_pm')} / {g('typical','worst','d_pm')} | "
+            f"{g('typical','best','d_gbw_pct')} / {g('typical','worst','d_gbw_pct')} |")
+    add("")
+    add("## Artifacts")
+    add("")
+    add("- Runner: `sim/gain-gbw-pm/run_gain_gbw_pm.py --passive-corners`; tests: `sim/gain-gbw-pm/test_gain_gbw_pm.py`")
+    add(f"- Per-cell logs, decks, data and the sanitised klt report: `sim/gain-gbw-pm/corners/{record}/`")
+    add("")
+    return "\n".join(L)
+
+
+def run_passive(pdk: Pdk, args) -> int:
+    want = passive_expected_keys()
+    record, stamp = allocate_record_id(REPO_ROOT)
+    paths = claim_record_paths(HERE, record, plots=False)
+    ngspice = ngspice_version()
+    kver = klt_version()
+    print(f"record {record}: passive-corner study, {len(want)} cells, PDK={pdk.path}, klt {kver}")
+    with tempfile.TemporaryDirectory(prefix="gainpm-pas-") as scratch:
+        work = Path(scratch)
+        tb = materialise(work / "grid", pdk)
+        req = passive_ac_request(tb, pdk)
+        req["batch"] = batch_block(args)
+        try:
+            report = run_klt_retrying(
+                req, work / "grid" / "out", args.backend, work / "grid",
+                retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s,
+            )
+        except KltError as exc:
+            print(f"ERROR: the passive-corner request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
+            return 2
+        results, arts, problems = analyse_ac_report(report, want)
+        if problems:
+            print("ERROR: passive-corner study did not complete cleanly; NO RECORD WRITTEN:", file=sys.stderr)
+            for p in problems:
+                print(f"  - {p}", file=sys.stderr)
+            return 2
+        remote = (report.get("environment") or {}).get("remote") or {}
+        backend_desc = (
+            f"`klt sim` backend `{remote.get('provider', 'local')}`"
+            + (f" ({'Spot' if remote.get('spot') else 'on-demand'} {remote.get('instance_type')})" if remote else "")
+            + f"; the {len(want)} cells are ONE `klt sim` corner-matrix request"
+        )
+        cdir = paths["corners"]
+        cdir.mkdir(parents=True, exist_ok=False)
+        for k, a in arts.items():
+            stem = point_stem(k)
+            if a["log"]:
+                shutil.copyfile(a["log"], cdir / f"{stem}.log")
+            if a["deck"]:
+                shutil.copyfile(a["deck"], cdir / f"{stem}.cir")
+            np.savetxt(
+                cdir / f"{stem}.dat",
+                np.column_stack([a["freq"], a["h"].real, a["h"].imag, a["vdiff"].real, a["vdiff"].imag]),
+                header="freq_hz re(vout/vdiff) im(vout/vdiff) re(vdiff) im(vdiff)",
+            )
+        (cdir / "klt-report.json").write_text(json.dumps(sanitise_report(report), indent=1))
+        import hashlib
+
+        dut_text = load_dut_text()
+        dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()
+        paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
+        paths["snapshot"].write_text("\n".join([
+            f"* netlist snapshot for record {record} (issue #70, passive-corner study)",
+            "* ---- conditions: klt sim request ----",
+            *("* " + ln for ln in json.dumps({k: v for k, v in req.items() if k != "netlist"}, indent=1).splitlines()),
+            "", "* ---- DUT (wrapper-normalised) ----", dut_text,
+            "* ---- testbench (verbatim) ----", TESTBENCH.read_text(), "",
+        ]))
+        base = sorted(p.name for p in (HERE / "records").glob("*.md"))[-1]
+        md = build_passive_record(
+            record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, klt_version=kver,
+            backend_desc=backend_desc, report=report, results=results, dut_sha=dut_sha,
+            base_record=base.removesuffix(".md"),
+        )
+        paths["record"].parent.mkdir(parents=True, exist_ok=True)
+        paths["record"].write_text(md)
+    print(f"wrote {paths['record']}")
+    return 0
+
+
 def smoke(pdk: Pdk) -> int:
     print(f"smoke test: {NOMINAL} only, local, PDK={pdk.path}")
     with tempfile.TemporaryDirectory(prefix="gainpm-smoke-") as scratch:
@@ -1190,6 +1458,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--smoke", action="store_true", help="one nominal point, local, no record")
     ap.add_argument("--backend", help="klt execution backend for the 45-point grid "
                     "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
+    ap.add_argument("--passive-corners", action="store_true",
+                    help="opt-in: RZ x CC passive-corner study (3x3 independent poly-resistor / "
+                    "MIM-cap sections at fs/125C/2.97V, ss/125C/2.97V and nominal) as ONE klt sim "
+                    "request; the default 45-point grid is unchanged")
     ap.add_argument("--strict", action="store_true", help="exit 1 when a ratified row misses")
     ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None,
                     help="forward batch.runner_version_check (only meaningful on the batch backend)")
@@ -1205,6 +1477,8 @@ def main(argv: list[str] | None = None) -> int:
     pdk = find_pdk()
     if args.smoke:
         return smoke(pdk)
+    if args.passive_corners:
+        return run_passive(pdk, args)
 
     want = expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)

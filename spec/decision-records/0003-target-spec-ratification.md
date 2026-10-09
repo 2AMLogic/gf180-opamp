@@ -172,6 +172,18 @@ that tracks `1/gm6` is "the standard remedy if the PVT sweep shows it
 is needed" (opamp_sizing.md §4.5). A measured shortfall triggers that
 redesign path — never a weakening of the 60° bound.
 
+*Addendum (issue #70, append-only; no bound or ratified text above changed).*
+The RZ/CC passive-corner quantification this section names is recorded in
+[`sim/gain-gbw-pm/records/20261009-233341-95dfc2a.md`](../../sim/gain-gbw-pm/records/20261009-233341-95dfc2a.md):
+all nine independent poly-resistor x MIM-cap corner combinations at
+FS / 125 °C / 2.97 V, SS / 125 °C / 2.97 V and nominal, on the committed
+schematic. Phase margin spans 53.63°–63.17° (7/27 cells meet ≥ 60°);
+CC is the dominant lever (about −2.9° / +2.5° for ±10 %), RZ second-order
+(about ±1° for ±20 %). The same CC increase that helps phase margin pulls GBW
+to 9.66 MHz at SS / 125 °C / 2.97 V, below the ratified 10 MHz. The record
+reports this and changes no bound; if the repair cannot hold both rows over
+passive spread, the route is a superseding decision record.
+
 ### (e) Residual register — explicitly OPEN, kept open here
 
 Each row below keeps `[TBD]` in the table, now carrying an explicit
