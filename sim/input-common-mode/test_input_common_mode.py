@@ -401,6 +401,32 @@ class EvidenceTests(unittest.TestCase):
             self.assertNotIn("cm", back[k])  # nothing retained for the failed unit
             self.assertEqual(m.build_table(back)[k].status(), "invalid")
 
+    def test_trim_raw_keeps_used_vectors_bit_identical(self):
+        names = ["frequency", "i(esb)", "v(vinn)", "v(vinp)", "v(vdd)", "v(vout)"]
+        npts = 3
+        hdr = ("Title: x\nDate: d\nPlotname: AC Analysis\nFlags: complex\n"
+               f"No. Variables: {len(names)}\nNo. Points: {npts}\nVariables:\n"
+               + "".join(f"\t{i}\t{n}\t{'frequency grid=3' if i == 0 else 'voltage'}\n" for i, n in enumerate(names))
+               + "Values:\n")
+        rng = np.random.default_rng(1)
+        body = []
+        for p in range(npts):
+            for i in range(len(names)):
+                a, b = (0.1 * 10 ** p, 0.0) if i == 0 else rng.normal(size=2)
+                body.append(f"{p if i == 0 else ''}\t{a:.15e},{b:.15e}")
+        text = hdr + "\n".join(body) + "\n"
+        full = m.G.parse_ascii_complex_raw(text)
+        trimmed = m.trim_raw(text)
+        part = m.G.parse_ascii_complex_raw(trimmed)
+        self.assertEqual(set(part), set(m.RAW_KEEP))
+        for k in m.RAW_KEEP:
+            self.assertTrue(np.array_equal(part[k], full[k]), k)
+        self.assertIn("No. Variables: 4", trimmed)
+        with self.assertRaises(ValueError):
+            m.trim_raw(text.replace("v(vout)", "v(vx)"))
+        with self.assertRaises(ValueError):
+            m.trim_raw(text.rsplit("\n", 2)[0] + "\n")  # truncated values
+
     def test_csv_roundtrip_detects_tampering(self):
         table = {key(v): sample(v) for v in (1200, 1650)}
         buf = io.StringIO()

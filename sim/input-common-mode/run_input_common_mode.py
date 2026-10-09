@@ -917,9 +917,58 @@ def vcm_tag(vcm_mv: int) -> str:
     return f"vcm{vcm_mv / 1000:.3f}V"
 
 
+#: Vectors kept in the committed rawfiles: exactly what the extraction reads.
+#: klt's rawfile also carries every other node and source current (20 vectors);
+#: committing all of them for ~12 000 units would be ~135 MB of evidence that
+#: no figure is derived from.
+RAW_KEEP = ("frequency", "v(vinp)", "v(vinn)", "v(vout)")
+
+
+def trim_raw(text: str, keep: tuple[str, ...] = RAW_KEEP) -> str:
+    """An ngspice ASCII rawfile reduced to the `keep` vectors.
+
+    Header lines other than the variable count and table are copied verbatim;
+    every kept value line is copied verbatim (no re-formatting of numbers), so
+    the trimmed file parses to bit-identical vectors. Raises ValueError when the
+    file is malformed or lacks a kept vector."""
+    head, sep, body = text.partition("Values:\n")
+    if not sep or "Variables:\n" not in head:
+        raise ValueError("rawfile header incomplete")
+    pre, _, vtab = head.partition("Variables:\n")
+    rows = [ln for ln in vtab.splitlines() if ln.strip()]
+    names = [r.split("\t")[2].lower() for r in rows]
+    m = re.search(r"^No\. Variables:\s*(\d+)$", pre, re.M)
+    p = re.search(r"^No\. Points:\s*(\d+)$", pre, re.M)
+    if not m or not p or int(m.group(1)) != len(names):
+        raise ValueError("rawfile variable count does not match its table")
+    nvar, npts = len(names), int(p.group(1))
+    idx = []
+    for k in keep:
+        if k not in names:
+            raise ValueError(f"rawfile has no {k} vector")
+        idx.append(names.index(k))
+    if idx[0] != 0:
+        raise ValueError("the first kept vector must be the scale (frequency)")
+    lines = [ln for ln in body.splitlines() if ln.strip()]
+    if len(lines) != nvar * npts:
+        raise ValueError(f"rawfile has {len(lines)} value lines, expected {nvar} x {npts}")
+    pre = re.sub(r"^No\. Variables:\s*\d+$", f"No. Variables: {len(idx)}", pre, flags=re.M)
+    out = [pre + "Variables:"]
+    for new_i, old_i in enumerate(idx):
+        parts = rows[old_i].split("\t")
+        parts[1] = str(new_i)
+        out.append("\t".join(parts))
+    out.append("Values:")
+    for pt in range(npts):
+        block = lines[pt * nvar:(pt + 1) * nvar]
+        out += [block[i] for i in idx]
+    return "\n".join(out) + "\n"
+
+
 def write_archives(data_dir: Path, retained: dict[Key, dict[str, Unit]]) -> int:
-    """One deterministic tar.gz per PVT point holding every retained rawfile and
-    ngspice log (per sample and excitation). Returns the number of members."""
+    """One deterministic tar.gz per PVT point holding every retained rawfile
+    (trimmed to RAW_KEEP; an untrimmable one is kept whole) and ngspice log, per
+    sample and excitation. Returns the number of members."""
     data_dir.mkdir(parents=True, exist_ok=True)
     by_combo: dict[Combo, list[Key]] = {}
     for k in retained:
@@ -934,6 +983,11 @@ def write_archives(data_dir: Path, retained: dict[Key, dict[str, Unit]]) -> int:
                         if not src or not Path(src).is_file():
                             continue  # a failed unit retains whatever ngspice left (nothing, often)
                         blob = Path(src).read_bytes()
+                        if kind == "raw":
+                            try:
+                                blob = trim_raw(blob.decode()).encode()
+                            except (ValueError, UnicodeDecodeError):
+                                pass  # malformed: keep it whole, it is the evidence of the failure
                         ti = tarfile.TarInfo(f"{vcm_tag(k[3])}.{mode}.{kind}")
                         ti.size, ti.mtime = len(blob), 0
                         tar.addfile(ti, io.BytesIO(blob))
