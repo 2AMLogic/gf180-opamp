@@ -144,6 +144,66 @@ def measurement_fingerprint(inputs: dict) -> str:
     return hashlib.sha256(fingerprint_json(inputs).encode()).hexdigest()
 
 
+def load_config_module(path: Path, name: str | None = None):
+    """Load a stdlib `measurement_config.py` by file path (issues #85, #89).
+
+    Cached per resolved path (not per name), so a scratch checkout used by the
+    offline report never shares a module with the real repository. Compiled
+    from source (no bytecode cache) so an edited module is never shadowed by a
+    stale `.pyc`. `purge_config_modules()` drops the cache.
+    """
+    import types
+
+    path = Path(path).resolve()
+    if name is None:
+        try:
+            name = "_mcfg_" + re.sub(r"\W", "_", path.relative_to(REPO_ROOT).as_posix())
+        except ValueError:  # a scratch checkout: key by its full path
+            name = "_mcfg_" + re.sub(r"\W", "_", path.as_posix())
+    if name in sys.modules:
+        return sys.modules[name]
+    mod = types.ModuleType(name)
+    mod.__file__ = str(path)
+    sys.modules[name] = mod
+    try:
+        exec(compile(path.read_text(), str(path), "exec"), mod.__dict__)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
+    return mod
+
+
+def purge_config_modules() -> None:
+    """Forget every config module loaded by `load_config_module`."""
+    for k in [k for k in sys.modules if k.startswith("_mcfg_")]:
+        del sys.modules[k]
+
+
+def fingerprint_header_lines(inputs: dict, covers: str) -> list[str]:
+    """The `**Measurement fingerprint**` header line a record embeds."""
+    return [
+        f"- **Measurement fingerprint**: version {inputs['fingerprint_version']}, sha256 "
+        f"`{measurement_fingerprint(inputs)}` over the canonical inputs retained in "
+        f"the 'Measurement fingerprint inputs' section ({covers}; excludes record IDs, "
+        "paths and backend scheduling)",
+    ]
+
+
+def fingerprint_inputs_section(inputs: dict, module_rel: str) -> list[str]:
+    """The `## Measurement fingerprint inputs` block a record embeds."""
+    return [
+        "## Measurement fingerprint inputs",
+        "",
+        "Canonical JSON (sorted keys, compact separators); its sha256 is the fingerprint in the header. "
+        f"Recompute with `{module_rel}`.",
+        "",
+        "```json",
+        fingerprint_json(inputs),
+        "```",
+        "",
+    ]
+
+
 DEFAULT_VARIANT = "gf180mcuD"
 # Pinned open_pdks revision of the gf180mcu PDK (full hash). CI's
 # GF180_PDK_REV must equal this; sim/ci_prereqs.py enforces it on the PDK

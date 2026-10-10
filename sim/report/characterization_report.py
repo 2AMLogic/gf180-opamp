@@ -539,7 +539,14 @@ def bound_in_spec(record_bound: str, spec_target: str) -> bool:
 #: Experiments whose records carry a measurement fingerprint, with the
 #: stdlib module (repo-relative) that computes the CURRENT effective inputs.
 #: Every other experiment is reported as freshness-unknown until migrated.
-MEASUREMENT_CONFIG = {"gain-gbw-pm": "sim/gain-gbw-pm/measurement_config.py"}
+MEASUREMENT_CONFIG = {
+    "gain-gbw-pm": "sim/gain-gbw-pm/measurement_config.py",
+    "noise": "sim/noise/measurement_config.py",
+    "offset-mc": "sim/offset-mc/measurement_config.py",
+    "cmrr": "sim/cmrr/measurement_config.py",
+    "psrr": "sim/psrr/measurement_config.py",
+    "slew-swing-power": "sim/slew-swing-power/measurement_config.py",
+}
 _FP_LINE = re.compile(r"^- \*\*Measurement fingerprint\*\*: version (\d+), sha256 `([0-9a-f]{64})`", re.M)
 _FP_BLOCK = re.compile(r"^## Measurement fingerprint inputs\n.*?^```json\n(.*?)\n```", re.M | re.S)
 
@@ -576,17 +583,36 @@ def _harness():
     return harness
 
 
-def current_measurement_inputs(root: Path, exp: str) -> dict:
-    """Effective measurement inputs of `exp` as the checkout at `root` would run them."""
+def current_measurement_inputs(root: Path, exp: str, retained: dict | None = None) -> dict:
+    """Effective measurement inputs of `exp` as the checkout at `root` would run them.
+
+    Single-bench modules (gain) expose `TESTBENCH_REL` and `inputs(text)`.
+    Later modules expose `TESTBENCHES_REL` (name -> repo-relative bench) and
+    `inputs(texts, retained)`; `retained` is the record's own stored inputs,
+    from which an experiment with independent figures (slew/swing/power)
+    selects the figures that record measured.
+    """
     import types
     mod_path = root / MEASUREMENT_CONFIG[exp]
     if not mod_path.is_file():
         raise ReportError(f"{exp}: measurement configuration module is missing: {MEASUREMENT_CONFIG[exp]}")
-    _harness()  # load the report's own harness first: measurement_config reuses it from sys.modules
+    h = _harness()  # load the report's own harness first: measurement_config reuses it from sys.modules
+    h.purge_config_modules()  # shared sibling configs are re-read from this root, never a cached copy
     # Compile from source (no bytecode cache) so an edited module is never shadowed by a stale .pyc.
     mod = types.ModuleType(f"_mcfg_{exp.replace('-', '_')}")
     mod.__file__ = str(mod_path)
-    exec(compile(mod_path.read_text(), str(mod_path), "exec"), mod.__dict__)
+    try:
+        exec(compile(mod_path.read_text(), str(mod_path), "exec"), mod.__dict__)
+    finally:
+        h.purge_config_modules()
+    if hasattr(mod, "TESTBENCHES_REL"):
+        texts = {}
+        for k, rel in mod.TESTBENCHES_REL.items():
+            tb = root / rel
+            if not tb.is_file():
+                raise ReportError(f"{exp}: current testbench is missing: {rel}")
+            texts[k] = tb.read_text()
+        return mod.inputs(texts, retained)
     tb = root / mod.TESTBENCH_REL
     if not tb.is_file():
         raise ReportError(f"{exp}: current testbench is missing: {mod.TESTBENCH_REL}")
@@ -612,7 +638,7 @@ def measurement_freshness(root: Path, exp: str, fp: dict | None, archival: bool)
     if exp not in MEASUREMENT_CONFIG:
         return {"status": "unknown", "detail": "record carries a fingerprint but the report has no current-configuration source for it",
                 "fingerprint": fp["sha256"]}
-    cur = current_measurement_inputs(root, exp)
+    cur = current_measurement_inputs(root, exp, fp["inputs"])
     cur_h = _harness().measurement_fingerprint(cur)
     if cur_h == fp["sha256"]:
         return {"status": "current", "fingerprint": fp["sha256"], "version": fp["version"]}

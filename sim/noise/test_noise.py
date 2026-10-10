@@ -229,5 +229,38 @@ class SimControlTests(unittest.TestCase):
             self.assertIn("1", a.models[m]["fnoimod"])
 
 
+class MeasurementFingerprint(unittest.TestCase):
+    """Issue #89: the runner and the fingerprint share ONE configuration source."""
+
+    TB = r.TESTBENCH.read_text()
+    PDK = r.Pdk(Path("/x/gf180mcuD"), "gf180mcuD", "test")
+
+    def inp(self):
+        return r.mc.inputs({"bench": self.TB})
+
+    def test_runner_constants_are_the_fingerprinted_ones(self):
+        for n in ("CORNERS", "TEMPS_C", "SUPPLIES_V", "BANDS", "SPOT_HZ", "ISOLATION_VALUES", "ANALYSIS_TAIL"):
+            self.assertIs(getattr(r, n), getattr(r.mc, n), n)
+        for n in ("F_START", "F_STOP", "PPD", "DENSE_PPD", "PRIMARY", "FIT_LO", "FIT_HI"):
+            self.assertEqual(getattr(r, n), getattr(r.mc, n), n)
+
+    def test_request_analysis_is_what_the_fingerprint_hashes(self):
+        req = r.noise_request(Path("/x/tb.spice"), self.PDK, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
+        self.assertEqual(req["analysis"]["kind"], self.inp()["analysis"]["kind"])
+        self.assertEqual(req["analysis"]["args"], self.inp()["analysis"]["args"])
+        self.assertEqual(req["models"]["lib"], self.inp()["models"]["lib"])
+        self.assertEqual(req["corners"]["process"], r.G.process_axis(self.inp()["corners"]["process"]))
+        self.assertEqual(req["corners"]["temperature_c"], self.inp()["corners"]["temperature_c"])
+        self.assertEqual(req["corners"]["supply_v"]["vdd"], self.inp()["corners"]["supply_v"])
+
+    def test_dense_control_uses_the_fingerprinted_density(self):
+        self.assertIn(f"dec {r.mc.DENSE_PPD:g} ", r.mc.analysis_args(r.mc.DENSE_PPD))
+
+    def test_record_embeds_header_and_inputs(self):
+        blob = "\n".join(r.mc.fingerprint_lines({"bench": self.TB}) + r.mc.inputs_section({"bench": self.TB}))
+        self.assertIn(r.mc.fingerprint({"bench": self.TB}), blob)
+        self.assertIn("## Measurement fingerprint inputs", blob)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

@@ -91,14 +91,16 @@ from harness import (  # noqa: E402
     sanitise_report,
 )
 
-from harness import load_sibling  # noqa: E402
+from harness import load_config_module  # noqa: E402
 
-# Loaded by path under an experiment-unique name, NOT `import measurement_config`:
-# sibling drivers load this driver through `harness.load_sibling`, which does not
-# put this directory on sys.path, and every experiment will grow its own
-# `measurement_config.py` (see that module's extension contract), so a bare
+# Loaded by path, NOT `import measurement_config`: sibling drivers load this
+# driver through `harness.load_sibling`, which does not put this directory on
+# sys.path, and every experiment has its own `measurement_config.py`, so a bare
 # top-level name would either fail to resolve or collide in sys.modules.
-mc = load_sibling("gain_gbw_pm_measurement_config", "sim/gain-gbw-pm/measurement_config.py")
+# `load_config_module` keys the module by its path, so the other experiments'
+# configuration modules (which take the shared grid axes from this one) get the
+# very same module object the gain driver uses (issue #89).
+mc = load_config_module(HERE / "measurement_config.py")
 # Single source for the fingerprinted constants.
 AC_FSTART = mc.AC_FSTART
 AC_FSTOP = mc.AC_FSTOP

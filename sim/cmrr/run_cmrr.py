@@ -107,13 +107,16 @@ from harness import (  # noqa: E402
 # bookkeeping (the klt wrapper itself is in `harness`); reuse them unchanged so the benches stay structurally identical.
 G = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
 
+# One source for everything the fingerprint covers (issue #89).
+mc = load_sibling("cmrr_measurement_config", "sim/cmrr/measurement_config.py")
+
 TESTBENCH = HERE / "testbench" / "tb_cmrr.spice"
 
-CORNERS = G.CORNERS
-TEMPS_C = G.TEMPS_C
-SUPPLIES_V = G.SUPPLIES_V
+CORNERS = mc.CORNERS
+TEMPS_C = mc.TEMPS_C
+SUPPLIES_V = mc.SUPPLIES_V
 NOMINAL = G.NOMINAL
-DEVICES = G.DEVICES
+DEVICES = mc.DEVICES
 Key = G.Key
 fmt_key = G.fmt_key
 point_key = G.point_key
@@ -126,14 +129,11 @@ expected_keys = G.expected_keys
 
 #: Same `.ac` sweep as the gain bench: 0.1 Hz (plateau) to 1 GHz (well past
 #: the differential unity-gain frequency at every corner).
-AC_FSTART, AC_FSTOP, AC_PPD = G.AC_FSTART, G.AC_FSTOP, G.AC_PPD
+AC_FSTART, AC_FSTOP, AC_PPD = mc.AC_FSTART, mc.AC_FSTOP, mc.AC_PPD
 N_FREQ = int(round(math.log10(AC_FSTOP / AC_FSTART) * AC_PPD)) + 1
 
-SERVO_NOMINAL = {"rsv": 1e9, "csv": 1e9}  # tau = 1e18 s
-MODES = {
-    "dm": {"acp": 0.5, "acn": -0.5},
-    "cm": {"acp": 1.0, "acn": 1.0},
-}
+SERVO_NOMINAL = mc.SERVO_NOMINAL
+MODES = mc.MODES
 SPOT_HZ = (1e3, 1e4, 1e5, 1e6)
 
 PLATEAU_DECADE_HI = 10.0  # "DC" band = [f0, 10 f0] = 0.1-1 Hz
@@ -151,8 +151,9 @@ TOL_GAIN_BENCH_DB = 0.05
 #: Local nominal unit vs the grid's nominal point (engine/environment parity).
 TOL_LOCAL_VS_GRID_DB = 0.05
 #: Servo-isolation study: tau varied 1e16..1e20 s must move nothing.
-ISOLATION_CSV = (1e7, 1e11)
-ISOLATION_INADEQUATE_CSV = 1e-12  # tau = 1e-3 s: the loop closes at AC
+ISOLATION_CSV = mc.ISOLATION_CSV
+ISOLATION_INADEQUATE_CSV = mc.ISOLATION_INADEQUATE_CSV
+UNEQUAL_CM = mc.UNEQUAL_CM
 ISOLATION_TOL_DB = 0.01
 #: Numerical floor: a response below FLOOR_MARGIN x the demonstrated
 #: superposition residual is reported as a lower bound, never as a ratio.
@@ -164,17 +165,13 @@ CONTROL_MIN_DROP_DB = 6.0
 #: (Chosen after checking nominal behaviour: the systematic Acm is a signed
 #: sum, so the opposite imbalance, +10 %, partially CANCELS it and raises the
 #: CMRR; that run is recorded as information, without a criterion.)
-CONTROL_MIRROR = ("XM3", "W", "6u", "5.4u")
-CONTROL_MIRROR_INFO = ("XM3", "W", "6u", "6.6u")
+CONTROL_MIRROR = mc.CONTROL_MIRROR
+CONTROL_MIRROR_INFO = mc.CONTROL_MIRROR_INFO
 
-#: Appended to `analysis.args`: klt places it verbatim in the `.control`
-#: block after `ac`. It prints the DC operating point of the same deck into
-#: the retained log (vout, inputs, every DUT device's Vds and Vdsat), then
-#: re-selects the ac plot so klt's `write` dumps the AC response.
-OP_PRINT = ["v(vout)", "v(vinp)", "v(vinn)"] + [
-    f"@m.xdut.{d}.m0[{p}]" for d in DEVICES for p in ("vds", "vdsat")
-]
-OP_TAIL = "\nop\nprint " + " ".join(OP_PRINT) + "\nsetplot ac1"
+#: Appended to `analysis.args` (see measurement_config.py): prints the DC
+#: operating point of the same deck, then re-selects the ac plot.
+OP_PRINT = mc.OP_PRINT
+OP_TAIL = mc.OP_TAIL
 
 
 # --------------------------------------------------------------------------
@@ -797,7 +794,7 @@ def run_cmrr_studies(pdk: Pdk, work: Path) -> Studies:
     runs += r
     # Unequal CM drive: 1 % less on vinn.
     uneq, r = cmrr_pair(pdk, work, "unequal-cm", "CM drive acp = 1, acn = 0.99", floor,
-                        cm_params={"acp": 1.0, "acn": 0.99})
+                        cm_params=dict(UNEQUAL_CM))
     runs += r
     uneq_naive = float("nan")
     if r[0].vec is not None and r[1].vec is not None and nominal.valid:
@@ -1110,6 +1107,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; commit `{record.rsplit('-', 1)[-1]}`; issue #39")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include `{dut_sha[:16]}`), "
         f"unchanged; snapshot `netlist-snapshots/{record}.spice`")
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
+        add(ln)
     for ln in pdk_lines(pdk, reports):
         add(ln)
     add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`, numpy `{np.__version__}`")
@@ -1257,6 +1256,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     for p in s.problems:
         add(f"- STUDY PROBLEM: {p}")
     add("")
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}))
     add("## Plots")
     add("")
     for p in plots:

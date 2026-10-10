@@ -183,5 +183,34 @@ class SimTests(unittest.TestCase):
             self.assertEqual(run.op.problems, [])
 
 
+class MeasurementFingerprint(unittest.TestCase):
+    """Issue #89: the runner and the fingerprint share ONE configuration source."""
+
+    TB = r.TESTBENCH.read_text()
+    PDK = r.C.Pdk(Path("/x/gf180mcuD"), "gf180mcuD", "test")
+
+    def inp(self):
+        return r.mc.inputs({"bench": self.TB})
+
+    def test_runner_constants_are_the_fingerprinted_ones(self):
+        self.assertIs(r.MODES, r.mc.MODES)
+        self.assertEqual(r.FEEDTHROUGH_R, r.mc.FEEDTHROUGH_R)
+        self.assertEqual(r.C.SERVO_NOMINAL, self.inp()["excitation"]["servo"])
+        self.assertEqual(list(r.C.ISOLATION_CSV), self.inp()["controls"]["isolation_csv"])
+
+    def test_request_analysis_is_what_the_fingerprint_hashes(self):
+        req = r.C.ac_request(Path("/x/tb.spice"), self.PDK, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
+        self.assertEqual(req["analysis"], {"kind": self.inp()["analysis"]["kind"], "args": self.inp()["analysis"]["args"]})
+
+    def test_supply_modes_are_fingerprinted(self):
+        self.assertEqual(self.inp()["excitation"]["modes"]["vss"]["acss"], 1.0)
+        self.assertEqual(self.inp()["excitation"]["modes"]["vdd"]["acss"], 0.0)
+
+    def test_record_embeds_header_and_inputs(self):
+        blob = "\n".join(r.mc.fingerprint_lines({"bench": self.TB}) + r.mc.inputs_section({"bench": self.TB}))
+        self.assertIn(r.mc.fingerprint({"bench": self.TB}), blob)
+        self.assertIn("## Measurement fingerprint inputs", blob)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
