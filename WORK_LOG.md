@@ -4,6 +4,29 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-10
 
+- **PR #135**: sim: mismatch Monte Carlo runner for gain, GBW and phase margin (#129)
+- **PR #134**: docs(#133): reconcile status prose with passive-corner side study
+- **PR #132**: ci(#131): extend regression-check mutations to ibias-cl-sensitivity and shared sim modules
+- **PR #130**: report: derive and hash supplementary passive-corner evidence (#121)
+- **PR #128**: docs(#102): sweep main-clean baseline recipe and regression check
+- **PR #126**: sim: gain/GBW/PM at the LDO 1.20 V input (fixed-VCM option + 45-point record)
+- **PR #127**: feat(#124): report the committed CMRR mismatch Monte Carlo record
+- **PR #123**: report: support the committed full-PVT offset Monte Carlo record (#120)
+- **PR #122**: feat(#114): ibias and CL sensitivity experiment (record pending)
+- **PR #119**: feat(#97): passive-corner side-study record for slew/swing/power
+- **PR #118**: sim: offset Monte Carlo over the 45-point T/VDD grid (--grid full, N=300 per point)
+- **Issue #129** (closed): sim: mismatch Monte Carlo of gain, GBW and phase margin (statistical evidence for the PM/GBW rows)
+- **Issue #133** (closed): docs: reconcile README, sim/README and target-spec status with the committed slew/swing/power passive-corner study
+- **Issue #131** (closed): ci: extend ci_regression_check.sh mutation coverage to ibias-cl-sensitivity and shared sim modules
+- **Issue #121** (closed): report: derive and hash supplementary passive-corner evidence
+- **Issue #102** (closed): Document and test a confined sweep main-clean baseline invocation
+- **Issue #125** (closed): sim: characterize gain GBW and PM at the LDO 1.20 V input operating point
+- **Issue #124** (closed): report: include separately scoped mismatch CMRR evidence
+- **Issue #120** (closed): report: support the committed full-PVT offset Monte Carlo record
+- **Issue #101** (closed): Auditor: retain rm-scope-outside-repo guard pending scoped lexical proof
+- **Issue #97** (closed): sim: measure slew, swing and power across RZ/CC passive corners (replace the analytic slew scaling)
+- **Issue #106** (closed): sim: extend offset Monte Carlo to the 45-point T/VDD grid (N=300 per point)
+- **Issue #89** (closed): Extend measurement freshness checks to the remaining selected characterization experiments
 - **PR #116**: sim: closed-loop follower step response (overshoot, settling) across the PVT grid (#113)
 - **PR #115**: feat(#112): check target-spec.md Sec. 2 record citations against selection.json
 - **PR #111**: feat: attach cross-checked ICMR evidence to the ungraded proposed row
