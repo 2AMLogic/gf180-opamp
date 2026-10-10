@@ -19,9 +19,10 @@ never the network -- and fails when they drift apart:
      not cite unlabelled records of an experiment selection.json selects
      nothing for.
 
-Records of another experiment cited as supporting evidence (e.g. the CMRR
-row's mismatch Monte-Carlo record under sim/cmrr-mc/) are not governed by
-selection.json and are checked for existence only.
+The CMRR row's mismatch Monte-Carlo record under sim/cmrr-mc/ is selected
+beside the systematic one (issue #124) and is governed the same way (ROW_ALSO).
+Records of any other experiment cited as supporting evidence are not governed
+by selection.json and are checked for existence only.
 
     python3 sim/report/spec_citation_check.py   # exit 0 ok, 1 drift found, 2 input error
 """
@@ -50,6 +51,10 @@ ROW_EXPERIMENT = {
     "cmrr": ("cmrr", None), "psrr": ("psrr", None),
     cr.ICMR_ROW_KEY: ("input-common-mode", None),
 }
+
+#: Rows that also cite a second experiment's selected record (issue #124: the CMRR row's mismatch
+#: Monte Carlo record, selected for the report beside the systematic one); governed like the primary.
+ROW_ALSO = {"cmrr": (("cmrr-mc", None),)}
 
 RID = r"\d{8}-\d{6}-[0-9a-f]{7}"
 _LINK = re.compile(r"\[([^\]]*)\]\(([^)\s]*?/sim/([\w.-]+)/records/(" + RID + r")\.md)\)")
@@ -140,21 +145,21 @@ def check(root: Path, manifest_path: Path, spec_rel: str = SPEC_REL) -> list:
                 problems.append(f"{where}: cites record(s) but has no experiment mapping "
                                 f"(add the row to ROW_EXPERIMENT in {Path(__file__).name})")
             continue
-        exp, sub = ROW_EXPERIMENT[row["key"]]
-        sel = selected_for(manifest, exp, sub)
-        primary = [c for c in cites if c["exp"] == exp and not c["labelled"]]
-        sel_desc = f"{exp}" + (f" ({sub})" if sub else "")
-        for c in primary:
-            if sel is None:
-                problems.append(f"{where}: cites {exp} record {c['rid']} but sim/report/selection.json "
-                                f"selects no record for {sel_desc}")
-            elif c["rid"] != sel:
-                problems.append(f"{where}: cites {exp} record {c['rid']} but sim/report/selection.json "
-                                f"selects {sel} for {sel_desc} (cite the selected record, or label the "
-                                f"older citation 'superseded'/'historical' in its clause)")
-        if sel is not None and not primary:
-            problems.append(f"{where}: sim/report/selection.json selects {exp} record {sel} for "
-                            f"{sel_desc}, but the Status cell cites no unlabelled {exp} record")
+        for exp, sub in (ROW_EXPERIMENT[row["key"]],) + ROW_ALSO.get(row["key"], ()):
+            sel = selected_for(manifest, exp, sub)
+            primary = [c for c in cites if c["exp"] == exp and not c["labelled"]]
+            sel_desc = f"{exp}" + (f" ({sub})" if sub else "")
+            for c in primary:
+                if sel is None:
+                    problems.append(f"{where}: cites {exp} record {c['rid']} but sim/report/selection.json "
+                                    f"selects no record for {sel_desc}")
+                elif c["rid"] != sel:
+                    problems.append(f"{where}: cites {exp} record {c['rid']} but sim/report/selection.json "
+                                    f"selects {sel} for {sel_desc} (cite the selected record, or label the "
+                                    f"older citation 'superseded'/'historical' in its clause)")
+            if sel is not None and not primary:
+                problems.append(f"{where}: sim/report/selection.json selects {exp} record {sel} for "
+                                f"{sel_desc}, but the Status cell cites no unlabelled {exp} record")
     return problems
 
 

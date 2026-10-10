@@ -81,3 +81,10 @@ corners/<rid>/controls/*.csv             control samples
 netlist-snapshots/<rid>.spice            DUT + testbench + requests
 probes/<rid>.{md,json}                   capability probes
 ```
+
+The characterization report selects the record for the CMRR row (issue #124):
+`sim/report/characterization_report.py` re-derives every per-point linear and dB
+3-sigma figure and the worst points from the record's tables, cross-checks them
+against `corners/<record>/samples.csv`, and lists them beside (never merged with)
+the systematic PVT figures. Temperature and supply are not sampled under
+mismatch, and the row stays proposed, not graded.
