@@ -560,5 +560,246 @@ class MeasurementFingerprint(unittest.TestCase):
         self.assertEqual(harness.measurement_fingerprint(json.loads(body)), self.fp())
 
 
+class FixedVcmTests(unittest.TestCase):
+    """Issue #125: explicit fixed-common-mode option; VDD/2 stays the default."""
+
+    pdk = types.SimpleNamespace(variant="gf180mcuD")
+    TB = r.TESTBENCH.read_text()
+
+    def vcm_of(self, req):
+        return req["corners"]["supply_v"]["vcm"]
+
+    def test_fixed_vcm_is_1p20_at_every_supply_point(self):
+        req = r.ac_request(Path("x"), self.pdk, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V, 1.20)
+        sv = req["corners"]["supply_v"]
+        self.assertEqual(sv["vdd"], list(r.SUPPLIES_V))
+        self.assertEqual(sv["vcm"], [1.20] * len(r.SUPPLIES_V))
+        self.assertEqual(len(sv["vcm"]), len(sv["vdd"]))  # swept by index
+
+    def test_default_still_tracks_half_supply(self):
+        req = r.ac_request(Path("x"), self.pdk, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
+        self.assertEqual(self.vcm_of(req), [1.485, 1.65, 1.815])
+        self.assertEqual(req, r.ac_request(Path("x"), self.pdk, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V, None))
+
+    def test_op_requests_carry_the_same_policy(self):
+        for fn in (r.op_request_grid, r.op_request_nominal):
+            req = fn(Path("x"), self.pdk, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V, 1.2)
+            self.assertEqual(self.vcm_of(req), [1.2] * 3)
+            req = fn(Path("x"), self.pdk, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
+            self.assertEqual(self.vcm_of(req), [1.485, 1.65, 1.815])
+
+    def test_grid_is_still_45_points(self):
+        self.assertEqual(len(r.expected_keys(r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)), 45)
+
+    def test_invalid_requests_fail_before_submission(self):
+        for bad in (0, -1.2, float("nan"), float("inf"), 2.97, 3.3, 5.0, "1.2", True):
+            with self.subTest(bad):
+                with self.assertRaises(r.VcmRequestError):
+                    r.validate_vcm_fixed(bad)
+                with self.assertRaises(r.VcmRequestError):
+                    r.ac_request(Path("x"), self.pdk, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V, bad)
+        self.assertEqual(r.validate_vcm_fixed(1.2), 1.2)
+        self.assertIsNone(r.validate_vcm_fixed(None))
+
+    def test_cli_rejects_before_any_tool_or_submission(self):
+        def boom(*a, **k):
+            raise AssertionError("must not reach the PDK / klt")
+        saved = (r.find_pdk, r.run_klt_retrying, r.run_klt)
+        r.find_pdk = r.run_klt_retrying = r.run_klt = boom
+        try:
+            for argv in (["--vcm-fixed", "-1"], ["--vcm-fixed", "nan"], ["--vcm-fixed", "2.97"],
+                         ["--vcm-fixed", "1.2", "--passive-corners"],
+                         ["--vcm-fixed", "1.2", "--recompute-passive", "x"]):
+                with self.subTest(argv), contextlib.redirect_stderr(io.StringIO()):
+                    with self.assertRaises(SystemExit) as cm:
+                        r.main(argv)
+                    self.assertEqual(cm.exception.code, 2)
+        finally:
+            r.find_pdk, r.run_klt_retrying, r.run_klt = saved
+
+    def test_fixed_mode_runs_smoke_before_submission_and_aborts_on_failure(self):
+        calls = []
+        saved = (r.run_single, r.run_klt_retrying, r.allocate_record_id, r.claim_record_paths,
+                 r.ngspice_version, r.klt_version)
+        r.run_single = lambda *a, **k: (calls.append(("smoke", k.get("vcm_fixed"))),
+                                        r.StudyRun("s", "d", None, [], error="boom"))[1]
+        r.run_klt_retrying = lambda *a, **k: calls.append("submit")
+        r.allocate_record_id = lambda root: ("20990101-000000-test", __import__("datetime").datetime(2099, 1, 1))
+        r.claim_record_paths = lambda base, rec, plots=True: {}
+        r.ngspice_version = r.klt_version = lambda: "x"
+        try:
+            with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+                rc = r.run_fixed_vcm(types.SimpleNamespace(path="p", variant="v", version="1", source="s"),
+                                     types.SimpleNamespace(), 1.2)
+        finally:
+            (r.run_single, r.run_klt_retrying, r.allocate_record_id, r.claim_record_paths,
+             r.ngspice_version, r.klt_version) = saved
+        self.assertEqual(rc, 2)
+        self.assertEqual(calls, [("smoke", 1.2)])  # grid never submitted
+
+    def test_vcm_verification_flags_wrong_value(self):
+        rep = {"corners": [{"process": "ff", "temperature_c": 27, "supply_v": {"vdd": 3.3, "vcm": 1.65}}]}
+        self.assertTrue(r.vcm_mismatches(rep, 1.2))
+        rep["corners"][0]["supply_v"]["vcm"] = 1.2
+        self.assertFalse(r.vcm_mismatches(rep, 1.2))
+
+    def test_fingerprint_default_unchanged_fixed_distinct_and_recorded(self):
+        import json
+        mc = r.mc
+        self.assertEqual(mc.inputs(self.TB)["corners"]["vcm_rule"], "vdd/2")
+        self.assertEqual(mc.fingerprint(self.TB), mc.fingerprint(self.TB, None))
+        self.assertNotEqual(mc.fingerprint(self.TB), mc.fingerprint(self.TB, 1.2))
+        self.assertNotEqual(mc.fingerprint(self.TB, 1.2), mc.fingerprint(self.TB, 1.25))
+        self.assertEqual(mc.inputs(self.TB, 1.2)["corners"]["vcm_rule"], "fixed:1.2")
+        blob = "\n".join(mc.fingerprint_lines(self.TB, 1.2) + mc.inputs_section(self.TB, 1.2))
+        body = blob.split("```json\n", 1)[1].split("\n```", 1)[0]
+        self.assertEqual(json.loads(body)["corners"]["vcm_rule"], "fixed:1.2")
+
+    def test_fixed_records_live_outside_default_record_and_corner_dirs(self):
+        self.assertNotEqual(r.FIXED_VCM_DIR, r.HERE)
+        self.assertEqual(r.FIXED_VCM_DIR.parent, r.HERE)
+        self.assertNotIn(r.FIXED_VCM_DIR.name, ("records", "corners"))
+
+    # ---- retained fingerprint inputs (judge feedback on PR #126) ----
+
+    @staticmethod
+    def rehash_record(md: str) -> tuple[str, str, dict]:
+        """(header fingerprint, sha256 of the retained JSON, parsed JSON)."""
+        import json
+        head = re.search(r"^- \*\*Measurement fingerprint\*\*: version \S+, sha256 `([0-9a-f]{64})`", md, re.M)
+        assert head, "no fingerprint header"
+        assert md.count("## Measurement fingerprint inputs") == 1, "no retained inputs section"
+        body = md.split("## Measurement fingerprint inputs", 1)[1].split("```json\n", 1)[1].split("\n```", 1)[0]
+        inp = json.loads(body)
+        return head.group(1), harness.measurement_fingerprint(inp), inp
+
+    def _metrics(self, pm_fail_keys=()):
+        want = r.expected_keys(r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
+        return want, {k: r.Metrics(valid=True, dc_gain_db=95.0, gbw_hz=12e6,
+                                   pm_deg=58.0 if k in pm_fail_keys else 61.0) for k in want}
+
+    def _record(self, **kw):
+        from datetime import datetime
+        want, res = self._metrics()
+        args = dict(record="20990101-000000-test", stamp=datetime(2099, 1, 1),
+                    pdk=types.SimpleNamespace(variant="gf180mcuD", version="v", source="s"),
+                    ngspice="ng", klt_version="k", backend_desc="b", report={}, op_report_remote=None,
+                    op_error=None, vcm=1.2, want=want, results=res, baseline={}, baseline_id="none",
+                    op=None, nominal_op=None, problems=[], smoke_line="smoke", dut_sha="0" * 64, req={})
+        args.update(kw)
+        return r.build_fixed_vcm_record(**args)
+
+    def test_generated_record_retains_inputs_that_rehash_to_the_header(self):
+        head, rehash, inp = self.rehash_record(self._record())
+        self.assertEqual(head, rehash)
+        self.assertEqual(head, r.mc.fingerprint(self.TB, 1.2))
+        self.assertEqual(inp["corners"]["vcm_rule"], "fixed:1.2")
+        self.assertNotEqual(head, r.mc.fingerprint(self.TB))  # never the VDD/2 fingerprint
+
+    def test_recompute_from_committed_record(self):
+        """`--recompute-fixed-vcm` supersedes the committed record without a simulator:
+        every table is byte-identical, the inputs block is added and rehashes to the
+        fingerprint the superseded record printed."""
+        src = "20261010-133217-43b32f6"
+        if not (r.FIXED_VCM_DIR / "corners" / src / "klt-report.json").is_file():
+            self.skipTest("committed fixed-VCM data not present")
+        from datetime import datetime, timezone
+        rid, md = r.recompute_fixed_vcm(src, now=datetime(2026, 1, 1, tzinfo=timezone.utc))
+        old = (r.FIXED_VCM_DIR / "records" / f"{src}.md").read_text()
+        self.assertNotIn("## Measurement fingerprint inputs", old)  # the defect being corrected
+        old_fp = re.search(r"sha256 `([0-9a-f]{64})` over the canonical", old).group(1)
+        head, rehash, _ = self.rehash_record(md)
+        self.assertEqual((head, rehash), (old_fp, old_fp))
+        body = lambda t: t.split("- **Issue**", 1)[1].split("## Interpretation limits", 1)[0]  # noqa: E731
+        self.assertEqual(body(md), body(old))
+        self.assertIn(f"- **Supersedes**: `{src}`", md)
+        self.assertIn(f"`sim/gain-gbw-pm/fixed-vcm/corners/{src}/`", md)
+        self.assertIn(f"netlist-snapshots/{src}.spice", md)
+
+    def test_recompute_rejects_a_fingerprint_mismatch(self):
+        src = "20261010-133217-43b32f6"
+        if not (r.FIXED_VCM_DIR / "corners" / src / "klt-report.json").is_file():
+            self.skipTest("committed fixed-VCM data not present")
+        import shutil
+        with tempfile.TemporaryDirectory() as d:
+            root = Path(d)
+            for sub in ("records", "netlist-snapshots"):
+                (root / sub).mkdir()
+            (root / "corners").symlink_to(r.FIXED_VCM_DIR / "corners")
+            shutil.copy(r.FIXED_VCM_DIR / "records" / f"{src}.md", root / "records")
+            snap = (r.FIXED_VCM_DIR / "netlist-snapshots" / f"{src}.spice").read_text()
+            (root / "netlist-snapshots" / f"{src}.spice").write_text(snap.replace("CL vout 0 2p", "CL vout 0 3p"))
+            with self.assertRaisesRegex(ValueError, "does not rehash"):
+                r.recompute_fixed_vcm(src, root=root, now=__import__("datetime").datetime(2026, 1, 1))
+
+    # ---- --strict in fixed mode (judge feedback on PR #126) ----
+
+    def _run_mocked_grid(self, strict: bool | None, pm_fail_keys) -> tuple[int, str]:
+        """Drive run_fixed_vcm end to end with every tool/fleet call mocked."""
+        want, res = self._metrics(pm_fail_keys)
+        report = {"corners": [{"process": k[0], "temperature_c": k[1],
+                               "supply_v": {"vdd": k[2], "vcm": 1.2}} for k in want]}
+        names = ("run_single", "materialise", "batch_block", "run_klt_retrying", "analyse_ac_report",
+                 "op_flags", "run_nominal_op", "load_dut_text", "latest_gain_dir", "allocate_record_id",
+                 "claim_record_paths", "ngspice_version", "klt_version")
+        saved = {n: getattr(r, n) for n in names}
+        with tempfile.TemporaryDirectory() as d:
+            base = Path(d)
+            ok = r.Metrics(valid=True, dc_gain_db=95.0, gbw_hz=12e6, pm_deg=59.0)
+            r.run_single = lambda *a, **k: r.StudyRun("s", "d", ok, [])
+            r.materialise = lambda work, pdk, *a, **k: work / "tb.spice"
+            r.batch_block = lambda args: {}
+            r.run_klt_retrying = lambda *a, **k: report
+            r.analyse_ac_report = lambda rep, w: (res, {}, [])
+            r.op_flags = lambda rep, w: {}
+            r.run_nominal_op = lambda *a, **k: None
+            r.load_dut_text = lambda: "dut"
+            r.latest_gain_dir = lambda: None
+            r.allocate_record_id = lambda root: ("20990101-000000-test", __import__("datetime").datetime(2099, 1, 1))
+            r.claim_record_paths = lambda b, rec, plots=True: {
+                "record": base / "records" / f"{rec}.md", "snapshot": base / "snap" / f"{rec}.spice",
+                "corners": base / "corners" / rec}
+            r.ngspice_version = r.klt_version = lambda: "x"
+            args = types.SimpleNamespace(backend=None, batch_submit_retries=0, batch_retry_wait_s=0.0)
+            if strict is not None:
+                args.strict = strict
+            try:
+                with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
+                    rc = r.run_fixed_vcm(types.SimpleNamespace(path="p", variant="gf180mcuD", version="1",
+                                                               source="s"), args, 1.2)
+            finally:
+                for n, f in saved.items():
+                    setattr(r, n, f)
+            md = (base / "records" / "20990101-000000-test.md").read_text()  # evidence always retained
+        return rc, md
+
+    def test_default_fixed_mode_is_diagnostic_and_succeeds_on_bound_misses(self):
+        want = r.expected_keys(r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
+        rc, md = self._run_mocked_grid(strict=False, pm_fail_keys=want[:30])
+        self.assertEqual(rc, 0)
+        self.assertIn("| Phase margin | >= 60 deg | 15/45 |", md)
+        rc, _ = self._run_mocked_grid(strict=None, pm_fail_keys=want[:30])  # flag absent
+        self.assertEqual(rc, 0)
+
+    def test_strict_fixed_mode_exits_1_after_retaining_evidence(self):
+        want = r.expected_keys(r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
+        rc, md = self._run_mocked_grid(strict=True, pm_fail_keys=want[:30])
+        self.assertEqual(rc, 1)
+        self.assertIn("| Phase margin | >= 60 deg | 15/45 |", md)
+        head, rehash, _ = self.rehash_record(md)
+        self.assertEqual(head, rehash)
+
+    def test_strict_fixed_mode_passes_when_every_row_passes(self):
+        rc, _ = self._run_mocked_grid(strict=True, pm_fail_keys=())
+        self.assertEqual(rc, 0)
+
+    def test_misses_count_invalid_and_missing_points(self):
+        want, res = self._metrics()
+        self.assertEqual(r.fixed_vcm_misses(res, want), [])
+        res[want[0]] = r.Metrics(valid=False, reason="x")
+        del res[want[1]]
+        self.assertEqual(len(r.fixed_vcm_misses(res, want)), len(r.ROWS))
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
