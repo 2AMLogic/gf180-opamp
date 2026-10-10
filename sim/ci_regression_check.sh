@@ -3,7 +3,7 @@
 #
 # Copies the repo's sim/ and design/ trees to a scratch dir, deliberately
 # breaks one testbench source guard and one extraction in EACH simulator-free
-# experiment (gain-gbw-pm, noise, offset-mc, cmrr, cmrr-mc, psrr,
+# experiment (gain-gbw-pm, noise, offset-mc, cmrr, cmrr-mc, gain-gbw-pm-mc, psrr,
 # slew-swing-power, input-common-mode, step-response, ibias-cl-sensitivity),
 # and requires that experiment's unit suite to FAIL for each (after a control
 # run of the unmutated suite). Issue #131 adds the shared modules whose suites
@@ -96,6 +96,27 @@ expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
 expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
   "extraction: duplicate sample index accepted" \
   'if idx is None or idx in seen[k]:' 'if False:'
+
+# gain-gbw-pm-mc (issue #129): the Monte Carlo bench guard, the fixed-denominator
+# sample accounting and the #42 campaign gate must each have teeth.
+control gain-gbw-pm-mc test_gain_gbw_pm_mc.py
+expect_fail gain-gbw-pm-mc test_gain_gbw_pm_mc.py gain-gbw-pm-mc/run_gain_gbw_pm_mc.py \
+  "guard: circuit-identical-to-gain-bench check removed" \
+  '    if rest != _code(gain):' '    if False:'
+expect_fail gain-gbw-pm-mc test_gain_gbw_pm_mc.py gain-gbw-pm-mc/run_gain_gbw_pm_mc.py \
+  "guard: mismatch switch may precede the design.ngspice include" \
+  'if not inc or sw[0] < inc[0]:' 'if False:'
+expect_fail gain-gbw-pm-mc test_gain_gbw_pm_mc.py gain-gbw-pm-mc/run_gain_gbw_pm_mc.py \
+  "accounting: failed/missing samples dropped from the failure count" \
+  '        n_invalid = n_expected - n
+' '        n_invalid = 0
+'
+expect_fail gain-gbw-pm-mc test_gain_gbw_pm_mc.py gain-gbw-pm-mc/run_gain_gbw_pm_mc.py \
+  "accounting: duplicate sample index accepted" \
+  '        if idx in out[k]:' '        if False:'
+expect_fail gain-gbw-pm-mc test_gain_gbw_pm_mc.py gain-gbw-pm-mc/run_gain_gbw_pm_mc.py \
+  "gate: stale revised-DUT pin accepted" \
+  '    if pin != current_sha:' '    if False:'
 
 control psrr test_psrr.py
 expect_fail psrr test_psrr.py psrr/run_psrr.py \

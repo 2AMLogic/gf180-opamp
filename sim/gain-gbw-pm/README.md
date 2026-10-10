@@ -239,6 +239,11 @@ T1 completion claim.
 
 - Deterministic corners only — no mismatch / Monte Carlo (offset has its own
   future testbench), no noise, CMRR/PSRR (#39), slew, swing or power.
+  A mismatch Monte Carlo runner for these three rows now exists in
+  [`../gain-gbw-pm-mc/`](../gain-gbw-pm-mc/README.md) (issue #129). It reuses
+  this bench, extraction and guards. **No mismatch evidence exists yet**:
+  its N = 300 campaign is gated on #42's revised DUT and deterministic
+  record, so the rows here still rest on deterministic corners only.
 - Passive corners are not independently exercised (see the policy above).
 - GBW and phase margin are defined by the first 0 dB crossing of the
   small-signal response with `CL = 2 pF` on the output and the committed
