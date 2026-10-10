@@ -3,7 +3,7 @@
   "kind": "generic",
   "provenance": {
     "input": {
-      "content_hash": "sha256:1bff82d99bc05a6745102ac798b4f437d52c27bf5f483d0b6116c52ad357a2bc",
+      "content_hash": "sha256:98d9c63716abce8af3f5023d4e23689b93102c3547038f05eadf36877265500b",
       "path": "sim/reports/characterization-report.json"
     }
   },

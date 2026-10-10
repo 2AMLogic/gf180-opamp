@@ -5,12 +5,12 @@
     "normalised_sha256_prefix": "81fbd914f8254a49"
   },
   "limitations": [
-    "cmrr: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
-    "noise: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
-    "offset-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
-    "psrr: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
-    "slew-swing-power (20261009-142137-1dab1db): measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
-    "slew-swing-power (20261009-143715-4d5aa43): measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
+    "cmrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "noise: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "offset-mc: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "psrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "slew-swing-power (20261009-142137-1dab1db): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "slew-swing-power (20261009-143715-4d5aa43): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), gain-gbw-pm (recorded), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (20261009-142137-1dab1db) (recorded), slew-swing-power (20261009-143715-4d5aa43) (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
     "ngspice versions differ: ngspice 42 <- noise (local), offset-mc (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)",
     "coverage differs between sources (see each row's coverage; e.g. the offset Monte Carlo is 5 corner points at nominal T/VDD while the AC rows are full 45-point grids)"
@@ -193,7 +193,7 @@
       "limitations": [
         "passives at typical only: RZ/CC passive corners are not swept",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -269,7 +269,7 @@
         "passives at typical only: RZ/CC passive corners are not swept",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "no ratified bound and no ratified integration band (DR-3 residual e1); the bands are candidates",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": 45,
@@ -344,7 +344,7 @@
         "nominal T/VDD only (27 C, 3.30 V): no temperature or supply axis",
         "mismatch Monte Carlo of the offset only; no numeric bound proposed (DR-3 residual e2)",
         "sigma relative standard error ~ 4.1 % at the stated N",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": 5,
@@ -421,7 +421,7 @@
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "systematic figure of a perfectly matched schematic; mismatch-limited CMRR (Monte Carlo) is not covered",
         "no ratified bound (DR-3 residual e3)",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": 45,
@@ -529,7 +529,7 @@
         "PSRR-: Avss changes sign across the grid, so low-frequency PSRR- near the flip is a cancellation, not design margin; the worst-case figure is the one to use",
         "systematic figure of a perfectly matched schematic; mismatch-limited PSRR is not covered",
         "no ratified bound (DR-3 residual e4)",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": 45,
@@ -603,7 +603,7 @@
       "limitations": [
         "passives at typical only: RZ/CC passive corners are not swept",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -647,7 +647,7 @@
       "limitations": [
         "passives at typical only: RZ/CC passive corners are not swept",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -710,7 +710,7 @@
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g5c94de0ebbfe",
       "measurement_config": {
-        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "detail": "this record predates measurement fingerprinting",
         "status": "unknown"
       },
       "ngspice_engine": "46",
@@ -745,7 +745,7 @@
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g4cbdfa769875",
       "measurement_config": {
-        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "detail": "this record predates measurement fingerprinting",
         "status": "unknown"
       },
       "ngspice_engine": null,
@@ -762,7 +762,7 @@
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g4cbdfa769875",
       "measurement_config": {
-        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "detail": "this record predates measurement fingerprinting",
         "status": "unknown"
       },
       "ngspice_engine": null,
@@ -779,7 +779,7 @@
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g5c94de0ebbfe",
       "measurement_config": {
-        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "detail": "this record predates measurement fingerprinting",
         "status": "unknown"
       },
       "ngspice_engine": "46",
@@ -796,7 +796,7 @@
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g4cbdfa769875",
       "measurement_config": {
-        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "detail": "this record predates measurement fingerprinting",
         "status": "unknown"
       },
       "ngspice_engine": "46",
@@ -813,7 +813,7 @@
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g4cbdfa769875",
       "measurement_config": {
-        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "detail": "this record predates measurement fingerprinting",
         "status": "unknown"
       },
       "ngspice_engine": "46",

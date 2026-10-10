@@ -12,13 +12,14 @@ workspace paths, backend / retry / scheduling options, and the extraction code
 (an extraction-only fix does not need a new simulation). The DUT is covered by
 its own hash (issue #75), not here.
 
-Extension contract for the other experiments: give each experiment a stdlib
-`measurement_config.py` exposing `EXPERIMENT`, `inputs(root)` and
-`FINGERPRINT_VERSION`, record the line
-`- **Measurement fingerprint**: ...` plus the inputs block in its records
-(see `fingerprint_lines`), and add it to `MEASUREMENT_CONFIG` in
-`sim/report/characterization_report.py`. Until then its records are reported
-as measurement-configuration freshness unknown.
+Extension contract for the other experiments (migrated in issue #89; see
+`sim/noise/measurement_config.py` for the multi-bench form): give each
+experiment a stdlib `measurement_config.py` exposing `EXPERIMENT`,
+`FINGERPRINT_VERSION`, `TESTBENCHES_REL` and `inputs(texts, retained)`,
+record the line `- **Measurement fingerprint**: ...` plus the inputs block in
+its records (see `harness.fingerprint_header_lines`), and add it to
+`MEASUREMENT_CONFIG` in `sim/report/characterization_report.py`. Records
+without the line are reported as measurement-configuration freshness unknown.
 """
 
 from __future__ import annotations

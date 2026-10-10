@@ -92,7 +92,11 @@ from harness import (  # noqa: E402
     run_klt,
     run_klt_retrying,
     sanitise_report,
+    load_sibling,
 )
+
+# One source for everything the fingerprint covers (issue #89).
+mc = load_sibling("offset_mc_measurement_config", "sim/offset-mc/measurement_config.py")
 
 TESTBENCH = HERE / "testbench" / "tb_offset_mc.spice"
 
@@ -100,25 +104,24 @@ TESTBENCH = HERE / "testbench" / "tb_offset_mc.spice"
 # Conditions (issue #45 scope decision: nominal T and supply only)
 # --------------------------------------------------------------------------
 
-CORNERS = ["typical", "ff", "ss", "fs", "sf"]
-PASSIVE_SECTIONS = ("res_typical", "mimcap_typical")
-TEMP_C = 27.0
-VDD_V = 3.30
-VCM_V = 1.65
-MODEL_LIB = "libs.tech/ngspice/sm141064.ngspice"
+CORNERS = mc.CORNERS
+PASSIVE_SECTIONS = mc.PASSIVE_SECTIONS
+TEMP_C = mc.TEMP_C
+VDD_V = mc.VDD_V
+VCM_V = mc.VCM_V
+MODEL_LIB = mc.MODEL_LIB
 
-#: Monte Carlo request. The seed is recorded; klt derives every per-sample
-#: seed from it deterministically, so re-running reproduces the draw.
-MC_N = 300
-MC_SEED = 45
-MC_VARY = "mismatch"
+#: Monte Carlo request (values live in measurement_config.py).
+MC_N = mc.MC_N
+MC_SEED = mc.MC_SEED
+MC_VARY = mc.MC_VARY
 #: Sigma of a normal sample has relative standard error ~ 1/sqrt(2(N-1)).
 MIN_N = 300
 
-#: Control sizes (kept small).
-CONTROL_N = 40
-IMBALANCE_DEVICE = "xm1"
-IMBALANCE_W_FROM, IMBALANCE_W_TO = "W=3.6u", "W=3.96u"  # +10 %
+#: Control sizes (kept small; values live in measurement_config.py).
+CONTROL_N = mc.CONTROL_N
+IMBALANCE_DEVICE = mc.IMBALANCE_DEVICE
+IMBALANCE_W_FROM, IMBALANCE_W_TO = mc.IMBALANCE_W_FROM, mc.IMBALANCE_W_TO
 #: The imbalance must move the mean offset by more than this to count as
 #: "visible" (volts). Chosen well above numerical noise (~1e-9 V) and far
 #: below the expected shift; it is a control threshold, not a spec bound.
@@ -135,13 +138,9 @@ TIE_TOL_V = 1e-6
 #: each; a 1e-5 V tolerance covers the rounding and nothing physical).
 XCHK_TOL_V = 1e-5
 
-SIM_SOURCE = "Ibias"
-SIM_ARGS = "Ibias 10u 11u 1u"
-MEASUREMENTS = [
-    {"name": "vout_v", "spice": ".meas dc vout_v FIND v(vout) AT=10u", "unit": "V"},
-    {"name": "vinp_v", "spice": ".meas dc vinp_v FIND v(vinp) AT=10u", "unit": "V"},
-    {"name": "vos_v", "spice": ".meas dc vos_v FIND par('v(vout)-v(vinp)') AT=10u", "unit": "V"},
-]
+SIM_SOURCE = mc.SIM_SOURCE
+SIM_ARGS = mc.SIM_ARGS
+MEASUREMENTS = mc.MEASUREMENTS
 
 
 # --------------------------------------------------------------------------
@@ -586,6 +585,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, report, stats, worst, sta
     add("")
     add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; commit `{record.rsplit('-', 1)[-1]}`; issue #45")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include `{dut_sha[:16]}`), unchanged")
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
+        add(ln)
     add(f"- **PDK**: {pdk.variant} (open_pdks `{pdk.version}`); tools: ngspice local `{ngspice}`, klt `{kver}`")
     if remote:
         add(f"- **Execution**: `klt sim` backend `{remote.get('provider')}`, job `{remote.get('job_id', remote.get('job'))}`, "
@@ -680,6 +681,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, report, stats, worst, sta
     add(f"- `sim/offset-mc/corners/{record}/offset_samples.csv`, `klt-report.json`, `controls/`")
     add(f"- `sim/offset-mc/netlist-snapshots/{record}.spice`")
     add("")
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}))
     return "\n".join(L)
 
 

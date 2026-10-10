@@ -19,6 +19,9 @@ echo "== sim/report: characterization report generator tests + staleness check (
 python3 report/test_report.py
 python3 report/characterization_report.py --check
 
+echo "== sim: per-experiment measurement-configuration fingerprint modules (no simulator) =="
+python3 test_measurement_config.py
+
 echo "== sim/gain-gbw-pm: extraction + source-guard tests (no simulator) =="
 python3 gain-gbw-pm/test_gain_gbw_pm.py
 

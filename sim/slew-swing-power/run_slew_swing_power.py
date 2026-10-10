@@ -108,19 +108,22 @@ from harness import (  # noqa: E402
 # in `harness`.)
 g = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
 
+# One source for everything the fingerprint covers (issue #89).
+mc = load_sibling("slew_swing_power_measurement_config", "sim/slew-swing-power/measurement_config.py")
+
 TB_DIR = HERE / "testbench"
 TESTBENCH = {f: TB_DIR / f"tb_{f}.spice" for f in ("power", "slew", "swing")}
-FIGURES = ("power", "slew", "swing")
+FIGURES = mc.FIGURES
 
 # --------------------------------------------------------------------------
 # Grid and conditions (identical to sim/gain-gbw-pm; spec/target-spec.md Sec.1)
 # --------------------------------------------------------------------------
 
-CORNERS = g.CORNERS
-TEMPS_C = g.TEMPS_C
-SUPPLIES_V = g.SUPPLIES_V
+CORNERS = mc.CORNERS
+TEMPS_C = mc.TEMPS_C
+SUPPLIES_V = mc.SUPPLIES_V
 NOMINAL = g.NOMINAL
-IBIAS_A = 10e-6
+IBIAS_A = mc.IBIAS_A
 
 # Ratified bounds (spec/target-spec.md Sec.2). Never edited here.
 SLEW_MIN_VUS = 10.0
@@ -129,21 +132,21 @@ SWING_STRETCH_V = 2.6
 POWER_MAX_UW = 350.0
 
 # Slew bench timing (tb_slew.spice): input low until RISE_T, high until FALL_T.
-SLEW_RISE_T = 1e-6
-SLEW_FALL_T = 3e-6
-SLEW_TSTOP = 5e-6
-SLEW_TSTEP = 5e-9  # output sample interval; 0.5 ns made the 45-point fleet job exceed its per-point timeout
-SLEW_STEP_V = 1.0  # input step, volts peak to peak (+-0.5 V about VCM)
-SLEW_LO_FRAC, SLEW_HI_FRAC = 0.2, 0.8
+SLEW_RISE_T = mc.SLEW_RISE_T
+SLEW_FALL_T = mc.SLEW_FALL_T
+SLEW_TSTOP = mc.SLEW_TSTOP
+SLEW_TSTEP = mc.SLEW_TSTEP
+SLEW_STEP_V = mc.SLEW_STEP_V
+SLEW_LO_FRAC, SLEW_HI_FRAC = mc.SLEW_LO_FRAC, mc.SLEW_HI_FRAC
 SLEW_LEVEL_TOL_V = 0.02  # |vout - vinp| at the settled pre-edge instants
-SLEW_SAMPLE_BEFORE = 10e-9  # settled level read this long before the next edge
+SLEW_SAMPLE_BEFORE = mc.SLEW_SAMPLE_BEFORE
 
 # Swing bench (tb_swing.spice): FIXED sweep range that covers every grid supply.
-SWING_VIN_STOP_V = 3.63
-SWING_VIN_STEP_V = 5e-3
-SWING_FRAC = 1.0 / math.sqrt(2.0)  # -3 dB: the criterion
+SWING_VIN_STOP_V = mc.SWING_VIN_STOP_V
+SWING_VIN_STEP_V = mc.SWING_VIN_STEP_V
+SWING_FRAC = mc.SWING_FRAC
 SWING_SENS_FRACS = (0.9, 0.5)  # reported as sensitivity only
-SWING_MID_BAND_V = 0.1  # mid-range gain read within +-this of VCM
+SWING_MID_BAND_V = mc.SWING_MID_BAND_V
 SWING_GAIN_TOL = 0.05  # mid-range |gain| must be 1 +- this
 
 # Cross-check tolerances against ngspice's own `.meas`.
@@ -195,31 +198,8 @@ def materialise(fig: str, work: Path, pdk: Pdk, *, ibias_a: float | None = None)
 def make_request(fig: str, netlist: Path, pdk: Pdk, corners, temps, supplies, *, ibias_a: float = IBIAS_A) -> dict:
     """One 45-point (or single-point) `corners` request for one figure."""
     req = g.ac_request(netlist, pdk, corners, temps, supplies)
-    if fig == "power":
-        # Operating point as a one-step DC sweep of Ibias (`.meas dc ... AT=`
-        # works on every runner; there is no `.meas op`).
-        at = f"{ibias_a:g}"
-        req["analysis"] = {"kind": "dc", "args": f"Ibias {ibias_a:g} {ibias_a + 1e-6:g} 1u"}
-        req["measurements"] = [
-            {"name": "ivdd_a", "spice": f".meas dc ivdd_a FIND i(vdd) AT={at}", "unit": "A"},
-            {"name": "vout_v", "spice": f".meas dc vout_v FIND v(vout) AT={at}", "unit": "V"},
-        ]
-    elif fig == "slew":
-        req["analysis"] = {"kind": "tran", "args": f"{SLEW_TSTEP:g} {SLEW_TSTOP:g}"}
-        pre_rise = SLEW_RISE_T - SLEW_SAMPLE_BEFORE
-        pre_fall = SLEW_FALL_T - SLEW_SAMPLE_BEFORE
-        req["measurements"] = [
-            {"name": "vlo_v", "spice": f".meas tran vlo_v FIND v(vout) AT={pre_rise:g}", "unit": "V"},
-            {"name": "vhi_v", "spice": f".meas tran vhi_v FIND v(vout) AT={pre_fall:g}", "unit": "V"},
-        ]
-    elif fig == "swing":
-        req["analysis"] = {"kind": "dc", "args": f"Vin 0 {SWING_VIN_STOP_V:g} {SWING_VIN_STEP_V:g}"}
-        req["measurements"] = [
-            {"name": "vout_max_v", "spice": ".meas dc vout_max_v MAX v(vout)", "unit": "V"},
-            {"name": "vout_min_v", "spice": ".meas dc vout_min_v MIN v(vout)", "unit": "V"},
-        ]
-    else:
-        raise ValueError(fig)
+    req["analysis"] = mc.analysis_for(fig, ibias_a)
+    req["measurements"] = mc.measurements_for(fig, ibias_a)
     req["options"] = {"timeout_s": 600, "keep_artifacts": True, "waveforms": True}
     return req
 
@@ -686,11 +666,7 @@ def run_unit(fig: str, name: str, pdk: Pdk, work: Path, ibias_a: float | None):
 
 def run_controls(pdk: Pdk, work: Path, figs=FIGURES) -> list[ControlRun]:
     out: list[ControlRun] = []
-    for name, desc, ib in (
-        ("nominal", "unmodified nominal point (reference for the controls)", None),
-        ("ibias-half", "ibias driven at 5 uA instead of 10 uA (all else nominal)", 5e-6),
-        ("ibias-zero", "ibias driven at 0 A (no bias current; all else nominal)", 0.0),
-    ):
+    for name, desc, ib in mc.CONTROLS:
         cr = ControlRun(name, desc, {})
         for fig in figs:
             try:
@@ -870,6 +846,12 @@ def worst_primary(verdicts) -> str:
     return _fmt(verdicts['swing'].worst_value, '.3f')
 
 
+def fingerprint_scope(ran) -> tuple[dict, dict]:
+    """(bench texts, retained-figure selector) for the figures a record measured."""
+    texts = {f: TESTBENCH[f].read_text() for f in FIGURES}
+    return texts, {"figures": {f: True for f in ran}}
+
+
 def build_record(
     *, record, stamp, pdk, ngspice, klt_version, backend_descs, reports, all_results, verdicts,
     ctrls, ctrl_bad, plots, dut_sha, not_run, xchk_counts, figs=FIGURES, rederived=None,
@@ -927,6 +909,9 @@ def build_record(
     )
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (wrapper-normalised, device body verbatim; "
         f"normalised sha256 `{dut_sha}`), snapshotted in full in `netlist-snapshots/{record}.spice`")
+    fp_texts, fp_sel = fingerprint_scope(ran)
+    for ln in mc.fingerprint_lines(fp_texts, fp_sel):
+        add(ln)
     add("- **Corner matrix run**:")
     add(f"  - Process (MOS): {', '.join(CORNERS)}")
     add("  - Temperature: " + ", ".join(f"{t:g} C" for t in TEMPS_C))
@@ -1070,6 +1055,7 @@ def build_record(
         for s in ctrl_bad:
             add(f"- {s}")
     add("")
+    L.extend(mc.inputs_section(fp_texts, fp_sel))
     add("## Plots")
     add("")
     for p in plots:

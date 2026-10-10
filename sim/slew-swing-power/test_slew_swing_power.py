@@ -451,5 +451,50 @@ class AppendOnlyTests(unittest.TestCase):
                 r.g.claim_record_paths(base, "rid-1")
 
 
+class MeasurementFingerprint(unittest.TestCase):
+    """Issue #89: the runner and the fingerprint share ONE configuration source,
+    per figure."""
+
+    PDK = r.Pdk(Path("/x/gf180mcuD"), "gf180mcuD", "test")
+    TEXTS = {f: r.TESTBENCH[f].read_text() for f in r.FIGURES}
+
+    def test_runner_constants_are_the_fingerprinted_ones(self):
+        for n in ("SLEW_RISE_T", "SLEW_FALL_T", "SLEW_TSTOP", "SLEW_TSTEP", "SLEW_STEP_V", "SLEW_LO_FRAC", "SLEW_HI_FRAC",
+                  "SLEW_SAMPLE_BEFORE", "SWING_VIN_STOP_V", "SWING_VIN_STEP_V", "SWING_FRAC", "SWING_MID_BAND_V", "IBIAS_A"):
+            self.assertEqual(getattr(r, n), getattr(r.mc, n), n)
+        self.assertEqual(r.FIGURES, r.mc.FIGURES)
+        self.assertIs(r.CORNERS, r.mc.CORNERS)
+        self.assertEqual(sorted(r.mc.TESTBENCHES_REL), sorted(r.FIGURES))
+        for f in r.FIGURES:
+            self.assertTrue(r.mc.TESTBENCHES_REL[f].endswith(r.TESTBENCH[f].name))
+
+    def test_each_figure_request_is_what_the_fingerprint_hashes(self):
+        inp = r.mc.inputs(self.TEXTS)
+        for f in r.FIGURES:
+            with self.subTest(f):
+                req = r.make_request(f, Path("/x/tb.spice"), self.PDK, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
+                fi = inp["figures"][f]
+                self.assertEqual(req["analysis"], {"kind": fi["analysis"]["kind"], "args": fi["analysis"]["args"]})
+                self.assertEqual(req["measurements"], fi["analysis"]["measurements"])
+                self.assertEqual(req["models"]["lib"], inp["models"]["lib"])
+
+    def test_controls_are_the_fingerprinted_ones(self):
+        self.assertEqual([c[2] for c in r.mc.CONTROLS][1:], [5e-6, 0.0])
+        self.assertEqual(r.mc.inputs(self.TEXTS)["figures"]["power"]["controls"]["ibias_a"], [c[2] for c in r.mc.CONTROLS])
+
+    def test_record_scope_is_the_measured_figures(self):
+        texts, sel = r.fingerprint_scope(["swing"])
+        self.assertEqual(sorted(r.mc.inputs(texts, sel)["figures"]), ["swing"])
+        texts, sel = r.fingerprint_scope(list(r.FIGURES))
+        self.assertEqual(sorted(r.mc.inputs(texts, sel)["figures"]), sorted(r.FIGURES))
+
+    def test_record_embeds_header_and_inputs_for_selected_figures(self):
+        texts, sel = r.fingerprint_scope(["power"])
+        blob = "\n".join(r.mc.fingerprint_lines(texts, sel) + r.mc.inputs_section(texts, sel))
+        self.assertIn(r.mc.fingerprint(texts, sel), blob)
+        self.assertIn("power", blob)
+        self.assertNotIn('"slew":', blob)
+
+
 if __name__ == "__main__":
     unittest.main()

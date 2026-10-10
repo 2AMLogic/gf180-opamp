@@ -165,13 +165,30 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   downgrades it to a disclosed limitation). Normalisation (`harness.py`,
   `canonical_bench_lines`): comments, blank lines, whitespace, case and
   `.include` paths are ignored; values are not numerically re-parsed. Excluded:
-  record IDs, workspace paths, backend/retry options, extraction code. Only
-  `gain-gbw-pm` is instrumented so far; older gain records and every other
-  experiment are reported as "measurement-configuration freshness unknown"
-  (per source, per row and in the report limitations), never as current. To
-  migrate an experiment, give it a stdlib `measurement_config.py` (see
-  `gain-gbw-pm/measurement_config.py`), emit the header line and inputs block
-  from its driver, and register it in `MEASUREMENT_CONFIG`. Historical
+  record IDs, workspace paths, backend/retry options, extraction code. Instrumented
+  experiments (issues #85, #89): `gain-gbw-pm`, `noise`, `offset-mc`, `cmrr`,
+  `psrr` and `slew-swing-power`, each with a stdlib
+  `sim/<experiment>/measurement_config.py` that its runner imports its
+  fingerprinted constants from (one source; per-experiment tests compare the
+  runner's klt request with the fingerprint inputs, and
+  `sim/test_measurement_config.py` fails when a configuration constant does
+  not move the fingerprint). Beyond the bench and corner/model axes each
+  fingerprints what is specific to its figure: noise bands, spot frequencies
+  and fit window; offset-MC sample count, seed, `vary` mode and the
+  `sw_stat_mismatch` switch; CMRR/PSRR excitation modes, servo and isolation
+  settings and the operating-point print; slew/swing/power timing, sweep and
+  criterion settings **per figure** (the record retains only the figures it
+  measured, so a power-only record never certifies slew or swing
+  configuration, and the report recomputes exactly that figure set). Records
+  written before the migration, and every older record, are reported as
+  "measurement-configuration freshness unknown" (per source, per row and in
+  the report limitations), never as current. To migrate a further experiment,
+  give it a `measurement_config.py` exposing `EXPERIMENT`,
+  `FINGERPRINT_VERSION`, `TESTBENCHES_REL` and `inputs(texts, retained)` (see
+  `noise/measurement_config.py`), emit the header line and inputs block from
+  its driver (`harness.fingerprint_header_lines` /
+  `fingerprint_inputs_section`), and register it in `MEASUREMENT_CONFIG`.
+  Historical
   records are never edited and no historical fingerprint is fabricated.
 - Regenerate: `python3 sim/report/characterization_report.py` (after editing
   `selection.json`); verify the committed copy: `... --check` (exit 1 if

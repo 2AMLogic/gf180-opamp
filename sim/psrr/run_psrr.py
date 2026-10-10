@@ -84,6 +84,9 @@ from harness import (  # noqa: E402
 C = load_sibling("cmrr_driver", "sim/cmrr/run_cmrr.py")
 G = C.G
 
+# One source for everything the fingerprint covers (issue #89).
+mc = load_sibling("psrr_measurement_config", "sim/psrr/measurement_config.py")
+
 TESTBENCH = HERE / "testbench" / "tb_psrr.spice"
 
 CORNERS, TEMPS_C, SUPPLIES_V, NOMINAL = C.CORNERS, C.TEMPS_C, C.SUPPLIES_V, C.NOMINAL
@@ -92,12 +95,8 @@ fmt_key, point_stem = C.fmt_key, C.point_stem
 SPOT_HZ = C.SPOT_HZ
 db = C.db
 
-QUIET = {"acp": 0.0, "acn": 0.0, "acdd": 0.0, "acss": 0.0}
-MODES = {
-    "dm": {**QUIET, "acp": 0.5, "acn": -0.5},
-    "vdd": {**QUIET, "acdd": 1.0},
-    "vss": {**QUIET, "acss": 1.0},
-}
+QUIET = mc.QUIET
+MODES = mc.MODES
 RAILS = {"vdd": "v(vdd)", "vss": "v(vss)"}
 NEED = ("v(vout)", "v(vinp)", "v(vinn)", "v(vdd)", "v(vss)")
 LABEL = {"vdd": "PSRR+", "vss": "PSRR-"}
@@ -107,9 +106,8 @@ INPUT_QUIET_V = 1e-9
 #: ... and the differential leak's contribution |Ad vd| must be this small a
 #: fraction of the measured output.
 INPUT_LEAK_FRAC = 1e-6
-#: Feedthrough fixture (stimulus-fixture negative control): a resistor from
-#: the driven rail to vout, appended to the bench only for the control.
-FEEDTHROUGH_R = 100e3
+#: Feedthrough fixture resistor (value lives in measurement_config.py).
+FEEDTHROUGH_R = mc.FEEDTHROUGH_R
 
 
 # --------------------------------------------------------------------------
@@ -317,6 +315,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; commit `{record.rsplit('-', 1)[-1]}`; issue #39")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include `{dut_sha[:16]}`), "
         f"unchanged; snapshot `netlist-snapshots/{record}.spice`")
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
+        add(ln)
     for ln in C.pdk_lines(pdk, reports):
         add(ln)
     add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`, numpy `{np.__version__}`")
@@ -450,6 +450,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     for p in s.problems:
         add(f"- STUDY PROBLEM: {p}")
     add("")
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}))
     add("## Plots")
     add("")
     for p in plots:
