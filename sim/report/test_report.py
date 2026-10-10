@@ -162,7 +162,11 @@ class CommittedReport(unittest.TestCase):
         # honest wrapper: the sidecar mirrors the report's own summary (any failing row stays visible
         # in the report, not hidden by 'pass'; after the issue #42 retune the committed report has none)
         rep = json.loads(raw)
-        self.assertGreaterEqual(rep["summary"]["fail"], 0)
+        verdicts = [x.get("verdict") for x in rep["rows"] if x["status"] == "measured-verdict"]
+        self.assertEqual(rep["summary"]["fail"], verdicts.count("FAIL"))
+        self.assertEqual(rep["summary"]["pass"], verdicts.count("PASS"))
+        self.assertEqual(rep["summary"]["ratified_rows_judged"], len(verdicts))
+        self.assertGreater(len(verdicts), 0)
         self.assertEqual(ev["report_summary"], rep["summary"])
         self.assertNotIn("/home/", json.dumps(ev))
         self.assertIsNone(re.search(r"\d{4}-\d\d-\d\dT", json.dumps(ev)))
