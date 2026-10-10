@@ -655,6 +655,30 @@ def point_stem(k: Key) -> str:
     return f"{k[0]}_{k[1]:g}c_{k[2]:.2f}v"
 
 
+def latest_gain_dir() -> Path | None:
+    """Newest gain-bench corner directory holding a full 45-point dataset.
+
+    Counts only per-point data files (`<process>_<T>c_<vdd>v.dat`), so an
+    auxiliary `.dat` in a record directory cannot masquerade as a point
+    (issue #68: one copy, shared by the noise/CMRR/PSRR cross-checks).
+    """
+    base = HERE / "corners"
+    if not base.is_dir():
+        return None
+    for d in sorted((p for p in base.iterdir() if p.is_dir()), reverse=True):
+        if len(list(d.glob("*_*c_*v.dat"))) >= 45:
+            return d
+    return None
+
+
+def load_gain_bench(gdir: Path, k: Key) -> np.ndarray | None:
+    """The committed (freq, re, im, ...) table for point `k`, or None if absent."""
+    p = gdir / f"{point_stem(k)}.dat"
+    if not p.is_file():
+        return None
+    return np.loadtxt(p)
+
+
 def expected_keys(corners, temps, supplies) -> list[Key]:
     return [(c, float(t), float(v)) for c in corners for v in supplies for t in temps]
 

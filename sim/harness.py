@@ -46,6 +46,7 @@ another backend) is fixed in one place.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import subprocess
@@ -58,6 +59,23 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 #: The committed xschem export of the DUT (every bench measures this).
 DUT_EXPORT = REPO_ROOT / "design" / "netlist" / "opamp_two_stage.spice"
+
+
+def load_sibling(module_name: str, relpath: str):
+    """Import a sibling driver by repo-relative path (issue #68).
+
+    Experiment directories contain hyphens, so the drivers cannot be imported
+    by name. Guarded by `sys.modules`: a driver already loaded under
+    `module_name` (by a test, or by another driver) is reused, so every
+    importer shares ONE copy of the module.
+    """
+    if module_name in sys.modules:
+        return sys.modules[module_name]
+    spec = importlib.util.spec_from_file_location(module_name, REPO_ROOT / relpath)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = mod
+    spec.loader.exec_module(mod)
+    return mod
 
 DEFAULT_VARIANT = "gf180mcuD"
 # Pinned open_pdks revision of the gf180mcu PDK (full hash). CI's

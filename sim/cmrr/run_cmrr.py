@@ -67,7 +67,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import math
 import os
@@ -100,23 +99,15 @@ from harness import (  # noqa: E402
     remote_of,
     run_klt,
     run_klt_retrying,
+    load_sibling,
     sanitise_report,
 )
 
 # The gain driver owns the committed-DUT guards, the request shape and the grid
 # bookkeeping (the klt wrapper itself is in `harness`); reuse them unchanged so the benches stay structurally identical.
-if "gain_gbw_pm_driver" in sys.modules:
-    G = sys.modules["gain_gbw_pm_driver"]
-else:
-    _spec = importlib.util.spec_from_file_location(
-        "gain_gbw_pm_driver", REPO_ROOT / "sim" / "gain-gbw-pm" / "run_gain_gbw_pm.py"
-    )
-    G = importlib.util.module_from_spec(_spec)
-    sys.modules["gain_gbw_pm_driver"] = G
-    _spec.loader.exec_module(G)
+G = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
 
 TESTBENCH = HERE / "testbench" / "tb_cmrr.spice"
-GAIN_DIR = REPO_ROOT / "sim" / "gain-gbw-pm"
 
 CORNERS = G.CORNERS
 TEMPS_C = G.TEMPS_C
@@ -665,16 +656,6 @@ def extract_cmrr(freq_dm, dm_vec: dict, freq_cm, cm_vec: dict, floor: float, *, 
 # --------------------------------------------------------------------------
 
 
-def latest_gain_dir() -> Path | None:
-    base = GAIN_DIR / "corners"
-    if not base.is_dir():
-        return None
-    for d in sorted((p for p in base.iterdir() if p.is_dir()), reverse=True):
-        if len(list(d.glob("*_*c_*v.dat"))) >= 45:
-            return d
-    return None
-
-
 def gain_bench_dev_db(gdir: Path | None, k: Key, freq: np.ndarray, h: np.ndarray,
                      fmax: float | None = None) -> float | None:
     """max | |h| - |gain-bench vout/vdiff| | in dB over the sweep (up to
@@ -686,10 +667,9 @@ def gain_bench_dev_db(gdir: Path | None, k: Key, freq: np.ndarray, h: np.ndarray
     |Acm/2| <= |Ad| x 1e-3 at every corner."""
     if gdir is None:
         return None
-    p = gdir / f"{point_stem(k)}.dat"
-    if not p.is_file():
+    d = G.load_gain_bench(gdir, k)
+    if d is None:
         return None
-    d = np.loadtxt(p)
     if d.shape[0] != len(freq) or np.any(np.abs(d[:, 0] / freq - 1) > 1e-6):
         return None
     ref = d[:, 1] + 1j * d[:, 2]
@@ -1401,7 +1381,7 @@ def main(argv: list[str] | None = None) -> int:
     if ctl_snap.exists():
         raise FileExistsError(f"{ctl_snap} already exists; evidence is append-only")
     ngspice, kver = ngspice_version(), klt_version()
-    gdir = latest_gain_dir()
+    gdir = G.latest_gain_dir()
     print(f"record {record}: 2 excitations x {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
     with work_dir(args, "cmrr-") as scratch:
