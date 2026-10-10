@@ -115,13 +115,58 @@ fails the driver stops and writes **no record** (the result is *not run*, there
 is no local fallback). The raw fleet report of a clean grid is also kept in
 `$TMPDIR` so a post-processing failure never wastes a completed grid.
 
+## PVT grid (`--grid full`, issue #106)
+
+`run_offset_mc.py --grid full` extends the same mismatch Monte Carlo to the
+45-point MOS × T × VDD grid of the other benches (T −40 / 27 / 125 °C, VDD
+2.97 / 3.30 / 3.63 V from `sim/gain-gbw-pm/measurement_config.py`, VCM =
+VDD/2 paired by index) with N = 300 per point: ONE `klt sim` request of
+45 × 300 = 13 500 units, executed wherever `klt` resolves the backend (the
+batch fleet on a dispatch worker; the job id is the record's
+`environment.remote`). Nothing is hand-launched and a failed submit writes no
+record. Every point goes through the same per-sample validation as the
+nominal run, with `vinp` checked against that point's own VDD/2 (which also
+proves the supply/VCM alters were applied); klt's per-point rollup is
+cross-checked; the same controls run at typical / 27 °C / 3.30 V.
+
+The request is sharded over `request.remote.hosts = 3` fleet jobs: one job is
+capped at 3600 s and a timed-out job returns no per-unit results
+(2AMLogic/klayout-tools#2833; the unsharded 13 500-unit request ran 3688 s and
+was lost). klt derives every seed over the whole request, so sharding changes
+no sample. A shard whose launch the fleet refuses (shared concurrency cap,
+klayout-tools#2917) is lost; the driver then re-submits the whole request
+through `klt sim` (never locally), up to `--batch-submit-retries` times.
+
+The grid record (title `# Offset Monte Carlo PVT grid record`) is a separate
+append-only record: mean, sigma, 3 sigma and the linear 3-sigma offset
+|mean| + 3 sigma per point, a T × VDD summary of the worst corner, the worst
+point, and the worst figure set next to the 27 °C / 3.30 V record's
+(`20261009-072205-96bf3cc`, recomputed from its committed samples). It
+proposes no bound (spec issue #62 decides that).
+
+Grid record: [`records/20261010-083043-ddf96db.md`](records/20261010-083043-ddf96db.md)
+(13 500 samples, all valid; 3 fleet jobs). Worst linear 3-sigma offset over
+the 45 points **15.458 mV** at typical / 27 °C / 3.30 V (sigma 4.946 mV, the
+grid's largest), against **15.635 mV** (sf) in the 27 °C / 3.30 V record.
+Per-point sigma is 4.29–4.95 mV and |mean| ≤ 0.70 mV. The 45 sigmas scatter by
+0.20 mV (standard deviation) around 4.60 mV, about the 0.19 mV that sampling
+alone gives at N = 300. So the grid shows no temperature or supply dependence
+of the mismatch spread that can be told apart from sampling noise. These are
+measurements, not verdicts. Its measurement fingerprint
+covers the full-grid axes (`"grid": "full"` in the inputs); the nominal
+fingerprint is unchanged. The characterization report still cites the 27 °C
+record for the offset row (the grid record is listed as a side study in
+`sim/report/characterization_report.py`).
+
 ## Running
 
 ```bash
 python3 sim/offset-mc/test_offset_mc.py        # offline tests (+ 2 local deterministic units)
 python3 sim/offset-mc/run_offset_mc.py --smoke # one deterministic local unit, no record
 python3 sim/offset-mc/run_offset_mc.py --batch-runner-version-check warn \
-        --batch-submit-retries 10             # full grid + record (append-only)
+        --batch-submit-retries 10             # 5 corners at 27 C / 3.30 V + record (append-only)
+python3 sim/offset-mc/run_offset_mc.py --grid full --batch-runner-version-check warn \
+        --batch-submit-retries 10             # 45-point PVT grid + record (append-only)
 ```
 
 Needs `klt`, `ngspice` and the pinned gf180mcu PDK (`find_pdk` in
@@ -143,8 +188,8 @@ A re-run mints a new record id; existing paths are never overwritten.
 
 ## Limitations
 
-- Nominal temperature and supply only (issue scope); the T/VDD axes are a
-  possible follow-up if the cost report supports it.
+- The default run is nominal temperature and supply only (issue #45 scope);
+  the T/VDD axes are covered by `--grid full` (issue #106, above).
 - MOS mismatch only (see audit); passive (RZ/CC) mismatch and global process
   spread beyond the five corners are not sampled.
 - Static follower offset; it says nothing about offset drift, CMRR/PSRR-induced
