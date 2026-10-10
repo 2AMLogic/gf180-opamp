@@ -26,12 +26,12 @@ once or the run stops).
 | `ibias` | 8 … 12 µA, CL = 2 pF | slew, slower edge (`slew-swing-power` slew bench) | nominal, power-binding, slew-binding |
 
 Corner tuples (process / T / VDD), read from the selected records
-`gain-gbw-pm/records/20261010-020141-1e51d1c.md` and
-`slew-swing-power/records/20261009-142137-1dab1db.md`:
+`gain-gbw-pm/records/20261010-161514-0127eb7.md` and
+`slew-swing-power/records/20261010-161852-0127eb7.md`:
 
 - nominal: typical / 27 °C / 3.30 V
-- PM-binding: fs / 125 °C / 2.97 V (57.34° worst)
-- GBW-binding and slew-binding: ss / 125 °C / 2.97 V (10.422 MHz, 14.51 V/µs)
+- PM-binding: fs / 125 °C / 2.97 V (71.99° worst after the #42 retune)
+- GBW-binding and slew-binding: ss / 125 °C / 2.97 V (11.910 MHz, 15.50 V/µs)
 - power-binding: ff / −40 °C / 3.63 V (310.98 µW)
 
 They are constants in `measurement_config.py`; a test checks they lie on the

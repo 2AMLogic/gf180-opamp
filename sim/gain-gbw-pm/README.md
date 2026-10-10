@@ -33,8 +33,13 @@ are superseded as evidence by the newest record here.
   `mimcap_{typical,ff,ss}` independently at fs/125 C/2.97 V, ss/125 C/2.97 V and
   nominal as ONE `klt sim` request (see record `20261009-234014-55b400c`, which
   supersedes `20261009-233341-95dfc2a` with a corrected verdict header from the same data). The
-  committed `RZ`/`CC` are used as drawn and never retuned here — their
-  phase-margin consequence is simply part of the measurement.
+  committed `RZ`/`CC` are used as drawn and never retuned by the driver — their
+  phase-margin consequence is simply part of the measurement. The design itself
+  was retuned in issue #42 (RZ 2.11 kOhm -> 11.23 kOhm, CC 0.619 -> 0.578 pF;
+  `design/opamp_sizing.md` section 4); the newest grid record
+  `20261010-161514-0127eb7` and passive study `20261010-161720-0127eb7`
+  measure the retuned design, and every earlier record measures the pre-retune
+  design and is retained unchanged.
 
 ## Measurement technique
 

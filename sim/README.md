@@ -268,9 +268,12 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   feedback-isolation study and deterministic negative controls. The repo's
   first circuit-level spec-row evidence (issues #19, #38; tracker #7
   items 5 and 9). Selected record
-  [`20261009-055759-2524b3e`](gain-gbw-pm/records/20261009-055759-2524b3e.md):
-  gain and GBW pass at 45/45 points, phase margin fails its 60 degree target
-  (15/45 pass, worst 57.34 degrees).
+  [`20261010-161514-0127eb7`](gain-gbw-pm/records/20261010-161514-0127eb7.md)
+  (measured on the #42 compensation retune, RZ 11.23 kOhm / CC 0.578 pF):
+  gain, GBW and phase margin pass at 45/45 points (worst 93.79 dB, 11.910 MHz,
+  71.99 degrees). The pre-retune design missed PM at 30/45 points (worst 57.34
+  degrees; records `20261009-055759-2524b3e`, `20261010-020141-1e51d1c`,
+  retained unchanged).
   Opt-in `--vcm-fixed 1.20` re-runs the 45 points with the input common mode
   held at the LDO consumer's 1.20 V instead of VDD/2 (issue #125; diagnostic
   record under `gain-gbw-pm/fixed-vcm/`, default records untouched; evidence for
@@ -348,21 +351,19 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 
 As of the records selected in `report/selection.json`, benches exist for gain,
 GBW, phase margin, slew rate, output swing, quiescent power, noise, offset
-(mismatch Monte Carlo), CMRR and PSRR. Slew rate (worst 14.51 V/us), output
+(mismatch Monte Carlo), CMRR and PSRR. Slew rate (worst 15.50 V/us after the #42 retune; 14.51 V/us before), output
 swing (worst 2.465 Vpp) and quiescent power (worst 310.98 uW) pass their
 ratified bounds at 45/45 points; the slew and power binding corners
 (ss / 125 C / 2.97 V and ff / -40 C / 3.63 V) differ in temperature from the
 spec's predicted SS / -40 C / low VDD and FF / 125 C / 3.63 V (see
 `slew-swing-power/README.md`). Common
-limitations: each selected record is at typical passives (RZ/CC); gain/GBW/PM and slew/swing/power
-have separate passive-corner side studies (the latter,
-[`slew-swing-power/records/20261010-094234-fe6599f.md`](slew-swing-power/records/20261010-094234-fe6599f.md),
-is 27 cells at three MOS/T/VDD points, PASS 27/27 for all three figures; it
-does not upgrade any row verdict; noise, offset, CMRR, PSRR, ICMR and step response stay
-typical-passive). Gain/GBW/PM study
-([`gain-gbw-pm/records/20261009-234014-55b400c.md`](gain-gbw-pm/records/20261009-234014-55b400c.md):
-PM 7/27 cells pass; GBW 24/27 pass, 3/27 fail at one SS / 125 C / 2.97 V point
-with CC worst, across RZ typical/best/worst, worst 9.656 MHz); offset covers five process
+limitations: each selected record is at typical passives (RZ/CC); gain/GBW/PM and
+slew/swing/power have separate 27-cell passive-corner studies at three PVT
+points only
+([`gain-gbw-pm/records/20261010-161720-0127eb7.md`](gain-gbw-pm/records/20261010-161720-0127eb7.md):
+PM 27/27 pass, worst 64.47 deg; GBW 27/27 pass, worst 10.726 MHz;
+[`slew-swing-power/records/20261010-162823-0127eb7.md`](slew-swing-power/records/20261010-162823-0127eb7.md):
+27/27 per row, slew worst 14.25 V/us); offset covers five process
 corners x 300 samples at 27 C / 3.30 V only (no temperature or supply axis);
 CMRR and PSRR are systematic-only (matched devices). Noise, offset, CMRR and
 PSRR are measured without a verdict because their numeric bounds are not

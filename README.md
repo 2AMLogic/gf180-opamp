@@ -18,46 +18,49 @@ compliance are three different things, as of the committed records named
 below:
 
 - **Measured against a ratified bound (45-point PVT grid, schematic level):**
-  DC gain and GBW pass at 45/45 points (worst 93.79 dB and 10.42 MHz, both at
-  SS / 125 C / 2.97 V); slew rate, output swing and quiescent power also pass
-  at 45/45 points (worst 14.51 V/us at SS / 125 C / 2.97 V, 2.46 Vpp at
-  SS / 125 C / 2.97 V, and 310.98 uW at FF / -40 C / 3.63 V; record
-  [`20261009-142137-1dab1db`](sim/slew-swing-power/records/20261009-142137-1dab1db.md));
-  these PASS verdicts cover the MOS / temperature / supply grid only, with
-  passives at typical; phase margin **fails** its 60 degree target, passing
-  at only 15/45 points (worst 57.34 degrees at FS / 125 C / 2.97 V). Record:
-  [`20261009-055759-2524b3e`](sim/gain-gbw-pm/records/20261009-055759-2524b3e.md).
-  The circuit repair is tracked in [#42](https://github.com/2AMLogic/gf180-opamp/issues/42).
+  after the Miller-compensation retune of [#42](https://github.com/2AMLogic/gf180-opamp/issues/42)
+  (RZ 2.11 kOhm -> 11.23 kOhm, CC 0.619 pF -> 0.578 pF), DC gain, GBW and
+  phase margin all pass at 45/45 points (worst 93.79 dB and 11.910 MHz, both at
+  SS / 125 C / 2.97 V, and 71.99 degrees at FS / 125 C / 2.97 V; record
+  [`20261010-161514-0127eb7`](sim/gain-gbw-pm/records/20261010-161514-0127eb7.md));
+  slew rate, output swing and quiescent power also pass at 45/45 points
+  (worst 15.50 V/us at SS / 125 C / 2.97 V, 2.46 Vpp at SS / 125 C / 2.97 V,
+  and 310.98 uW at FF / -40 C / 3.63 V; record
+  [`20261010-161852-0127eb7`](sim/slew-swing-power/records/20261010-161852-0127eb7.md)).
+  Before the retune, PM passed at only 15/45 points (worst 57.34 degrees) and
+  GBW worst was 10.42 MHz (records `20261010-020141-1e51d1c`,
+  `20261009-142137-1dab1db`, kept unchanged). These PASS verdicts cover the
+  MOS / temperature / supply grid only, with passives at typical.
 - **Measured, bound still open (no verdict):** input-referred noise
-  ([`20261009-082007-68b4567`](sim/noise/records/20261009-082007-68b4567.md),
+  ([`20261010-163507-0127eb7`](sim/noise/records/20261010-163507-0127eb7.md),
   45 points), input offset mismatch Monte Carlo
-  ([`20261010-083043-ddf96db`](sim/offset-mc/records/20261010-083043-ddf96db.md),
+  ([`20261010-185141-e4be1ac`](sim/offset-mc/records/20261010-185141-e4be1ac.md),
   45-point PVT grid x 300 samples per point; worst |mean| + 3 sigma 15.458 mV
   at typical / 27 C / 3.30 V), CMRR
-  ([`20261009-105631-30ec86d`](sim/cmrr/records/20261009-105631-30ec86d.md))
+  ([`20261010-163601-0127eb7`](sim/cmrr/records/20261010-163601-0127eb7.md))
   and PSRR
-  ([`20261009-105929-30ec86d`](sim/psrr/records/20261009-105929-30ec86d.md)),
+  ([`20261010-163854-0127eb7`](sim/psrr/records/20261010-163854-0127eb7.md)),
   both systematic-only (matched devices, 45 points); the characterization
   report also lists the CMRR mismatch Monte Carlo record
-  ([`20261010-035206-978f088`](sim/cmrr-mc/records/20261010-035206-978f088.md),
+  ([`20261010-202454-e4be1ac`](sim/cmrr-mc/records/20261010-202454-e4be1ac.md),
   five corners x 300 samples at 27 C / 3.30 V only) beside it as separate,
   ungraded information. Their numeric bounds are
   not ratified.
 - **Not yet measured:** post-layout verification (no layout evidence; area is
   open).
 
-The selected records use typical passives; the 45-point grid verdicts above do not sweep RZ/CC. A
-separate 27-cell gain/GBW/PM passive-corner study
-([`20261009-234014-55b400c`](sim/gain-gbw-pm/records/20261009-234014-55b400c.md))
-shows PM >= 60 degrees at only 7/27 cells and GBW PASS at 24/27 cells with
-FAIL at 3/27: all three failing cells sit at one MOS/T/VDD point (SS / 125 C /
-2.97 V) with CC worst, one per RZ level (typical/best/worst = 9.663/9.656/9.673
-MHz; worst 9.656 MHz, below the 10 MHz bound). A separate
-27-cell slew/swing/power passive-corner SIDE STUDY
-([`20261010-094234-fe6599f`](sim/slew-swing-power/records/20261010-094234-fe6599f.md);
-three MOS/T/VDD points x 3 RZ x 3 CC) passes at 27/27 cells for all three
-figures; it covers 3 of the 45 grid points and does not upgrade any row
-verdict. Noise, offset, CMRR, PSRR, ICMR and step response remain at typical
+The selected 45-point records use typical passives; they do not sweep RZ/CC.
+Two 27-cell passive-corner studies on the retuned design (RZ and CC each at
+the PDK typical/ff/ss sections, at FS / 125 C / 2.97 V, SS / 125 C / 2.97 V
+and typical / 27 C / 3.30 V) cover only those three points, not the full 45:
+gain/GBW/PM
+([`20261010-161720-0127eb7`](sim/gain-gbw-pm/records/20261010-161720-0127eb7.md))
+shows PM >= 60 degrees at 27/27 cells (worst 64.47 degrees) and GBW >= 10 MHz
+at 27/27 cells (worst 10.726 MHz, SS / 125 C / 2.97 V, RZ ff, CC ss); slew,
+swing and power
+([`20261010-162823-0127eb7`](sim/slew-swing-power/records/20261010-162823-0127eb7.md))
+pass 27/27 per row (slew worst 14.25 V/us). No independent passive-corner
+pass is claimed for the full grid, and the other figures remain at typical
 passives only. The `klt signoff` verdict of
 record ([`manifests/`](manifests/README.md)) is still below T1; no T1 claim
 is made. The 5 V device flavors remain surveyed but not characterized, and

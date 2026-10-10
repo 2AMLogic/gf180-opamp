@@ -25,25 +25,29 @@ import characterization_report as cr  # noqa: E402
 
 REPO = HERE.parent.parent
 MANIFEST = HERE / "selection.json"
-FULL_SSP_REC = "20261009-142137-1dab1db"  # power + slew + swing (swing data vin/vout only)
-SWING_REC = "20261009-143715-4d5aa43"  # swing only, with the M6/M7 saturation vectors
+FULL_SSP_REC = "20261010-161852-0127eb7"  # power + slew + swing, swing re-derivable (selected, issue #42 retune)
+SWING_REC = FULL_SSP_REC  # the revised-design run judges all three figures in one record
+LEGACY_FULL_SSP_REC = "20261009-142137-1dab1db"  # pre-retune DUT: swing data vin/vout only (not re-derivable)
+LEGACY_SWING_REC = "20261009-143715-4d5aa43"  # pre-retune DUT: swing only, with the M6/M7 saturation vectors
+LEGACY_RECS = {"noise": "sim/noise/records/20261009-082007-68b4567.md", "cmrr": "sim/cmrr/records/20261009-105631-30ec86d.md",
+               "psrr": "sim/psrr/records/20261009-105929-30ec86d.md"}  # pre-retune, unfingerprinted
 SSP = "sim/slew-swing-power/records/"
 ICMR = "sim/input-common-mode"
-ICMR_REC = "20261009-222613-871d1a6"
+ICMR_REC = "20261010-164310-0127eb7"
 ICMR_MD = f"{ICMR}/records/{ICMR_REC}.md"
 ICMR_CSV = f"{ICMR}/corners/{ICMR_REC}/samples.csv"
 OFF = "sim/offset-mc"
 CMC = "sim/cmrr-mc"
-CMC_REC = "20261010-035206-978f088"  # issue #61 record, selected by issue #124
+CMC_REC = "20261010-202454-e4be1ac"  # issue #61 record, selected by issue #124
 CMC_MD = f"{CMC}/records/{CMC_REC}.md"
 CMC_CSV = f"{CMC}/corners/{CMC_REC}/samples.csv"
-OFF_GRID_REC = "20261010-083043-ddf96db"  # issue #106: 45-point PVT grid, N=300 per point (selected, issue #120)
+OFF_GRID_REC = "20261010-185141-e4be1ac"  # issue #106: 45-point PVT grid, N=300 per point (selected, issue #120)
 OFF_NOM_REC = "20261009-072205-96bf3cc"  # issue #45: 5 corners at 27 C / 3.30 V
 OFF_GRID_MD = f"{OFF}/records/{OFF_GRID_REC}.md"
 OFF_NOM_MD = f"{OFF}/records/{OFF_NOM_REC}.md"
 OFF_GRID_CSV = f"{OFF}/corners/{OFF_GRID_REC}/offset_samples.csv"
-GAIN_STUDY_MD = "sim/gain-gbw-pm/records/20261009-234014-55b400c.md"  # issue #70 side study (supplementary, #121)
-SSP_STUDY_MD = "sim/slew-swing-power/records/20261010-094234-fe6599f.md"  # issue #97 side study (supplementary, #121)
+GAIN_STUDY_MD = "sim/gain-gbw-pm/records/20261010-161720-0127eb7.md"  # issue #70 side study (supplementary, #121)
+SSP_STUDY_MD = "sim/slew-swing-power/records/20261010-162823-0127eb7.md"  # issue #97 side study (supplementary, #121)
 
 
 def make_root(tmp: Path) -> Path:
@@ -111,21 +115,21 @@ class CommittedReport(unittest.TestCase):
             self.assertNotIn(ssp_id, lim)
             self.assertNotIn("are not swept", lim)
         gbw = " ".join(rows["gbw"]["limitations"])
-        for frag in ("24/27 cells pass, 3 fail", "9.656", "9.663/9.656/9.673 MHz"):
+        for frag in ("27/27 cells pass, 0 fail", "10.726"):
             self.assertIn(frag, gbw)
-        self.assertIn("7/27 cells pass, 20 fail; range 53.63 .. 63.17 deg", " ".join(rows["pm"]["limitations"]))
+        self.assertIn("27/27 cells pass, 0 fail; range 64.47 .. 84.93 deg", " ".join(rows["pm"]["limitations"]))
         for k in ("slew", "swing", "power"):
             lim = " ".join(rows[k]["limitations"])
             self.assertIn("passives at typical only", lim)
             self.assertIn(ssp_id, lim)
             self.assertNotIn(gain_id, lim)
-        self.assertIn("worst 13.40 V/us at ss / 125 C / 2.97 V, RZ worst, CC worst", " ".join(rows["slew"]["limitations"]))
+        self.assertIn("worst 14.25 V/us at ss / 125 C / 2.97 V, RZ best, CC worst", " ".join(rows["slew"]["limitations"]))
         noise = " ".join(rows["noise"]["limitations"])
         self.assertIn("passives at typical only", noise)
         self.assertNotIn(gain_id, noise)
         self.assertNotIn(ssp_id, noise)
         self.assertEqual(rows["gbw"]["verdict"], "PASS")
-        self.assertEqual(rows["pm"]["verdict"], "FAIL")
+        self.assertEqual(rows["pm"]["verdict"], "PASS")
 
     def test_md_links_resolve_from_report_dir(self):
         """Issue #95 review: md links (incl. the passive studies) resolve relative to sim/reports/."""
@@ -155,9 +159,14 @@ class CommittedReport(unittest.TestCase):
         man = json.loads((REPO / "manifests/gf180-opamp.json").read_text())
         self.assertEqual(man["evidence"]["8"], {"file": "sim/reports/characterization-report.evidence.json",
                                                 "content_hash": want})
-        # honest wrapper: failures stay visible in the report, not hidden by 'pass'
+        # honest wrapper: the sidecar mirrors the report's own summary (any failing row stays visible
+        # in the report, not hidden by 'pass'; after the issue #42 retune the committed report has none)
         rep = json.loads(raw)
-        self.assertGreater(rep["summary"]["fail"], 0)
+        verdicts = [x.get("verdict") for x in rep["rows"] if x["status"] == "measured-verdict"]
+        self.assertEqual(rep["summary"]["fail"], verdicts.count("FAIL"))
+        self.assertEqual(rep["summary"]["pass"], verdicts.count("PASS"))
+        self.assertEqual(rep["summary"]["ratified_rows_judged"], len(verdicts))
+        self.assertGreater(len(verdicts), 0)
         self.assertEqual(ev["report_summary"], rep["summary"])
         self.assertNotIn("/home/", json.dumps(ev))
         self.assertIsNone(re.search(r"\d{4}-\d\d-\d\dT", json.dumps(ev)))
@@ -181,19 +190,19 @@ class CommittedReport(unittest.TestCase):
     def test_headline_facts(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
         r = rows_by_key(rep)
-        self.assertEqual((r["pm"]["verdict"], r["pm"]["points_pass"], r["pm"]["points_total"]), ("FAIL", 15, 45))
-        self.assertEqual(r["pm"]["worst"], "57.34 deg")
+        self.assertEqual((r["pm"]["verdict"], r["pm"]["points_pass"], r["pm"]["points_total"]), ("PASS", 45, 45))
+        self.assertEqual(r["pm"]["worst"], "71.99 deg")
         self.assertEqual(r["pm"]["worst_corner"], "fs / 125 C / 2.97 V")
         self.assertEqual((r["gain"]["verdict"], r["gain"]["worst"]), ("PASS", "93.79 dB"))
-        self.assertEqual((r["gbw"]["verdict"], r["gbw"]["worst"]), ("PASS", "10.422 MHz"))
-        self.assertEqual(rep["dut"]["normalised_sha256_prefix"], "81fbd914f8254a49")
-        self.assertEqual(rep["sources"]["gain-gbw-pm"]["record_id"], "20261010-020141-1e51d1c")
+        self.assertEqual((r["gbw"]["verdict"], r["gbw"]["worst"]), ("PASS", "11.910 MHz"))
+        self.assertEqual(rep["dut"]["normalised_sha256_prefix"], "33b58dac62c747de")
+        self.assertEqual(rep["sources"]["gain-gbw-pm"]["record_id"], "20261010-161514-0127eb7")
 
     def test_slew_swing_power_rows(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
         r = rows_by_key(rep)
         self.assertEqual((r["slew"]["verdict"], r["slew"]["points_pass"], r["slew"]["worst"], r["slew"]["worst_corner"]),
-                         ("PASS", 45, "14.51 V/us", "ss / 125 C / 2.97 V"))
+                         ("PASS", 45, "15.50 V/us", "ss / 125 C / 2.97 V"))
         self.assertEqual((r["power"]["verdict"], r["power"]["worst"], r["power"]["worst_corner"]),
                          ("PASS", "310.98 uW", "ff / -40 C / 3.63 V"))
         self.assertEqual(r["power"]["spec_bound"], "≤ 350 uW")
@@ -257,7 +266,7 @@ class CommittedReport(unittest.TestCase):
         self.assertIsNone(r["verdict"])
         self.assertIsNone(r["worst"])
         self.assertEqual(r["source"]["record_id"], ICMR_REC)  # issue #90: measured, source-pinned, still ungraded
-        self.assertIn("20261009-222613-871d1a6", r["spec_status"])
+        self.assertIn("20261010-164310-0127eb7", r["spec_status"])
         s = rep["summary"]
         self.assertEqual(s["proposed_not_graded"], 3)  # ICMR [DR-5], CMRR and PSRR [DR-6]
         self.assertEqual(s["ratified_rows_judged"], sum(1 for x in rep["rows"] if x["verdict"]))
@@ -294,7 +303,7 @@ class CommittedReport(unittest.TestCase):
             self.assertEqual(cells[3], "none", line)
             self.assertEqual(cells[4:7], ["-", "-", "-"], line)
             self.assertNotIn("dB (", cells[5])
-        self.assertIn("20261010-035206-978f088", r["cmrr"]["spec_status"])  # the mismatch-inclusive record
+        self.assertIn("20261010-202454-e4be1ac", r["cmrr"]["spec_status"])  # the mismatch-inclusive record
         cmrr_line = next(l for l in md.splitlines() if l.startswith("| CMRR |"))
         self.assertNotIn("95.42", cmrr_line)
 
@@ -314,10 +323,18 @@ class CommittedReport(unittest.TestCase):
         without = cr.build(REPO, manifest(cmrr_mc=None))
         self.assertFalse(any("coverage differs" in l for l in without["limitations"]))
         # ... and a nominal offset selection is still disclosed as a coverage difference
-        rep2 = cr.build(REPO, manifest(offset_mc=OFF_NOM_MD, cmrr_mc=None))
+        # (the committed nominal offset record measures the pre-retune DUT, whose offset is unchanged by
+        # RZ/CC; retarget its DUT prefix in a scratch copy so it can be selected beside the current records)
+        with tempfile.TemporaryDirectory() as d:
+            root2 = make_root(Path(d))
+            p2 = root2 / OFF_NOM_MD
+            p2.write_text(p2.read_text().replace("81fbd914f8254a49", "33b58dac62c747de"))
+            rep2 = cr.build(root2, manifest(offset_mc=OFF_NOM_MD, cmrr_mc=None))
         self.assertTrue(any("coverage differs" in l for l in rep2["limitations"]))
-        self.assertTrue(any("PDK revision differs" in l for l in rep["limitations"]))
-        self.assertTrue(any("ngspice versions differ" in l for l in rep["limitations"]))
+        # the revised-design records were all re-measured at one pinned PDK revision and ngspice, so
+        # neither difference is disclosed any more (test_pdk_mismatch_is_flagged_not_fatal covers the flag)
+        self.assertFalse(any("PDK revision differs" in l for l in rep["limitations"]))
+        self.assertFalse(any("ngspice versions differ" in l for l in rep["limitations"]))
         for s in rep["sources"].values():
             self.assertRegex(s["sha256"], r"^[0-9a-f]{64}$")
 
@@ -421,17 +438,17 @@ class Mutations(unittest.TestCase):
         self.assertFalse((out / f"{cr.OUT_NAME}.evidence.json").exists())
 
     def test_missing_record(self):
-        (self.root / "sim/noise/records/20261009-082007-68b4567.md").unlink()
+        (self.root / "sim/noise/records/20261010-163507-0127eb7.md").unlink()
         with self.assertRaisesRegex(cr.ReportError, "selected record is missing"):
             self.build()
 
     def test_mixed_dut_hash_rejected(self):
-        self.edit("sim/cmrr/records/20261009-105631-30ec86d.md", "81fbd914f8254a49", "0123456789abcdef")
+        self.edit("sim/cmrr/records/20261010-163601-0127eb7.md", "33b58dac62c747de", "0123456789abcdef")
         with self.assertRaisesRegex(cr.ReportError, "different DUT versions"):
             self.build()
 
     def test_mixed_dut_hash_cli_exit_code(self):
-        self.edit("sim/psrr/records/20261009-105929-30ec86d.md", "81fbd914f8254a49", "0123456789abcdef")
+        self.edit("sim/psrr/records/20261010-163854-0127eb7.md", "33b58dac62c747de", "0123456789abcdef")
         mp = self.root / "m.json"
         mp.write_text(json.dumps(manifest()))
         self.assertEqual(cr.main(["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(self.root / "o")]), 2)
@@ -452,7 +469,7 @@ class Mutations(unittest.TestCase):
         self.assertEqual(r["psrr"]["figures"], [])
         self.assertEqual(r["noise"]["status"], "not-measured")
         self.assertIsNone(r["psrr"]["source"])
-        self.assertEqual(r["pm"]["verdict"], "FAIL")
+        self.assertEqual(r["pm"]["verdict"], "PASS")
         self.assertNotIn("psrr", rep["sources"])
         self.assertTrue(any("no record selected for psrr" in l for l in rep["limitations"]))
 
@@ -492,20 +509,20 @@ class Mutations(unittest.TestCase):
             self.build()
 
     def test_verdict_table_must_agree_with_point_table(self):
-        self.edit("sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md", "| **FAIL** | 15/45 |", "| **FAIL** | 16/45 |")
+        self.edit("sim/gain-gbw-pm/records/20261010-161514-0127eb7.md", "| **PASS** | 45/45 | 71.99 deg", "| **PASS** | 44/45 | 71.99 deg")
         with self.assertRaisesRegex(cr.ReportError, "disagrees with its own per-point table"):
             self.build()
 
     def test_pdk_mismatch_is_flagged_not_fatal(self):
-        self.edit("sim/noise/records/20261009-082007-68b4567.md", "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+        self.edit("sim/noise/records/20261010-163507-0127eb7.md", "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
                   "a" * 40)
         rep = self.build()
         self.assertTrue(any("PDK revision differs" in l for l in rep["limitations"]))
 
     def test_partial_grid_flagged(self):
-        t = (self.root / "sim/cmrr/records/20261009-105631-30ec86d.md").read_text()
+        t = (self.root / "sim/cmrr/records/20261010-163601-0127eb7.md").read_text()
         t = "\n".join(l for l in t.splitlines() if not l.startswith("| ss / 125 C / 3.63 V")) + "\n"
-        (self.root / "sim/cmrr/records/20261009-105631-30ec86d.md").write_text(t)
+        (self.root / "sim/cmrr/records/20261010-163601-0127eb7.md").write_text(t)
         rep = self.build()
         self.assertEqual(rows_by_key(rep)["cmrr"]["coverage"]["points"], 44)
         self.assertTrue(any("partial grid" in l for l in rows_by_key(rep)["cmrr"]["limitations"]))
@@ -535,7 +552,7 @@ class Mutations(unittest.TestCase):
         mp.write_text(json.dumps(manifest()))
         args = ["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(self.root / "o")]
         self.assertEqual(cr.main(args), 0)
-        rec = self.root / "sim/cmrr/records/20261009-105631-30ec86d.md"
+        rec = self.root / "sim/cmrr/records/20261010-163601-0127eb7.md"
         rec.write_text(rec.read_text() + "\nextra line\n")
         self.assertEqual(cr.main(args + ["--check"]), 1)
 
@@ -543,23 +560,29 @@ class Mutations(unittest.TestCase):
         mp = self.root / "m.json"
         mp.write_text(json.dumps(manifest()))
         args = ["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(self.root / "o")]
-        (self.root / "sim/cmrr/records/20261009-105631-30ec86d.md").unlink()
+        (self.root / "sim/cmrr/records/20261010-163601-0127eb7.md").unlink()
         self.assertEqual(cr.main(args), 2)
         self.assertFalse((self.root / "o").exists())
         self.assertEqual(cr.main(args + ["--check"]), 2)
 
     def test_ssp_single_record_for_all_rows(self):
-        # the full run alone: all three rows from it, and its swing is flagged as not re-derivable
+        # the full run alone: all three rows from it (the revised design's record re-derives its swing)
         rep = self.build(manifest(slew_swing_power=f"{SSP}{FULL_SSP_REC}.md"))
         r = rows_by_key(rep)
         self.assertEqual({r[k]["source"]["record_id"] for k in ("slew", "swing", "power")}, {FULL_SSP_REC})
-        self.assertTrue(any("cannot be re-derived" in l for l in r["swing"]["limitations"]))
+        self.assertFalse(any("cannot be re-derived" in l for l in r["swing"]["limitations"]))
         self.assertIn("slew-swing-power", rep["sources"])
+        # the pre-retune full run (archival: its DUT is no longer the current one): swing not re-derivable
+        old = cr.build(self.root, {"experiments": {"slew-swing-power": f"{SSP}{LEGACY_FULL_SSP_REC}.md"}}, archival=True)
+        ro = rows_by_key(old)
+        self.assertEqual({ro[k]["source"]["record_id"] for k in ("slew", "swing", "power")}, {LEGACY_FULL_SSP_REC})
+        self.assertTrue(any("cannot be re-derived" in l for l in ro["swing"]["limitations"]))
 
     def test_ssp_row_from_a_record_that_did_not_judge_it(self):
-        m = manifest(slew_swing_power={"power": f"{SSP}{SWING_REC}.md", "swing": f"{SSP}{SWING_REC}.md"})
+        # (the swing-only record is a pre-retune one: archival, as its DUT is no longer the current one)
+        m = {"experiments": {"slew-swing-power": {"power": f"{SSP}{LEGACY_SWING_REC}.md", "swing": f"{SSP}{LEGACY_SWING_REC}.md"}}}
         with self.assertRaisesRegex(cr.ReportError, "does not judge that row"):
-            self.build(m)
+            cr.build(self.root, m, archival=True)
 
     def test_ssp_unselected_row_is_not_measured(self):
         rep = self.build(manifest(slew_swing_power={"swing": f"{SSP}{SWING_REC}.md"}))
@@ -617,14 +640,13 @@ class Mutations(unittest.TestCase):
     def test_ssp_not_run_rows_are_never_selected(self):
         # the earlier records judged power/swing but left slew NOT RUN: slew can never come from them
         sel = cr.latest_selection(self.root)["slew-swing-power"]
-        self.assertEqual(sel, {"power": f"{SSP}{FULL_SSP_REC}.md", "slew": f"{SSP}{FULL_SSP_REC}.md",
-                               "swing": f"{SSP}{SWING_REC}.md"})
+        self.assertEqual(sel, f"{SSP}{FULL_SSP_REC}.md")  # the newest record judges all three figures
         ex = cr.extract_ssp((self.root / SSP / "20261009-114727-1dab1db.md").read_text(), "x")
         self.assertNotIn("slew", ex["rows"])
 
     def test_latest_selection_skips_nothing_superseded(self):
         sel = cr.latest_selection(self.root)
-        self.assertEqual(sel["gain-gbw-pm"], "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md")
+        self.assertEqual(sel["gain-gbw-pm"], "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md")
         self.assertEqual(sel, json.loads(MANIFEST.read_text())["experiments"])
 
     def test_latest_selection_ignores_side_study_records(self):
@@ -632,7 +654,7 @@ class Mutations(unittest.TestCase):
         rec = self.root / "sim/gain-gbw-pm/records/29991231-235959-0000000.md"
         rec.write_text("# gain/GBW/PM passive-corner study (RZ x CC) -- record 29991231-235959-0000000\n")
         self.assertEqual(cr.latest_selection(self.root)["gain-gbw-pm"],
-                         "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md")
+                         "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md")
 
     def test_latest_selection_picks_the_offset_pvt_grid_record(self):
         # issue #120: the full-grid offset record is read by the offset extractor, not a side study
@@ -668,13 +690,18 @@ class MeasurementConfigFreshness(unittest.TestCase):
         rep = cr.build(self.root, manifest())
         sel = json.loads(MANIFEST.read_text())["experiments"]
         for e, s in rep["sources"].items():
-            if e in ("gain-gbw-pm", "offset-mc") and "Measurement fingerprint" in (REPO / sel[e]).read_text():
+            if e not in (cr.ICMR_EXP, cr.CMRR_MC_EXP):  # every instrumented selected record is fingerprinted
                 self.assertEqual(s["measurement_config"]["status"], "current", e)
                 continue
             self.assertEqual(s["measurement_config"]["status"], "unknown", e)
         joined = " ".join(rep["limitations"])
-        self.assertIn("cmrr: measurement-configuration freshness unknown", joined)
+        self.assertIn(f"{cr.ICMR_EXP}: measurement-configuration freshness unknown", joined)
         self.assertIn("freshness unknown", cr.render_md(rep))
+        # a pre-fingerprinting record (the pre-retune cmrr, archival: its DUT is not the current one)
+        # is still disclosed as unknown, never "current"
+        old = cr.build(self.root, {"experiments": {"cmrr": LEGACY_RECS["cmrr"]}}, archival=True)
+        self.assertEqual(old["sources"]["cmrr"]["measurement_config"]["status"], "unknown")
+        self.assertIn("cmrr: measurement-configuration freshness unknown", " ".join(old["limitations"]))
 
     def test_matching_fingerprint_is_current(self):
         self.stamped()
@@ -692,7 +719,7 @@ class MeasurementConfigFreshness(unittest.TestCase):
                 self.setUp(); self.stamped()
                 self.edit(rel, old, new)
                 with self.assertRaisesRegex(cr.ReportError,
-                                            r"stale measurement configuration.*Experiments needing a rerun: gain-gbw-pm"):
+                                            r"stale measurement configuration.*Experiments needing a rerun: [\w, -]*gain-gbw-pm"):
                     cr.build(self.root, self.m)
                 self.tearDown()
 
@@ -847,19 +874,24 @@ class MigratedExperimentFreshness(unittest.TestCase):
         self.assertIn("not instrumented", mc["detail"])
 
     def test_committed_legacy_records_stay_unknown(self):
+        # the selected (revised-design) records are all fingerprinted; the pre-retune records are not.
         rep = cr.build(REPO, manifest())
         for e, src in rep["sources"].items():
-            if e in ("gain-gbw-pm", "offset-mc", cr.ICMR_EXP, cr.CMRR_MC_EXP):  # ICMR, cmrr-mc: not instrumented
+            if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP):  # ICMR, cmrr-mc: not instrumented
                 continue
+            self.assertEqual(src["measurement_config"]["status"], "current", e)
+        joined = " ".join(rep["limitations"])
+        for e in ("noise", "cmrr", "psrr", "offset-mc", "gain-gbw-pm"):
+            self.assertNotIn(f"{e}: measurement-configuration freshness unknown", joined)
+        old = cr.build(REPO, {"experiments": {**{e: p for e, p in LEGACY_RECS.items()},
+                                              "slew-swing-power": f"{SSP}{LEGACY_FULL_SSP_REC}.md"}}, archival=True)
+        for e, src in old["sources"].items():
             self.assertEqual(src["measurement_config"]["status"], "unknown", e)
             self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"], e)
-        # issue #120: the selected offset grid record carries its own fingerprint and is current
-        self.assertEqual(rep["sources"]["offset-mc"]["measurement_config"]["status"], "current")
-        joined = " ".join(rep["limitations"])
-        self.assertNotIn("offset-mc: measurement-configuration freshness unknown", joined)
+        ojoined = " ".join(old["limitations"])
         for e in ("noise", "cmrr", "psrr"):
-            self.assertIn(f"{e}: measurement-configuration freshness unknown", joined)
-        self.assertIn("slew-swing-power (", joined)
+            self.assertIn(f"{e}: measurement-configuration freshness unknown", ojoined)
+        self.assertIn("slew-swing-power (", ojoined)
 
     def test_stamped_records_are_current_and_others_stay_unknown(self):
         for exp in EXP_BENCH:
@@ -869,8 +901,10 @@ class MigratedExperimentFreshness(unittest.TestCase):
                 rep = cr.build(self.root, self.m)
                 self.assertEqual(rep["sources"][exp]["measurement_config"]["status"], "current")
                 for e, src in rep["sources"].items():
-                    if e not in (exp, "gain-gbw-pm", "offset-mc"):  # both selected records are fingerprinted
+                    if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP):  # not instrumented
                         self.assertEqual(src["measurement_config"]["status"], "unknown", e)
+                    else:  # every other selected record is fingerprinted
+                        self.assertEqual(src["measurement_config"]["status"], "current", e)
                 self.assertFalse(any(l.startswith(f"{exp}: measurement-configuration") for l in rep["limitations"]))
 
     def test_changed_input_with_unchanged_dut_is_rejected_naming_experiment_and_group(self):
@@ -882,7 +916,7 @@ class MigratedExperimentFreshness(unittest.TestCase):
                 with self.assertRaisesRegex(
                         cr.ReportError,
                         rf"stale measurement configuration.*{re.escape(exp)}: changed [^;]*{group}.*"
-                        rf"Experiments needing a rerun: {re.escape(exp)}"):
+                        rf"Experiments needing a rerun: [\w, -]*{re.escape(exp)}"):
                     cr.build(self.root, self.m)
 
     def test_archival_discloses_stale_config(self):
@@ -949,7 +983,8 @@ class MigratedExperimentFreshness(unittest.TestCase):
     # ---- slew / swing / power: per-figure selection ----
 
     def ssp_key(self, rec):
-        return f"slew-swing-power ({Path(rec).stem})"
+        # one record judging all three figures is keyed by the experiment alone (no per-row split)
+        return "slew-swing-power"
 
     def test_ssp_full_record_stale_names_the_changed_figure(self):
         for rel, old, new, fig in (
@@ -962,7 +997,7 @@ class MigratedExperimentFreshness(unittest.TestCase):
                 self.fresh()
                 stamp_record(self.root, "slew-swing-power", self.SSP_REC, ("power", "slew", "swing"))
                 self.edit(rel, old, new)
-                with self.assertRaisesRegex(cr.ReportError, rf"slew-swing-power \([^)]*\): changed [^;]*figures\.{fig}\."):
+                with self.assertRaisesRegex(cr.ReportError, rf"slew-swing-power(?: \([^)]*\))?: changed [^;]*figures\.{fig}\."):
                     cr.build(self.root, self.m)
 
     def test_ssp_swing_only_record_is_not_invalidated_by_other_figures(self):
@@ -1076,6 +1111,9 @@ class OffsetGridRecord(unittest.TestCase):
                 self.assertAlmostEqual(a[mine], theirs, places=9, msg=f"{k} {mine}")
 
     def test_nominal_format_still_supported(self):
+        # (the committed nominal record measures the pre-retune DUT, whose offset RZ/CC do not change:
+        # retarget its DUT prefix in the scratch copy so it can be selected beside the current records)
+        self.edit(OFF_NOM_MD, "81fbd914f8254a49", "33b58dac62c747de")
         rep = self.build(manifest(offset_mc=OFF_NOM_MD))
         r = rows_by_key(rep)["offset"]
         self.assertEqual((r["status"], r["verdict"], r["points_total"]), ("measured-no-bound", None, 5))
@@ -1130,7 +1168,7 @@ class OffsetGridRecord(unittest.TestCase):
 
     def test_missing_retained_evidence_rejected(self):
         (self.root / OFF_GRID_CSV).unlink()
-        self.rejects(r"retained per-sample evidence is missing: sim/offset-mc/corners/20261010-083043-ddf96db")
+        self.rejects(r"retained per-sample evidence is missing: sim/offset-mc/corners/20261010-185141-e4be1ac")
 
     # ---- summaries vs each other and vs the samples ----
 
@@ -1196,7 +1234,7 @@ class OffsetGridRecord(unittest.TestCase):
         self.rejects(r"stale DUT.*Experiments needing a rerun: .*offset-mc")
 
     def test_mixed_dut_rejected(self):
-        self.edit(OFF_GRID_MD, "81fbd914f8254a49", "0123456789abcdef")
+        self.edit(OFF_GRID_MD, "33b58dac62c747de", "0123456789abcdef")
         self.rejects(r"different DUT versions")
 
 
@@ -1233,7 +1271,7 @@ class CmrrMismatchRecord(unittest.TestCase):
     def test_committed_selection_and_row(self):
         sel = json.loads(MANIFEST.read_text())["experiments"]
         self.assertEqual(sel["cmrr-mc"], CMC_MD)
-        self.assertEqual(sel["cmrr"], "sim/cmrr/records/20261009-105631-30ec86d.md")
+        self.assertEqual(sel["cmrr"], "sim/cmrr/records/20261010-163601-0127eb7.md")
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
         r = rows_by_key(rep)["cmrr"]
         # the row stays proposed-not-graded: no verdict, no worst value, no point counts
@@ -1410,7 +1448,7 @@ class CmrrMismatchRecord(unittest.TestCase):
         self.assertEqual(cr.build(self.root, manifest(), archival=True)["sources"]["cmrr-mc"]["record_id"], CMC_REC)
 
     def test_mixed_dut_names_cmrr_mc(self):
-        self.edit(CMC_MD, "81fbd914f8254a49", "0123456789abcdef")
+        self.edit(CMC_MD, "33b58dac62c747de", "0123456789abcdef")
         self.rejects(r"different DUT versions .*0123456789abcdef: cmrr-mc")
 
     def test_record_edit_changes_sha_and_check_fails(self):
@@ -1463,7 +1501,7 @@ class ICMREvidence(unittest.TestCase):
         self.assertEqual(src["path"], ICMR_MD)
         self.assertEqual(src["sha256"], hashlib.sha256((REPO / ICMR_MD).read_bytes()).hexdigest())
         self.assertEqual(r["source"]["sha256"], src["sha256"])
-        self.assertEqual(src["dut_sha256"], "81fbd914f8254a49")
+        self.assertEqual(src["dut_sha256"], "33b58dac62c747de")
         self.assertEqual(src["pdk_open_pdks"], "c6d73a35f524070e85faff4a6a9eef49553ebc2b")
         self.assertEqual(r["coverage"]["points"], 45)
         ic = r["icmr"]
@@ -1488,8 +1526,10 @@ class ICMREvidence(unittest.TestCase):
         self.assertTrue(r["figures"])
         self.assertTrue(all("information only" in f["label"] for f in r["figures"]))
         joined = " ".join(r["limitations"])
-        for frag in ("not ratified", "follower-biased", "mismatch not covered", "freshness unknown", "addendum"):
+        for frag in ("not ratified", "follower-biased", "mismatch not covered", "freshness unknown"):
             self.assertIn(frag, joined)
+        # the revised-design record carries its disclosures itself: no separate addendum (the pre-retune one has)
+        self.assertIsNone(ic["addendum"])
         # excluded from ratified compliance counts
         s = rep["summary"]
         self.assertEqual((s["ratified_rows_judged"], s["proposed_not_graded"]), (6, 3))
@@ -1533,7 +1573,7 @@ class ICMREvidence(unittest.TestCase):
 
     def test_stale_icmr_dut_rejected(self):
         only = {"experiments": {cr.ICMR_EXP: ICMR_MD}}
-        self.edit(ICMR_MD, "`81fbd914f8254a49`", "`0123456789abcdef`")
+        self.edit(ICMR_MD, "`33b58dac62c747de`", "`0123456789abcdef`")
         with self.assertRaisesRegex(cr.ReportError, r"stale DUT.*Experiments needing a rerun: input-common-mode"):
             self.build(only)
         with self.assertRaisesRegex(cr.ReportError, "different DUT versions"):
@@ -1602,7 +1642,7 @@ class ICMREvidence(unittest.TestCase):
          "smallest 1.20 V margin"),
         ("component margin", "Smallest device margin inside that component: XM5 +0.6 mV",
          "Smallest device margin inside that component: XM5 +1.6 mV", "retained evidence"),
-        ("sample counts", "3450 pass, 2245 fail, 470 invalid.", "3451 pass, 2244 fail, 470 invalid.", "retained evidence|holds"),
+        ("sample counts", "3450 pass, 2247 fail, 468 invalid.", "3451 pass, 2246 fail, 468 invalid.", "retained evidence|holds"),
         ("missing point", "| typical / 27 C / 3.30 V | [1.060, 3.095] V | 84 | 5 mV | fail | 5 mV | fail | pass | [1.060, 3.090] V |\n",
          "", "claims 45 PVT points|explicit 1.20 V table covers"),
     )
@@ -1740,13 +1780,11 @@ class SupplementaryPassiveStudies(unittest.TestCase):
 
     def test_gain_study_observations_derived_from_tables(self):
         f = self.build()["supplementary"][self.GKEY]["figures"]
-        self.assertEqual((f["gbw"]["pass"], f["gbw"]["total"], f["gbw"]["fail"]), (24, 27, 3))
-        self.assertEqual((f["pm"]["pass"], f["pm"]["total"]), (7, 27))
-        self.assertEqual(f["pm"]["range"], ["53.63", "63.17"])
-        self.assertEqual(f["gbw"]["worst"], {"value": "9.656", "point": "ss / 125 C / 2.97 V", "rz": "best", "cc": "worst"})
-        self.assertEqual([(c["rz"], c["cc"], c["value"]) for c in f["gbw"]["failing_cells"]],
-                         [("typical", "worst", "9.663"), ("best", "worst", "9.656"), ("worst", "worst", "9.673")])
-        # the 60.00 deg cell is a FAIL in the record (59.99x): accepted within display precision
+        self.assertEqual((f["gbw"]["pass"], f["gbw"]["total"], f["gbw"]["fail"]), (27, 27, 0))
+        self.assertEqual((f["pm"]["pass"], f["pm"]["total"]), (27, 27))
+        self.assertEqual(f["pm"]["range"], ["64.47", "84.93"])
+        self.assertEqual(f["gbw"]["worst"], {"value": "10.726", "point": "ss / 125 C / 2.97 V", "rz": "best", "cc": "worst"})
+        self.assertEqual(f["gbw"]["failing_cells"], [])
         self.assertNotIn("gain", f)
 
     def test_ssp_study_observations_derived_from_tables(self):
@@ -1754,7 +1792,7 @@ class SupplementaryPassiveStudies(unittest.TestCase):
         self.assertEqual(sorted(f), ["power", "slew", "swing"])
         for k in f:
             self.assertEqual((f[k]["pass"], f[k]["total"], f[k]["verdict_in_record"]), (27, 27, "PASS"))
-        self.assertEqual(f["slew"]["worst"]["value"], "13.40")
+        self.assertEqual(f["slew"]["worst"]["value"], "14.25")
         self.assertEqual(f["power"]["range"], ["239.2", "273.7"])
         self.assertEqual(f["swing"]["worst"]["value"], "2.465")
 
@@ -1790,37 +1828,38 @@ class SupplementaryPassiveStudies(unittest.TestCase):
 
     def test_consistent_numeric_change_is_reflected_not_stale_prose(self):
         # move the worst PM cell in both the table and the header: the derived text follows
-        self.edit(GAIN_STUDY_MD, "| best | best | 53.63 |", "| best | best | 52.90 |")
-        self.edit(GAIN_STUDY_MD, "worst 53.63 deg at fs", "worst 52.90 deg at fs")
+        self.edit(GAIN_STUDY_MD, "| best | best | 64.47 |", "| best | best | 63.90 |")
+        self.edit(GAIN_STUDY_MD, "worst 64.47 deg at fs", "worst 63.90 deg at fs")
         rep = self.build()
         pm = " ".join(rows_by_key(rep)["pm"]["limitations"])
-        self.assertIn("range 52.90 .. 63.17 deg", pm)
-        self.assertNotIn("53.63", pm)
+        self.assertIn("range 63.90 .. 84.93 deg", pm)
+        self.assertNotIn("64.47", pm)
 
     def test_table_change_contradicting_the_header_rejected(self):
-        self.edit(GAIN_STUDY_MD, "| best | best | 53.63 |", "| best | best | 52.90 |")
+        self.edit(GAIN_STUDY_MD, "| best | best | 64.47 |", "| best | best | 63.90 |")
         self.rejects(r"Phase margin summary .* disagrees with its own tables")
 
     def test_cell_flip_contradicting_counts_rejected(self):
-        self.edit(GAIN_STUDY_MD, "| 9.663 | -7.3 | 0.909 | PASS | FAIL |", "| 10.663 | -7.3 | 0.909 | PASS | PASS |")
-        self.rejects(r"GBW summary .*24/27 pass.* disagrees with its own tables \(FAIL, 25/27 pass")
+        self.edit(GAIN_STUDY_MD, "| 10.726 | -9.9 | 0.909 | PASS | PASS |", "| 9.726 | -9.9 | 0.909 | PASS | FAIL |")
+        self.rejects(r"GBW summary .*27/27 pass.* disagrees with its own tables \(FAIL, 26/27 pass")
 
     def test_cell_flag_contradicting_its_value_rejected(self):
-        self.edit(GAIN_STUDY_MD, "| 9.663 | -7.3 | 0.909 | PASS | FAIL |", "| 10.663 | -7.3 | 0.909 | PASS | FAIL |")
-        self.rejects(r"GBW cell ss / 125 C / 2.97 V, RZ typical, CC worst reads 10.663 MHz but is marked 'FAIL'")
+        self.edit(GAIN_STUDY_MD, "| 10.726 | -9.9 | 0.909 | PASS | PASS |", "| 9.726 | -9.9 | 0.909 | PASS | PASS |")
+        self.rejects(r"GBW cell ss / 125 C / 2.97 V, RZ best, CC worst reads 9.726 MHz but is marked 'PASS'")
 
     def test_header_count_disagreeing_rejected(self):
-        self.edit(GAIN_STUDY_MD, "passes at 24/27 study cells (fails at 3/27)", "passes at 25/27 study cells (fails at 2/27)")
+        self.edit(GAIN_STUDY_MD, "GBW >= 10 MHz: **PASS** -- passes at 27/27 study cells (fails at 0/27)",
+                  "GBW >= 10 MHz: **PASS** -- passes at 26/27 study cells (fails at 1/27)")
         self.rejects(r"GBW summary .* disagrees with its own tables")
 
     def test_ssp_summary_disagreeing_rejected(self):
-        self.edit(SSP_STUDY_MD, "worst 13.4 V/us at ss / 125 C / 2.97 V, RZ worst, CC worst",
-                  "worst 13.6 V/us at ss / 125 C / 2.97 V, RZ worst, CC worst")
+        self.edit(SSP_STUDY_MD, "worst 14.25 V/us at ss / 125 C / 2.97 V, RZ best, CC worst",
+                  "worst 14.6 V/us at ss / 125 C / 2.97 V, RZ best, CC worst")
         self.rejects(r"Slew rate .* summary .* disagrees with its own tables")
 
     def test_ssp_worst_cell_misnamed_rejected(self):
-        self.edit(SSP_STUDY_MD, "worst 13.4 V/us at ss / 125 C / 2.97 V, RZ worst, CC worst",
-                  "worst 13.4 V/us at ss / 125 C / 2.97 V, RZ worst, CC best")
+        self.edit(SSP_STUDY_MD, "worst 14.25 V/us at ss / 125 C / 2.97 V, RZ best, CC worst",
+                  "worst 14.25 V/us at ss / 125 C / 2.97 V, RZ best, CC best")
         self.rejects(r"Slew rate .* summary .* disagrees with its own tables")
 
     # ---- malformed / missing ----
@@ -1829,19 +1868,19 @@ class SupplementaryPassiveStudies(unittest.TestCase):
         self.rejects(r"supplementary slew-swing-power-passive-corners: selected record is missing")
 
     def test_duplicate_cell_rejected(self):
-        self.edit(GAIN_STUDY_MD, "| worst | worst | 60.72 |", "| best | best | 60.72 |")
+        self.edit(GAIN_STUDY_MD, "| worst | worst | 79.16 |", "| best | best | 79.16 |")
         self.rejects(r"duplicate cell RZ best, CC best under '### fs / 125 C / 2.97 V'")
 
     def test_missing_cell_rejected(self):
-        self.edit(SSP_STUDY_MD, "| worst | worst | 2.893 | +0.0 | PASS |\n", "")
+        self.edit(SSP_STUDY_MD, "| worst | worst | 2.893 | -0.0 | PASS |\n", "")
         self.rejects(r"'### Output swing -- typical / 27 C / 3.30 V .*' is missing 1 of 9 RZ x CC cells")
 
     def test_malformed_cell_rejected(self):
-        self.edit(GAIN_STUDY_MD, "| best | best | 53.63 |", "| best | best | 53.6x |")
-        self.rejects(r"malformed value '53.6x'")
+        self.edit(GAIN_STUDY_MD, "| best | best | 64.47 |", "| best | best | 64.4x |")
+        self.rejects(r"malformed value '64.4x'")
 
     def test_unknown_level_rejected(self):
-        self.edit(GAIN_STUDY_MD, "| worst | worst | 60.72 |", "| worst | slow | 60.72 |")
+        self.edit(GAIN_STUDY_MD, "| worst | worst | 79.16 |", "| worst | slow | 79.16 |")
         self.rejects(r"malformed RZ x CC row")
 
     def test_missing_point_table_rejected(self):
@@ -1852,16 +1891,16 @@ class SupplementaryPassiveStudies(unittest.TestCase):
         self.rejects(r"no results table for study point typical / 27 C / 3.30 V")
 
     def test_missing_header_line_rejected(self):
-        self.edit(GAIN_STUDY_MD, "  - GBW >= 10 MHz: **FAIL**", "  - GBW at least 10 MHz: **FAIL**")
+        self.edit(GAIN_STUDY_MD, "  - GBW >= 10 MHz: **PASS**", "  - GBW at least 10 MHz: **PASS**")
         self.rejects(r"no 'GBW' verdict line")
 
     # ---- selection / provenance ----
     def test_stale_or_mixed_dut_rejected(self):
-        self.edit(SSP_STUDY_MD, "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860", "0" * 64)
-        self.rejects(r"side study measures DUT 0000000000000000, the selected records 81fbd914f8254a49")
+        self.edit(SSP_STUDY_MD, "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b", "0" * 64)
+        self.rejects(r"side study measures DUT 0000000000000000, the selected records 33b58dac62c747de")
 
     def test_stale_dut_without_primary_selection_rejected(self):
-        self.edit(SSP_STUDY_MD, "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860", "0" * 64)
+        self.edit(SSP_STUDY_MD, "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b", "0" * 64)
         m = self.sup(**{self.GKEY: None})
         m["experiments"] = {}
         self.rejects(r"stale DUT: supplementary slew-swing-power-passive-corners", m)

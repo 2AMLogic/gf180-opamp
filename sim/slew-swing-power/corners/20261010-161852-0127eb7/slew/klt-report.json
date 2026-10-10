@@ -1,0 +1,2162 @@
+{
+ "schema_version": 3,
+ "netlist": {
+  "path": null,
+  "scope": "external"
+ },
+ "status": "pass",
+ "corner_count": 45,
+ "passed": 45,
+ "failed": 0,
+ "errored": 0,
+ "inconclusive": 0,
+ "diagnostic_counts": {
+  "by_code": {},
+  "by_severity": {},
+  "corners_with_diagnostics": 0
+ },
+ "metrics": {
+  "sim__corner__count": 45,
+  "sim__corner__passed_count": 45,
+  "sim__corner__failed_count": 0,
+  "sim__corner__errored_count": 0,
+  "sim__corner__inconclusive_count": 0
+ },
+ "environment": {
+  "engine": "ngspice",
+  "engine_version": "46",
+  "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+  "models_lib": {
+   "path": null,
+   "scope": "external"
+  },
+  "models_lib_sha256": "6edba54d23b38a2c60f8ffdbaa3eb75a7568c615e4820808969bd1121b77b1aa",
+  "netlist_sha256": "faff2f8ffd4c210f10c79849ff68b4fe56879af14f0ea534899de47b641c101f",
+  "netlist_closure": [
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "faff2f8ffd4c210f10c79849ff68b4fe56879af14f0ea534899de47b641c101f"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+   }
+  ],
+  "remote": {
+   "provider": "aws-batch-fleet",
+   "job_id": "klt-sim-5819fb8b7d48",
+   "bucket": "2am-batch-jobs-221082181346",
+   "region": "us-east-1",
+   "instance_id": "i-0921a82e724177c50",
+   "instance_type": "m6i.4xlarge",
+   "availability_zone": "us-east-1d",
+   "ami_id": "ami-0e40e3245f1923ac8",
+   "lifecycle": "spot",
+   "spot": true,
+   "state": "done",
+   "exit_code": "0",
+   "concurrency": "1",
+   "physical_cores": "8",
+   "elapsed_seconds": 223,
+   "runner_klt_version": "0.5.0",
+   "client_klt_version": "0.7.0+g21e45ce7233b",
+   "runner_compatibility": "mismatch",
+   "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g21e45ce7233b; request options the runner does not know may have been ignored -- update the runner image or use a compatible client"
+  }
+ },
+ "coverage": {
+  "corners_simulated": 45,
+  "measurements_declared": 2,
+  "measurements_with_limits": 0,
+  "unrecognized_limit_keys": [],
+  "schema_version": 1,
+  "known": true,
+  "checked": [
+   "measurement:[0,\"typical/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[0,\"typical/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[1,\"typical/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/observation",
+   "measurement:[1,\"typical/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/observation",
+   "measurement:[10,\"ff/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/observation",
+   "measurement:[10,\"ff/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/observation",
+   "measurement:[11,\"ff/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/observation",
+   "measurement:[11,\"ff/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/observation",
+   "measurement:[12,\"ff/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[12,\"ff/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[13,\"ff/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/observation",
+   "measurement:[13,\"ff/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/observation",
+   "measurement:[14,\"ff/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/observation",
+   "measurement:[14,\"ff/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/observation",
+   "measurement:[15,\"ff/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[15,\"ff/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[16,\"ff/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/observation",
+   "measurement:[16,\"ff/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/observation",
+   "measurement:[17,\"ff/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/observation",
+   "measurement:[17,\"ff/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/observation",
+   "measurement:[18,\"ss/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[18,\"ss/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[19,\"ss/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/observation",
+   "measurement:[19,\"ss/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/observation",
+   "measurement:[2,\"typical/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/observation",
+   "measurement:[2,\"typical/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/observation",
+   "measurement:[20,\"ss/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/observation",
+   "measurement:[20,\"ss/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/observation",
+   "measurement:[21,\"ss/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[21,\"ss/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[22,\"ss/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/observation",
+   "measurement:[22,\"ss/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/observation",
+   "measurement:[23,\"ss/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/observation",
+   "measurement:[23,\"ss/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/observation",
+   "measurement:[24,\"ss/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[24,\"ss/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[25,\"ss/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/observation",
+   "measurement:[25,\"ss/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/observation",
+   "measurement:[26,\"ss/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/observation",
+   "measurement:[26,\"ss/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/observation",
+   "measurement:[27,\"fs/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[27,\"fs/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[28,\"fs/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/observation",
+   "measurement:[28,\"fs/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/observation",
+   "measurement:[29,\"fs/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/observation",
+   "measurement:[29,\"fs/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/observation",
+   "measurement:[3,\"typical/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[3,\"typical/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[30,\"fs/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[30,\"fs/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[31,\"fs/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/observation",
+   "measurement:[31,\"fs/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/observation",
+   "measurement:[32,\"fs/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/observation",
+   "measurement:[32,\"fs/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/observation",
+   "measurement:[33,\"fs/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[33,\"fs/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[34,\"fs/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/observation",
+   "measurement:[34,\"fs/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/observation",
+   "measurement:[35,\"fs/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/observation",
+   "measurement:[35,\"fs/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/observation",
+   "measurement:[36,\"sf/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[36,\"sf/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[37,\"sf/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/observation",
+   "measurement:[37,\"sf/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/observation",
+   "measurement:[38,\"sf/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/observation",
+   "measurement:[38,\"sf/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/observation",
+   "measurement:[39,\"sf/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[39,\"sf/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[4,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/observation",
+   "measurement:[4,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/observation",
+   "measurement:[40,\"sf/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/observation",
+   "measurement:[40,\"sf/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/observation",
+   "measurement:[41,\"sf/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/observation",
+   "measurement:[41,\"sf/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/observation",
+   "measurement:[42,\"sf/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[42,\"sf/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[43,\"sf/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/observation",
+   "measurement:[43,\"sf/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/observation",
+   "measurement:[44,\"sf/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/observation",
+   "measurement:[44,\"sf/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/observation",
+   "measurement:[5,\"typical/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/observation",
+   "measurement:[5,\"typical/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/observation",
+   "measurement:[6,\"typical/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[6,\"typical/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/observation",
+   "measurement:[7,\"typical/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/observation",
+   "measurement:[7,\"typical/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/observation",
+   "measurement:[8,\"typical/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/observation",
+   "measurement:[8,\"typical/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/observation",
+   "measurement:[9,\"ff/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/observation",
+   "measurement:[9,\"ff/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/observation"
+  ],
+  "skipped": [],
+  "inapplicable": [
+   {
+    "id": "measurement:[0,\"typical/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[0,\"typical/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[1,\"typical/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[1,\"typical/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[10,\"ff/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[10,\"ff/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[11,\"ff/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[11,\"ff/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[12,\"ff/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[12,\"ff/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[13,\"ff/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[13,\"ff/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[14,\"ff/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[14,\"ff/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[15,\"ff/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[15,\"ff/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[16,\"ff/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[16,\"ff/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[17,\"ff/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[17,\"ff/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[18,\"ss/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[18,\"ss/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[19,\"ss/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[19,\"ss/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[2,\"typical/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[2,\"typical/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[20,\"ss/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[20,\"ss/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[21,\"ss/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[21,\"ss/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[22,\"ss/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[22,\"ss/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[23,\"ss/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[23,\"ss/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[24,\"ss/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[24,\"ss/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[25,\"ss/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[25,\"ss/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[26,\"ss/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[26,\"ss/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[27,\"fs/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[27,\"fs/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[28,\"fs/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[28,\"fs/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[29,\"fs/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[29,\"fs/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[3,\"typical/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[3,\"typical/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[30,\"fs/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[30,\"fs/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[31,\"fs/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[31,\"fs/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[32,\"fs/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[32,\"fs/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[33,\"fs/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[33,\"fs/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[34,\"fs/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[34,\"fs/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[35,\"fs/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[35,\"fs/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[36,\"sf/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[36,\"sf/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[37,\"sf/vcm=1.485_vdd=2.970V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[37,\"sf/vcm=1.485_vdd=2.970V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[38,\"sf/vcm=1.485_vdd=2.970V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[38,\"sf/vcm=1.485_vdd=2.970V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[39,\"sf/vcm=1.650_vdd=3.300V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[39,\"sf/vcm=1.650_vdd=3.300V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[4,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[4,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[40,\"sf/vcm=1.650_vdd=3.300V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[40,\"sf/vcm=1.650_vdd=3.300V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[41,\"sf/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[41,\"sf/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[42,\"sf/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[42,\"sf/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[43,\"sf/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[43,\"sf/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[44,\"sf/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[44,\"sf/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[5,\"typical/vcm=1.650_vdd=3.300V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[5,\"typical/vcm=1.650_vdd=3.300V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[6,\"typical/vcm=1.815_vdd=3.630V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[6,\"typical/vcm=1.815_vdd=3.630V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[7,\"typical/vcm=1.815_vdd=3.630V/27C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[7,\"typical/vcm=1.815_vdd=3.630V/27C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[8,\"typical/vcm=1.815_vdd=3.630V/125C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[8,\"typical/vcm=1.815_vdd=3.630V/125C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[9,\"ff/vcm=1.485_vdd=2.970V/-40C\",\"vhi_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[9,\"ff/vcm=1.485_vdd=2.970V/-40C\",\"vlo_v\"]/limits",
+    "reason": "characterization_without_limits"
+   }
+  ],
+  "unknown": [],
+  "nothing_checked": false,
+  "nothing_checked_reasons": []
+ },
+ "provenance": {
+  "klt_version": "0.7.0+g21e45ce7233b",
+  "klayout_version": "0.30.12",
+  "pdk": {
+   "name": "gf180mcuD",
+   "source": "PDK_ROOT environment variable",
+   "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+   "ambiguous_sources": [
+    "search root: ~/.ciel"
+   ]
+  },
+  "deck": {
+   "name": "sm141064.ngspice",
+   "content_hash": "sha256:6edba54d23b38a2c60f8ffdbaa3eb75a7568c615e4820808969bd1121b77b1aa",
+   "released": false
+  },
+  "input": {
+   "content_hash": "sha256:faff2f8ffd4c210f10c79849ff68b4fe56879af14f0ea534899de47b641c101f",
+   "role": "netlist"
+  }
+ },
+ "measurements": [
+  {
+   "name": "vlo_v",
+   "unit": "V",
+   "limits": null,
+   "status": "pass",
+   "worst_case": {
+    "corner_id": "typical/vcm=1.485_vdd=2.970V/-40C",
+    "value": 0.984903,
+    "margin": null
+   }
+  },
+  {
+   "name": "vhi_v",
+   "unit": "V",
+   "limits": null,
+   "status": "pass",
+   "worst_case": {
+    "corner_id": "typical/vcm=1.485_vdd=2.970V/-40C",
+    "value": 1.98496,
+    "margin": null
+   }
+  }
+ ],
+ "corners": [
+  {
+   "corner_id": "typical/vcm=1.485_vdd=2.970V/-40C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 37.986,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984903,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98496,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.485_vdd=2.970V/27C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 43.213,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984931,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98498,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.485_vdd=2.970V/125C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 42.323,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984966,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.985,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/-40C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 38.7,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14997,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14997,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 43.194,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14999,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14998,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/125C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 42.007,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.15001,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.15001,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.815_vdd=3.630V/-40C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 39.627,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.815_vdd=3.630V/27C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 42.952,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31499,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31498,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.815_vdd=3.630V/125C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 40.471,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31502,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31501,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 35.613,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984967,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 40.871,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984984,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98498,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 40.011,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.985011,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98501,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 36.195,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14997,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14997,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 42.579,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14999,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14998,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 39.831,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.15002,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.15001,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 35.313,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 38.591,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31499,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31499,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 37.875,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31502,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31501,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 36.279,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.9847,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98496,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.485_vdd=2.970V/27C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 34.911,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984759,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.485_vdd=2.970V/125C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 40.691,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984817,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.985,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 37.637,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14994,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14996,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.650_vdd=3.300V/27C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 34.754,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14996,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14998,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.650_vdd=3.300V/125C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 38.612,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14999,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.15,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 36.505,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.815_vdd=3.630V/27C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 34.778,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31499,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31498,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.815_vdd=3.630V/125C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 40.558,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31501,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.315,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.485_vdd=2.970V/-40C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 35.916,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984958,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98496,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.485_vdd=2.970V/27C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 40.918,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984976,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98498,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.485_vdd=2.970V/125C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 39.036,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.985002,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.985,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.650_vdd=3.300V/-40C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 36.001,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14997,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14996,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.650_vdd=3.300V/27C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 39.204,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14999,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14998,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.650_vdd=3.300V/125C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 38.852,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.15001,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.15,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.815_vdd=3.630V/-40C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 35.618,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.815_vdd=3.630V/27C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 38.943,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31499,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31498,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.815_vdd=3.630V/125C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 38.117,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31501,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31501,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.485_vdd=2.970V/-40C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 34.721,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984776,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98496,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.485_vdd=2.970V/27C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 39.156,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984823,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.98498,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.485_vdd=2.970V/125C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 41.248,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 0.984874,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 1.985,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.650_vdd=3.300V/-40C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 34.66,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14996,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14997,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.650_vdd=3.300V/27C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 30.501,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.14998,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.14998,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.650_vdd=3.300V/125C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 28.056,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.15,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.15001,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.815_vdd=3.630V/-40C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 24.132,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31497,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.815_vdd=3.630V/27C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 23.633,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31499,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31498,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.815_vdd=3.630V/125C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 22.086,
+   "measurements": [
+    {
+     "name": "vlo_v",
+     "value": 1.31502,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vhi_v",
+     "value": 2.31501,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  }
+ ]
+}

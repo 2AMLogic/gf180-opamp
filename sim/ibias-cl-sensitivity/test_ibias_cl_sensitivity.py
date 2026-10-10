@@ -191,9 +191,9 @@ class Control(unittest.TestCase):
         for p in r.POINTS["power"]:
             self.assertIsNotNone(r.reference_ssp(smd, p), p)
         self.assertIsNotNone(r.reference_gain(gmd, r.mc.PM_BINDING))
-        self.assertAlmostEqual(r.reference_gain(gmd, r.mc.PM_BINDING)[2], 57.34)
+        self.assertAlmostEqual(r.reference_gain(gmd, r.mc.PM_BINDING)[2], 71.99)
         self.assertAlmostEqual(r.reference_ssp(smd, r.mc.POWER_BINDING)[0], 310.98)
-        self.assertAlmostEqual(r.reference_ssp(smd, r.mc.SLEW_BINDING)[1], 14.51)
+        self.assertAlmostEqual(r.reference_ssp(smd, r.mc.SLEW_BINDING)[1], 15.50)
 
 
 class SourceGuard(unittest.TestCase):
