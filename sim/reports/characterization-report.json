@@ -6,18 +6,20 @@
   },
   "limitations": [
     "cmrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "input-common-mode: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "noise: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "offset-mc: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "psrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "slew-swing-power (20261009-142137-1dab1db): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "slew-swing-power (20261009-143715-4d5aa43): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
-    "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), gain-gbw-pm (recorded), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (20261009-142137-1dab1db) (recorded), slew-swing-power (20261009-143715-4d5aa43) (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
-    "ngspice versions differ: ngspice 42 <- noise (local), offset-mc (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)",
+    "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), gain-gbw-pm (recorded), input-common-mode (recorded), input-common-mode (klt client-resolved), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (20261009-142137-1dab1db) (recorded), slew-swing-power (20261009-143715-4d5aa43) (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
+    "ngspice versions differ: ngspice 42 <- input-common-mode (local), noise (local), offset-mc (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), input-common-mode (klt engine), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)",
     "coverage differs between sources (see each row's coverage; e.g. the offset Monte Carlo is 5 corner points at nominal T/VDD while the AC rows are full 45-point grids)"
   ],
   "manifest_selection": {
     "cmrr": "sim/cmrr/records/20261009-105631-30ec86d.md",
     "gain-gbw-pm": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
+    "input-common-mode": "sim/input-common-mode/records/20261009-222613-871d1a6.md",
     "noise": "sim/noise/records/20261009-082007-68b4567.md",
     "offset-mc": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
     "psrr": "sim/psrr/records/20261009-105929-30ec86d.md",
@@ -556,16 +558,675 @@
     },
     {
       "bound_open": false,
-      "coverage": null,
-      "figures": [],
+      "coverage": {
+        "corners": [
+          "typical",
+          "ff",
+          "ss",
+          "fs",
+          "sf"
+        ],
+        "points": 45,
+        "temps_c": [
+          -40,
+          27,
+          125
+        ],
+        "vdd_v": [
+          "2.97",
+          "3.30",
+          "3.63"
+        ]
+      },
+      "figures": [
+        {
+          "corner": null,
+          "label": "conservative common interval over all 45 PVT points (intersection; disjoint components listed separately, never bridged) (information only, not graded)",
+          "value": "[1.185, 2.705] V"
+        },
+        {
+          "corner": null,
+          "label": "component of the common interval containing 1.20 V (information only, not graded)",
+          "value": "[1.185, 2.705] V"
+        },
+        {
+          "corner": "ss / -40 C / 2.97 V",
+          "label": "low edge, edge-binding corner (information only, not graded)",
+          "value": "1.185 V, bracket 5 mV to a fail sample"
+        },
+        {
+          "corner": "fs / 125 C / 2.97 V",
+          "label": "high edge, edge-binding corner (information only, not graded)",
+          "value": "2.705 V, bracket 5 mV to a fail sample"
+        },
+        {
+          "corner": null,
+          "label": "transition resolution (largest edge bracket over every per-point interval endpoint) (information only, not graded)",
+          "value": "5 mV over 90 endpoints (scan <= 50 mV, refinement <= 5 mV)"
+        },
+        {
+          "corner": null,
+          "label": "explicit 1.20 V sample coverage (information only, not graded)",
+          "value": "45/45 pass, 0 fail, 0 invalid/missing (record verdict: meets)"
+        },
+        {
+          "corner": "ss / -40 C / 2.97 V",
+          "label": "smallest saturation margin at 1.20 V (information only, not graded)",
+          "value": "XM5 +11.1 mV (plateau gain 96.14 dB)"
+        },
+        {
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "lowest plateau gain at 1.20 V (information only, not graded)",
+          "value": "94.22 dB (limiting XM5 +11.7 mV)"
+        },
+        {
+          "corner": "ss / -40 C / 2.97 V",
+          "label": "smallest saturation margin inside the 1.20 V component (information only, not graded)",
+          "value": "XM5 +0.6 mV at VCM 1.185 V (plateau gain 96.15 dB)"
+        },
+        {
+          "corner": "fs / 125 C / 2.97 V",
+          "label": "lowest plateau gain inside the 1.20 V component (information only, not graded)",
+          "value": "60.93 dB at VCM 2.705 V (limiting XM6 +25.1 mV)"
+        },
+        {
+          "corner": null,
+          "label": "common interval with a strict 0 mV saturation tolerance (information only, not graded)",
+          "value": "[1.185, 2.705] V"
+        },
+        {
+          "corner": null,
+          "label": "PVT points with disjoint passing intervals (information only, not graded)",
+          "value": "0 of 45"
+        },
+        {
+          "corner": null,
+          "label": "(PVT point, VCM) samples (information only, not graded)",
+          "value": "6165 (3450 pass, 2245 fail, 470 invalid); re-derived from the retained sim/input-common-mode/corners/20261009-222613-871d1a6/samples.csv"
+        }
+      ],
+      "icmr": {
+        "addendum": {
+          "path": "sim/input-common-mode/records/20261009-222613-871d1a6-addendum/ADDENDUM.md",
+          "sha256": "225e2360d2b970d82eb9b3bf7d30dca5a0b959b3d9bcc08a3bd6bd35826857db"
+        },
+        "common_interval_components": [
+          {
+            "high_binding_point": "fs / 125 C / 2.97 V",
+            "high_bracket_mv": 5,
+            "high_mv": 2705,
+            "high_neighbour": "fail",
+            "low_binding_point": "ss / -40 C / 2.97 V",
+            "low_bracket_mv": 5,
+            "low_mv": 1185,
+            "low_neighbour": "fail"
+          }
+        ],
+        "common_interval_strict_mv": [
+          [
+            1185,
+            2705
+          ]
+        ],
+        "component_containing_1v20": {
+          "high_binding_point": "fs / 125 C / 2.97 V",
+          "high_bracket_mv": 5,
+          "high_mv": 2705,
+          "high_neighbour": "fail",
+          "low_binding_point": "ss / -40 C / 2.97 V",
+          "low_bracket_mv": 5,
+          "low_mv": 1185,
+          "low_neighbour": "fail"
+        },
+        "explicit_1v20": {
+          "fail": 0,
+          "invalid": 0,
+          "pass": 45,
+          "points": 45,
+          "verdict_in_record": "meets"
+        },
+        "graded": false,
+        "lowest_plateau_gain": {
+          "at_1v20": {
+            "device": "XM5",
+            "gain_db": 94.22,
+            "margin_mv": 11.7,
+            "point": "ss / 125 C / 2.97 V"
+          },
+          "inside_component": {
+            "device": "XM6",
+            "gain_db": 60.93,
+            "margin_mv": 25.1,
+            "point": "fs / 125 C / 2.97 V",
+            "vcm_mv": 2705
+          }
+        },
+        "per_point_intervals": [
+          {
+            "intervals_mv": [
+              [
+                1065,
+                2790
+              ]
+            ],
+            "point": "typical / -40 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1060,
+                2765
+              ]
+            ],
+            "point": "typical / 27 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1055,
+                2730
+              ]
+            ],
+            "point": "typical / 125 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1065,
+                3115
+              ]
+            ],
+            "point": "typical / -40 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1060,
+                3095
+              ]
+            ],
+            "point": "typical / 27 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1055,
+                3060
+              ]
+            ],
+            "point": "typical / 125 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1060,
+                3445
+              ]
+            ],
+            "point": "typical / -40 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1060,
+                3420
+              ]
+            ],
+            "point": "typical / 27 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1055,
+                3385
+              ]
+            ],
+            "point": "typical / 125 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                945,
+                2795
+              ]
+            ],
+            "point": "ff / -40 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                935,
+                2770
+              ]
+            ],
+            "point": "ff / 27 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                925,
+                2740
+              ]
+            ],
+            "point": "ff / 125 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                940,
+                3120
+              ]
+            ],
+            "point": "ff / -40 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                935,
+                3100
+              ]
+            ],
+            "point": "ff / 27 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                925,
+                3065
+              ]
+            ],
+            "point": "ff / 125 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                940,
+                3450
+              ]
+            ],
+            "point": "ff / -40 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                935,
+                3425
+              ]
+            ],
+            "point": "ff / 27 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                925,
+                3395
+              ]
+            ],
+            "point": "ff / 125 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1185,
+                2785
+              ]
+            ],
+            "point": "ss / -40 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1185,
+                2760
+              ]
+            ],
+            "point": "ss / 27 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1185,
+                2725
+              ]
+            ],
+            "point": "ss / 125 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1185,
+                3110
+              ]
+            ],
+            "point": "ss / -40 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1185,
+                3085
+              ]
+            ],
+            "point": "ss / 27 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1185,
+                3055
+              ]
+            ],
+            "point": "ss / 125 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1185,
+                3440
+              ]
+            ],
+            "point": "ss / -40 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1185,
+                3415
+              ]
+            ],
+            "point": "ss / 27 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1185,
+                3380
+              ]
+            ],
+            "point": "ss / 125 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                980,
+                2770
+              ]
+            ],
+            "point": "fs / -40 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                975,
+                2745
+              ]
+            ],
+            "point": "fs / 27 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                965,
+                2705
+              ]
+            ],
+            "point": "fs / 125 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                980,
+                3105
+              ]
+            ],
+            "point": "fs / -40 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                970,
+                3080
+              ]
+            ],
+            "point": "fs / 27 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                965,
+                3045
+              ]
+            ],
+            "point": "fs / 125 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                975,
+                3440
+              ]
+            ],
+            "point": "fs / -40 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                970,
+                3410
+              ]
+            ],
+            "point": "fs / 27 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                965,
+                3375
+              ]
+            ],
+            "point": "fs / 125 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1150,
+                2795
+              ]
+            ],
+            "point": "sf / -40 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1150,
+                2770
+              ]
+            ],
+            "point": "sf / 27 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1145,
+                2735
+              ]
+            ],
+            "point": "sf / 125 C / 2.97 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1150,
+                3120
+              ]
+            ],
+            "point": "sf / -40 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1145,
+                3095
+              ]
+            ],
+            "point": "sf / 27 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1145,
+                3065
+              ]
+            ],
+            "point": "sf / 125 C / 3.30 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1150,
+                3445
+              ]
+            ],
+            "point": "sf / -40 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1145,
+                3425
+              ]
+            ],
+            "point": "sf / 27 C / 3.63 V",
+            "status_1v20": "pass"
+          },
+          {
+            "intervals_mv": [
+              [
+                1145,
+                3390
+              ]
+            ],
+            "point": "sf / 125 C / 3.63 V",
+            "status_1v20": "pass"
+          }
+        ],
+        "provenance": {
+          "backend": "aws-batch-fleet",
+          "dut_sha256": "81fbd914f8254a49",
+          "fleet_runner_mismatch": true,
+          "klt_client": "0.7.0+gb82427b30c96",
+          "measurement_config": {
+            "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+            "status": "unknown"
+          },
+          "ngspice_engine": "46",
+          "ngspice_local": "42",
+          "pdk_client_resolved": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+          "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+          "record_id": "20261009-222613-871d1a6",
+          "record_sha256": "663492386732d44808422a134aae0d2411b9c23d9a8f99d80ea69639ec93fa6d"
+        },
+        "retained_evidence": {
+          "path": "sim/input-common-mode/corners/20261009-222613-871d1a6/samples.csv",
+          "points": 45,
+          "samples": 6165,
+          "sha256": "f1d833e4dbeed110142e45130c8cac8900178598ff021154fa20fac5f2ca8a70"
+        },
+        "samples": {
+          "fail": 2245,
+          "invalid": 470,
+          "pass": 3450,
+          "total": 6165
+        },
+        "smallest_saturation_margin": {
+          "at_1v20": {
+            "device": "XM5",
+            "gain_db": 96.14,
+            "margin_mv": 11.1,
+            "point": "ss / -40 C / 2.97 V"
+          },
+          "inside_component": {
+            "device": "XM5",
+            "gain_db": 96.15,
+            "margin_mv": 0.6,
+            "point": "ss / -40 C / 2.97 V",
+            "vcm_mv": 1185
+          }
+        },
+        "tolerance_flagged_samples": 15,
+        "transition_resolution": {
+          "endpoints": 90,
+          "max_endpoint_bracket_mv": 5,
+          "refine_step_mv": 5,
+          "scan_step_mv": 50
+        }
+      },
       "key": "input-common-mode-range",
       "limitations": [
-        "bound proposed by a decision record and not ratified: this report grades ratified rows only, so the row is not graded and is counted neither among the ratified rows judged nor as not measured; see the spec status column for the evidence it cites"
+        "bound proposed by a decision record and not ratified: this report grades ratified rows only, so the row is not graded and is counted neither among the ratified rows judged nor as not measured; see the spec status column for the evidence it cites",
+        "the figures listed for this row come from the selected ICMR record, re-derived from its per-point tables and cross-checked against its retained per-sample evidence; they are information only and are not compared with the proposed bound",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
+        "fleet runner klt version differs from the client's (compatibility mismatch)",
+        "follower-biased bench (unity-gain-follower DC operating point): the measured range is not an arbitrary-output-voltage input range and not an offset-accuracy claim",
+        "systematic only: perfectly matched schematic, mismatch not covered",
+        "sampled coverage: each edge is the nearest verified passing sample; the true transition lies within the stated bracket on the non-passing side (initial scan <= 50 mV, transitions refined to <= 5 mV)",
+        "the bench-validity tolerances (1 mV saturation tolerance, 0.10 V output tolerance) are not ratified bounds; 15 passing samples have a negative saturation margin inside the 1 mV tolerance",
+        "470 of 6165 samples are invalid (never passing, never bridged); see the record's validity-failure section",
+        "the record has an addendum (sim/input-common-mode/records/20261009-222613-871d1a6-addendum/ADDENDUM.md, sha256 225e2360d2b970d8) with disclosures and presentation corrections; read it with the record",
+        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": null,
       "row": "Input common-mode range",
-      "source": null,
+      "source": {
+        "experiment": "input-common-mode",
+        "path": "sim/input-common-mode/records/20261009-222613-871d1a6.md",
+        "record_id": "20261009-222613-871d1a6",
+        "sha256": "663492386732d44808422a134aae0d2411b9c23d9a8f99d80ea69639ec93fa6d"
+      },
       "spec_bound": "proposed, not ratified: 1.20 V ≤ VCM ≤ 2.70 V at all PVT points [DR-5]",
       "spec_status": "Proposed [DR-5] — measured: covered at all 45 PVT points (conservative 45-point intersection [1.185, 2.705] V at 5 mV brackets; 1.20 V passes 45/45, smallest margin XM5 +11.1 mV at SS / −40 °C / 2.97 V — a thin low edge; record 20261009-222613-871d1a6)",
       "status": "proposed-not-graded",
@@ -747,6 +1408,23 @@
       "record_id": "20261010-020141-1e51d1c",
       "sha256": "37ae04a15b0b92cff7cb781f9c95da8c6b39926c841af46515f07c6177a1904b"
     },
+    "input-common-mode": {
+      "backend": "aws-batch-fleet",
+      "dut_sha256": "81fbd914f8254a49",
+      "fleet_runner_mismatch": true,
+      "klt_client": "0.7.0+gb82427b30c96",
+      "measurement_config": {
+        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "status": "unknown"
+      },
+      "ngspice_engine": "46",
+      "ngspice_local": "42",
+      "path": "sim/input-common-mode/records/20261009-222613-871d1a6.md",
+      "pdk_client_resolved": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "record_id": "20261009-222613-871d1a6",
+      "sha256": "663492386732d44808422a134aae0d2411b9c23d9a8f99d80ea69639ec93fa6d"
+    },
     "noise": {
       "backend": "aws-batch-fleet",
       "dut_sha256": "81fbd914f8254a49",
@@ -835,7 +1513,7 @@
   },
   "spec": {
     "path": "spec/target-spec.md",
-    "sha256": "d94a3282bb930eafec3c3592496e56258d099ee09d9066f286f777505574f580"
+    "sha256": "b92134564488d774886b98aae3305709c2f97e8ddceb97af86e7cc847c67058f"
   },
   "summary": {
     "fail": 1,

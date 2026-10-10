@@ -26,7 +26,13 @@ release, or the PDK with every path searched, and
 klt / ngspice / committed gain dataset) into failures; local runs without the
 variable still skip. `ci_regression_check.sh` then breaks a copy of the
 gain-bench source guard and extraction on purpose and requires the unit suite
-to fail. The job fails if it leaves any file modified or created (no
+to fail. The selftest also runs `report/spec_citation_check.py` (issue #112,
+no simulator): every record cited in the Status column of
+`spec/target-spec.md` §2 must exist, and must be the record
+`report/selection.json` selects for that row's experiment unless its clause
+labels it `superseded`/`historical` or the `passive-corner` study (records of
+another experiment, such as the CMRR row's `cmrr-mc` record, are checked for
+existence only); `ci_regression_check.sh` proves it can fail. The job fails if it leaves any file modified or created (no
 `records/`). It never runs a PVT/Monte Carlo grid and needs no credentials.
 
 The selftest also runs `ci_netlist_check.py` (issue #76): it exports
@@ -160,6 +166,22 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 - Existing records have no structured sidecars, so the verdict/worst-case
   lines are extracted from the Markdown (cross-checked against each record's
   own per-point table); historical records are never modified.
+- Input common-mode range (issue #90): the selected `input-common-mode`
+  record is attached to DR-5's `proposed-not-graded` row as information only
+  (no verdict, no worst value beside the proposed bound, still outside the
+  ratified counts). The report re-derives the conservative common interval
+  (every disjoint component kept apart, never bridged), its edge-binding
+  corners and brackets, the transition resolution, the explicit 1.20 V sample
+  at every point and the smallest saturation margins from the record's
+  per-point tables, then cross-checks them against the retained
+  `input-common-mode/corners/<rid>/samples.csv` (its sha256 is reported). A
+  disagreement, a malformed or overlapping interval, or a missing
+  `samples.csv` is an error. Without a selected ICMR record the row stays
+  explicitly missing; nothing is read from the spec status text. ICMR records
+  carry no measurement fingerprint, so their configuration freshness is
+  reported as unknown. If DR-5 is ratified (the in-row tag removed) while an
+  ICMR record is selected, generation fails until the report learns to grade
+  the row.
 - Measurement-configuration freshness (issue #85), additive to the DUT gate:
   a record may carry a versioned `**Measurement fingerprint**` header line
   plus the canonical inputs it hashes (`## Measurement fingerprint inputs`).
@@ -280,6 +302,14 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   explicit 1.20 V sample. Two `klt sim` requests per scan/refinement round
   (paired `vdd`/`vcm` axes on the batch fleet); measured evidence for the ICMR
   row proposed by decision record 0005 (issue #60).
+- [`step-response/`](step-response/README.md) — **closed-loop follower step
+  response** of the committed sized schematic: unity-gain follower, CL = 2 pF,
+  a 100 mV step about VCM (rising and falling edge), overshoot, 1 % and 0.1 %
+  settling time and monotonicity across the same 45-point grid as one
+  `klt sim` request, worst points identified, alongside the gain record's PM.
+  Evidence only: no spec row exists for settling/overshoot and none is
+  proposed (that would need a `spec/` decision record) (issue #113; context
+  #42).
 
 ## Coverage and gaps
 
