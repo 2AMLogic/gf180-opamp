@@ -1,0 +1,62 @@
+* tb_cmrr_mc.spice -- mismatch-aware CMRR bench: both AC excitations of ONE
+* Monte Carlo sample in ONE deck (issue #61; spec row: CMRR; DR-3 residual (e3)).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_cmrr_mc.py) materialises `opamp_two_stage.dut.spice`
+* from the committed export (the wrapper normalisation every bench uses) and
+* rewrites the two `.include` targets below to absolute paths of the per-run
+* work directory. test_cmrr_mc.py guards both includes, the absence of
+* transistors and every line of the circuit below.
+*
+* This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* `.control` or `.end`. `klt sim` adds the corner's `.lib` cards, `.temp`,
+* the supply `alter`s, the Monte Carlo seed card and the `.ac` analysis.
+*
+* ---- Circuit: identical to sim/cmrr/testbench/tb_cmrr.spice ----
+* Same DUT instance, Ibias = 10 uA (ideal), CL = 2 pF [DR-1], DC input common
+* mode VCM = VDD/2 (vdd and vcm swept together by `klt sim`), and the same
+* ideal DC servo (Esb buffer -> Rsv/Csv low-pass, tau = 1e18 s -> Esv in
+* series with the vinn AC source). See sim/cmrr/README.md "Bench".
+*
+* ---- What differs: one deck carries both excitations ----
+* Under mismatch Monte Carlo, Ad and Acm must come from the SAME sampled
+* devices. The systematic bench runs the two excitations as two separate
+* `klt sim` requests; here the driver appends control commands to the
+* analysis line so that ONE ngspice process runs
+*     ac (dm: acp = +0.5, acn = -0.5)   -> plot ac1
+*     op                                 (DC operating point, printed)
+*     alter vcm acmag=1 ; alter vnac acmag=1
+*     ac (cm: acp = acn = 1)             -> plot ac2
+*     op                                 (DC operating point, printed again)
+* on one parsed circuit. The per-instance mismatch values (`agauss` in the
+* PDK's `fets_mm` subcircuits) are drawn once, when the netlist is parsed, so
+* both sweeps see the same devices. The driver checks that per sample: the
+* DC output (which carries the sampled offset, sigma ~ 5 mV) printed after
+* each sweep must agree to 1 uV.
+*
+* ---- Mismatch switch ----
+* `sw_stat_mismatch` gates the per-instance MOS mismatch of the plain
+* `nfet_03v3`/`pfet_03v3` subcircuits (default 0 in design.ngspice). It is set
+* on the single `.param` line below, AFTER the design.ngspice include, so it
+* overrides the PDK default; `sw_stat_global` is not touched (global spread
+* is the five MOS corners). The driver rewrites only this `.param` line
+* (acp/acn are fixed at the dm values; sw_stat_mismatch = 0 for the
+* mismatch-off control).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param acp=0.5 acn=-0.5 rsv=1e9 csv=1e9 sw_stat_mismatch=1
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65 ac {acp}
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vinn vout ibias opamp_two_stage
+Esb vsb 0 vout 0 1
+Rsv vsb vsv {rsv}
+Csv vsv 0 {csv}
+Esv vinn vnac vsv 0 1
+Vnac vnac 0 dc 0 ac {acn}
+CL vout 0 2p

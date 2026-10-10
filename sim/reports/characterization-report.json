@@ -362,7 +362,7 @@
       "worst_corner": "sf (corner only; 27 C / 3.30 V)"
     },
     {
-      "bound_open": true,
+      "bound_open": false,
       "coverage": {
         "corners": [
           "typical",
@@ -386,37 +386,39 @@
       "figures": [
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "CMRR DC plateau (0.1-1 Hz), lowest",
+          "label": "systematic (mismatch-free) CMRR DC plateau (0.1-1 Hz), lowest (information only, not the row's statistic)",
           "value": "95.42 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "CMRR 1 kHz, lowest",
+          "label": "systematic (mismatch-free) CMRR 1 kHz, lowest (information only, not the row's statistic)",
           "value": "95.42 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "CMRR 10 kHz, lowest",
+          "label": "systematic (mismatch-free) CMRR 10 kHz, lowest (information only, not the row's statistic)",
           "value": "95.42 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "CMRR 100 kHz, lowest",
+          "label": "systematic (mismatch-free) CMRR 100 kHz, lowest (information only, not the row's statistic)",
           "value": "95.29 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "CMRR 1 MHz, lowest",
+          "label": "systematic (mismatch-free) CMRR 1 MHz, lowest (information only, not the row's statistic)",
           "value": "89.19 dB"
         },
         {
           "corner": "ss / -40 C / 2.97 V",
-          "label": "CMRR at f_u (differential unity gain), lowest",
+          "label": "systematic (mismatch-free) CMRR at f_u (differential unity gain), lowest (information only, not the row's statistic)",
           "value": "60.99 dB"
         }
       ],
       "key": "cmrr",
       "limitations": [
+        "bound proposed by a decision record and not ratified: this report grades ratified rows only, so the row is not graded and is counted neither among the ratified rows judged nor as not measured; see the spec status column for the evidence it cites",
+        "the figures listed for this row come from the selected systematic (mismatch-free) PVT record and are information only: they are NOT the statistic of the proposed row, which is stated on a mismatch-inclusive basis (see the spec statistical-basis and status columns for the record it cites); this report does not ingest that record, and the systematic figures are optimistic against it",
         "passives at typical only: RZ/CC passive corners are not swept",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "systematic figure of a perfectly matched schematic; mismatch-limited CMRR (Monte Carlo) is not covered",
@@ -424,7 +426,7 @@
         "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
-      "points_total": 45,
+      "points_total": null,
       "row": "CMRR",
       "source": {
         "experiment": "cmrr",
@@ -432,14 +434,15 @@
         "record_id": "20261009-105631-30ec86d",
         "sha256": "30ab2d2c36eb50d084559b3ae4b6329d54b1e57e0aca5486cb932a834a64e23e"
       },
-      "spec_bound": "open",
-      "status": "measured-no-bound",
+      "spec_bound": "proposed, not ratified: ≥ 60 dB at the DC plateau (0.1–1 Hz) and at 10 kHz [DR-6]",
+      "spec_status": "Proposed [DR-6] — measured: covered (mismatch-inclusive linear 3σ worst 82.71 dB at DC and 82.65 dB at 10 kHz, typical, 27 °C / 3.30 V, 1 500 samples, record 20261010-035206-978f088; dB mean − 3σ 68.84 dB; empirical sample minimum 79.28 dB; PVT estimate 77.1 dB = systematic worst 95.42 dB at SS / 125 °C / 2.97 V minus the worst mismatch penalty 18.31 dB; reported only: 100 kHz 82.66 dB, 1 MHz 82.19 dB, at f_u 61.02 dB; systematic record 20261009-105631-30ec86d)",
+      "status": "proposed-not-graded",
       "verdict": null,
-      "worst": "95.42 dB (DC plateau (0.1-1 Hz), lowest)",
-      "worst_corner": "ss / 125 C / 2.97 V"
+      "worst": null,
+      "worst_corner": null
     },
     {
-      "bound_open": true,
+      "bound_open": false,
       "coverage": {
         "corners": [
           "typical",
@@ -463,67 +466,68 @@
       "figures": [
         {
           "corner": "fs / -40 C / 2.97 V",
-          "label": "PSRR+ DC plateau (0.1-1 Hz), lowest",
+          "label": "PSRR+ DC plateau (0.1-1 Hz), lowest (information only, not graded)",
           "value": "98.45 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "PSRR+ 1 kHz, lowest",
+          "label": "PSRR+ 1 kHz, lowest (information only, not graded)",
           "value": "81.24 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "PSRR+ 10 kHz, lowest",
+          "label": "PSRR+ 10 kHz, lowest (information only, not graded)",
           "value": "61.31 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "PSRR+ 100 kHz, lowest",
+          "label": "PSRR+ 100 kHz, lowest (information only, not graded)",
           "value": "41.31 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "PSRR+ 1 MHz, lowest",
+          "label": "PSRR+ 1 MHz, lowest (information only, not graded)",
           "value": "21.31 dB"
         },
         {
           "corner": "sf / -40 C / 2.97 V",
-          "label": "PSRR+ at f_u (differential unity gain), lowest",
+          "label": "PSRR+ at f_u (differential unity gain), lowest (information only, not graded)",
           "value": "0.86 dB"
         },
         {
           "corner": "ss / -40 C / 2.97 V",
-          "label": "PSRR- DC plateau (0.1-1 Hz), lowest",
+          "label": "PSRR- DC plateau (0.1-1 Hz), lowest (information only, not graded)",
           "value": "101.01 dB"
         },
         {
           "corner": "ss / -40 C / 2.97 V",
-          "label": "PSRR- 1 kHz, lowest",
+          "label": "PSRR- 1 kHz, lowest (information only, not graded)",
           "value": "101.01 dB"
         },
         {
           "corner": "ss / -40 C / 2.97 V",
-          "label": "PSRR- 10 kHz, lowest",
+          "label": "PSRR- 10 kHz, lowest (information only, not graded)",
           "value": "100.89 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "PSRR- 100 kHz, lowest",
+          "label": "PSRR- 100 kHz, lowest (information only, not graded)",
           "value": "93.48 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
-          "label": "PSRR- 1 MHz, lowest",
+          "label": "PSRR- 1 MHz, lowest (information only, not graded)",
           "value": "72.60 dB"
         },
         {
           "corner": "ss / -40 C / 2.97 V",
-          "label": "PSRR- at f_u (differential unity gain), lowest",
+          "label": "PSRR- at f_u (differential unity gain), lowest (information only, not graded)",
           "value": "37.14 dB"
         }
       ],
       "key": "psrr",
       "limitations": [
+        "bound proposed by a decision record and not ratified: this report grades ratified rows only, so the row is not graded and is counted neither among the ratified rows judged nor as not measured; see the spec status column for the evidence it cites",
         "passives at typical only: RZ/CC passive corners are not swept",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "PSRR-: Avss changes sign across the grid, so low-frequency PSRR- near the flip is a cancellation, not design margin; the worst-case figure is the one to use",
@@ -532,7 +536,7 @@
         "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
-      "points_total": 45,
+      "points_total": null,
       "row": "PSRR",
       "source": {
         "experiment": "psrr",
@@ -540,11 +544,12 @@
         "record_id": "20261009-105929-30ec86d",
         "sha256": "5e97c2ff265200f6c36afcdfaa008a2cd6e241ee158cbbd682baf19458333f0c"
       },
-      "spec_bound": "open",
-      "status": "measured-no-bound",
+      "spec_bound": "proposed, not ratified: PSRR+ ≥ 60 dB and PSRR− ≥ 60 dB at the DC plateau and at 1 kHz; ≥ 50 dB each at 10 kHz [DR-6]",
+      "spec_status": "Proposed [DR-6] — measured: covered at all 45 PVT points (PSRR+ worst 98.45 dB DC, 81.24 dB at 1 kHz, 61.31 dB at 10 kHz; PSRR− worst 101.01 dB DC, 101.01 dB at 1 kHz, 100.89 dB at 10 kHz; not bounded: PSRR+ 41.31 dB at 100 kHz, 21.31 dB at 1 MHz and 0.86 dB at f_u (SF / −40 °C / 2.97 V), PSRR− 93.48 / 72.60 / 37.14 dB; record 20261009-105929-30ec86d)",
+      "status": "proposed-not-graded",
       "verdict": null,
-      "worst": "PSRR+ 98.45 dB (DC plateau (0.1-1 Hz), lowest)",
-      "worst_corner": "fs / -40 C / 2.97 V"
+      "worst": null,
+      "worst_corner": null
     },
     {
       "bound_open": false,
@@ -558,7 +563,7 @@
       "points_total": null,
       "row": "Input common-mode range",
       "source": null,
-      "spec_bound": "1.20 V ≤ VCM ≤ 2.70 V at all PVT points [DR-5]",
+      "spec_bound": "proposed, not ratified: 1.20 V ≤ VCM ≤ 2.70 V at all PVT points [DR-5]",
       "spec_status": "Proposed [DR-5] — measured: covered at all 45 PVT points (conservative 45-point intersection [1.185, 2.705] V at 5 mV brackets; 1.20 V passes 45/45, smallest margin XM5 +11.1 mV at SS / −40 °C / 2.97 V — a thin low edge; record 20261009-222613-871d1a6)",
       "status": "proposed-not-graded",
       "verdict": null,
@@ -827,14 +832,14 @@
   },
   "spec": {
     "path": "spec/target-spec.md",
-    "sha256": "79b49050069da925289f4786b718bf33bb0593da4da5b9791f14ec2705a4dfbf"
+    "sha256": "d94a3282bb930eafec3c3592496e56258d099ee09d9066f286f777505574f580"
   },
   "summary": {
     "fail": 1,
-    "measured_no_bound": 4,
+    "measured_no_bound": 2,
     "not_measured": 2,
     "pass": 5,
-    "proposed_not_graded": 1,
+    "proposed_not_graded": 3,
     "ratified_rows_judged": 6
   },
   "title": "gf180-opamp characterization report (generated; not evidence)",

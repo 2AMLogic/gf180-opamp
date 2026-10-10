@@ -46,6 +46,12 @@ python3 cmrr/test_cmrr.py
 echo "== sim/cmrr: smoke test (typical, 27C, 3.30 V, both excitations, local) =="
 python3 cmrr/run_cmrr.py --smoke
 
+echo "== sim/cmrr-mc: statistics + extraction + source-guard tests (one nominal local unit runs) =="
+python3 cmrr-mc/test_cmrr_mc.py
+
+echo "== sim/cmrr-mc: smoke test (typical, 27C, 3.30 V, both excitations in one deck, local) =="
+python3 cmrr-mc/run_cmrr_mc.py --smoke
+
 echo "== sim/psrr: extraction + source/request-guard tests (one nominal local triple runs) =="
 python3 psrr/test_psrr.py
 

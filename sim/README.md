@@ -236,6 +236,14 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   bands, thermal floor and 1/f corner, the PDK flicker-model audit and
   extraction validation against ngspice's totals and the gain bench. Measured
   only: no verdict, no bound or band proposed (issue #46; DR-3 residual (e1)).
+- [`cmrr-mc/`](cmrr-mc/README.md) — **mismatch-aware CMRR** of the committed
+  sized schematic: `typical/ff/ss/fs/sf` × N = 300 (the `offset-mc/` population
+  and seed) at 27 °C / 3.30 V, one `klt sim` `monte_carlo` request with an AC
+  analysis carrying both excitations of each sample in ONE deck, per-corner
+  mean / sigma / mean−3σ / min / p5 of CMRR at DC, 1 kHz–1 MHz and f_u, with
+  switch-off, process-only and mirror-imbalance controls. Statistic only: the
+  record itself proposes no bound; decision record 0006 does (DR-6, proposed,
+  not ratified) (issue #61; DR-3 residual (e3)).
 - [`cmrr/`](cmrr/README.md) — **CMRR** of the committed sized schematic across
   the full 45-point grid: differential and common-mode excitations (two
   `klt sim` requests) on a DC-servo bench that admits equal AC drive on both
