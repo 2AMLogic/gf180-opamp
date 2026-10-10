@@ -19,13 +19,13 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#97**: sim: measure slew, swing and power across RZ/CC passive corners (replace the analytic slew scaling)
+_None._
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#106**: sim: extend offset Monte Carlo to the 45-point T/VDD grid (N=300 per point)
+- **#42**: Design: phase margin misses the ratified 60 deg target at 30/45 PVT points (worst 57.34 deg at FS / 125 C / 2.97 V)
 - **#114**: sim: ibias and CL sensitivity of GBW, PM, slew and power (evidence for the PM shortfall)
 
 ## PRs Awaiting Review
@@ -45,6 +45,7 @@ PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 Issues carrying `loom:curated`.
 
 - **#7**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
+- **#42**: Design: phase margin misses the ratified 60 deg target at 30/45 PVT points (worst 57.34 deg at FS / 125 C / 2.97 V) *(curated)*
 - **#77**: Prepare a reproducible GF180 layout device pilot before full op-amp placement *(curated)*
 - **#114**: sim: ibias and CL sensitivity of GBW, PM, slew and power (evidence for the PM shortfall) *(curated)*
 
@@ -63,11 +64,11 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 1 |
 | Operator priority | 0 |
-| Ready (`loom:issue`) | 1 |
+| Ready (`loom:issue`) | 0 |
 | In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 3 |
-| Architect / Hermit proposals | 1 |
+| Curated | 4 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
