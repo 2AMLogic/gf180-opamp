@@ -25,7 +25,8 @@ printed after each sweep carries the sampled offset and must agree to 1 µV.
 `measurements[].expr` is not used: the batch fleet's runner (klt 0.5.0)
 rejects any measurement without a `spice` card
 (probes `20261009-233828-95dfc2a`, failed job; `20261009-234034-95dfc2a`,
-3/3 valid distinct samples, `environment.monte_carlo` populated).
+3/3 valid distinct samples, `environment.monte_carlo` populated). The missing declarative path for this
+statistic is filed as 2AMLogic/klayout-tools#3028.
 
 ## Statistics
 

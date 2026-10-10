@@ -261,4 +261,4 @@ content changes.
 - **PSRR mismatch Monte Carlo**, with the PSRR− cancellation points as the first
   target.
 
-Both are filed as issues referencing #61.
+Filed as #98 (CMRR T/VDD mismatch grid) and #99 (PSRR mismatch); both reference #61.
