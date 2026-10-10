@@ -77,6 +77,7 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 
 from harness import (  # noqa: E402
     DUT_EXPORT,
+    DUT_INCLUDE_NAME,
     KltError,
     Pdk,
     allocate_record_id,
@@ -89,6 +90,7 @@ from harness import (  # noqa: E402
     run_klt,
     run_klt_retrying,
     sanitise_report,
+    stage_workdir,
 )
 
 from harness import load_config_module  # noqa: E402
@@ -209,7 +211,6 @@ def strip_instance(dut_text: str, inst: str) -> str:
 # Source guard: the bench must stay tied to the committed design
 # --------------------------------------------------------------------------
 
-DUT_INCLUDE_NAME = "opamp_two_stage.dut.spice"
 _DEVICE_MODEL_RE = re.compile(
     r"\b(nfet|pfet|nmos|pmos|cap_mim|ppolyf|npolyf|nplus|pplus|diode|bjt)\w*", re.I
 )
@@ -317,20 +318,9 @@ def materialise(
     overrides used only by the isolation study (`lfb`) and a negative control
     (`ibias_a`). `dut_text` overrides the DUT only for a negative control.
     """
-    errs = guard_testbench(TESTBENCH.read_text())
-    if errs:
-        raise RuntimeError("testbench guard failed:\n  " + "\n  ".join(errs))
-    work.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(pdk.design_include, work / "design.ngspice")
-    dut = load_dut_text() if dut_text is None else dut_text
-    derrs = guard_dut(dut, allow_missing=allow_missing)
-    if derrs:
-        raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(derrs))
-    (work / DUT_INCLUDE_NAME).write_text(dut)
-    tb = TESTBENCH.read_text()
-    tb = tb.replace("'design.ngspice'", f"'{work / 'design.ngspice'}'")
-    tb = tb.replace(
-        "'opamp_two_stage.dut.spice'", f"'{work / 'opamp_two_stage.dut.spice'}'"
+    tb = stage_workdir(
+        work, pdk, TESTBENCH.read_text(), guard_tb=guard_testbench,
+        guard_dut=lambda d: guard_dut(d, allow_missing=allow_missing), dut_text=dut_text,
     )
     if lfb is not None:
         tb, n = _PARAM_RE.subn(f".param lfb={lfb:g} cfb={lfb:g}", tb)

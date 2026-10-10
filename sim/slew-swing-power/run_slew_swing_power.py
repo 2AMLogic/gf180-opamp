@@ -99,6 +99,7 @@ from harness import (  # noqa: E402
     run_klt_retrying,
     load_sibling,
     sanitise_report,
+    stage_workdir,
 )
 
 
@@ -168,19 +169,8 @@ def materialise(fig: str, work: Path, pdk: Pdk, *, ibias_a: float | None = None)
     targets (rewritten to absolute paths in `work`) and, for a control only,
     an explicit `Ibias` override.
     """
-    tb_text = TESTBENCH[fig].read_text()
-    errs = g.guard_testbench(tb_text)
-    if errs:
-        raise RuntimeError(f"{TESTBENCH[fig].name} guard failed:\n  " + "\n  ".join(errs))
-    work.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(pdk.design_include, work / "design.ngspice")
-    dut = load_dut_text()
-    derrs = g.guard_dut(dut)
-    if derrs:
-        raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(derrs))
-    (work / g.DUT_INCLUDE_NAME).write_text(dut)
-    tb = tb_text.replace("'design.ngspice'", f"'{work / 'design.ngspice'}'")
-    tb = tb.replace(f"'{g.DUT_INCLUDE_NAME}'", f"'{work / g.DUT_INCLUDE_NAME}'")
+    tb = stage_workdir(work, pdk, TESTBENCH[fig].read_text(), guard_tb=g.guard_testbench,
+                       guard_dut=g.guard_dut, tb_label=TESTBENCH[fig].name)
     if ibias_a is not None:
         tb, n = _IBIAS_RE.subn(f"Ibias vdd ibias dc {ibias_a:g}", tb)
         if n != 1:

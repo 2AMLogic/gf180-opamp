@@ -101,6 +101,7 @@ from harness import (  # noqa: E402
     run_klt_retrying,
     load_sibling,
     sanitise_report,
+    stage_workdir,
 )
 
 # The gain driver owns the committed-DUT guards, the request shape and the grid
@@ -277,18 +278,8 @@ def materialise(
     -fixture control only. `dut_text` overrides the DUT only for a control.
     """
     src = testbench.read_text()
-    errs = guard(src)
-    if errs:
-        raise RuntimeError("testbench guard failed:\n  " + "\n  ".join(errs))
-    work.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(pdk.design_include, work / "design.ngspice")
-    dut = load_dut_text() if dut_text is None else dut_text
-    derrs = G.guard_dut(dut, allow_missing=allow_missing)
-    if derrs:
-        raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(derrs))
-    (work / G.DUT_INCLUDE_NAME).write_text(dut)
-    tb = src.replace("'design.ngspice'", f"'{work / 'design.ngspice'}'")
-    tb = tb.replace("'opamp_two_stage.dut.spice'", f"'{work / G.DUT_INCLUDE_NAME}'")
+    tb = stage_workdir(work, pdk, src, guard_tb=guard,
+                       guard_dut=lambda d: G.guard_dut(d, allow_missing=allow_missing), dut_text=dut_text)
     tb, n = re.subn(r"^\.param\s+.*$", param_line(param_keys(src), params), tb, flags=re.M | re.I)
     if n != 1:
         raise RuntimeError("testbench .param line not found exactly once")
