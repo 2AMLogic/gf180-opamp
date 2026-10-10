@@ -11,6 +11,13 @@ conditions, the model library and passive sections, and the control settings
 (small-N, imbalance device and size, switch-off). NOT fingerprinted: record
 IDs, workspace paths, backend/retry options, validity thresholds and the
 extraction/statistics code. The DUT has its own hash (#75).
+
+Two grids (issue #106). `nominal` is the issue #45 population (27 C / 3.30 V /
+VCM 1.65 V) and its inputs are byte-identical to the pre-#106 ones, so the
+committed nominal record keeps its fingerprint. `full` takes the T and VDD
+axes from the gain experiment's configuration module (one source for every
+45-point bench) with VCM = VDD/2, and adds `"grid": "full"` to the inputs; a
+record's retained inputs select the grid it was measured on.
 """
 
 from __future__ import annotations
@@ -21,6 +28,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "sim"))
 import harness  # noqa: E402
+
+_GAIN = harness.load_config_module(HERE.parent / "gain-gbw-pm" / "measurement_config.py")
 
 EXPERIMENT = "offset-mc"
 FINGERPRINT_VERSION = harness.FINGERPRINT_VERSION
@@ -54,9 +63,29 @@ MEASUREMENTS = [
 ]
 
 
+def grid_axes(grid: str = "nominal") -> tuple[list[float], list[float], list[float]]:
+    """(temperatures, supplies, VCMs) of a grid; VCM pairs with VDD by index."""
+    if grid == "nominal":
+        return [float(TEMP_C)], [float(VDD_V)], [float(VCM_V)]
+    if grid == "full":
+        sup = [float(v) for v in _GAIN.SUPPLIES_V]
+        return [float(t) for t in _GAIN.TEMPS_C], sup, [round(v / 2, 6) for v in sup]
+    raise ValueError(f"unknown grid {grid!r}")
+
+
+def grid_of(retained: dict | None) -> str:
+    """The grid a record measured (`nominal` when its inputs name none)."""
+    return (retained or {}).get("grid", "nominal")
+
+
 def inputs(texts: dict, retained: dict | None = None) -> dict:
-    """The effective measurement inputs, as a JSON-serialisable dict."""
-    return {
+    """The effective measurement inputs, as a JSON-serialisable dict.
+
+    `retained` is a record's stored inputs (or `{"grid": "full"}` from the
+    runner); it selects the grid only."""
+    grid = grid_of(retained)
+    temps, supplies, vcms = grid_axes(grid)
+    out = {
         "experiment": EXPERIMENT,
         "fingerprint_version": FINGERPRINT_VERSION,
         "bench": harness.canonical_bench_lines(texts["bench"]),
@@ -69,12 +98,15 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
         "corners": {
             "process": list(CORNERS),
             "passive_sections": list(PASSIVE_SECTIONS),
-            "temperature_c": [float(TEMP_C)],
-            "supply_v": [float(VDD_V)],
-            "vcm_v": [float(VCM_V)],
+            "temperature_c": temps,
+            "supply_v": supplies,
+            "vcm_v": vcms,
         },
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},
     }
+    if grid != "nominal":
+        out["grid"] = grid
+    return out
 
 
 def fingerprint(texts: dict, retained: dict | None = None) -> str:

@@ -55,10 +55,14 @@ MULTI_RECORD = {"slew-swing-power": ("power", "slew", "swing")}
 #: judge its spec rows (matched on the record's title line), so `--latest`
 #: must not select them: the gain-gbw-pm RZ x CC passive-corner study
 #: (`run_gain_gbw_pm.py --passive-corners`, issue #70) and the slew/swing/power
-#: one (`run_slew_swing_power.py --passive-corners`, issue #97).
+#: one (`run_slew_swing_power.py --passive-corners`, issue #97). The offset
+#: Monte Carlo PVT-grid record (`run_offset_mc.py --grid full`, issue #106)
+#: has its own per-point layout the offset extractor does not read; until the
+#: report learns it, the report keeps citing the 27 C / 3.30 V record.
 STUDY_TITLES = {
     "gain-gbw-pm": ("# gain/GBW/PM passive-corner study",),
     "slew-swing-power": ("# slew/swing/power passive-corner study",),  # issue #97
+    "offset-mc": ("# Offset Monte Carlo PVT grid record",),  # issue #106
 }
 CORNER_ORDER = ["typical", "ff", "ss", "fs", "sf"]
 FULL_GRID = 45

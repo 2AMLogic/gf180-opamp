@@ -375,5 +375,179 @@ class MeasurementFingerprint(unittest.TestCase):
         self.assertIn("## Measurement fingerprint inputs", blob)
 
 
+def grid_corner(proc: str, t: float, vdd: float, idx: int, vos: float, *, vcm: float | None = None) -> dict:
+    """A synthetic grid sample; `vcm` defaults to the commanded VDD/2."""
+    vcm = round(vdd / 2, 6) if vcm is None else vcm
+    c = corner(proc, idx, vos, vinp=vcm)
+    c["corner_id"] = f"{proc}/vcm={vcm:.3f}_vdd={vdd:.3f}V/{t:g}C/mc{idx}"
+    c["temperature_c"] = t
+    c["supply_v"] = {"vdd": vdd, "vcm": vcm}
+    return c
+
+
+def grid_report(n: int, sigma=1e-3, mean_of=lambda k: 0.0) -> dict:
+    corners = []
+    for k in r.grid_keys("full"):
+        for i in range(n):
+            corners.append(grid_corner(*k, i, mean_of(k) + (sigma if i % 2 == 0 else -sigma)))
+    return {"corners": corners}
+
+
+class GridTests(unittest.TestCase):
+    """Issue #106: the 45-point T/VDD grid (`--grid full`), offline."""
+
+    def setUp(self):
+        self.pdk = Pdk(Path("/nonexistent"), "gf180mcuD", "test")
+
+    def test_full_grid_request_is_one_45_point_monte_carlo_request(self):
+        req = r.grid_request(Path("/x/tb.spice"), self.pdk, r.CORNERS, "full", r.MC_N, r.MC_SEED, r.MC_VARY)
+        self.assertEqual(req["monte_carlo"], {"n": 300, "seed": r.MC_SEED, "vary": "mismatch"})
+        self.assertEqual(req["corners"]["temperature_c"], [-40.0, 27.0, 125.0])
+        self.assertEqual(req["corners"]["supply_v"], {"vdd": [2.97, 3.3, 3.63], "vcm": [1.485, 1.65, 1.815]})
+        n_points = len(req["corners"]["process"]) * len(req["corners"]["temperature_c"]) * len(req["corners"]["supply_v"]["vdd"])
+        self.assertEqual(n_points, 45)
+        self.assertEqual(len(r.grid_keys("full")), 45)
+        self.assertEqual(n_points * req["monte_carlo"]["n"], 13500)
+        self.assertNotIn("backend", req)  # the batch fleet is klt's decision ($KLT_SIM_BACKEND)
+        # the grid axes are the gain bench's (one source for every 45-point bench)
+        gain = r.mc._GAIN
+        self.assertEqual(req["corners"]["temperature_c"], [float(t) for t in gain.TEMPS_C])
+        self.assertEqual(req["corners"]["supply_v"]["vdd"], [float(v) for v in gain.SUPPLIES_V])
+
+    def test_nominal_grid_request_is_the_issue_45_request(self):
+        a = r.grid_request(Path("/x/tb.spice"), self.pdk, r.CORNERS, "nominal", r.MC_N, r.MC_SEED, r.MC_VARY)
+        b = r.mc_request(Path("/x/tb.spice"), self.pdk, r.CORNERS, r.MC_N, r.MC_SEED, r.MC_VARY)
+        self.assertEqual(a, b)
+
+    def test_clean_grid_report_is_valid_per_point(self):
+        samples, probs = r.extract_grid(grid_report(4), "full", 4)
+        self.assertEqual(probs, [])
+        self.assertEqual(len(samples), 45)
+        self.assertTrue(all(len(v) == 4 for v in samples.values()))
+
+    def test_vinp_is_checked_against_each_points_own_vcm(self):
+        rep = grid_report(2)
+        # a sample at 2.97 V whose vinp stayed at the nominal 1.65 V (supply alter not applied)
+        bad = next(c for c in rep["corners"] if c["supply_v"]["vdd"] == 2.97)
+        bad["measurements"][1]["value"] = 1.65
+        bad["measurements"][0]["value"] = 1.65 + bad["measurements"][2]["value"]
+        _, probs = r.extract_grid(rep, "full", 2)
+        self.assertTrue(any("vinp" in p and "1.485" in p for p in probs), probs)
+
+    def test_missing_unexpected_and_short_points_are_problems(self):
+        rep = grid_report(2)
+        rep["corners"] = [c for c in rep["corners"] if not (c["process"] == "sf" and c["temperature_c"] == 125.0
+                                                            and c["supply_v"]["vdd"] == 3.63)]
+        _, probs = r.extract_grid(rep, "full", 2)
+        self.assertTrue(any("sf / 125 C / 3.63 V" in p and "0 valid samples" in p for p in probs), probs)
+        rep2 = grid_report(2)
+        rep2["corners"].append(grid_corner("typical", 85.0, 3.3, 0, 1e-3))
+        self.assertTrue(any("unexpected grid point" in p for p in r.extract_grid(rep2, "full", 2)[1]))
+        rep3 = grid_report(2)
+        del rep3["corners"][0]["temperature_c"]
+        self.assertTrue(any("unparseable" in p for p in r.extract_grid(rep3, "full", 2)[1]))
+
+    def test_offset_regression_in_the_shared_extraction_reaches_the_grid(self):
+        # the grid validates every point through extract_samples: same offset of record
+        samples, _ = r.extract_grid(grid_report(2, sigma=2e-3), "full", 2)
+        k = ("ss", -40.0, 2.97)
+        self.assertEqual(sorted(s.offset_v for s in samples[k]), [-2e-3, 2e-3])
+
+    def test_worst_point_separates_sigma_from_linear_three_sigma(self):
+        kx, ks = ("ff", 125.0, 3.63), ("ss", -40.0, 2.97)
+        rep = grid_report(10, sigma=1e-3, mean_of=lambda k: 10e-3 if k == kx else 0.0)
+        for c in rep["corners"]:  # wider spread at ks, zero mean
+            if r._point_of(c) == ks:
+                c["measurements"][2]["value"] *= 2
+                c["measurements"][0]["value"] = c["measurements"][1]["value"] + c["measurements"][2]["value"]
+        samples, probs = r.extract_grid(rep, "full", 10)
+        self.assertEqual(probs, [])
+        st = r.grid_stats(samples)
+        w = r.worst_points(st)
+        self.assertEqual(w["sigma"], ks)
+        self.assertEqual(w["extreme"], kx)
+        self.assertAlmostEqual(st[kx].worst_extreme, abs(st[kx].mean) + 3 * st[kx].sigma)
+
+    def test_grid_rollup_crosscheck_is_per_point(self):
+        rep = grid_report(4)
+        st = r.grid_stats(r.extract_grid(rep, "full", 4)[0])
+        k = ("fs", 27.0, 3.63)
+        cid = "fs/vcm=1.815_vdd=3.630V/27C"
+        good = {"name": "vos_v", "monte_carlo": {"by_corner": [{"corner_id": cid, "mean": st[k].mean, "stddev": st[k].sigma}]}}
+        rep["measurements"] = [good]
+        self.assertEqual(r.grid_rollup_crosscheck(st, rep), [])
+        rep["measurements"] = [{"name": "vos_v", "monte_carlo": {"by_corner": [
+            {"corner_id": cid, "mean": st[k].mean, "stddev": 2 * st[k].sigma}]}}]
+        probs = r.grid_rollup_crosscheck(st, rep)
+        self.assertEqual(len(probs), 1)
+        self.assertIn("fs / 27 C / 3.63 V", probs[0])
+
+    def test_nominal_reference_reproduces_the_committed_27c_record(self):
+        ref = r.nominal_reference()
+        if not ref:
+            self.skipTest("committed nominal samples not present")
+        w = max(ref, key=lambda p: ref[p].worst_extreme)
+        self.assertEqual(w, "sf")
+        self.assertAlmostEqual(ref[w].worst_extreme * 1e3, 15.635, places=3)  # the record's own figure
+        self.assertEqual({st.n for st in ref.values()}, {300})
+
+    def _record(self, stats, problems=()):
+        det = r.DetRun("switch-off", "", -1.4e-5)
+        imb = r.DetRun("imbalance", "", -8.5e-3)
+        off = r.stats_of([-1.4e-5] * 4)
+        rep = {"environment": {"remote": {"provider": "aws-batch-fleet", "job_id": "klt-sim-test123"}}}
+        return r.build_grid_record(
+            record="20991231-000000-abcdef0", stamp=__import__("datetime").datetime(2099, 12, 31),
+            pdk=self.pdk, ngspice="ngspice-x", kver="klt x", report=rep, stats=stats,
+            worst=r.worst_points(stats), stats_problems=list(problems), sw_off=det, imb=imb, proc_stats=None,
+            proc_note="n/a", off_stats=off, off_note="", wall_s=1.0, dut_sha="0" * 64, n_units=45 * 2,
+            nominal_ref=r.nominal_reference())
+
+    def test_grid_record_states_worst_point_next_to_the_27c_figure_without_a_bound(self):
+        st = r.grid_stats(r.extract_grid(grid_report(4), "full", 4)[0])
+        md = self._record(st)
+        self.assertTrue(md.startswith("# Offset Monte Carlo PVT grid record"))
+        self.assertIn("job `klt-sim-test123`", md)
+        self.assertIn("Worst linear 3-sigma offset over the 45-point grid", md)
+        self.assertIn("27 C / 3.30 V figure", md)
+        self.assertIn(r.NOMINAL_RECORD, md)
+        self.assertIn("No numeric offset bound is proposed, ratified or judged here", md)
+        self.assertIn("#62", md)
+        self.assertNotRegex(md, r"(?i)\b(pass|fail)(es|ed)?\b.*bound")
+        for k in r.grid_keys("full"):  # every point has a row
+            self.assertIn(f"| {k[0]} | {k[1]:g} | {k[2]:.2f} | 4 |", md)
+        # the record carries the full-grid fingerprint, and it round-trips
+        fp = r.mc.fingerprint({"bench": r.TESTBENCH.read_text()}, {"grid": "full"})
+        self.assertIn(fp, md)
+        body = md.split("```json\n", 1)[1].split("\n```", 1)[0]
+        import json as _json
+        from harness import measurement_fingerprint
+        self.assertEqual(measurement_fingerprint(_json.loads(body)), fp)
+
+
+class GridFingerprint(unittest.TestCase):
+    TB = r.TESTBENCH.read_text()
+
+    def test_full_grid_moves_the_fingerprint_and_nominal_stays_put(self):
+        t = {"bench": self.TB}
+        self.assertNotEqual(r.mc.fingerprint(t, {"grid": "full"}), r.mc.fingerprint(t))
+        self.assertEqual(r.mc.fingerprint(t, {"grid": "nominal"}), r.mc.fingerprint(t))
+        self.assertNotIn("grid", r.mc.inputs(t))  # nominal inputs are the pre-#106 ones
+        # the nominal fingerprint of the committed bench/config (pre-#106 value)
+        self.assertEqual(r.mc.fingerprint(t), "2b73d9b7d0c355fede9701ac29e8a6d985641e8657803dfc3031d7aefa0e7de3")
+
+    def test_full_grid_request_is_what_the_fingerprint_hashes(self):
+        pdk = Pdk(Path("/nonexistent"), "gf180mcuD", "test")
+        req = r.grid_request(Path("/x/tb.spice"), pdk, r.CORNERS, "full", r.MC_N, r.MC_SEED, r.MC_VARY)
+        inp = r.mc.inputs({"bench": self.TB}, {"grid": "full"})
+        self.assertEqual(req["corners"]["temperature_c"], inp["corners"]["temperature_c"])
+        self.assertEqual(req["corners"]["supply_v"], {"vdd": inp["corners"]["supply_v"], "vcm": inp["corners"]["vcm_v"]})
+        self.assertEqual(req["monte_carlo"], {k: inp["monte_carlo"][k] for k in ("n", "seed", "vary")})
+
+    def test_unknown_grid_is_rejected(self):
+        with self.assertRaises(ValueError):
+            r.mc.grid_axes("half")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
