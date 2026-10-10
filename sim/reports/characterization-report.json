@@ -6,16 +6,19 @@
   },
   "limitations": [
     "cmrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "cmrr-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "input-common-mode: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "noise: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "psrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "slew-swing-power (20261009-142137-1dab1db): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "slew-swing-power (20261009-143715-4d5aa43): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
-    "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), gain-gbw-pm (recorded), input-common-mode (recorded), input-common-mode (klt client-resolved), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (20261009-142137-1dab1db) (recorded), slew-swing-power (20261009-143715-4d5aa43) (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
-    "ngspice versions differ: ngspice 42 <- input-common-mode (local), noise (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), input-common-mode (klt engine), offset-mc (local), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)"
+    "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), cmrr-mc (recorded), gain-gbw-pm (recorded), input-common-mode (recorded), input-common-mode (klt client-resolved), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (20261009-142137-1dab1db) (recorded), slew-swing-power (20261009-143715-4d5aa43) (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
+    "ngspice versions differ: ngspice 42 <- input-common-mode (local), noise (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), cmrr-mc (local), cmrr-mc (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), input-common-mode (klt engine), offset-mc (local), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)",
+    "coverage differs between sources (see each row's coverage; e.g. the CMRR mismatch Monte Carlo record is 5 corner points at 27 C / 3.30 V while the AC rows are full 45-point grids)"
   ],
   "manifest_selection": {
     "cmrr": "sim/cmrr/records/20261009-105631-30ec86d.md",
+    "cmrr-mc": "sim/cmrr-mc/records/20261010-035206-978f088.md",
     "gain-gbw-pm": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
     "input-common-mode": "sim/input-common-mode/records/20261009-222613-871d1a6.md",
     "noise": "sim/noise/records/20261009-082007-68b4567.md",
@@ -403,6 +406,383 @@
     },
     {
       "bound_open": false,
+      "cmrr_mc": {
+        "basis": "mismatch-inclusive, information only, not graded; linear 3-sigma and dB 3-sigma are separate figures",
+        "controls": {
+          "imbalance_shift_acm_vv": 0.5461,
+          "imbalance_shift_se": 0.101,
+          "process_only_cmrr_dc_sigma_db": 5.693,
+          "process_only_offset_sigma_mv": 5.876,
+          "switch_off_max_dev_db_at_fu": 0.004,
+          "switch_off_max_dev_db_dc_to_1m": 0.0001
+        },
+        "measurement_config": {
+          "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+          "status": "unknown"
+        },
+        "per_point": {
+          "100k": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 71.51,
+              "lin3": 82.97,
+              "mean": 96.22,
+              "n": 300,
+              "sigma": 8.24
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 72.02,
+              "lin3": 83.41,
+              "mean": 96.01,
+              "n": 300,
+              "sigma": 8.0
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 72.03,
+              "lin3": 82.78,
+              "mean": 95.77,
+              "n": 300,
+              "sigma": 7.91
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 72.44,
+              "lin3": 82.86,
+              "mean": 95.81,
+              "n": 300,
+              "sigma": 7.79
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 71.49,
+              "lin3": 82.66,
+              "mean": 95.69,
+              "n": 300,
+              "sigma": 8.07
+            }
+          },
+          "10k": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 69.69,
+              "lin3": 82.96,
+              "mean": 96.52,
+              "n": 300,
+              "sigma": 8.94
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 70.0,
+              "lin3": 83.4,
+              "mean": 96.32,
+              "n": 300,
+              "sigma": 8.78
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 69.89,
+              "lin3": 82.77,
+              "mean": 96.11,
+              "n": 300,
+              "sigma": 8.74
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 70.38,
+              "lin3": 82.85,
+              "mean": 96.14,
+              "n": 300,
+              "sigma": 8.59
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 69.12,
+              "lin3": 82.65,
+              "mean": 96.04,
+              "n": 300,
+              "sigma": 8.97
+            }
+          },
+          "1k": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 69.65,
+              "lin3": 82.96,
+              "mean": 96.53,
+              "n": 300,
+              "sigma": 8.96
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 69.92,
+              "lin3": 83.4,
+              "mean": 96.33,
+              "n": 300,
+              "sigma": 8.8
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 69.79,
+              "lin3": 82.77,
+              "mean": 96.12,
+              "n": 300,
+              "sigma": 8.78
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 70.13,
+              "lin3": 82.85,
+              "mean": 96.16,
+              "n": 300,
+              "sigma": 8.68
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 68.84,
+              "lin3": 82.65,
+              "mean": 96.06,
+              "n": 300,
+              "sigma": 9.07
+            }
+          },
+          "1m": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 79.11,
+              "lin3": 82.94,
+              "mean": 92.75,
+              "n": 300,
+              "sigma": 4.55
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 79.8,
+              "lin3": 83.32,
+              "mean": 92.4,
+              "n": 300,
+              "sigma": 4.2
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 79.34,
+              "lin3": 82.43,
+              "mean": 91.99,
+              "n": 300,
+              "sigma": 4.22
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 78.82,
+              "lin3": 82.19,
+              "mean": 91.58,
+              "n": 300,
+              "sigma": 4.25
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 78.57,
+              "lin3": 82.27,
+              "mean": 92.1,
+              "n": 300,
+              "sigma": 4.51
+            }
+          },
+          "dc": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 69.65,
+              "lin3": 83.01,
+              "mean": 96.53,
+              "n": 300,
+              "sigma": 8.96
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 69.92,
+              "lin3": 83.44,
+              "mean": 96.33,
+              "n": 300,
+              "sigma": 8.8
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 69.79,
+              "lin3": 82.85,
+              "mean": 96.12,
+              "n": 300,
+              "sigma": 8.78
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 70.12,
+              "lin3": 82.93,
+              "mean": 96.16,
+              "n": 300,
+              "sigma": 8.68
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 68.84,
+              "lin3": 82.71,
+              "mean": 96.06,
+              "n": 300,
+              "sigma": 9.07
+            }
+          },
+          "fu": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 66.43,
+              "lin3": 66.55,
+              "mean": 68.04,
+              "n": 300,
+              "sigma": 0.54
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 64.23,
+              "lin3": 64.31,
+              "mean": 65.43,
+              "n": 300,
+              "sigma": 0.4
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 62.37,
+              "lin3": 62.41,
+              "mean": 63.35,
+              "n": 300,
+              "sigma": 0.32
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 60.98,
+              "lin3": 61.02,
+              "mean": 61.81,
+              "n": 300,
+              "sigma": 0.27
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 63.1,
+              "lin3": 63.15,
+              "mean": 64.13,
+              "n": 300,
+              "sigma": 0.34
+            }
+          }
+        },
+        "population": {
+          "n_per_point": 300,
+          "processes": [
+            "typical",
+            "ff",
+            "ss",
+            "fs",
+            "sf"
+          ],
+          "samples": 1500,
+          "seed": 45,
+          "temperature_and_supply_sampled": false,
+          "temperature_c": "27",
+          "vary": "mismatch",
+          "vdd_v": "3.30"
+        },
+        "retained_evidence": {
+          "path": "sim/cmrr-mc/corners/20261010-035206-978f088/samples.csv",
+          "points": 5,
+          "samples": 1500,
+          "sha256": "1b828d1d084c2df0f73b542299ad6abb40eab1239e4081e455aeb959a5d8ee61"
+        },
+        "source": {
+          "experiment": "cmrr-mc",
+          "path": "sim/cmrr-mc/records/20261010-035206-978f088.md",
+          "record_id": "20261010-035206-978f088",
+          "sha256": "85029ad341f586587d09e4e7bf3dfcb8ec9dece19e0c2ea35eb3d2380a3ba142"
+        },
+        "worst_per_figure": {
+          "100k": {
+            "db3": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 71.49
+            },
+            "lin3": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 82.66
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 79.28
+            },
+            "p5": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 84.93
+            }
+          },
+          "10k": {
+            "db3": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 69.12
+            },
+            "lin3": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 82.65
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 79.28
+            },
+            "p5": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 84.94
+            }
+          },
+          "1k": {
+            "db3": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 68.84
+            },
+            "lin3": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 82.65
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 79.28
+            },
+            "p5": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 84.94
+            }
+          },
+          "1m": {
+            "db3": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 78.57
+            },
+            "lin3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 82.19
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 78.84
+            },
+            "p5": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 84.13
+            }
+          },
+          "dc": {
+            "db3": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 68.84
+            },
+            "lin3": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 82.71
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 79.28
+            },
+            "p5": {
+              "at": "typical / 27 C / 3.30 V",
+              "value": 84.94
+            }
+          },
+          "fu": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 60.98
+            },
+            "lin3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 61.02
+            },
+            "min": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 61.05
+            },
+            "p5": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 61.36
+            }
+          }
+        }
+      },
       "coverage": {
         "corners": [
           "typical",
@@ -453,17 +833,108 @@
           "corner": "ss / -40 C / 2.97 V",
           "label": "systematic (mismatch-free) CMRR at f_u (differential unity gain), lowest (information only, not the row's statistic)",
           "value": "60.99 dB"
+        },
+        {
+          "corner": null,
+          "label": "mismatch Monte Carlo population (information only, not graded; seed 45, vary \"mismatch\", 1500 samples)",
+          "value": "5 MOS corners (typical, ff, ss, fs, sf) x N=300 mismatch samples at 27 C, 3.30 V only (5 corner points)"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "mismatch CMRR DC plateau (0.1-1 Hz), linear 3-sigma lowest (mean Ad - 20 log10(mean|Acm| + 3 sigma|Acm|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "82.71 dB"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "mismatch CMRR DC plateau (0.1-1 Hz), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "68.84 dB"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "mismatch CMRR 1 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Acm| + 3 sigma|Acm|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "82.65 dB"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "mismatch CMRR 1 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "68.84 dB"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "mismatch CMRR 10 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Acm| + 3 sigma|Acm|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "82.65 dB"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "mismatch CMRR 10 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "69.12 dB"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "mismatch CMRR 100 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Acm| + 3 sigma|Acm|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "82.66 dB"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "mismatch CMRR 100 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "71.49 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch CMRR 1 MHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Acm| + 3 sigma|Acm|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "82.19 dB"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "mismatch CMRR 1 MHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "78.57 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch CMRR at f_u (differential unity gain), linear 3-sigma lowest (mean Ad - 20 log10(mean|Acm| + 3 sigma|Acm|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "61.02 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch CMRR at f_u (differential unity gain), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "60.98 dB"
+        },
+        {
+          "corner": "sf / 27 C / 3.30 V",
+          "label": "mismatch CMRR sample minimum over all samples, DC plateau (empirical, N=300 per corner; information only)",
+          "value": "79.28 dB"
+        },
+        {
+          "corner": null,
+          "label": "mismatch controls: switch-off max deviation from the systematic record (DC..1 MHz / at f_u; information only)",
+          "value": "0.0001 dB / 0.004 dB"
+        },
+        {
+          "corner": null,
+          "label": "mismatch controls: mirror-imbalance negative control, shift of mean |Acm| at DC (information only)",
+          "value": "+0.5461 V/V (5.4 standard errors)"
+        },
+        {
+          "corner": null,
+          "label": "mismatch per-point statistics re-derived from the retained samples (information only)",
+          "value": "1500 samples at 5 points agree with the record (sim/cmrr-mc/corners/20261010-035206-978f088/samples.csv, sha256 1b828d1d084c2df0)"
         }
       ],
       "key": "cmrr",
       "limitations": [
         "bound proposed by a decision record and not ratified: this report grades ratified rows only, so the row is not graded and is counted neither among the ratified rows judged nor as not measured; see the spec status column for the evidence it cites",
-        "the figures listed for this row come from the selected systematic (mismatch-free) PVT record and are information only: they are NOT the statistic of the proposed row, which is stated on a mismatch-inclusive basis (see the spec statistical-basis and status columns for the record it cites); this report does not ingest that record, and the systematic figures are optimistic against it",
+        "the figures listed for this row come from the selected systematic (mismatch-free) PVT record and are information only: they are NOT the statistic of the proposed row, which is stated on a mismatch-inclusive basis (see the spec statistical-basis and status columns for the record it cites); the selected mismatch Monte Carlo record is listed separately below (27 C / 3.30 V only), and the systematic figures are optimistic against it",
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "systematic figure of a perfectly matched schematic; mismatch-limited CMRR (Monte Carlo) is not covered",
+        "systematic figure of a perfectly matched schematic; mismatch-limited CMRR (Monte Carlo) is not covered by this record",
         "no ratified bound (DR-3 residual e3)",
-        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's",
+        "the mismatch-inclusive figures below come from the selected CMRR mismatch Monte Carlo record (20261010-035206-978f088): 5 MOS corners x N=300 = 1500 samples, seed 45, vary \"mismatch\", 27 C / 3.30 V only. They are measured information, not graded, and are not combined with the systematic PVT figures: the systematic record covers T and VDD (matched devices), the Monte Carlo record covers mismatch (one T / VDD point)",
+        "temperature and supply are NOT sampled under mismatch: 27 C / 3.30 V only (the systematic cmrr record covers T and VDD for matched devices only)",
+        "MOS mismatch only; passives (RZ, CC) at typical with no passive mismatch, resistor and capacitor mismatch not modelled",
+        "N=300 cannot resolve a 0.135 % tail: neither the linear nor the dB 3-sigma figure is a sample statistic; the empirical minimum and percentiles are the normality cross-check",
+        "mismatch Monte Carlo of the CMRR; no numeric bound proposed or judged here (DR-6 is proposed, not ratified)",
+        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": null,
@@ -1424,6 +1895,29 @@
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
       "record_id": "20261009-105631-30ec86d",
       "sha256": "30ab2d2c36eb50d084559b3ae4b6329d54b1e57e0aca5486cb932a834a64e23e"
+    },
+    "cmrr-mc": {
+      "backend": "aws-batch-fleet",
+      "dut_sha256": "81fbd914f8254a49",
+      "fleet_runner_mismatch": true,
+      "klt_client": "0.7.0+g8eec069c7576",
+      "measurement_config": {
+        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "status": "unknown"
+      },
+      "ngspice_engine": "46",
+      "ngspice_local": "46",
+      "path": "sim/cmrr-mc/records/20261010-035206-978f088.md",
+      "pdk_client_resolved": null,
+      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "record_id": "20261010-035206-978f088",
+      "retained_evidence": {
+        "path": "sim/cmrr-mc/corners/20261010-035206-978f088/samples.csv",
+        "points": 5,
+        "samples": 1500,
+        "sha256": "1b828d1d084c2df0f73b542299ad6abb40eab1239e4081e455aeb959a5d8ee61"
+      },
+      "sha256": "85029ad341f586587d09e4e7bf3dfcb8ec9dece19e0c2ea35eb3d2380a3ba142"
     },
     "gain-gbw-pm": {
       "backend": "aws-batch-fleet",

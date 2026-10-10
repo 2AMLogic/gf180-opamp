@@ -33,6 +33,10 @@ ICMR_REC = "20261009-222613-871d1a6"
 ICMR_MD = f"{ICMR}/records/{ICMR_REC}.md"
 ICMR_CSV = f"{ICMR}/corners/{ICMR_REC}/samples.csv"
 OFF = "sim/offset-mc"
+CMC = "sim/cmrr-mc"
+CMC_REC = "20261010-035206-978f088"  # issue #61 record, selected by issue #124
+CMC_MD = f"{CMC}/records/{CMC_REC}.md"
+CMC_CSV = f"{CMC}/corners/{CMC_REC}/samples.csv"
 OFF_GRID_REC = "20261010-083043-ddf96db"  # issue #106: 45-point PVT grid, N=300 per point (selected, issue #120)
 OFF_NOM_REC = "20261009-072205-96bf3cc"  # issue #45: 5 corners at 27 C / 3.30 V
 OFF_GRID_MD = f"{OFF}/records/{OFF_GRID_REC}.md"
@@ -60,7 +64,8 @@ def make_root(tmp: Path) -> Path:
     # ICMR (issue #90): the retained per-sample evidence and the record addendum are report inputs
     # offset grid (issue #120): its retained per-sample evidence is a report input too
     for p in (list((REPO / ICMR).glob("corners/*/samples.csv")) + list((REPO / ICMR).glob("records/*-addendum/ADDENDUM.md"))
-              + list((REPO / OFF).glob("corners/*/offset_samples.csv"))):
+              + list((REPO / OFF).glob("corners/*/offset_samples.csv"))
+              + list((REPO / CMC).glob("corners/*/samples.csv"))):  # CMRR mismatch MC (issue #124)
         dst = tmp / p.relative_to(REPO)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(p, dst)
@@ -294,9 +299,14 @@ class CommittedReport(unittest.TestCase):
         self.assertEqual(r["offset"]["coverage"]["temps_c"], [-40, 27, 125])
         for k in ("gain", "noise", "cmrr", "psrr", "slew", "swing", "power"):
             self.assertEqual(r[k]["coverage"]["points"], 45, k)
-        self.assertFalse(any("coverage differs" in l for l in rep["limitations"]))
+        # issue #124: the CMRR mismatch Monte Carlo record (5 corner points at 27 C / 3.30 V) is a
+        # different population from the 45-point AC grids, and the report says so
+        self.assertEqual(r["cmrr"]["coverage"]["points"], 45)
+        self.assertTrue(any("coverage differs" in l for l in rep["limitations"]))
+        without = cr.build(REPO, manifest(cmrr_mc=None))
+        self.assertFalse(any("coverage differs" in l for l in without["limitations"]))
         # ... and a nominal offset selection is still disclosed as a coverage difference
-        rep2 = cr.build(REPO, manifest(offset_mc=OFF_NOM_MD))
+        rep2 = cr.build(REPO, manifest(offset_mc=OFF_NOM_MD, cmrr_mc=None))
         self.assertTrue(any("coverage differs" in l for l in rep2["limitations"]))
         self.assertTrue(any("PDK revision differs" in l for l in rep["limitations"]))
         self.assertTrue(any("ngspice versions differ" in l for l in rep["limitations"]))
@@ -362,7 +372,7 @@ class Mutations(unittest.TestCase):
         t = p.read_text()
         self.assertIn("W=72u", t)
         p.write_text(t.replace("W=72u", "W=73u", 1))
-        with self.assertRaisesRegex(cr.ReportError, r"stale DUT.*Experiments needing a rerun: cmrr, gain-gbw-pm"):
+        with self.assertRaisesRegex(cr.ReportError, r"stale DUT.*Experiments needing a rerun: cmrr, cmrr-mc, gain-gbw-pm"):
             self.build()
 
     def test_stale_dut_check_cli_fails_and_writes_nothing(self):
@@ -823,7 +833,7 @@ class MigratedExperimentFreshness(unittest.TestCase):
 
     def test_all_selected_experiments_are_registered(self):
         # the ICMR record (issue #90) is not instrumented yet: disclosed as unknown, never "current"
-        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG), sorted(e for e in self.sel if e != cr.ICMR_EXP))
+        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG), sorted(e for e in self.sel if e not in (cr.ICMR_EXP, cr.CMRR_MC_EXP)))
         mc = cr.build(REPO, manifest())["sources"][cr.ICMR_EXP]["measurement_config"]
         self.assertEqual(mc["status"], "unknown")
         self.assertIn("not instrumented", mc["detail"])
@@ -831,7 +841,7 @@ class MigratedExperimentFreshness(unittest.TestCase):
     def test_committed_legacy_records_stay_unknown(self):
         rep = cr.build(REPO, manifest())
         for e, src in rep["sources"].items():
-            if e in ("gain-gbw-pm", "offset-mc", cr.ICMR_EXP):  # ICMR: not instrumented (see above)
+            if e in ("gain-gbw-pm", "offset-mc", cr.ICMR_EXP, cr.CMRR_MC_EXP):  # ICMR, cmrr-mc: not instrumented
                 continue
             self.assertEqual(src["measurement_config"]["status"], "unknown", e)
             self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"], e)
@@ -1180,6 +1190,234 @@ class OffsetGridRecord(unittest.TestCase):
     def test_mixed_dut_rejected(self):
         self.edit(OFF_GRID_MD, "81fbd914f8254a49", "0123456789abcdef")
         self.rejects(r"different DUT versions")
+
+
+class CmrrMismatchRecord(unittest.TestCase):
+    """Issue #124: the committed CMRR mismatch Monte Carlo record (issue #61) is selected, re-derived
+    from its own tables and its retained samples, and shown beside (never merged with) the
+    systematic PVT figures of the proposed CMRR row. No verdict, no worst value."""
+
+    DC_TYP = "| typical / 27 C / 3.30 V | 300 | 96.06 | 9.07 | +1.45 | 80.81 | 82.54 | 84.94 | **82.71** |"
+    DC_FF = "| ff / 27 C / 3.30 V | 300 | 96.53 | 8.96 | +1.10 |"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def edit(self, rel, old, new, count=1):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertIn(old, t)
+        p.write_text(t.replace(old, new, count))
+
+    def build(self, m=None):
+        return cr.build(self.root, m or manifest())
+
+    def rejects(self, rx, m=None):
+        with self.assertRaisesRegex(cr.ReportError, rx):
+            self.build(m)
+
+    # ---- the committed row ----
+
+    def test_committed_selection_and_row(self):
+        sel = json.loads(MANIFEST.read_text())["experiments"]
+        self.assertEqual(sel["cmrr-mc"], CMC_MD)
+        self.assertEqual(sel["cmrr"], "sim/cmrr/records/20261009-105631-30ec86d.md")
+        rep = cr.build(REPO, cr.load_manifest(MANIFEST))
+        r = rows_by_key(rep)["cmrr"]
+        # the row stays proposed-not-graded: no verdict, no worst value, no point counts
+        self.assertEqual((r["status"], r["verdict"], r["worst"], r["worst_corner"], r["points_pass"]),
+                         ("proposed-not-graded", None, None, None, None))
+        self.assertEqual(r["coverage"]["points"], 45)  # the systematic grid still covers T and VDD
+        self.assertEqual(r["source"]["experiment"], "cmrr")
+        sysf = [f for f in r["figures"] if f["label"].startswith("systematic (mismatch-free)")]
+        self.assertEqual(sysf[0]["value"], "95.42 dB")
+        self.assertEqual(len(sysf), 6)
+        mc = r["cmrr_mc"]
+        self.assertEqual(mc["population"], {"processes": ["typical", "ff", "ss", "fs", "sf"], "temperature_c": "27",
+                                            "vdd_v": "3.30", "n_per_point": 300, "samples": 1500, "seed": 45,
+                                            "vary": "mismatch", "temperature_and_supply_sampled": False})
+        w = mc["worst_per_figure"]
+        self.assertEqual((w["dc"]["lin3"]["value"], w["dc"]["db3"]["value"]), (82.71, 68.84))
+        self.assertEqual(w["10k"]["lin3"]["value"], 82.65)
+        self.assertEqual(w["fu"]["lin3"]["at"], "ss / 27 C / 3.30 V")
+        self.assertEqual(w["dc"]["min"]["at"], "sf / 27 C / 3.30 V")
+        self.assertEqual(set(mc["per_point"]), {"dc", "1k", "10k", "100k", "1m", "fu"})
+        self.assertEqual(mc["controls"]["imbalance_shift_acm_vv"], 0.5461)
+        self.assertEqual(mc["retained_evidence"]["samples"], 1500)
+        self.assertEqual(mc["retained_evidence"]["points"], 5)
+        self.assertEqual(rep["sources"]["cmrr-mc"]["retained_evidence"], mc["retained_evidence"])
+        self.assertRegex(rep["sources"]["cmrr-mc"]["retained_evidence"]["sha256"], r"^[0-9a-f]{64}$")
+        # linear and dB 3-sigma are distinct, labelled figures; the mismatch population is stated
+        lin = [f for f in r["figures"] if "linear 3-sigma" in f["label"]]
+        db = [f for f in r["figures"] if "dB 3-sigma" in f["label"]]
+        self.assertEqual((len(lin), len(db)), (6, 6))
+        self.assertEqual((lin[0]["value"], db[0]["value"]), ("82.71 dB", "68.84 dB"))
+        for f in lin + db:
+            self.assertIn("27 C / 3.30 V only", f["label"])
+            self.assertIn("information only, not graded", f["label"])
+        lim = " ".join(r["limitations"])
+        self.assertIn("NOT the statistic of the proposed row", lim)
+        self.assertIn("temperature and supply are NOT sampled under mismatch", lim)
+        self.assertIn("seed 45", lim)
+        self.assertIn("no numeric bound proposed or judged", lim)
+        # the 77.1 dB PVT estimate of the decision record is an estimate: never a measured figure here
+        # (the spec status column is quoted verbatim and labels that figure an estimate; skip it)
+        text = json.dumps({k: v for k, v in r.items() if k != "spec_status"}) + "\n".join(
+            l for l in cr.render_md(rep).splitlines() if "Spec status column" not in l and "| Proposed [DR-6]" not in l)
+        self.assertNotRegex(text, r"(?<![\d.])77\.1\d* dB")
+        self.assertEqual(rep["sources"]["cmrr-mc"]["measurement_config"]["status"], "unknown")
+        self.assertTrue(any(l.startswith("cmrr-mc: measurement-configuration freshness unknown")
+                            for l in rep["limitations"]))
+
+    def test_markdown_shows_both_blocks(self):
+        md = cr.render_md(cr.build(REPO, cr.load_manifest(MANIFEST)))
+        self.assertIn("5 MOS corners (typical, ff, ss, fs, sf) x N=300 mismatch samples at 27 C, 3.30 V only", md)
+        self.assertIn("systematic (mismatch-free) CMRR DC plateau", md)
+        self.assertIn("mismatch CMRR DC plateau (0.1-1 Hz), linear 3-sigma lowest", md)
+        self.assertIn("| cmrr-mc |", md)
+        cmrr_line = next(l for l in md.splitlines() if l.startswith("| CMRR |"))
+        self.assertIn("proposed-not-graded", cmrr_line)
+        for frag in ("82.71", "68.84", "77.1 dB"):
+            self.assertNotIn(frag, cmrr_line)
+
+    def test_systematic_only_selection_still_builds(self):
+        rep = self.build(manifest(cmrr_mc=None))
+        r = rows_by_key(rep)["cmrr"]
+        self.assertEqual(r["status"], "proposed-not-graded")
+        self.assertNotIn("cmrr_mc", r)
+        self.assertNotIn("cmrr-mc", rep["sources"])
+        self.assertTrue(any("this report does not ingest that record" in l for l in r["limitations"]))
+        self.assertTrue(any(l.startswith("no record selected for cmrr-mc") for l in rep["limitations"]))
+
+    def test_unmodified_copy_matches_committed(self):
+        self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
+
+    # ---- the record's own summaries ----
+
+    def test_altered_lin3s_cell_rejected(self):
+        self.edit(CMC_MD, self.DC_TYP, self.DC_TYP.replace("**82.71**", "**83.71**"))
+        self.rejects(r"inconsistent summary at typical / 27 C / 3\.30 V under '### DC plateau")
+
+    def test_altered_db3s_cell_rejected(self):
+        self.edit(CMC_MD, "| **82.71** | 68.84 |", "| **82.71** | 60.84 |")
+        self.rejects(r"inconsistent summary at typical / 27 C / 3\.30 V under '### DC plateau")
+
+    def test_altered_worst_table_rejected(self):
+        self.edit(CMC_MD, "| DC plateau (0.1-1 Hz) | **82.71** |", "| DC plateau (0.1-1 Hz) | **81.71** |")
+        self.rejects(r"worst-point table \(DC plateau \(0\.1-1 Hz\), lin3: 81\.71\) disagrees")
+
+    def test_worst_table_wrong_point_rejected(self):
+        self.edit(CMC_MD, "| **82.71** | typical / 27 C / 3.30 V | 68.84 |", "| **82.71** | ff / 27 C / 3.30 V | 68.84 |")
+        self.rejects(r"names 'ff / 27 C / 3\.30 V'")
+
+    def test_summary_consistent_with_itself_but_not_with_samples_rejected(self):
+        # edit the mean and the dB 3-sigma together so the record is self-consistent: only the
+        # retained samples can catch it
+        self.edit(CMC_MD, "| ff / 27 C / 3.30 V | 300 | 96.53 | 8.96 | +1.10 | 81.42 | 83.26 | 85.67 | **83.01** | 69.65 |",
+                  "| ff / 27 C / 3.30 V | 300 | 97.03 | 8.96 | +1.10 | 81.42 | 83.26 | 85.67 | **83.01** | 70.15 |")
+        self.rejects(r"disagree\(s\) with the retained evidence .*samples\.csv")
+
+    # ---- population ----
+
+    def test_malformed_sample_count_rejected(self):
+        self.edit(CMC_MD, "| typical / 27 C / 3.30 V | 300 | 96.06 |", "| typical / 27 C / 3.30 V | 299 | 96.06 |")
+        self.rejects(r"insufficient samples at typical / 27 C / 3\.30 V under '### DC plateau.*N=299")
+
+    def test_duplicate_point_rejected(self):
+        self.edit(CMC_MD, self.DC_FF, self.DC_FF.replace("| ff /", "| typical /"))
+        self.rejects(r"duplicate grid point typical / 27 C / 3\.30 V")
+
+    def test_missing_point_rejected(self):
+        p = self.root / CMC_MD
+        p.write_text("\n".join(l for l in p.read_text().split("\n") if not l.startswith(self.DC_FF)))
+        self.rejects(r"missing 1 of 5 grid points \(first: ff / 27 C / 3\.30 V\)")
+
+    def test_unexpected_point_rejected(self):
+        self.edit(CMC_MD, self.DC_FF, self.DC_FF.replace("| ff / 27 C", "| ff / 125 C"))
+        self.rejects(r"unexpected grid point ff / 125 C / 3\.30 V")
+
+    def test_n_below_ratified_basis_rejected(self):
+        self.edit(CMC_MD, "n: 300, seed: 45", "n: 200, seed: 45")
+        self.rejects(r"insufficient samples: the record's Monte Carlo request is N=200")
+
+    def test_non_mismatch_population_rejected(self):
+        self.edit(CMC_MD, 'vary: "mismatch"}` per grid point', 'vary: "process"}` per grid point')
+        self.rejects(r"varies 'process'")
+
+    def test_failed_control_rejected(self):
+        self.edit(CMC_MD, "Result: **PASS**", "Result: **FAIL**", count=2)
+        self.rejects(r"controls section lacks a passing")
+
+    def test_failed_blocking_checks_rejected(self):
+        self.edit(CMC_MD, "All blocking checks passed: yes.", "All blocking checks passed: NO.")
+        self.rejects(r"All blocking checks passed: yes")
+
+    # ---- retained evidence and selection ----
+
+    def test_missing_record_rejected(self):
+        (self.root / CMC_MD).unlink()
+        self.rejects(r"cmrr-mc: selected record is missing")
+
+    def test_missing_samples_csv_rejected(self):
+        (self.root / CMC_CSV).unlink()
+        self.rejects(r"retained per-sample evidence is missing: .*samples\.csv")
+
+    def test_tampered_samples_csv_rejected(self):
+        t = (self.root / CMC_CSV).read_text().split("\n")
+        cols = t[0].split(",")
+        i = cols.index("cmc_cmrr_dc")
+        r = t[1].split(",")
+        r[i] = str(float(r[i]) + 100.0)
+        t[1] = ",".join(r)
+        (self.root / CMC_CSV).write_text("\n".join(t))
+        self.rejects(r"disagree\(s\) with the retained evidence")
+
+    def test_short_samples_csv_rejected(self):
+        t = (self.root / CMC_CSV).read_text().split("\n")
+        (self.root / CMC_CSV).write_text("\n".join(t[:5] + t[6:]))
+        self.rejects(r"insufficient samples in .*samples\.csv at typical")
+
+    def test_invalid_sample_rejected(self):
+        t = (self.root / CMC_CSV).read_text().split("\n")
+        i = t[0].split(",").index("valid")
+        r = t[1].split(",")
+        r[i] = "0"
+        t[1] = ",".join(r)
+        (self.root / CMC_CSV).write_text("\n".join(t))
+        self.rejects(r"invalid sample 0 at typical")
+
+    def test_record_outside_its_experiment_directory_rejected(self):
+        self.rejects(r"is not a record under sim/cmrr-mc/records", manifest(cmrr_mc="sim/cmrr/records/20261009-105631-30ec86d.md"))
+
+    # ---- DUT identity and hash binding ----
+
+    def test_stale_dut_names_cmrr_mc(self):
+        p = self.root / "design/netlist/opamp_two_stage.spice"
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        self.rejects(r"stale DUT.*Experiments needing a rerun: [^.]*cmrr-mc")
+        self.assertEqual(cr.build(self.root, manifest(), archival=True)["sources"]["cmrr-mc"]["record_id"], CMC_REC)
+
+    def test_mixed_dut_names_cmrr_mc(self):
+        self.edit(CMC_MD, "81fbd914f8254a49", "0123456789abcdef")
+        self.rejects(r"different DUT versions .*0123456789abcdef: cmrr-mc")
+
+    def test_record_edit_changes_sha_and_check_fails(self):
+        out = self.root / cr.OUT_DIR_REL
+        out.mkdir(parents=True, exist_ok=True)
+        for n in ("md", "json", "evidence.json"):
+            shutil.copy(REPO / cr.OUT_DIR_REL / f"{cr.OUT_NAME}.{n}", out / f"{cr.OUT_NAME}.{n}")
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        base = ["--root", str(self.root), "--manifest", str(mp), "--check"]
+        self.assertEqual(cr.main(base), 0)
+        before = self.build()["sources"]["cmrr-mc"]["sha256"]
+        self.edit(CMC_MD, "N = 300 cannot resolve", "N = 301 cannot resolve")  # prose only: one byte
+        self.assertNotEqual(self.build()["sources"]["cmrr-mc"]["sha256"], before)
+        self.assertEqual(cr.main(base), 1)
 
 
 class ICMREvidence(unittest.TestCase):

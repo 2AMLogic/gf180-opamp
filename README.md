@@ -37,7 +37,11 @@ below:
   ([`20261009-105631-30ec86d`](sim/cmrr/records/20261009-105631-30ec86d.md))
   and PSRR
   ([`20261009-105929-30ec86d`](sim/psrr/records/20261009-105929-30ec86d.md)),
-  both systematic-only (matched devices, 45 points). Their numeric bounds are
+  both systematic-only (matched devices, 45 points); the characterization
+  report also lists the CMRR mismatch Monte Carlo record
+  ([`20261010-035206-978f088`](sim/cmrr-mc/records/20261010-035206-978f088.md),
+  five corners x 300 samples at 27 C / 3.30 V only) beside it as separate,
+  ungraded information. Their numeric bounds are
   not ratified.
 - **Not yet measured:** post-layout verification (no layout evidence; area is
   open).

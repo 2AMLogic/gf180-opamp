@@ -148,12 +148,32 @@ class Existence(Base):
         self.assertEqual(len(probs), 1)
         self.assertIn("matches no sim/*/records/*.md file", probs[0])
 
-    def test_cross_experiment_citation_is_existence_only(self):
-        # the CMRR row's sim/cmrr-mc record is not governed by selection.json
+    def test_cmrr_mc_citation_is_governed_by_selection(self):
+        # issue #124: selection.json selects the cmrr-mc record, so the CMRR row's citation of it is
+        # compared with the selection like the systematic one (it was existence-only before)
         cmrr = {r["key"]: r for r in sc.spec_rows(self.spec.read_text())}["cmrr"]
         exps = {c["exp"] for c in sc.citations(cmrr["status_raw"])}
         self.assertEqual(exps, {"cmrr", "cmrr-mc"})
         self.assertEqual(self.problems(), [])
+        self.assertEqual(sc.selected_for(json.loads(self.manifest.read_text()), "cmrr-mc", None), "20261010-035206-978f088")
+
+    def test_cmrr_mc_selection_drift_fails(self):
+        m = json.loads(self.manifest.read_text())
+        m["experiments"]["cmrr-mc"] = "sim/cmrr-mc/records/20260101-000000-0000000.md"
+        self.manifest.write_text(json.dumps(m))
+        probs = self.problems()
+        self.assertEqual(len(probs), 1)
+        self.assertIn("cites cmrr-mc record 20261010-035206-978f088 but sim/report/selection.json selects", probs[0])
+
+    def test_cmrr_mc_selected_but_not_cited_fails(self):
+        self.edit_row("CMRR", link("cmrr-mc", "20261010-035206-978f088"), "a record")
+        self.assertIn("cites no unlabelled cmrr-mc record", " ".join(self.problems()))
+
+    def test_cmrr_mc_deselected_but_cited_fails(self):
+        m = json.loads(self.manifest.read_text())
+        m["experiments"].pop("cmrr-mc")
+        self.manifest.write_text(json.dumps(m))
+        self.assertIn("selects no record for cmrr-mc", " ".join(self.problems()))
 
     def test_unmapped_row_citing_a_record_fails(self):
         self.edit_row("Area |", "Open [DR-3] — no layout", f"Open [DR-3] — {link('noise', '20261009-082007-68b4567')}")
