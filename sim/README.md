@@ -26,7 +26,13 @@ release, or the PDK with every path searched, and
 klt / ngspice / committed gain dataset) into failures; local runs without the
 variable still skip. `ci_regression_check.sh` then breaks a copy of the
 gain-bench source guard and extraction on purpose and requires the unit suite
-to fail. The job fails if it leaves any file modified or created (no
+to fail. The selftest also runs `report/spec_citation_check.py` (issue #112,
+no simulator): every record cited in the Status column of
+`spec/target-spec.md` §2 must exist, and must be the record
+`report/selection.json` selects for that row's experiment unless its clause
+labels it `superseded`/`historical` or the `passive-corner` study (records of
+another experiment, such as the CMRR row's `cmrr-mc` record, are checked for
+existence only); `ci_regression_check.sh` proves it can fail. The job fails if it leaves any file modified or created (no
 `records/`). It never runs a PVT/Monte Carlo grid and needs no credentials.
 
 The selftest also runs `ci_netlist_check.py` (issue #76): it exports
@@ -303,6 +309,14 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   points, one small `klt sim` request per sweep value, reusing the
   `gain-gbw-pm` and `slew-swing-power` benches; the 10 µA / 2 pF points are
   controls against the committed records (issue #114; evidence for #42).
+- [`step-response/`](step-response/README.md) — **closed-loop follower step
+  response** of the committed sized schematic: unity-gain follower, CL = 2 pF,
+  a 100 mV step about VCM (rising and falling edge), overshoot, 1 % and 0.1 %
+  settling time and monotonicity across the same 45-point grid as one
+  `klt sim` request, worst points identified, alongside the gain record's PM.
+  Evidence only: no spec row exists for settling/overshoot and none is
+  proposed (that would need a `spec/` decision record) (issue #113; context
+  #42).
 
 ## Coverage and gaps
 

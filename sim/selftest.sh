@@ -22,6 +22,10 @@ echo "== sim/report: characterization report generator tests + staleness check (
 python3 report/test_report.py
 python3 report/characterization_report.py --check
 
+echo "== sim/report: spec/target-spec.md Sec. 2 record citations vs selection.json (no simulator; issue #112) =="
+python3 report/test_spec_citation_check.py
+python3 report/spec_citation_check.py
+
 echo "== sim: per-experiment measurement-configuration fingerprint modules (no simulator) =="
 python3 test_measurement_config.py
 
@@ -69,6 +73,12 @@ python3 slew-swing-power/test_slew_swing_power.py
 
 echo "== sim/slew-swing-power: smoke test (typical, 27C, 3.30 V, one local point per figure) =="
 python3 slew-swing-power/run_slew_swing_power.py --smoke
+
+echo "== sim/step-response: extraction + source-guard tests (no simulator) =="
+python3 step-response/test_step_response.py
+
+echo "== sim/step-response: smoke test (typical, 27C, 3.30 V, one local point) =="
+python3 step-response/run_step_response.py --smoke
 
 echo "== sim/input-common-mode: request/extraction/range tests (local nominal units run) =="
 python3 input-common-mode/test_input_common_mode.py

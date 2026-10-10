@@ -4,10 +4,14 @@
 # Copies the repo's sim/ and design/ trees to a scratch dir, deliberately
 # breaks one testbench source guard and one extraction in EACH simulator-free
 # experiment (gain-gbw-pm, noise, offset-mc, cmrr, cmrr-mc, psrr,
-# slew-swing-power, input-common-mode), and requires that experiment's unit
-# suite to FAIL for each (after a control run of the unmutated suite). A green
-# run of this script means the guard/extraction tests have teeth. No
-# simulator, no records written to the real tree.
+# slew-swing-power, input-common-mode, step-response), and requires that
+# experiment's unit suite to FAIL for each (after a control run of the
+# unmutated suite). A green run of this script means the guard/extraction tests
+# have teeth. It does the
+# same for the spec-citation check (issue #112): one mutation of the checker
+# must fail its unit suite, and one stale citation in the scratch copy of
+# spec/target-spec.md must fail the checker itself. No simulator, no records
+# written to the real tree.
 set -euo pipefail
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 work="$(mktemp -d)"
@@ -17,12 +21,13 @@ trap 'rm -rf "$work"' EXIT
 #   EXPERIMENT   sim/ subdirectory whose unit suite must fail
 #   TEST_FILE    that suite's test script (relative to the experiment dir)
 #   SOURCE_FILE  file mutated, relative to sim/ (may be a shared driver the
-#                experiment imports, e.g. cmrr/run_cmrr.py for input-common-mode)
+#                experiment imports, e.g. cmrr/run_cmrr.py for input-common-mode;
+#                ../spec/target-spec.md for the spec-citation check)
 # The first occurrence of PATTERN is replaced; a missing anchor is fatal.
 expect_fail() {
   local exp="$1" test="$2" src="$3" name="$4" pattern="$5" replacement="$6"
   rm -rf "$work/t"; mkdir "$work/t"
-  cp -R "$repo/sim" "$repo/design" "$work/t/"
+  cp -R "$repo/sim" "$repo/design" "$repo/spec" "$work/t/"
   python3 - "$work/t/sim/$src" "$pattern" "$replacement" <<'PY'
 import sys
 p, a, b = sys.argv[1:]
@@ -120,3 +125,29 @@ expect_fail input-common-mode test_input_common_mode.py cmrr/run_cmrr.py \
 expect_fail input-common-mode test_input_common_mode.py input-common-mode/run_input_common_mode.py \
   "extraction: paired-operating-point agreement check disabled" \
   'if worst > OP_AGREE_V:' 'if False:'
+
+# step-response (issue #113) reuses the gain driver's testbench and DUT guards,
+# so the guard mutations land in gain-gbw-pm/run_gain_gbw_pm.py.
+control step-response test_step_response.py
+expect_fail step-response test_step_response.py gain-gbw-pm/run_gain_gbw_pm.py \
+  "guard: shared gain-driver DUT-include check removed" \
+  'if DUT_INCLUDE_NAME not in targets:' 'if False:'
+expect_fail step-response test_step_response.py gain-gbw-pm/run_gain_gbw_pm.py \
+  "guard: stale/altered DUT line no longer rejected" \
+  'errs.append(f"export line missing or altered in the DUT: {ln[:70]}")' 'pass'
+expect_fail step-response test_step_response.py step-response/run_step_response.py \
+  "extraction: overshoot offset by 1 % of the step" \
+  'overshoot = max(0.0, float(yw.max()) - 1.0)' 'overshoot = max(0.0, float(yw.max()) - 0.99)'
+
+# spec-citation check (issue #112): the checker's unit suite must catch a
+# disabled selected-record comparison, and the checker itself (run on the
+# scratch copy, whose root it derives from its own path) must catch a spec row
+# citing an older record than sim/report/selection.json selects.
+control report test_spec_citation_check.py
+expect_fail report test_spec_citation_check.py report/spec_citation_check.py \
+  "check: cited-vs-selected record comparison disabled" \
+  'elif c["rid"] != sel:' 'elif False:'
+expect_fail report spec_citation_check.py ../spec/target-spec.md \
+  "data: gain row cites the older gain-gbw-pm record again" \
+  '[record `20261010-020141-1e51d1c`](../sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md)' \
+  '[record `20261009-055759-2524b3e`](../sim/gain-gbw-pm/records/20261009-055759-2524b3e.md)'

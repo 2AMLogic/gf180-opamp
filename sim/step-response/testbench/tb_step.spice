@@ -1,0 +1,46 @@
+* tb_step.spice -- unity-gain follower small-step response (issue #113; evidence only, no spec row).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_step_response.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+*
+* CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`, `.control` or
+* `.end`; klt adds the corner's `.lib` cards, `.temp`, the supply alters
+* and the analysis. Vdd and Vcm are swept together by index (VCM = VDD/2,
+* i.e. 1.65 V at the nominal 3.30 V supply), the convention of every other
+* experiment in sim/.
+*
+* Unity-gain follower (vinn = vout), CL = 2 pF [DR-1] on vout, no other load
+* (identical to tb_slew.spice except for the step size and timing).
+* Input = VCM + a +-50 mV step (100 mV, fixed in volts, centred on VCM).
+* Series construction (Vcm in series with Vstep) keeps the swept quantity a
+* plain DC source, which every klt runner version alters correctly.
+*
+*   t = 0 .. 100 ns   input low  (VCM - 50 mV); the transient starts from the
+*                     operating point, so the output is already settled
+*   t = 100 ns        rising edge  (1 ns)
+*   t = 600 ns        falling edge (1 ns)
+*   t = 1.1 us        end of run
+*
+* 500 ns after each edge: with GBW >= 10 MHz the closed-loop time constant is
+* tau = 1/(2*pi*GBW) <= 15.9 ns, so each edge window is >= 31 tau; a
+* single-pole response reaches 0.1 % in 6.9 tau (<= 110 ns). The settled level
+* is read over the last 50 ns of each window (see README).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+Vdd vdd 0 dc 3.3
+Vcm vcm 0 dc 1.65
+Vstep vinp vcm dc 0 pulse(-0.05 0.05 100n 1n 1n 499n 100u)
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vout vout ibias opamp_two_stage
+CL vout 0 2p
+
+* Only the two nodes the driver reads are saved (fleet rawfile size; see
+* sim/slew-swing-power/README.md, "Batch-fleet timing").
+.save v(vinp) v(vout)

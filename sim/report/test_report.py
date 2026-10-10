@@ -604,6 +604,13 @@ class Mutations(unittest.TestCase):
         self.assertEqual(cr.latest_selection(self.root)["gain-gbw-pm"],
                          "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md")
 
+    def test_latest_selection_ignores_the_offset_pvt_grid_record(self):
+        # issue #106: the full-grid offset record is not read by the offset extractor
+        rec = self.root / "sim/offset-mc/records/29991231-235959-0000000.md"
+        rec.write_text("# Offset Monte Carlo PVT grid record `29991231-235959-0000000`\n")
+        self.assertEqual(cr.latest_selection(self.root)["offset-mc"],
+                         "sim/offset-mc/records/20261009-072205-96bf3cc.md")
+
 
 
 

@@ -1513,7 +1513,7 @@
   },
   "spec": {
     "path": "spec/target-spec.md",
-    "sha256": "d94a3282bb930eafec3c3592496e56258d099ee09d9066f286f777505574f580"
+    "sha256": "b92134564488d774886b98aae3305709c2f97e8ddceb97af86e7cc847c67058f"
   },
   "summary": {
     "fail": 1,

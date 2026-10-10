@@ -47,8 +47,18 @@ Evidence produced (append-only, a new record id every run):
     netlist-snapshots/<rid>.spice         DUT + testbench + conditions
     records/<rid>.md
 
+PVT grid (issue #106): `--grid full` submits ONE `klt sim` request over the
+45-point MOS x T x VDD grid (the gain bench's axes, VCM = VDD/2) with the
+same `monte_carlo = {n: 300, seed: 45, vary: "mismatch"}` per point --
+45 x 300 = 13500 units -- and writes a separate append-only record with mean,
+sigma, 3 sigma and the linear 3-sigma offset |mean| + 3 sigma per grid point,
+the worst point, and the worst figure next to the committed 27 C / 3.30 V
+record's. The same controls run at typical / 27 C / 3.30 V. The default
+(`--grid nominal`) is the issue #45 run, unchanged.
+
 Usage:
-    python3 sim/offset-mc/run_offset_mc.py                 # full grid + record
+    python3 sim/offset-mc/run_offset_mc.py                 # nominal 5-corner MC + record
+    python3 sim/offset-mc/run_offset_mc.py --grid full     # 45-point PVT MC + record
     python3 sim/offset-mc/run_offset_mc.py --smoke         # one local unit, no record
     python3 sim/offset-mc/run_offset_mc.py --backend local # force a backend
 
@@ -142,6 +152,29 @@ XCHK_TOL_V = 1e-5
 SIM_SOURCE = mc.SIM_SOURCE
 SIM_ARGS = mc.SIM_ARGS
 MEASUREMENTS = mc.MEASUREMENTS
+
+#: Grids (issue #106): `nominal` is the issue #45 population; `full` is the
+#: 45-point MOS x T x VDD grid (axes from the gain bench, VCM = VDD/2).
+GRIDS = ("nominal", "full")
+#: The committed 27 C / 3.30 V record the full-grid record is set next to.
+NOMINAL_RECORD = "20261009-072205-96bf3cc"
+NOMINAL_CSV = HERE / "corners" / NOMINAL_RECORD / "offset_samples.csv"
+#: Batch shards (`request.remote.hosts`, one fleet job each) for the full
+#: grid. The fleet caps ONE job at 3600 s and a timed-out job returns no
+#: per-unit results (2AMLogic/klayout-tools#2833): the unsharded 13500-unit
+#: request ran 3688 s and was lost. The nominal 1500 units took 446 s on one
+#: job (~0.30 s/unit), so 3 shards of 4500 units (~1350 s each) stay well
+#: inside the cap while asking the shared fleet (capped at a few concurrent
+#: instances) for few instances. klt derives every seed in the client from
+#: (seed, corner index, sample index) over the WHOLE request, so sharding
+#: changes no sample's value.
+GRID_HOSTS = 3
+#: A shard whose launch the fleet refused (shared concurrency cap or Spot
+#: capacity) comes back as `lost_shard` units, not a submit error, and
+#: `batch.capacity_wait_s` does not wait out the concurrency cap
+#: (2AMLogic/klayout-tools#2917). Such a run is re-submitted whole (still
+#: through `klt sim`, never locally), up to `--batch-submit-retries` times.
+_LOST_SHARD_TRANSIENT = ("already running", "BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity")
 
 
 # --------------------------------------------------------------------------
@@ -328,6 +361,43 @@ def mc_request(netlist: Path, pdk: Pdk, corners: list[str], n: int, seed: int, v
     return req
 
 
+def grid_request(netlist: Path, pdk: Pdk, corners: list[str], grid: str, n: int, seed: int, vary: str,
+                 *, hosts: int | None = None) -> dict:
+    """`mc_request` over a grid's T and VDD axes; vdd and vcm sweep together
+    by index (VCM = VDD/2), as in the gain bench's request. `hosts` > 1
+    shards the expanded unit list into that many fleet jobs (klt merges the
+    shard reports back into one, in unsharded unit order)."""
+    temps, supplies, vcms = mc.grid_axes(grid)
+    req = mc_request(netlist, pdk, corners, n, seed, vary)
+    req["corners"]["supply_v"] = {"vdd": supplies, "vcm": vcms}
+    req["corners"]["temperature_c"] = temps
+    if hosts and hosts > 1:
+        req["remote"] = {"hosts": int(hosts)}
+    return req
+
+
+def lost_shard_refusals(report: dict) -> int:
+    """Units lost because a shard's fleet launch was refused for capacity or
+    the shared concurrency cap (nothing ran for them; re-submittable)."""
+    n = 0
+    for c in report.get("corners", []):
+        for d in c.get("diagnostics", []) or []:
+            msg = str(d.get("message", ""))
+            if (d.get("code") == "lost_shard" or "shard lost" in msg) and any(t in msg for t in _LOST_SHARD_TRANSIENT):
+                n += 1
+                break
+    return n
+
+
+def remote_jobs(report: dict) -> list[dict]:
+    """The fleet job block(s) of a report: one `environment.remote` block, or
+    its `fleet[]` entries for a sharded run (`None` for a lost shard)."""
+    r = remote_of(report)
+    if "fleet" in r:
+        return [e or {} for e in r.get("fleet") or []]
+    return [r] if r else []
+
+
 # --------------------------------------------------------------------------
 # Extraction + statistics (pure functions; unit-tested offline)
 # --------------------------------------------------------------------------
@@ -358,7 +428,7 @@ def _finite(x) -> bool:
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x)
 
 
-def extract_samples(report: dict, corners: list[str], n_expected: int | None) -> Extraction:
+def extract_samples(report: dict, corners: list[str], n_expected: int | None, *, vcm_v: float = VCM_V) -> Extraction:
     """Per-corner offset samples from a klt report, with extraction validation.
 
     Per sample: all three measurements finite; vinp == VCM (the follower tie
@@ -366,7 +436,8 @@ def extract_samples(report: dict, corners: list[str], n_expected: int | None) ->
     vout - vinp; |offset| inside the valid follower window. Anything else is
     a problem string -- the sample is NOT silently dropped. With
     `n_expected`, each corner must contribute exactly that many samples with
-    distinct sample indices.
+    distinct sample indices. `vcm_v` is the commanded VCM (a grid point's
+    VDD/2; default the nominal 1.65 V).
     """
     ex = Extraction()
     seen: dict[str, set[int]] = {}
@@ -388,8 +459,8 @@ def extract_samples(report: dict, corners: list[str], n_expected: int | None) ->
             continue
         vout, vinp, vos = (float(v[k]) for k in names)
         off = vos
-        if abs(vinp - VCM_V) > TIE_TOL_V:
-            ex.problems.append(f"{cid}: vinp = {vinp:.6g} V, expected {VCM_V} V")
+        if abs(vinp - vcm_v) > TIE_TOL_V:
+            ex.problems.append(f"{cid}: vinp = {vinp:.6g} V, expected {vcm_v} V")
             continue
         if abs(vos - (vout - vinp)) > XCHK_TOL_V:
             ex.problems.append(f"{cid}: vos_v cross-check mismatch ({vos:.9g} vs {vout - vinp:.9g})")
@@ -497,6 +568,107 @@ def rollup_crosscheck(stats: dict[str, Stats], rollup: dict[str, dict]) -> list[
     return problems
 
 
+# ---- PVT grid (issue #106) ------------------------------------------------
+
+Key = tuple  # (process, temperature_c, vdd_v)
+
+
+def grid_keys(grid: str) -> list[Key]:
+    """Every (process, T, VDD) point of a grid, in record order."""
+    temps, supplies, _ = mc.grid_axes(grid)
+    return [(p, t, v) for p in CORNERS for t in temps for v in supplies]
+
+
+def fmt_key(k: Key) -> str:
+    return f"{k[0]} / {k[1]:g} C / {k[2]:.2f} V"
+
+
+def _point_of(c: dict) -> Key:
+    proc = c["process"]
+    if isinstance(proc, dict):
+        proc = proc["name"]
+    return (proc, float(c["temperature_c"]), float(c["supply_v"]["vdd"]))
+
+
+def extract_grid(report: dict, grid: str, n_expected: int) -> tuple[dict[Key, list[Sample]], list[str]]:
+    """Per-point samples of a grid report, every point validated by
+    `extract_samples` with that point's own commanded VCM (= VDD/2 from the
+    grid axes, NOT the value the report claims). Blocking problems: an
+    unparseable or unexpected point, and every per-sample / per-point
+    problem `extract_samples` raises (exactly `n_expected` distinct samples)."""
+    temps, supplies, vcms = mc.grid_axes(grid)
+    vcm_of = dict(zip(supplies, vcms))
+    want = grid_keys(grid)
+    groups: dict[Key, list[dict]] = {k: [] for k in want}
+    problems: list[str] = []
+    for c in report.get("corners", []):
+        cid = str(c.get("corner_id", "?"))
+        try:
+            k = _point_of(c)
+        except (KeyError, TypeError, ValueError):
+            problems.append(f"{cid}: unparseable grid point")
+            continue
+        if k not in groups:
+            problems.append(f"{cid}: unexpected grid point {k!r}")
+            continue
+        groups[k].append(c)
+    samples: dict[Key, list[Sample]] = {}
+    for k in want:
+        ex = extract_samples({"corners": groups[k]}, [k[0]], n_expected, vcm_v=vcm_of[k[2]])
+        problems += [f"[{fmt_key(k)}] {p}" for p in ex.problems]
+        samples[k] = ex.samples.get(k[0], [])
+    return samples, problems
+
+
+def grid_stats(samples: dict[Key, list[Sample]]) -> dict[Key, Stats]:
+    return {k: stats_of([s.offset_v for s in ss]) for k, ss in samples.items() if len(ss) >= 2}
+
+
+def worst_points(stats: dict[Key, Stats]) -> dict[str, Key]:
+    """Worst point by sigma and by the linear 3-sigma offset |mean| + 3 sigma."""
+    if not stats:
+        raise ValueError("no statistics")
+    return {"sigma": max(stats, key=lambda k: stats[k].sigma),
+            "extreme": max(stats, key=lambda k: stats[k].worst_extreme)}
+
+
+def grid_rollup_crosscheck(stats: dict[Key, Stats], report: dict) -> list[str]:
+    """klt's per-point `vos_v` rollup vs ours. The rollup's `corner_id` is a
+    sample's `corner_id` without its `/mc<i>` suffix, so the point each
+    rollup entry belongs to is taken from the report's own samples."""
+    base: dict[str, Key] = {}
+    for c in report.get("corners", []):
+        cid = str(c.get("corner_id", ""))
+        try:
+            base[re.sub(r"/mc\d+$", "", cid)] = _point_of(c)
+        except (KeyError, TypeError, ValueError):
+            continue
+    problems: list[str] = []
+    for cid, b in klt_rollup(report).items():
+        k = base.get(cid)
+        s = stats.get(k) if k else None
+        if s is None:
+            continue
+        mean, sig = b.get("mean"), b.get("sigma", b.get("stddev"))
+        if _finite(mean) and abs(mean - s.mean) > 1e-9:
+            problems.append(f"{fmt_key(k)}: klt rollup mean {mean:.9g} != {s.mean:.9g}")
+        if _finite(sig) and abs(sig - s.sigma) > max(1e-9, 1e-6 * s.sigma):
+            problems.append(f"{fmt_key(k)}: klt rollup sigma {sig:.9g} != {s.sigma:.9g}")
+    return problems
+
+
+def nominal_reference(path: Path = NOMINAL_CSV) -> dict[str, Stats]:
+    """Per-corner statistics of the committed 27 C / 3.30 V record, recomputed
+    from its committed per-sample CSV (empty when the CSV is absent)."""
+    if not path.is_file():
+        return {}
+    by: dict[str, list[float]] = {}
+    with path.open(newline="") as fh:
+        for row in csv.DictReader(fh):
+            by.setdefault(row["corner"], []).append(float(row["offset_v"]))
+    return {p: stats_of(v) for p, v in by.items() if len(v) >= 2}
+
+
 def mismatch_activity(report: dict) -> list[dict]:
     return ((report.get("environment") or {}).get("monte_carlo") or {}).get("family_mismatch") or []
 
@@ -563,6 +735,35 @@ def run_mc_control(name: str, vary: str, mismatch: int, pdk: Pdk, work: Path, ar
 
 def mv(x: float) -> str:
     return f"{x * 1e3:+.3f}"
+
+
+def control_lines(*, sw_off: DetRun, imb: DetRun, off_stats: Stats | None, off_note: str,
+                  proc_stats: Stats | None, proc_note: str) -> list[str]:
+    """The record's `## Controls` section (shared by the nominal and grid records)."""
+    L: list[str] = []
+    add = L.append
+    add("## Controls")
+    add("")
+    add(f"- **Switch-off** (`sw_stat_mismatch = 0`, typical, deterministic): offset {mv(sw_off.offset_v) if sw_off.offset_v is not None else 'n/a'} mV. "
+        "The mismatch path contributes nothing when the model switch is off.")
+    if imb.offset_v is not None and sw_off.offset_v is not None:
+        shift = imb.offset_v - sw_off.offset_v
+        add(f"- **Imbalance** (M1 `{IMBALANCE_W_FROM}` -> `{IMBALANCE_W_TO}` in a snapshot copy of the DUT, mismatch off, typical): "
+            f"offset {mv(imb.offset_v)} mV, shift {mv(shift)} mV vs the unperturbed deterministic unit "
+            f"({'visible, > ' + format(IMBALANCE_MIN_SHIFT_V*1e3, 'g') + ' mV' if abs(shift) > IMBALANCE_MIN_SHIFT_V else 'NOT visible: CONTROL FAILED'}).")
+    else:
+        add(f"- **Imbalance**: control did not produce a value: {imb.error}")
+    if off_stats is not None:
+        add(f"- **Switch-off Monte Carlo** (`sw_stat_mismatch = 0`, `vary: \"mismatch\"`, typical, N={CONTROL_N}, same seed): "
+            f"sigma = {off_stats.sigma*1e3:.6f} mV, min {mv(off_stats.vmin)}, max {mv(off_stats.vmax)} mV "
+            f"({'sigma = 0 as required: the sampler injects no variation by itself' if off_stats.sigma <= 1e-9 else 'NONZERO: CONTROL FAILED'}).")
+    else:
+        add(f"- **Switch-off Monte Carlo**: {off_note}")
+    add(f"- **Process-only** (`vary: \"process\"`, typical, N={CONTROL_N}, same seed): {proc_note}")
+    if proc_stats is not None:
+        add(f"  mean {mv(proc_stats.mean)} mV, sigma {proc_stats.sigma*1e3:.4f} mV, min {mv(proc_stats.vmin)}, max {mv(proc_stats.vmax)} mV")
+    add("")
+    return L
 
 
 def build_record(*, record, stamp, pdk, ngspice, kver, report, stats, worst, stats_problems,
@@ -632,27 +833,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, report, stats, worst, sta
     else:
         add(f"- Switch-off control did not produce a value: {sw_off.error}")
     add("")
-    add("## Controls")
-    add("")
-    add(f"- **Switch-off** (`sw_stat_mismatch = 0`, typical, deterministic): offset {mv(sw_off.offset_v) if sw_off.offset_v is not None else 'n/a'} mV. "
-        "The mismatch path contributes nothing when the model switch is off.")
-    if imb.offset_v is not None and sw_off.offset_v is not None:
-        shift = imb.offset_v - sw_off.offset_v
-        add(f"- **Imbalance** (M1 `{IMBALANCE_W_FROM}` -> `{IMBALANCE_W_TO}` in a snapshot copy of the DUT, mismatch off, typical): "
-            f"offset {mv(imb.offset_v)} mV, shift {mv(shift)} mV vs the unperturbed deterministic unit "
-            f"({'visible, > ' + format(IMBALANCE_MIN_SHIFT_V*1e3, 'g') + ' mV' if abs(shift) > IMBALANCE_MIN_SHIFT_V else 'NOT visible: CONTROL FAILED'}).")
-    else:
-        add(f"- **Imbalance**: control did not produce a value: {imb.error}")
-    if off_stats is not None:
-        add(f"- **Switch-off Monte Carlo** (`sw_stat_mismatch = 0`, `vary: \"mismatch\"`, typical, N={CONTROL_N}, same seed): "
-            f"sigma = {off_stats.sigma*1e3:.6f} mV, min {mv(off_stats.vmin)}, max {mv(off_stats.vmax)} mV "
-            f"({'sigma = 0 as required: the sampler injects no variation by itself' if off_stats.sigma <= 1e-9 else 'NONZERO: CONTROL FAILED'}).")
-    else:
-        add(f"- **Switch-off Monte Carlo**: {off_note}")
-    add(f"- **Process-only** (`vary: \"process\"`, typical, N={CONTROL_N}, same seed): {proc_note}")
-    if proc_stats is not None:
-        add(f"  mean {mv(proc_stats.mean)} mV, sigma {proc_stats.sigma*1e3:.4f} mV, min {mv(proc_stats.vmin)}, max {mv(proc_stats.vmax)} mV")
-    add("")
+    L.extend(control_lines(sw_off=sw_off, imb=imb, off_stats=off_stats, off_note=off_note,
+                           proc_stats=proc_stats, proc_note=proc_note))
     add("## Extraction validation")
     add("")
     add(f"Every sample was required to have finite `vout_v`/`vinp_v`/`vos_v`; `vinp = {VCM_V}` V; the independently measured `vos_v = v(vout)-v(vinp)` to agree with "
@@ -676,6 +858,154 @@ def build_record(*, record, stamp, pdk, ngspice, kver, report, stats, worst, sta
     return "\n".join(L)
 
 
+def build_grid_record(*, record, stamp, pdk, ngspice, kver, report, stats: dict, worst: dict, stats_problems,
+                      sw_off: DetRun, imb: DetRun, proc_stats: Stats | None, proc_note: str,
+                      off_stats: Stats | None, off_note: str, wall_s: float, dut_sha: str, n_units: int,
+                      nominal_ref: dict[str, Stats], resubmits: int = 0) -> str:
+    """The issue #106 record: per-point statistics over the 45-point grid, the
+    worst point, and the worst linear 3-sigma offset next to the committed
+    27 C / 3.30 V record's figure. Proposes and judges no bound."""
+    L: list[str] = []
+    add = L.append
+    retained = {"grid": "full"}
+    temps, supplies, vcms = mc.grid_axes("full")
+    jobs = remote_jobs(report)
+    keys = grid_keys("full")
+    add(f"# Offset Monte Carlo PVT grid record `{record}`")
+    add("")
+    add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; commit `{record.rsplit('-', 1)[-1]}`; issue #106 "
+        f"(extends the issue #45 record `{NOMINAL_RECORD}` to the T/VDD grid; that record is unchanged)")
+    add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include `{dut_sha[:16]}`), unchanged")
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}, retained):
+        add(ln)
+    add(f"- **PDK**: {pdk.variant} (open_pdks `{pdk.version}`); tools: ngspice local `{ngspice}`, klt `{kver}`")
+    if jobs:
+        j0 = jobs[0]
+        add(f"- **Execution**: `klt sim` backend `{j0.get('provider')}`, {len(jobs)} fleet job(s) "
+            f"(`remote.hosts = {len(jobs)}`, contiguous shards of the unit list merged by klt): "
+            + ", ".join(f"`{j.get('job_id', j.get('job'))}`" for j in jobs)
+            + f"; {'Spot ' if j0.get('spot') else ''}{j0.get('instance_type', '')}; "
+            f"runner klt `{j0.get('runner_klt_version')}` vs client `{j0.get('client_klt_version')}` "
+            "(`environment.remote` of the grid report)")
+    else:
+        add("- **Execution**: `klt sim` local backend (no `environment.remote` in the report)")
+    add(f"- **Request**: ONE `klt sim` request: {len(CORNERS)} MOS corners x T {', '.join(f'{t:g} C' for t in temps)} x "
+        f"VDD {', '.join(f'{v:.2f} V' for v in supplies)} (VCM = VDD/2: {', '.join(f'{v:g} V' for v in vcms)}) = "
+        f"{len(keys)} points, `monte_carlo = {{n: {MC_N}, seed: {MC_SEED}, vary: \"{MC_VARY}\"}}` per point = "
+        f"{n_units} units, wall time {wall_s:.0f} s (client-side, first submit to final report"
+        + (f", including {resubmits} whole-request re-submit(s) after refused shard launches)" if resubmits else ")"))
+    add(f"- **Seeds**: base seed {MC_SEED}; klt derives every per-sample seed (rndseed / mismatch_seed / process_seed) "
+        f"from it; all of them are in `corners/{record}/offset_samples.csv`")
+    add("- **Passive sections**: every point uses `res_typical` and `mimcap_typical` (RZ/CC passive spread is NOT sampled; "
+        "the resistor family has no mismatch in this PDK, see README)")
+    act = mosfet_active(report)
+    add(f"- **klt mismatch-activity report (mosfet family)**: `active = {act}`"
+        + (" (klt scans the top-level netlist only; the response is established by the measured nonzero sigma at every point)"
+           if act is None else ""))
+    add("")
+    add("## Worst point and the 27 C / 3.30 V figure")
+    add("")
+    add("The linear 3-sigma offset is |mean| + 3 sigma (systematic plus mismatch, added linearly). Values in mV.")
+    add("")
+    if stats:
+        we, ws = worst["extreme"], worst["sigma"]
+        add(f"- **Worst linear 3-sigma offset over the {len(keys)}-point grid**: **{stats[we].worst_extreme*1e3:.3f} mV** at "
+            f"`{fmt_key(we)}` (mean {mv(stats[we].mean)}, sigma {stats[we].sigma*1e3:.3f}, 3 sigma {stats[we].three_sigma*1e3:.3f})")
+        add(f"- **Worst sigma over the grid**: {stats[ws].sigma*1e3:.3f} mV (3 sigma {stats[ws].three_sigma*1e3:.3f}) at `{fmt_key(ws)}`")
+        if nominal_ref:
+            nw = max(nominal_ref, key=lambda p: nominal_ref[p].worst_extreme)
+            add(f"- **27 C / 3.30 V figure** (record `{NOMINAL_RECORD}`, recomputed from its committed samples): "
+                f"{nominal_ref[nw].worst_extreme*1e3:.3f} mV at `{nw}`; the grid's worst is "
+                f"{(stats[we].worst_extreme - nominal_ref[nw].worst_extreme)*1e3:+.3f} mV from it "
+                f"(x{stats[we].worst_extreme / nominal_ref[nw].worst_extreme:.3f})")
+        else:
+            add(f"- **27 C / 3.30 V figure**: the committed samples of record `{NOMINAL_RECORD}` were not found")
+        nom = {k: st for k, st in stats.items() if k[1] == 27.0 and abs(k[2] - 3.30) < 1e-9}
+        if nom:
+            kn = max(nom, key=lambda k: nom[k].worst_extreme)
+            add(f"- This grid's own 27 C / 3.30 V slice: worst {nom[kn].worst_extreme*1e3:.3f} mV at `{kn[0]}`")
+        n = min(st.n for st in stats.values())
+        add(f"- Statistical precision: sigma relative standard error ~ {100/math.sqrt(2*(n-1)):.1f} % at N={n} per point "
+            "(normal approximation); the worst of 45 points is a maximum over noisy estimates, so it is biased high by "
+            "a few standard errors.")
+    add("- **No numeric offset bound is proposed, ratified or judged here.** The bound is spec issue #62's decision "
+        "(DR-3 residual (e2)); this record only supplies the T/VDD-grid statistic it asked for.")
+    add("")
+    add("## Linear 3-sigma offset by temperature and supply (worst MOS corner)")
+    add("")
+    add("| T \\ VDD | " + " | ".join(f"{v:.2f} V" for v in supplies) + " |")
+    add("|---|" + "---|" * len(supplies))
+    for t in temps:
+        cells = []
+        for v in supplies:
+            pts = {k: stats[k] for k in keys if k[1] == t and k[2] == v and k in stats}
+            if pts:
+                kk = max(pts, key=lambda k: pts[k].worst_extreme)
+                cells.append(f"{pts[kk].worst_extreme*1e3:.3f} ({kk[0]})")
+            else:
+                cells.append("-")
+        add(f"| {t:g} C | " + " | ".join(cells) + " |")
+    add("")
+    add("## Offset statistics per grid point (unity follower, `vout - vinp`)")
+    add("")
+    add("The mean contains the systematic offset; sigma is the mismatch spread. Values in mV.")
+    add("")
+    add("| corner | T (C) | VDD (V) | N | mean | sigma | 3 sigma | \\|mean\\|+3s | min | max | skew | ex.kurt |")
+    add("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for k in keys:
+        st = stats.get(k)
+        if st is None:
+            add(f"| {k[0]} | {k[1]:g} | {k[2]:.2f} | 0 | - | - | - | - | - | - | - | - |")
+            continue
+        add(f"| {k[0]} | {k[1]:g} | {k[2]:.2f} | {st.n} | {mv(st.mean)} | {st.sigma*1e3:.3f} | {st.three_sigma*1e3:.3f} | "
+            f"{st.worst_extreme*1e3:.3f} | {mv(st.vmin)} | {mv(st.vmax)} | {st.skew:+.2f} | {st.ex_kurt:+.2f} |")
+    add("")
+    add("## Systematic vs mismatch")
+    add("")
+    kt = ("typical", 27.0, 3.30)
+    if sw_off.offset_v is not None and kt in stats:
+        st = stats[kt]
+        add(f"- Systematic offset (typical / 27 C / 3.30 V, `sw_stat_mismatch = 0`, one deterministic unit): **{mv(sw_off.offset_v)} mV**.")
+        add(f"- Grid typical / 27 C / 3.30 V Monte Carlo mean: {mv(st.mean)} mV; difference from the systematic term "
+            f"{mv(st.mean - sw_off.offset_v)} mV = {abs(st.mean - sw_off.offset_v)/(st.sigma/math.sqrt(st.n)):.1f} standard errors of the mean.")
+    else:
+        add(f"- Switch-off control did not produce a value: {sw_off.error}")
+    add("")
+    L.extend(control_lines(sw_off=sw_off, imb=imb, off_stats=off_stats, off_note=off_note,
+                           proc_stats=proc_stats, proc_note=proc_note))
+    add("The controls run at typical / 27 C / 3.30 V (the nominal point); the grid itself is the 45-point request above.")
+    add("")
+    add("## Extraction validation")
+    add("")
+    add(f"Every sample was required to have finite `vout_v`/`vinp_v`/`vos_v`; `vinp` = the point's commanded VCM (VDD/2 "
+        f"from the grid axes, within {TIE_TOL_V:g} V -- this also proves klt applied the supply/VCM alters); "
+        f"`vos_v = v(vout)-v(vinp)` to agree with `vout_v - vinp_v` within {XCHK_TOL_V:g} V; and |offset| < "
+        f"{OFFSET_VALID_ABS_V} V. Every one of the {len(keys)} points had to contribute exactly N={MC_N} samples with "
+        "distinct indices, and a nonzero sigma.")
+    add("")
+    if stats_problems:
+        add("**Problems:**")
+        for pr in stats_problems:
+            add(f"- {pr}")
+    else:
+        add(f"Result: all {n_units} samples valid; driver statistics agree with klt's own per-point rollup where it reported one.")
+    add("")
+    add("## Reproduce")
+    add("")
+    add("```")
+    add("python3 sim/offset-mc/run_offset_mc.py --grid full --batch-runner-version-check warn --batch-submit-retries 10 "
+        "--batch-capacity-wait-s 1800")
+    add("```")
+    add("")
+    add("## Files")
+    add("")
+    add(f"- `sim/offset-mc/corners/{record}/offset_samples.csv`, `klt-report.json`, `controls/`")
+    add(f"- `sim/offset-mc/netlist-snapshots/{record}.spice`")
+    add("")
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}, retained))
+    return "\n".join(L)
+
+
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
@@ -693,6 +1023,45 @@ def smoke(pdk: Pdk) -> int:
     return 0
 
 
+def run_controls(pdk: Pdk, work: Path, args, stats_problems: list[str]):
+    """The controls, at typical / 27 C / 3.30 V: two deterministic LOCAL units
+    (switch-off, imbalance) and two small `monte_carlo` requests through
+    `klt sim` (process-only, switch-off MC). Control failures are appended to
+    `stats_problems`; returns None when a deterministic control produced no
+    value (the caller writes no record)."""
+    # Controls: two deterministic LOCAL units + two small Monte Carlo requests.
+    sw_off = run_deterministic("switch-off", "sw_stat_mismatch=0", pdk, work, mismatch=0)
+    imb = run_deterministic("imbalance", "M1 W +10 % (snapshot copy)", pdk, work, mismatch=0,
+                            dut_text=imbalance_dut(load_dut_text()), allow_changed=(IMBALANCE_DEVICE,))
+    proc_stats, proc_note, proc_report = run_mc_control("process-only", "process", 1, pdk, work, args)
+    if proc_stats is not None:
+        proc_note = (f"sigma = {proc_stats.sigma*1e3:.4f} mV "
+                     f"({'~0: mismatch draws held fixed' if proc_stats.sigma < 1e-6 else 'NONZERO: the mismatch draws still change with the process seed'}).")
+    off_stats, off_note, off_report = run_mc_control("switch-off-mc", MC_VARY, 0, pdk, work, args)
+    if off_stats is None:
+        stats_problems.append(f"switch-off Monte Carlo control: {off_note}")
+    elif off_stats.sigma > 1e-9:
+        stats_problems.append(f"switch-off Monte Carlo control has sigma = {off_stats.sigma:.3g} V (must be 0)")
+
+    if sw_off.offset_v is None or imb.offset_v is None:
+        print(f"ERROR: a deterministic control failed: {sw_off.error} {imb.error}", file=sys.stderr)
+        return None
+    if abs(imb.offset_v - sw_off.offset_v) <= IMBALANCE_MIN_SHIFT_V:
+        stats_problems.append("imbalance control did not shift the mean offset visibly")
+    return sw_off, imb, proc_stats, proc_note, proc_report, off_stats, off_note, off_report
+
+
+def write_controls(cdir: Path, sw_off: DetRun, imb: DetRun, off_report: dict | None, proc_report: dict | None) -> None:
+    cdir.mkdir()
+    for r in (sw_off, imb):
+        if r.report:
+            (cdir / f"{r.name}.klt-report.json").write_text(json.dumps(sanitise_report(r.report), indent=1))
+    if off_report:
+        (cdir / "switch-off-mc.klt-report.json").write_text(json.dumps(sanitise_report(off_report), separators=(",", ":")))
+    if proc_report:
+        (cdir / "process-only.klt-report.json").write_text(json.dumps(sanitise_report(proc_report), separators=(",", ":")))
+
+
 def write_samples_csv(path: Path, stats_samples: dict[str, list[Sample]]) -> None:
     with path.open("w", newline="") as fh:
         w = csv.writer(fh)
@@ -702,20 +1071,139 @@ def write_samples_csv(path: Path, stats_samples: dict[str, list[Sample]]) -> Non
                 w.writerow([p, s.index, s.seed, s.mismatch_seed, s.process_seed, repr(s.vout_v), repr(s.offset_v)])
 
 
+def write_grid_csv(path: Path, samples: dict) -> None:
+    with path.open("w", newline="") as fh:
+        w = csv.writer(fh)
+        w.writerow(["corner", "temperature_c", "vdd_v", "vcm_v", "sample_index", "rndseed", "mismatch_seed",
+                    "process_seed", "vout_v", "offset_v"])
+        vcm_of = dict(zip(*mc.grid_axes("full")[1:]))
+        for k in grid_keys("full"):
+            for s in sorted(samples.get(k, []), key=lambda s: -1 if s.index is None else s.index):
+                w.writerow([k[0], k[1], k[2], vcm_of[k[2]], s.index, s.seed, s.mismatch_seed, s.process_seed,
+                            repr(s.vout_v), repr(s.offset_v)])
+
+
+def run_grid(pdk: Pdk, args) -> int:
+    """`--grid full` (issue #106): one 45-point `monte_carlo` request through
+    `klt sim`, the shared controls, and a new append-only record. A failed
+    submit is reported and NOTHING is written; there is no local fallback."""
+    keys = grid_keys("full")
+    n_units = len(keys) * MC_N
+    record, stamp = allocate_record_id(REPO_ROOT)
+    paths = claim_record_paths(HERE, record, plots=False)
+    ngspice, kver = ngspice_version(), klt_version()
+    print(f"record {record}: {len(keys)} points x N={MC_N} = {n_units} units, seed {MC_SEED}, PDK={pdk.path}, klt {kver}",
+          flush=True)
+    with tempfile.TemporaryDirectory(prefix="offmc-grid-") as scratch:
+        work = Path(scratch)
+        tb = materialise(work / "grid", pdk)
+        req = grid_request(tb, pdk, CORNERS, "full", MC_N, MC_SEED, MC_VARY,
+                           hosts=GRID_HOSTS if args.hosts is None else args.hosts)
+        req["batch"] = batch_block(args)
+        t0 = time.monotonic()
+        for attempt in range(args.batch_submit_retries + 1):
+            try:
+                report = run_klt_retrying(req, work / "grid" / f"out{attempt}", args.backend, work / "grid",
+                                          retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
+            except KltError as exc:
+                print(f"ERROR: the grid Monte Carlo request could not be run; NO RECORD WRITTEN (result NOT RUN).\n{exc}",
+                      file=sys.stderr)
+                return 2
+            lost = lost_shard_refusals(report)
+            if not lost or attempt == args.batch_submit_retries:
+                break
+            print(f"  {lost} units lost to a refused shard launch (attempt {attempt + 1}/{args.batch_submit_retries + 1}); "
+                  f"re-submitting the request in {args.batch_retry_wait_s:g}s", flush=True)
+            time.sleep(args.batch_retry_wait_s)
+        wall_s = time.monotonic() - t0
+        keep = Path(tempfile.gettempdir()) / f"offset-mc-{record}-pvt-grid-report.json"
+        keep.write_text(json.dumps(sanitise_report(report), separators=(",", ":")))
+        jobs = ", ".join(str(j.get("job_id", "?")) for j in remote_jobs(report)) or "local"
+        print(f"  grid report kept at {keep} (job(s) {jobs}, {wall_s:.0f} s)", flush=True)
+        samples, problems = extract_grid(report, "full", MC_N)
+        if problems:
+            print("ERROR: the grid Monte Carlo did not complete cleanly; NO RECORD WRITTEN:", file=sys.stderr)
+            for pr in problems[:40]:
+                print(f"  - {pr}", file=sys.stderr)
+            if len(problems) > 40:
+                print(f"  ... {len(problems) - 40} more", file=sys.stderr)
+            return 2
+        stats = grid_stats(samples)
+        worst = worst_points(stats)
+        stats_problems = grid_rollup_crosscheck(stats, report)
+        if mosfet_active(report) is False:
+            stats_problems.append("klt reports the mosfet family mismatch as structurally inactive")
+        stats_problems += [f"{fmt_key(k)}: sigma = 0, the mismatch path did not respond" for k, st in stats.items()
+                           if st.sigma <= 0]
+
+        ctl = run_controls(pdk, work, args, stats_problems)
+        if ctl is None:
+            return 2
+        sw_off, imb, proc_stats, proc_note, proc_report, off_stats, off_note, off_report = ctl
+
+        paths["corners"].mkdir(parents=True, exist_ok=False)
+        write_grid_csv(paths["corners"] / "offset_samples.csv", samples)
+        (paths["corners"] / "klt-report.json").write_text(json.dumps(sanitise_report(report), separators=(",", ":")))
+        write_controls(paths["corners"] / "controls", sw_off, imb, off_report, proc_report)
+
+        dut_text = load_dut_text()
+        dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()
+        paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
+        paths["snapshot"].write_text("\n".join([
+            f"* netlist snapshot for record {record} (issue #106, 45-point PVT grid)",
+            "* Reproduces the measured design: DUT contents, testbench, conditions.",
+            "* ---- conditions: klt sim request (grid) ----",
+            *("* " + ln for ln in json.dumps({k: v for k, v in req.items() if k != "netlist"}, indent=1).splitlines()),
+            "",
+            "* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----",
+            dut_text,
+            "* ---- testbench: sim/offset-mc/testbench/tb_offset_mc.spice (verbatim) ----",
+            TESTBENCH.read_text(),
+            "* ---- imbalance control: the ONLY DUT line that differs (snapshot copy; committed netlist untouched) ----",
+            *("* " + ln for ln in imbalance_dut(dut_text).splitlines() if ln.lower().startswith(IMBALANCE_DEVICE + " ")),
+            "",
+        ]))
+        md = build_grid_record(
+            record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, kver=kver, report=report, stats=stats, worst=worst,
+            stats_problems=stats_problems, sw_off=sw_off, imb=imb, proc_stats=proc_stats, proc_note=proc_note,
+            off_stats=off_stats, off_note=off_note, wall_s=wall_s, dut_sha=dut_sha, n_units=n_units,
+            nominal_ref=nominal_reference(), resubmits=attempt,
+        )
+        paths["record"].parent.mkdir(parents=True, exist_ok=True)
+        paths["record"].write_text(md)
+
+    print(f"wrote {paths['record']}")
+    we = worst["extreme"]
+    print(f"  worst |mean|+3s {stats[we].worst_extreme*1e3:.3f} mV at {fmt_key(we)}; "
+          f"worst sigma {stats[worst['sigma']].sigma*1e3:.3f} mV at {fmt_key(worst['sigma'])}")
+    if stats_problems:
+        print("STUDY PROBLEMS:")
+        for s in stats_problems:
+            print(f"  - {s}")
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--smoke", action="store_true", help="one deterministic local unit, no record")
+    ap.add_argument("--grid", choices=GRIDS, default="nominal",
+                    help="nominal: 5 corners at 27 C / 3.30 V (issue #45); full: the 45-point T/VDD grid (issue #106)")
     ap.add_argument("--backend", help="klt execution backend for the Monte Carlo grid "
                     "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
     ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
     ap.add_argument("--batch-submit-retries", type=int, default=0)
     ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    ap.add_argument("--hosts", type=int, default=None,
+                    help=f"--grid full only: fleet jobs to shard the units over (default {GRID_HOSTS})")
     args = ap.parse_args(argv)
 
     pdk = find_pdk()
     if args.smoke:
         return smoke(pdk)
+    if args.grid == "full":
+        return run_grid(pdk, args)
 
     record, stamp = allocate_record_id(REPO_ROOT)
     paths = claim_record_paths(HERE, record, plots=False)
@@ -756,38 +1244,15 @@ def main(argv: list[str] | None = None) -> int:
         if any(s.sigma <= 0 for s in stats.values()):
             stats_problems.append("a corner has sigma = 0: the mismatch path did not respond")
 
-        # Controls: two deterministic LOCAL units + one small process-only MC.
-        sw_off = run_deterministic("switch-off", "sw_stat_mismatch=0", pdk, work, mismatch=0)
-        imb = run_deterministic("imbalance", "M1 W +10 % (snapshot copy)", pdk, work, mismatch=0,
-                                dut_text=imbalance_dut(load_dut_text()), allow_changed=(IMBALANCE_DEVICE,))
-        proc_stats, proc_note, proc_report = run_mc_control("process-only", "process", 1, pdk, work, args)
-        if proc_stats is not None:
-            proc_note = (f"sigma = {proc_stats.sigma*1e3:.4f} mV "
-                         f"({'~0: mismatch draws held fixed' if proc_stats.sigma < 1e-6 else 'NONZERO: the mismatch draws still change with the process seed'}).")
-        off_stats, off_note, off_report = run_mc_control("switch-off-mc", MC_VARY, 0, pdk, work, args)
-        if off_stats is None:
-            stats_problems.append(f"switch-off Monte Carlo control: {off_note}")
-        elif off_stats.sigma > 1e-9:
-            stats_problems.append(f"switch-off Monte Carlo control has sigma = {off_stats.sigma:.3g} V (must be 0)")
-
-        if sw_off.offset_v is None or imb.offset_v is None:
-            print(f"ERROR: a deterministic control failed: {sw_off.error} {imb.error}", file=sys.stderr)
+        ctl = run_controls(pdk, work, args, stats_problems)
+        if ctl is None:
             return 2
-        if abs(imb.offset_v - sw_off.offset_v) <= IMBALANCE_MIN_SHIFT_V:
-            stats_problems.append("imbalance control did not shift the mean offset visibly")
+        sw_off, imb, proc_stats, proc_note, proc_report, off_stats, off_note, off_report = ctl
 
         paths["corners"].mkdir(parents=True, exist_ok=False)
         write_samples_csv(paths["corners"] / "offset_samples.csv", ex.samples)
         (paths["corners"] / "klt-report.json").write_text(json.dumps(sanitise_report(report), separators=(",", ":")))
-        cdir = paths["corners"] / "controls"
-        cdir.mkdir()
-        for r in (sw_off, imb):
-            if r.report:
-                (cdir / f"{r.name}.klt-report.json").write_text(json.dumps(sanitise_report(r.report), indent=1))
-        if off_report:
-            (cdir / "switch-off-mc.klt-report.json").write_text(json.dumps(sanitise_report(off_report), separators=(",", ":")))
-        if proc_report:
-            (cdir / "process-only.klt-report.json").write_text(json.dumps(sanitise_report(proc_report), separators=(",", ":")))
+        write_controls(paths["corners"] / "controls", sw_off, imb, off_report, proc_report)
 
         dut_text = load_dut_text()
         dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()
