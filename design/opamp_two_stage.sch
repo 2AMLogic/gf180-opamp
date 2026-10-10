@@ -30,12 +30,14 @@ v {xschem version=3.4.7 file_version=1.2
 *
 *   Compensation (between the two stages)
 *     CC      MIM Miller capacitor from n2 (stage-1 output) to nz.
-*     RZ      series nulling resistor from nz to vout. RZ ~ 1/gm6 moves the
-*             feedforward right-half-plane zero out of the way; without it
-*             this design would need gm6/gm1 >= 10 rather than the 8.5 it
-*             has, i.e. ~20 % more output-stage current for the same phase
-*             margin. RZ carries no DC current, so it does not enter the
-*             operating point at all.
+*     RZ      series nulling resistor from nz to vout. RZ > 1/gm6 turns the
+*             feedforward right-half-plane zero into a left-half-plane zero
+*             that adds phase lead near crossover. Issue #42 retuned it from
+*             the original RZ ~ 1/gm6 (2.11 kohm, which left PM at 57-61 deg
+*             over PVT) to ~5.5/gm6 (11.2 kohm): the zero then sits at
+*             ~1/(2*pi*RZ*CC), set by passives rather than by gm6, about 2x
+*             above nominal GBW. RZ carries no DC current, so it does not
+*             enter the operating point at all.
 *
 *   Bias
 *     MB1     NMOS diode that turns the externally supplied reference
@@ -49,15 +51,16 @@ v {xschem version=3.4.7 file_version=1.2
 *   Itail  = 10 uA, ID(M1) = ID(M2) = 5 uA, I(M6) = I(M7) = 60 uA
 *   Iq     = 80 uA total -> 264 uW at VDD = 3.3 V
 *   CL     = 2 pF  [DR-1]  (external, not drawn here)
-*   CC     = 0.619 pF (17.4 x 17.4 um MIM), RZ = 2.11 kohm ~ 1/gm6
+*   CC     = 0.578 pF (16.8 x 16.8 um MIM), RZ = 11.23 kohm (2 x 22 um
+*            ppolyf_u_1k, 11 squares) -- retuned by issue #42; the
+*            original sizing pass drew CC = 0.619 pF (17.4 um square) and
+*            RZ = 2.11 kohm (2 x 4 um). See design/opamp_sizing.md Sec.4/9.
 *   gm1    = 60.3 uS, gm6 = 510 uS  (gm/ID-predicted, typical/27 C)
-*   -> GBW ~ 15.5 MHz, second pole gm6/(2*pi*CL) ~ 40.6 MHz (2.6x GBW)
+*   -> gm1/(2*pi*CC) ~ 16.6 MHz, second pole gm6/(2*pi*CL) ~ 40.6 MHz
 *   -> gm/gds-predicted open-loop DC gain ~ 97.7 dB (95.8 dB at the
 *      simulated operating point -- design/opamp_sizing.md Sec.7)
-* These are gm/ID predictions, not measured results: no AC/PVT testbench
-* exists yet (tracker #7 item 5). The only simulation this schematic is
-* committed against is the nominal DC operating-point check in
-* design/check_dc_op.py.
+* Measured AC/PVT results live in sim/gain-gbw-pm/records/ (the newest
+* record cited by spec/target-spec.md), not here.
 *
 * Systematic-offset (balance) condition, checked:
 *   (W6/L6)/(W4/L4) = 72/6 = 12 = 2*(W7/L7)/(W5/L5) = 2*(36/2)/(6/2) = 12
@@ -154,12 +157,12 @@ N 420 30 420 50 {}
 C {lab_pin.sym} 420 50 0 0 {name=l73 lab=vss}
 N 420 0 440 0 {}
 C {lab_pin.sym} 440 0 0 0 {name=l74 lab=vss}
-C {symbols/cap_mim_2f0fF.sym} 250 -150 0 0 {name=CC model=cap_mim_2f0_m4m5_noshield W=17.4u L=17.4u m=1}
+C {symbols/cap_mim_2f0fF.sym} 250 -150 0 0 {name=CC model=cap_mim_2f0_m4m5_noshield W=16.8u L=16.8u m=1}
 N 250 -180 250 -200 {}
 C {lab_pin.sym} 250 -200 0 0 {name=lc1 lab=n2}
 N 250 -120 250 -100 {}
 C {lab_pin.sym} 250 -100 0 0 {name=lc2 lab=nz}
-C {symbols/ppolyf_u_1k.sym} 250 0 0 0 {name=RZ model=ppolyf_u_1k W=2u L=4u m=1}
+C {symbols/ppolyf_u_1k.sym} 250 0 0 0 {name=RZ model=ppolyf_u_1k W=2u L=22u m=1}
 N 250 -30 250 -50 {}
 C {lab_pin.sym} 250 -50 0 0 {name=lr1 lab=nz}
 N 250 30 250 50 {}
