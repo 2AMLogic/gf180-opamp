@@ -74,6 +74,12 @@ python3 slew-swing-power/test_slew_swing_power.py
 echo "== sim/slew-swing-power: smoke test (typical, 27C, 3.30 V, one local point per figure) =="
 python3 slew-swing-power/run_slew_swing_power.py --smoke
 
+echo "== sim/step-response: extraction + source-guard tests (no simulator) =="
+python3 step-response/test_step_response.py
+
+echo "== sim/step-response: smoke test (typical, 27C, 3.30 V, one local point) =="
+python3 step-response/run_step_response.py --smoke
+
 echo "== sim/input-common-mode: request/extraction/range tests (local nominal units run) =="
 python3 input-common-mode/test_input_common_mode.py
 
