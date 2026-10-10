@@ -20,7 +20,8 @@ Mirrors `gf180-comparator`'s `characterize.sh`/`selftest.sh` split. See
 `.github/workflows/selftest.yml` runs `./selftest.sh` on every push to `main`
 and every PR: ngspice (apt, `ubuntu-24.04` = ngspice 42), the selftest klt and
 the pinned gf180mcu PDK are provisioned, `ci_prereqs.py` fails naming any
-missing tool (`klt`, `ngspice`) or the PDK with every path searched, and
+missing tool (`klt`, `ngspice`, `xschem`), an xschem other than the pinned
+release, or the PDK with every path searched, and
 `SIM_REQUIRE_PREREQS=1` turns the suites' skip-when-unavailable paths (PDK /
 klt / ngspice / committed gain dataset) into failures; local runs without the
 variable still skip. `ci_regression_check.sh` then breaks a copy of the
@@ -35,6 +36,28 @@ checkout-specific `** sch_path:` comment. Missing xschem, a failed or empty
 export, a missing symbol or an empty subcircuit fail it. Reproduce locally
 with `python3 sim/ci_netlist_check.py` (tests: `python3 sim/test_netlist_check.py`);
 a mismatch means regenerate the netlist per `design/README.md`.
+
+**xschem pin: 3.4.7**, built from upstream commit
+`92dd8fe5f4d5c1057489710d8a22f18fdc9d7ed0` (what tag `3.4.7` points at),
+not from apt (ubuntu-24.04 ships 3.4.4, which formats the export differently).
+Three places hold it and must agree: `selftest.yml` `SELFTEST_XSCHEM_VERSION`
+(plus `XSCHEM_COMMIT` for the source build, cached on that commit), and
+`ci_netlist_check.py` `PINNED_XSCHEM_VERSION`. `ci_prereqs.py` fails if the
+workflow variable disagrees with the constant or if `xschem --version` on
+PATH is not `XSCHEM V3.4.7`; `ci_netlist_check.py` also stops with exit 2 on
+a version mismatch instead of reporting a diff. `test_netlist_check.py`
+checks the workflow pin statically and the version gate with fake xschem
+binaries. To get the pinned xschem locally (build deps as in the workflow;
+installs to `/usr/local` unless you pass `--prefix`):
+
+```bash
+git init xschem-src && cd xschem-src
+git remote add origin https://github.com/StefanSchippers/xschem.git
+git fetch --depth 1 origin 92dd8fe5f4d5c1057489710d8a22f18fdc9d7ed0
+git checkout FETCH_HEAD
+./configure && make -j2 && sudo make install     # or ./configure --prefix=$HOME/xschem-3.4.7
+xschem --no_x -q --version | head -1             # must print XSCHEM V3.4.7
+```
 
 **Two distinct klt pins** (do not conflate):
 
@@ -55,7 +78,7 @@ on scratch fixtures in the volare layout (pinned passes; wrong revision,
 pinned-named dir with wrong contents, and unknown provenance fail) without
 needing the real PDK. volare itself is pinned (`VOLARE_VERSION`).
 
-Reproduce locally (needs `klt`, `ngspice`, numpy/matplotlib, and the PDK):
+Reproduce locally (needs `klt`, `ngspice`, xschem 3.4.7 (above), numpy/matplotlib, and the PDK):
 
 ```bash
 volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b

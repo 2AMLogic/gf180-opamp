@@ -67,6 +67,20 @@ writing into the repo: `python3 sim/ci_netlist_check.py` exports into a temp
 dir and compares, normalizing only the `** sch_path:` comment line. It treats
 exit 10 as success but still requires a complete, non-empty export.
 
+**Pinned exporter: xschem 3.4.7** (upstream tag `3.4.7`, commit
+`92dd8fe5f4d5c1057489710d8a22f18fdc9d7ed0`). The committed netlist was
+exported with it, and other releases format the same circuit differently
+(xschem 3.4.4, the ubuntu-24.04 apt package, adds a blank line after
+`**.subckt` and wraps device lines and `+` continuations differently). That
+formatting is not normalized away, so regenerate and check with exactly this
+release: `xschem --version` must print `XSCHEM V3.4.7`.
+`sim/ci_netlist_check.py` (constant `PINNED_XSCHEM_VERSION`) and
+`sim/ci_prereqs.py` refuse any other version with an expected/actual message
+before exporting. CI builds it from source (`.github/workflows/selftest.yml`,
+`SELFTEST_XSCHEM_VERSION` / `XSCHEM_COMMIT`). For a local build, see
+`sim/README.md` -> "CI selftest". Changing the pin means regenerating the
+netlist with the new release in its own justified change.
+
 To open the schematic interactively:
 
 ```bash
