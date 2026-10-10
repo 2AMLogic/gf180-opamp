@@ -4,10 +4,13 @@
 # Copies the repo's sim/ and design/ trees to a scratch dir, deliberately
 # breaks one testbench source guard and one extraction in EACH simulator-free
 # experiment (gain-gbw-pm, noise, offset-mc, cmrr, cmrr-mc, psrr,
-# slew-swing-power, input-common-mode, step-response), and requires that
-# experiment's unit suite to FAIL for each (after a control run of the
-# unmutated suite). A green run of this script means the guard/extraction tests
-# have teeth. It does the
+# slew-swing-power, input-common-mode, step-response, ibias-cl-sensitivity),
+# and requires that experiment's unit suite to FAIL for each (after a control
+# run of the unmutated suite). Issue #131 adds the shared modules whose suites
+# are wired into selftest.sh: sim/harness.py (test_harness.py) and
+# sim/passive_corners.py (covered by the slew-swing-power suite; it has no
+# suite of its own). A green run of this script means the guard/extraction
+# tests have teeth. It does the
 # same for the spec-citation check (issue #112): one mutation of the checker
 # must fail its unit suite, and one stale citation in the scratch copy of
 # spec/target-spec.md must fail the checker itself. No simulator, no records
@@ -138,6 +141,33 @@ expect_fail step-response test_step_response.py gain-gbw-pm/run_gain_gbw_pm.py \
 expect_fail step-response test_step_response.py step-response/run_step_response.py \
   "extraction: overshoot offset by 1 % of the step" \
   'overshoot = max(0.0, float(yw.max()) - 1.0)' 'overshoot = max(0.0, float(yw.max()) - 0.99)'
+
+# ibias-cl-sensitivity (issue #131): the substitution helpers' exactly-one-match
+# guard and the control-vs-committed-record comparison.
+control ibias-cl-sensitivity test_ibias_cl_sensitivity.py
+expect_fail ibias-cl-sensitivity test_ibias_cl_sensitivity.py ibias-cl-sensitivity/run_ibias_cl_sensitivity.py \
+  "guard: Ibias substitution no longer requires exactly one match" \
+  'if n != 1:
+        raise RuntimeError(f"testbench Ibias' 'if False:
+        raise RuntimeError(f"testbench Ibias'
+expect_fail ibias-cl-sensitivity test_ibias_cl_sensitivity.py ibias-cl-sensitivity/run_ibias_cl_sensitivity.py \
+  "extraction: control comparison never reports a failure" \
+  '                bad.append(f"control {fig} {lab}: {v[field]:.4g} vs record {ref[i]:.4g}")
+    return bad' '                bad.append(f"control {fig} {lab}: {v[field]:.4g} vs record {ref[i]:.4g}")
+    return []'
+
+# Shared modules (issue #131). harness.py has its own suite (test_harness.py, in
+# the sim/ root). passive_corners.py has no suite of its own: its helpers are
+# exercised by the slew-swing-power suite, which is the one that must fail.
+control . test_harness.py
+expect_fail . test_harness.py harness.py \
+  "guard: stage_workdir ignores testbench guard errors" \
+  '    errs = guard_tb(tb_text)
+    if errs:' '    errs = guard_tb(tb_text)
+    if False:'
+expect_fail slew-swing-power test_slew_swing_power.py passive_corners.py \
+  "extraction: worst passive level maps to the ff section" \
+  '"worst": "ss"}' '"worst": "ff"}'
 
 # spec-citation check (issue #112): the checker's unit suite must catch a
 # disabled selected-record comparison, and the checker itself (run on the
