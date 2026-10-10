@@ -307,9 +307,9 @@ class ControlTests(unittest.TestCase):
     def test_systematic_reference_reads_the_committed_record(self):
         ref = m.systematic_reference([NOM, ("ss", 27.0, 3.30)])
         self.assertAlmostEqual(ref[NOM]["dc"], 100.64, delta=0.005)
-        self.assertAlmostEqual(ref[NOM]["1m"], 94.78, delta=0.005)
-        self.assertAlmostEqual(ref[NOM]["fu"], 64.16)
-        self.assertAlmostEqual(ref[NOM]["fu_hz"], 13.220e6)
+        self.assertAlmostEqual(ref[NOM]["1m"], 94.94, delta=0.005)
+        self.assertAlmostEqual(ref[NOM]["fu"], 63.17)
+        self.assertAlmostEqual(ref[NOM]["fu_hz"], 16.399e6)
         self.assertIn(("ss", 27.0, 3.30), ref)
 
 

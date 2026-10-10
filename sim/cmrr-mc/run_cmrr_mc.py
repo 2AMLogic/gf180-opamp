@@ -40,7 +40,7 @@ submit fails: it stops with the error and writes no record.
 Controls (small requests, same deck):
   * switch-off: `sw_stat_mismatch = 0`, every corner, a few samples: the
     spread must be exactly zero and the values must reproduce the committed
-    systematic record (`sim/cmrr/records/20261009-105631-30ec86d.md`).
+    systematic record (`sim/cmrr/records/20261010-163601-0127eb7.md`).
   * process-only: `vary: "process"` at typical, recorded as measured (klt
     feeds ngspice one combined seed, so it is not a sigma = 0 control with
     this deck -- the offset-mc finding, 2AMLogic/klayout-tools#2937).
@@ -107,7 +107,7 @@ G = C.G
 TESTBENCH = HERE / "testbench" / "tb_cmrr_mc.spice"
 SYSTEMATIC_TB = REPO_ROOT / "sim" / "cmrr" / "testbench" / "tb_cmrr.spice"
 #: The committed systematic record the switch-off control must reproduce.
-SYSTEMATIC_RECORD = "20261009-105631-30ec86d"
+SYSTEMATIC_RECORD = "20261010-163601-0127eb7"
 SYSTEMATIC_DIR = REPO_ROOT / "sim" / "cmrr"
 #: The committed offset Monte Carlo (same corners, N, seed): per-sample link.
 OFFSET_MC_RECORD = "20261009-072205-96bf3cc"

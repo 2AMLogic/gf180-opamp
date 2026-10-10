@@ -109,20 +109,23 @@ This is a **smoke check, not characterization** — one corner, no AC
 analysis, and it deliberately writes no `sim/` record. PVT-cornered
 characterization of this schematic lives under `sim/` instead: gain, GBW and
 phase margin
-([`sim/gain-gbw-pm/records/20261009-055759-2524b3e.md`](../sim/gain-gbw-pm/records/20261009-055759-2524b3e.md)),
+([`sim/gain-gbw-pm/records/20261010-161514-0127eb7.md`](../sim/gain-gbw-pm/records/20261010-161514-0127eb7.md)),
 noise
-([`20261009-082007-68b4567`](../sim/noise/records/20261009-082007-68b4567.md)),
+([`20261010-163507-0127eb7`](../sim/noise/records/20261010-163507-0127eb7.md)),
 offset mismatch Monte Carlo
-([`20261009-072205-96bf3cc`](../sim/offset-mc/records/20261009-072205-96bf3cc.md)),
+([`20261010-185141-e4be1ac`](../sim/offset-mc/records/20261010-185141-e4be1ac.md)),
 CMRR
-([`20261009-105631-30ec86d`](../sim/cmrr/records/20261009-105631-30ec86d.md))
-and PSRR
-([`20261009-105929-30ec86d`](../sim/psrr/records/20261009-105929-30ec86d.md)).
+([`20261010-163601-0127eb7`](../sim/cmrr/records/20261010-163601-0127eb7.md))
+PSRR
+([`20261010-163854-0127eb7`](../sim/psrr/records/20261010-163854-0127eb7.md))
+and slew / swing / power
+([`20261010-161852-0127eb7`](../sim/slew-swing-power/records/20261010-161852-0127eb7.md)).
 The small-signal numbers quoted in `opamp_sizing.md` are the original gm/ID
 predictions, kept as the sizing record; where a measured value exists the
-`sim/` record, not the prediction, is the evidence (phase margin in particular
-measures below its 60 degree target at 30 of 45 points). Slew, swing and
-power benches are not yet committed; the remaining gap is tracked by
+`sim/` record, not the prediction, is the evidence (the Miller compensation was
+retuned in issue #42, RZ 11.23 kOhm / CC 0.578 pF; phase margin now measures
+71.99 degrees worst over the 45 points, against 57.34 before the retune). The
+remaining gap is tracked by
 [#7](https://github.com/2AMLogic/gf180-opamp/issues/7).
 
 ## Prerequisites

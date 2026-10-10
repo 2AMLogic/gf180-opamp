@@ -47,7 +47,7 @@ runs the 45-point T/VDD grid under mismatch (13 500 units).
 ## Controls (all in the record, blocking)
 
 - **switch-off** (`sw_stat_mismatch = 0`): spread exactly zero and values equal
-  to the committed systematic record `20261009-105631-30ec86d`.
+  to the committed systematic record `20261010-163601-0127eb7`.
 - **process-only** (`vary: "process"`): recorded as measured; not a σ = 0
   control with this PDK deck (2AMLogic/klayout-tools#2937).
 - **mirror-imbalance** (XM3 W −10 % in a DUT copy, same Monte Carlo): mean |Acm|

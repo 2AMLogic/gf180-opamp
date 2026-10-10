@@ -22,8 +22,8 @@ import spec_citation_check as sc  # noqa: E402
 
 REPO = HERE.parent.parent
 SPEC = "spec/target-spec.md"
-GAIN_NEW, GAIN_OLD = "20261010-020141-1e51d1c", "20261009-055759-2524b3e"
-SWING_NEW, SSP_FULL = "20261009-143715-4d5aa43", "20261009-142137-1dab1db"
+GAIN_NEW, GAIN_OLD = "20261010-161514-0127eb7", "20261010-020141-1e51d1c"
+SWING_NEW, SSP_FULL = "20261010-161852-0127eb7", "20261009-143715-4d5aa43"
 
 
 def link(exp: str, rid: str) -> str:
@@ -84,14 +84,14 @@ class Committed(Base):
         # the offset cell contains an escaped `\|mean\|`; its citations sit after it: the selected
         # full-grid record (issue #120), then the nominal record labelled historical
         self.assertEqual([(c["rid"], c["labelled"]) for c in rows["offset"]],
-                         [("20261010-083043-ddf96db", False), ("20261009-072205-96bf3cc", True)])
+                         [("20261010-185141-e4be1ac", False), ("20261009-072205-96bf3cc", True)])
         self.assertEqual(rows["area"], [])
 
     def test_labelled_passive_and_superseded_citations_are_exempt(self):
         pm = {r["key"]: r for r in sc.spec_rows((REPO / SPEC).read_text())}["pm"]
         got = {c["rid"]: c["labelled"] for c in sc.citations(pm["status_raw"])}
-        self.assertEqual(got, {GAIN_NEW: False, "20261009-234014-55b400c": True,
-                               "20261009-233341-95dfc2a": True})
+        self.assertEqual(got, {GAIN_NEW: False, "20261010-161720-0127eb7": True,
+                               GAIN_OLD: True})
 
 
 class Drift(Base):
@@ -123,7 +123,7 @@ class Drift(Base):
         self.assertEqual(self.failing_rows(), ["Input-referred noise"])
 
     def test_selected_record_not_cited(self):
-        self.edit_row("PSRR", link("psrr", "20261009-105929-30ec86d"), "a record")
+        self.edit_row("PSRR", link("psrr", "20261010-163854-0127eb7"), "a record")
         probs = self.problems()
         self.assertEqual(len(probs), 1)
         self.assertIn("cites no unlabelled psrr record", probs[0])
@@ -137,13 +137,13 @@ class Drift(Base):
 
 class Existence(Base):
     def test_missing_linked_record(self):
-        (self.root / "sim/cmrr-mc/records/20261010-035206-978f088.md").unlink()
+        (self.root / "sim/cmrr-mc/records/20261010-202454-e4be1ac.md").unlink()
         probs = self.problems()
         self.assertEqual(len(probs), 1)
         self.assertIn("does not exist", probs[0])
 
     def test_missing_bare_record_id(self):
-        self.edit_row("Phase margin", "`20261009-233341-95dfc2a`", "`20261009-233341-0000000`")
+        self.edit_row("Phase margin", "(historical, superseded:", "(historical, superseded `20261009-233341-0000000`:")
         probs = self.problems()
         self.assertEqual(len(probs), 1)
         self.assertIn("matches no sim/*/records/*.md file", probs[0])
@@ -155,7 +155,7 @@ class Existence(Base):
         exps = {c["exp"] for c in sc.citations(cmrr["status_raw"])}
         self.assertEqual(exps, {"cmrr", "cmrr-mc"})
         self.assertEqual(self.problems(), [])
-        self.assertEqual(sc.selected_for(json.loads(self.manifest.read_text()), "cmrr-mc", None), "20261010-035206-978f088")
+        self.assertEqual(sc.selected_for(json.loads(self.manifest.read_text()), "cmrr-mc", None), "20261010-202454-e4be1ac")
 
     def test_cmrr_mc_selection_drift_fails(self):
         m = json.loads(self.manifest.read_text())
@@ -163,10 +163,10 @@ class Existence(Base):
         self.manifest.write_text(json.dumps(m))
         probs = self.problems()
         self.assertEqual(len(probs), 1)
-        self.assertIn("cites cmrr-mc record 20261010-035206-978f088 but sim/report/selection.json selects", probs[0])
+        self.assertIn("cites cmrr-mc record 20261010-202454-e4be1ac but sim/report/selection.json selects", probs[0])
 
     def test_cmrr_mc_selected_but_not_cited_fails(self):
-        self.edit_row("CMRR", link("cmrr-mc", "20261010-035206-978f088"), "a record")
+        self.edit_row("CMRR", link("cmrr-mc", "20261010-202454-e4be1ac"), "a record")
         self.assertIn("cites no unlabelled cmrr-mc record", " ".join(self.problems()))
 
     def test_cmrr_mc_deselected_but_cited_fails(self):
@@ -176,7 +176,7 @@ class Existence(Base):
         self.assertIn("selects no record for cmrr-mc", " ".join(self.problems()))
 
     def test_unmapped_row_citing_a_record_fails(self):
-        self.edit_row("Area |", "Open [DR-3] — no layout", f"Open [DR-3] — {link('noise', '20261009-082007-68b4567')}")
+        self.edit_row("Area |", "Open [DR-3] — no layout", f"Open [DR-3] — {link('noise', '20261010-163507-0127eb7')}")
         self.assertIn("no experiment mapping", " ".join(self.problems()))
 
     def test_input_errors_exit_2(self):

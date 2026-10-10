@@ -144,7 +144,10 @@ point, and the worst figure set next to the 27 °C / 3.30 V record's
 (`20261009-072205-96bf3cc`, recomputed from its committed samples). It
 proposes no bound (spec issue #62 decides that).
 
-Grid record: [`records/20261010-083043-ddf96db.md`](records/20261010-083043-ddf96db.md)
+Newest grid record (revised #42 compensation, DC offset unchanged): [`records/20261010-185141-e4be1ac.md`](records/20261010-185141-e4be1ac.md)
+(worst 15.458 mV at typical / 27 °C / 3.30 V, identical to the record below, as expected since RZ/CC carry no DC current).
+
+Previous grid record: [`records/20261010-083043-ddf96db.md`](records/20261010-083043-ddf96db.md)
 (13 500 samples, all valid; 3 fleet jobs). Worst linear 3-sigma offset over
 the 45 points **15.458 mV** at typical / 27 °C / 3.30 V (sigma 4.946 mV, the
 grid's largest), against **15.635 mV** (sf) in the 27 °C / 3.30 V record.

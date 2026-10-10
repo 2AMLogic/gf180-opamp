@@ -1,36 +1,25 @@
 {
   "dut": {
     "netlist": "design/netlist/opamp_two_stage.spice",
-    "normalised_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
-    "normalised_sha256_prefix": "81fbd914f8254a49"
+    "normalised_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
+    "normalised_sha256_prefix": "33b58dac62c747de"
   },
   "limitations": [
-    "cmrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "cmrr-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "input-common-mode: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
-    "noise: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
-    "psrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
-    "slew-swing-power (20261009-142137-1dab1db): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
-    "slew-swing-power (20261009-143715-4d5aa43): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
-    "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), cmrr-mc (recorded), gain-gbw-pm (recorded), input-common-mode (recorded), input-common-mode (klt client-resolved), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (20261009-142137-1dab1db) (recorded), slew-swing-power (20261009-143715-4d5aa43) (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
-    "ngspice versions differ: ngspice 42 <- input-common-mode (local), noise (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), cmrr-mc (local), cmrr-mc (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), input-common-mode (klt engine), offset-mc (local), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)",
     "coverage differs between sources (see each row's coverage; e.g. the CMRR mismatch Monte Carlo record is 5 corner points at 27 C / 3.30 V while the AC rows are full 45-point grids)",
     "supplementary gain-gbw-pm-passive-corners: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "supplementary slew-swing-power-passive-corners: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not"
   ],
   "manifest_selection": {
-    "cmrr": "sim/cmrr/records/20261009-105631-30ec86d.md",
-    "cmrr-mc": "sim/cmrr-mc/records/20261010-035206-978f088.md",
-    "gain-gbw-pm": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
-    "input-common-mode": "sim/input-common-mode/records/20261009-222613-871d1a6.md",
-    "noise": "sim/noise/records/20261009-082007-68b4567.md",
-    "offset-mc": "sim/offset-mc/records/20261010-083043-ddf96db.md",
-    "psrr": "sim/psrr/records/20261009-105929-30ec86d.md",
-    "slew-swing-power": {
-      "power": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
-      "slew": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
-      "swing": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md"
-    }
+    "cmrr": "sim/cmrr/records/20261010-163601-0127eb7.md",
+    "cmrr-mc": "sim/cmrr-mc/records/20261010-202454-e4be1ac.md",
+    "gain-gbw-pm": "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md",
+    "input-common-mode": "sim/input-common-mode/records/20261010-164310-0127eb7.md",
+    "noise": "sim/noise/records/20261010-163507-0127eb7.md",
+    "offset-mc": "sim/offset-mc/records/20261010-185141-e4be1ac.md",
+    "psrr": "sim/psrr/records/20261010-163854-0127eb7.md",
+    "slew-swing-power": "sim/slew-swing-power/records/20261010-161852-0127eb7.md"
   },
   "rows": [
     {
@@ -67,16 +56,16 @@
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "provisional gain/GBW/PM records are superseded by this one and are not used as evidence",
-        "supplementary side study `sim/gain-gbw-pm/records/20261009-234014-55b400c.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product): the study measures PM and GBW only (no DC-gain column): no gain observation"
+        "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product): the study measures PM and GBW only (no DC-gain column): no gain observation"
       ],
       "points_pass": 45,
       "points_total": 45,
       "row": "Open-loop DC gain",
       "source": {
         "experiment": "gain-gbw-pm",
-        "path": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
-        "record_id": "20261010-020141-1e51d1c",
-        "sha256": "37ae04a15b0b92cff7cb781f9c95da8c6b39926c841af46515f07c6177a1904b"
+        "path": "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md",
+        "record_id": "20261010-161514-0127eb7",
+        "sha256": "8de10b83158eb44d5944229b2c1959c48510ddd253ac93fbff0d0545e7ce34bc"
       },
       "spec_bound": "≥ 60 dB",
       "status": "measured-verdict",
@@ -112,21 +101,21 @@
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "provisional gain/GBW/PM records are superseded by this one and are not used as evidence",
-        "supplementary side study `sim/gain-gbw-pm/records/20261009-234014-55b400c.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures GBW >= 10 MHz: 24/27 cells pass, 3 fail; range 9.656 .. 14.361 MHz; worst 9.656 MHz at ss / 125 C / 2.97 V, RZ best, CC worst; failing cells: ss / 125 C / 2.97 V 3/9 (RZ typical/best/worst; CC worst; 9.663/9.656/9.673 MHz)"
+        "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures GBW >= 10 MHz: 27/27 cells pass, 0 fail; range 10.726 .. 19.095 MHz; worst 10.726 MHz at ss / 125 C / 2.97 V, RZ best, CC worst"
       ],
       "points_pass": 45,
       "points_total": 45,
       "row": "GBW",
       "source": {
         "experiment": "gain-gbw-pm",
-        "path": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
-        "record_id": "20261010-020141-1e51d1c",
-        "sha256": "37ae04a15b0b92cff7cb781f9c95da8c6b39926c841af46515f07c6177a1904b"
+        "path": "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md",
+        "record_id": "20261010-161514-0127eb7",
+        "sha256": "8de10b83158eb44d5944229b2c1959c48510ddd253ac93fbff0d0545e7ce34bc"
       },
       "spec_bound": "≥ 10 MHz",
       "status": "measured-verdict",
       "verdict": "PASS",
-      "worst": "10.422 MHz",
+      "worst": "11.910 MHz",
       "worst_corner": "ss / 125 C / 2.97 V"
     },
     {
@@ -157,21 +146,21 @@
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "provisional gain/GBW/PM records are superseded by this one and are not used as evidence",
-        "supplementary side study `sim/gain-gbw-pm/records/20261009-234014-55b400c.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Phase margin >= 60 deg: 7/27 cells pass, 20 fail; range 53.63 .. 63.17 deg; worst 53.63 deg at fs / 125 C / 2.97 V, RZ best, CC best; failing cells: fs / 125 C / 2.97 V 8/9 (RZ typical/best/worst; CC typical/best/worst), ss / 125 C / 2.97 V 7/9 (RZ typical/best/worst; CC typical/best/worst), typical / 27 C / 3.30 V 5/9 (RZ typical/best/worst; CC typical/best)"
+        "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Phase margin >= 60 deg: 27/27 cells pass, 0 fail; range 64.47 .. 84.93 deg; worst 64.47 deg at fs / 125 C / 2.97 V, RZ best, CC best"
       ],
-      "points_pass": 15,
+      "points_pass": 45,
       "points_total": 45,
       "row": "Phase margin",
       "source": {
         "experiment": "gain-gbw-pm",
-        "path": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
-        "record_id": "20261010-020141-1e51d1c",
-        "sha256": "37ae04a15b0b92cff7cb781f9c95da8c6b39926c841af46515f07c6177a1904b"
+        "path": "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md",
+        "record_id": "20261010-161514-0127eb7",
+        "sha256": "8de10b83158eb44d5944229b2c1959c48510ddd253ac93fbff0d0545e7ce34bc"
       },
       "spec_bound": "≥ 60 deg",
       "status": "measured-verdict",
-      "verdict": "FAIL",
-      "worst": "57.34 deg",
+      "verdict": "PASS",
+      "worst": "71.99 deg",
       "worst_corner": "fs / 125 C / 2.97 V"
     },
     {
@@ -201,22 +190,21 @@
       "limitations": [
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's",
-        "supplementary side study `sim/slew-swing-power/records/20261010-094234-fe6599f.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Slew rate (slower of rise/fall, CL = 2 pF) >= 10 V/us: 27/27 cells pass, 0 fail; range 13.40 .. 16.37 V/us; worst 13.40 V/us at ss / 125 C / 2.97 V, RZ worst, CC worst"
+        "supplementary side study `sim/slew-swing-power/records/20261010-162823-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Slew rate (slower of rise/fall, CL = 2 pF) >= 10 V/us: 27/27 cells pass, 0 fail; range 14.25 .. 17.82 V/us; worst 14.25 V/us at ss / 125 C / 2.97 V, RZ best, CC worst"
       ],
       "points_pass": 45,
       "points_total": 45,
       "row": "Slew rate",
       "source": {
         "experiment": "slew-swing-power",
-        "path": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
-        "record_id": "20261009-142137-1dab1db",
-        "sha256": "bab53389699eb212e5b7b8c15b292539db6d6659cef3833ec0ebbc430aa3c286"
+        "path": "sim/slew-swing-power/records/20261010-161852-0127eb7.md",
+        "record_id": "20261010-161852-0127eb7",
+        "sha256": "a49ee8cbead1e3a69857d37ed8dc4fd67aa229b1300f6a296a987af61f180379"
       },
       "spec_bound": "≥ 10 V/us",
       "status": "measured-verdict",
       "verdict": "PASS",
-      "worst": "14.51 V/us",
+      "worst": "15.50 V/us",
       "worst_corner": "ss / 125 C / 2.97 V"
     },
     {
@@ -245,7 +233,7 @@
         {
           "corner": "ss / 125 C / 3.63 V",
           "label": "input-referred rms 100 Hz - 1 MHz, highest",
-          "value": "62.902 uV"
+          "value": "62.901 uV"
         },
         {
           "corner": "ss / 125 C / 3.63 V",
@@ -265,34 +253,33 @@
         {
           "corner": null,
           "label": "thermal floor range over the grid",
-          "value": "21.78 .. 36.29 nV/rtHz"
+          "value": "21.72 .. 36.19 nV/rtHz"
         },
         {
           "corner": null,
           "label": "1/f corner range over the grid",
-          "value": "209.6 .. 504.7 kHz"
+          "value": "210.7 .. 508.0 kHz"
         }
       ],
       "key": "noise",
       "limitations": [
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "no ratified bound and no ratified integration band (DR-3 residual e1); the bands are candidates",
-        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
+        "no ratified bound and no ratified integration band (DR-3 residual e1); the bands are candidates"
       ],
       "points_pass": null,
       "points_total": 45,
       "row": "Input-referred noise",
       "source": {
         "experiment": "noise",
-        "path": "sim/noise/records/20261009-082007-68b4567.md",
-        "record_id": "20261009-082007-68b4567",
-        "sha256": "37976fec70bd2f39f71818878af601ff7d331f43d0d45f00a17720e25fe57356"
+        "path": "sim/noise/records/20261010-163507-0127eb7.md",
+        "record_id": "20261010-163507-0127eb7",
+        "sha256": "b7e691379c34082eeaea2a6d62265773b44b25cc27203994d77c7ac409fd3a84"
       },
       "spec_bound": "open",
       "status": "measured-no-bound",
       "verdict": null,
-      "worst": "62.902 uV rms (100 Hz - 1 MHz, highest)",
+      "worst": "62.901 uV rms (100 Hz - 1 MHz, highest)",
       "worst_corner": "ss / 125 C / 3.63 V"
     },
     {
@@ -382,7 +369,7 @@
         {
           "corner": null,
           "label": "per-point statistics re-derived from the retained samples",
-          "value": "13500 samples at 45 points agree with the record (sim/offset-mc/corners/20261010-083043-ddf96db/offset_samples.csv, sha256 ced1f6105da1e6a1)"
+          "value": "13500 samples at 45 points agree with the record (sim/offset-mc/corners/20261010-185141-e4be1ac/offset_samples.csv, sha256 67932852d4984cf5)"
         }
       ],
       "key": "offset",
@@ -397,9 +384,9 @@
       "row": "Input-referred offset",
       "source": {
         "experiment": "offset-mc",
-        "path": "sim/offset-mc/records/20261010-083043-ddf96db.md",
-        "record_id": "20261010-083043-ddf96db",
-        "sha256": "f64e28119b83d5c3e5d81a39166ff0534be976748197830f2701fd36174d1913"
+        "path": "sim/offset-mc/records/20261010-185141-e4be1ac.md",
+        "record_id": "20261010-185141-e4be1ac",
+        "sha256": "6d7f3da43d4c3c7a363d95931c52bf4b46b63635c6eb64dc9792cf7dfebec817"
       },
       "spec_bound": "open",
       "status": "measured-no-bound",
@@ -416,8 +403,8 @@
           "imbalance_shift_se": 0.101,
           "process_only_cmrr_dc_sigma_db": 5.693,
           "process_only_offset_sigma_mv": 5.876,
-          "switch_off_max_dev_db_at_fu": 0.004,
-          "switch_off_max_dev_db_dc_to_1m": 0.0001
+          "switch_off_max_dev_db_at_fu": 0.003,
+          "switch_off_max_dev_db_dc_to_1m": 0.0
         },
         "measurement_config": {
           "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
@@ -434,17 +421,17 @@
             },
             "fs / 27 C / 3.30 V": {
               "db3": 72.02,
-              "lin3": 83.41,
+              "lin3": 83.42,
               "mean": 96.01,
               "n": 300,
               "sigma": 8.0
             },
             "sf / 27 C / 3.30 V": {
-              "db3": 72.03,
+              "db3": 72.02,
               "lin3": 82.78,
               "mean": 95.77,
               "n": 300,
-              "sigma": 7.91
+              "sigma": 7.92
             },
             "ss / 27 C / 3.30 V": {
               "db3": 72.44,
@@ -456,7 +443,7 @@
             "typical / 27 C / 3.30 V": {
               "db3": 71.49,
               "lin3": 82.66,
-              "mean": 95.69,
+              "mean": 95.7,
               "n": 300,
               "sigma": 8.07
             }
@@ -470,7 +457,7 @@
               "sigma": 8.94
             },
             "fs / 27 C / 3.30 V": {
-              "db3": 70.0,
+              "db3": 69.99,
               "lin3": 83.4,
               "mean": 96.32,
               "n": 300,
@@ -515,7 +502,7 @@
             },
             "sf / 27 C / 3.30 V": {
               "db3": 69.79,
-              "lin3": 82.77,
+              "lin3": 82.78,
               "mean": 96.12,
               "n": 300,
               "sigma": 8.78
@@ -538,38 +525,38 @@
           "1m": {
             "ff / 27 C / 3.30 V": {
               "db3": 79.11,
-              "lin3": 82.94,
-              "mean": 92.75,
+              "lin3": 82.97,
+              "mean": 92.8,
               "n": 300,
-              "sigma": 4.55
+              "sigma": 4.56
             },
             "fs / 27 C / 3.30 V": {
               "db3": 79.8,
-              "lin3": 83.32,
-              "mean": 92.4,
-              "n": 300,
-              "sigma": 4.2
-            },
-            "sf / 27 C / 3.30 V": {
-              "db3": 79.34,
-              "lin3": 82.43,
-              "mean": 91.99,
+              "lin3": 83.35,
+              "mean": 92.46,
               "n": 300,
               "sigma": 4.22
             },
-            "ss / 27 C / 3.30 V": {
-              "db3": 78.82,
-              "lin3": 82.19,
-              "mean": 91.58,
+            "sf / 27 C / 3.30 V": {
+              "db3": 79.38,
+              "lin3": 82.48,
+              "mean": 92.05,
               "n": 300,
-              "sigma": 4.25
+              "sigma": 4.23
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 78.88,
+              "lin3": 82.26,
+              "mean": 91.66,
+              "n": 300,
+              "sigma": 4.26
             },
             "typical / 27 C / 3.30 V": {
-              "db3": 78.57,
-              "lin3": 82.27,
-              "mean": 92.1,
+              "db3": 78.61,
+              "lin3": 82.32,
+              "mean": 92.16,
               "n": 300,
-              "sigma": 4.51
+              "sigma": 4.52
             }
           },
           "dc": {
@@ -611,39 +598,39 @@
           },
           "fu": {
             "ff / 27 C / 3.30 V": {
-              "db3": 66.43,
-              "lin3": 66.55,
-              "mean": 68.04,
+              "db3": 65.37,
+              "lin3": 65.46,
+              "mean": 66.77,
               "n": 300,
-              "sigma": 0.54
+              "sigma": 0.47
             },
             "fs / 27 C / 3.30 V": {
-              "db3": 64.23,
-              "lin3": 64.31,
-              "mean": 65.43,
+              "db3": 63.6,
+              "lin3": 63.63,
+              "mean": 64.53,
               "n": 300,
-              "sigma": 0.4
+              "sigma": 0.31
             },
             "sf / 27 C / 3.30 V": {
-              "db3": 62.37,
-              "lin3": 62.41,
-              "mean": 63.35,
+              "db3": 61.56,
+              "lin3": 61.57,
+              "mean": 62.31,
               "n": 300,
-              "sigma": 0.32
+              "sigma": 0.25
             },
             "ss / 27 C / 3.30 V": {
-              "db3": 60.98,
-              "lin3": 61.02,
-              "mean": 61.81,
+              "db3": 60.31,
+              "lin3": 60.32,
+              "mean": 60.91,
               "n": 300,
-              "sigma": 0.27
+              "sigma": 0.2
             },
             "typical / 27 C / 3.30 V": {
-              "db3": 63.1,
-              "lin3": 63.15,
-              "mean": 64.13,
+              "db3": 62.34,
+              "lin3": 62.36,
+              "mean": 63.17,
               "n": 300,
-              "sigma": 0.34
+              "sigma": 0.28
             }
           }
         },
@@ -664,16 +651,16 @@
           "vdd_v": "3.30"
         },
         "retained_evidence": {
-          "path": "sim/cmrr-mc/corners/20261010-035206-978f088/samples.csv",
+          "path": "sim/cmrr-mc/corners/20261010-202454-e4be1ac/samples.csv",
           "points": 5,
           "samples": 1500,
-          "sha256": "1b828d1d084c2df0f73b542299ad6abb40eab1239e4081e455aeb959a5d8ee61"
+          "sha256": "b3dda575ae07715ae0ecd48ba3d434e0ed904ce3020a37360b7736dba58cc378"
         },
         "source": {
           "experiment": "cmrr-mc",
-          "path": "sim/cmrr-mc/records/20261010-035206-978f088.md",
-          "record_id": "20261010-035206-978f088",
-          "sha256": "85029ad341f586587d09e4e7bf3dfcb8ec9dece19e0c2ea35eb3d2380a3ba142"
+          "path": "sim/cmrr-mc/records/20261010-202454-e4be1ac.md",
+          "record_id": "20261010-202454-e4be1ac",
+          "sha256": "73aab6eac9d54511de790f167b9645c52541ab1a6ff4749815454990f214fd87"
         },
         "worst_per_figure": {
           "100k": {
@@ -733,19 +720,19 @@
           "1m": {
             "db3": {
               "at": "typical / 27 C / 3.30 V",
-              "value": 78.57
+              "value": 78.61
             },
             "lin3": {
               "at": "ss / 27 C / 3.30 V",
-              "value": 82.19
+              "value": 82.26
             },
             "min": {
               "at": "sf / 27 C / 3.30 V",
-              "value": 78.84
+              "value": 78.87
             },
             "p5": {
               "at": "ss / 27 C / 3.30 V",
-              "value": 84.13
+              "value": 84.19
             }
           },
           "dc": {
@@ -769,19 +756,19 @@
           "fu": {
             "db3": {
               "at": "ss / 27 C / 3.30 V",
-              "value": 60.98
+              "value": 60.31
             },
             "lin3": {
               "at": "ss / 27 C / 3.30 V",
-              "value": 61.02
+              "value": 60.32
             },
             "min": {
               "at": "ss / 27 C / 3.30 V",
-              "value": 61.05
+              "value": 60.29
             },
             "p5": {
               "at": "ss / 27 C / 3.30 V",
-              "value": 61.36
+              "value": 60.59
             }
           }
         }
@@ -830,12 +817,12 @@
         {
           "corner": "ss / 125 C / 2.97 V",
           "label": "systematic (mismatch-free) CMRR 1 MHz, lowest (information only, not the row's statistic)",
-          "value": "89.19 dB"
+          "value": "89.34 dB"
         },
         {
-          "corner": "ss / -40 C / 2.97 V",
+          "corner": "ss / -40 C / 3.63 V",
           "label": "systematic (mismatch-free) CMRR at f_u (differential unity gain), lowest (information only, not the row's statistic)",
-          "value": "60.99 dB"
+          "value": "59.19 dB"
         },
         {
           "corner": null,
@@ -885,22 +872,22 @@
         {
           "corner": "ss / 27 C / 3.30 V",
           "label": "mismatch CMRR 1 MHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Acm| + 3 sigma|Acm|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "82.19 dB"
+          "value": "82.26 dB"
         },
         {
           "corner": "typical / 27 C / 3.30 V",
           "label": "mismatch CMRR 1 MHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "78.57 dB"
+          "value": "78.61 dB"
         },
         {
           "corner": "ss / 27 C / 3.30 V",
           "label": "mismatch CMRR at f_u (differential unity gain), linear 3-sigma lowest (mean Ad - 20 log10(mean|Acm| + 3 sigma|Acm|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "61.02 dB"
+          "value": "60.32 dB"
         },
         {
           "corner": "ss / 27 C / 3.30 V",
           "label": "mismatch CMRR at f_u (differential unity gain), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "60.98 dB"
+          "value": "60.31 dB"
         },
         {
           "corner": "sf / 27 C / 3.30 V",
@@ -910,7 +897,7 @@
         {
           "corner": null,
           "label": "mismatch controls: switch-off max deviation from the systematic record (DC..1 MHz / at f_u; information only)",
-          "value": "0.0001 dB / 0.004 dB"
+          "value": "0.0000 dB / 0.003 dB"
         },
         {
           "corner": null,
@@ -920,7 +907,7 @@
         {
           "corner": null,
           "label": "mismatch per-point statistics re-derived from the retained samples (information only)",
-          "value": "1500 samples at 5 points agree with the record (sim/cmrr-mc/corners/20261010-035206-978f088/samples.csv, sha256 1b828d1d084c2df0)"
+          "value": "1500 samples at 5 points agree with the record (sim/cmrr-mc/corners/20261010-202454-e4be1ac/samples.csv, sha256 b3dda575ae07715a)"
         }
       ],
       "key": "cmrr",
@@ -931,8 +918,7 @@
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "systematic figure of a perfectly matched schematic; mismatch-limited CMRR (Monte Carlo) is not covered by this record",
         "no ratified bound (DR-3 residual e3)",
-        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's",
-        "the mismatch-inclusive figures below come from the selected CMRR mismatch Monte Carlo record (20261010-035206-978f088): 5 MOS corners x N=300 = 1500 samples, seed 45, vary \"mismatch\", 27 C / 3.30 V only. They are measured information, not graded, and are not combined with the systematic PVT figures: the systematic record covers T and VDD (matched devices), the Monte Carlo record covers mismatch (one T / VDD point)",
+        "the mismatch-inclusive figures below come from the selected CMRR mismatch Monte Carlo record (20261010-202454-e4be1ac): 5 MOS corners x N=300 = 1500 samples, seed 45, vary \"mismatch\", 27 C / 3.30 V only. They are measured information, not graded, and are not combined with the systematic PVT figures: the systematic record covers T and VDD (matched devices), the Monte Carlo record covers mismatch (one T / VDD point)",
         "temperature and supply are NOT sampled under mismatch: 27 C / 3.30 V only (the systematic cmrr record covers T and VDD for matched devices only)",
         "MOS mismatch only; passives (RZ, CC) at typical with no passive mismatch, resistor and capacitor mismatch not modelled",
         "N=300 cannot resolve a 0.135 % tail: neither the linear nor the dB 3-sigma figure is a sample statistic; the empirical minimum and percentiles are the normality cross-check",
@@ -944,12 +930,12 @@
       "row": "CMRR",
       "source": {
         "experiment": "cmrr",
-        "path": "sim/cmrr/records/20261009-105631-30ec86d.md",
-        "record_id": "20261009-105631-30ec86d",
-        "sha256": "30ab2d2c36eb50d084559b3ae4b6329d54b1e57e0aca5486cb932a834a64e23e"
+        "path": "sim/cmrr/records/20261010-163601-0127eb7.md",
+        "record_id": "20261010-163601-0127eb7",
+        "sha256": "677dd92c6045134c8dc6e4eed73cb4bb3b0536151f149236faed25e79a36c5ae"
       },
       "spec_bound": "proposed, not ratified: ≥ 60 dB at the DC plateau (0.1–1 Hz) and at 10 kHz [DR-6]",
-      "spec_status": "Proposed [DR-6] — measured: covered (mismatch-inclusive linear 3σ worst 82.71 dB at DC and 82.65 dB at 10 kHz, typical, 27 °C / 3.30 V, 1 500 samples, record 20261010-035206-978f088; dB mean − 3σ 68.84 dB; empirical sample minimum 79.28 dB; PVT estimate 77.1 dB = systematic worst 95.42 dB at SS / 125 °C / 2.97 V minus the worst mismatch penalty 18.31 dB; reported only: 100 kHz 82.66 dB, 1 MHz 82.19 dB, at f_u 61.02 dB; systematic record 20261009-105631-30ec86d)",
+      "spec_status": "Proposed [DR-6] — measured: covered (mismatch-inclusive linear 3σ worst 82.71 dB at DC and 82.65 dB at 10 kHz, typical, 27 °C / 3.30 V, 1 500 samples, record 20261010-202454-e4be1ac; dB mean − 3σ 68.84 dB; empirical sample minimum 79.28 dB; PVT estimate 77.1 dB = systematic worst 95.42 dB at SS / 125 °C / 2.97 V minus the worst mismatch penalty 18.31 dB; reported only: 100 kHz 82.66 dB, 1 MHz 82.26 dB, at f_u 60.32 dB; systematic record 20261010-163601-0127eb7)",
       "status": "proposed-not-graded",
       "verdict": null,
       "worst": null,
@@ -986,27 +972,27 @@
         {
           "corner": "ss / 125 C / 2.97 V",
           "label": "PSRR+ 1 kHz, lowest (information only, not graded)",
-          "value": "81.24 dB"
+          "value": "81.82 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
           "label": "PSRR+ 10 kHz, lowest (information only, not graded)",
-          "value": "61.31 dB"
+          "value": "61.90 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
           "label": "PSRR+ 100 kHz, lowest (information only, not graded)",
-          "value": "41.31 dB"
+          "value": "41.90 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
           "label": "PSRR+ 1 MHz, lowest (information only, not graded)",
-          "value": "21.31 dB"
+          "value": "21.90 dB"
         },
         {
-          "corner": "sf / -40 C / 2.97 V",
+          "corner": "sf / 27 C / 2.97 V",
           "label": "PSRR+ at f_u (differential unity gain), lowest (information only, not graded)",
-          "value": "0.86 dB"
+          "value": "0.73 dB"
         },
         {
           "corner": "ss / -40 C / 2.97 V",
@@ -1021,22 +1007,22 @@
         {
           "corner": "ss / -40 C / 2.97 V",
           "label": "PSRR- 10 kHz, lowest (information only, not graded)",
-          "value": "100.89 dB"
+          "value": "100.90 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
           "label": "PSRR- 100 kHz, lowest (information only, not graded)",
-          "value": "93.48 dB"
+          "value": "93.90 dB"
         },
         {
           "corner": "ss / 125 C / 2.97 V",
           "label": "PSRR- 1 MHz, lowest (information only, not graded)",
-          "value": "72.60 dB"
+          "value": "73.15 dB"
         },
         {
           "corner": "ss / -40 C / 2.97 V",
           "label": "PSRR- at f_u (differential unity gain), lowest (information only, not graded)",
-          "value": "37.14 dB"
+          "value": "35.10 dB"
         }
       ],
       "key": "psrr",
@@ -1046,20 +1032,19 @@
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "PSRR-: Avss changes sign across the grid, so low-frequency PSRR- near the flip is a cancellation, not design margin; the worst-case figure is the one to use",
         "systematic figure of a perfectly matched schematic; mismatch-limited PSRR is not covered",
-        "no ratified bound (DR-3 residual e4)",
-        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
+        "no ratified bound (DR-3 residual e4)"
       ],
       "points_pass": null,
       "points_total": null,
       "row": "PSRR",
       "source": {
         "experiment": "psrr",
-        "path": "sim/psrr/records/20261009-105929-30ec86d.md",
-        "record_id": "20261009-105929-30ec86d",
-        "sha256": "5e97c2ff265200f6c36afcdfaa008a2cd6e241ee158cbbd682baf19458333f0c"
+        "path": "sim/psrr/records/20261010-163854-0127eb7.md",
+        "record_id": "20261010-163854-0127eb7",
+        "sha256": "bf895436b24b672ff09dd6cb5c3edb0814474572350f8ba634735e2e81bb8a69"
       },
       "spec_bound": "proposed, not ratified: PSRR+ ≥ 60 dB and PSRR− ≥ 60 dB at the DC plateau and at 1 kHz; ≥ 50 dB each at 10 kHz [DR-6]",
-      "spec_status": "Proposed [DR-6] — measured: covered at all 45 PVT points (PSRR+ worst 98.45 dB DC, 81.24 dB at 1 kHz, 61.31 dB at 10 kHz; PSRR− worst 101.01 dB DC, 101.01 dB at 1 kHz, 100.89 dB at 10 kHz; not bounded: PSRR+ 41.31 dB at 100 kHz, 21.31 dB at 1 MHz and 0.86 dB at f_u (SF / −40 °C / 2.97 V), PSRR− 93.48 / 72.60 / 37.14 dB; record 20261009-105929-30ec86d)",
+      "spec_status": "Proposed [DR-6] — measured: covered at all 45 PVT points (PSRR+ worst 98.45 dB DC, 81.82 dB at 1 kHz, 61.90 dB at 10 kHz; PSRR− worst 101.01 dB DC, 101.01 dB at 1 kHz, 100.90 dB at 10 kHz; not bounded: PSRR+ 41.90 dB at 100 kHz, 21.90 dB at 1 MHz and 0.73 dB at f_u (SF / 27 °C / 2.97 V), PSRR− 93.90 / 73.15 / 35.10 dB; record 20261010-163854-0127eb7)",
       "status": "proposed-not-graded",
       "verdict": null,
       "worst": null,
@@ -1151,14 +1136,11 @@
         {
           "corner": null,
           "label": "(PVT point, VCM) samples (information only, not graded)",
-          "value": "6165 (3450 pass, 2245 fail, 470 invalid); re-derived from the retained sim/input-common-mode/corners/20261009-222613-871d1a6/samples.csv"
+          "value": "6165 (3450 pass, 2247 fail, 468 invalid); re-derived from the retained sim/input-common-mode/corners/20261010-164310-0127eb7/samples.csv"
         }
       ],
       "icmr": {
-        "addendum": {
-          "path": "sim/input-common-mode/records/20261009-222613-871d1a6-addendum/ADDENDUM.md",
-          "sha256": "225e2360d2b970d82eb9b3bf7d30dca5a0b959b3d9bcc08a3bd6bd35826857db"
-        },
+        "addendum": null,
         "common_interval_components": [
           {
             "high_binding_point": "fs / 125 C / 2.97 V",
@@ -1664,29 +1646,29 @@
         ],
         "provenance": {
           "backend": "aws-batch-fleet",
-          "dut_sha256": "81fbd914f8254a49",
+          "dut_sha256": "33b58dac62c747de",
           "fleet_runner_mismatch": true,
-          "klt_client": "0.7.0+gb82427b30c96",
+          "klt_client": "0.7.0+g21e45ce7233b",
           "measurement_config": {
             "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
             "status": "unknown"
           },
           "ngspice_engine": "46",
-          "ngspice_local": "42",
-          "pdk_client_resolved": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+          "ngspice_local": "46",
+          "pdk_client_resolved": null,
           "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-          "record_id": "20261009-222613-871d1a6",
-          "record_sha256": "663492386732d44808422a134aae0d2411b9c23d9a8f99d80ea69639ec93fa6d"
+          "record_id": "20261010-164310-0127eb7",
+          "record_sha256": "c5e1b08cc96015fd8823ce00ab4c95f6da6b4c05e3e56ab0f8561307d6e07ce3"
         },
         "retained_evidence": {
-          "path": "sim/input-common-mode/corners/20261009-222613-871d1a6/samples.csv",
+          "path": "sim/input-common-mode/corners/20261010-164310-0127eb7/samples.csv",
           "points": 45,
           "samples": 6165,
-          "sha256": "f1d833e4dbeed110142e45130c8cac8900178598ff021154fa20fac5f2ca8a70"
+          "sha256": "671389fea0d5528e8c3f2f9decbc70868e3bdedd5ea746fcb22e64e744b7d313"
         },
         "samples": {
-          "fail": 2245,
-          "invalid": 470,
+          "fail": 2247,
+          "invalid": 468,
           "pass": 3450,
           "total": 6165
         },
@@ -1723,8 +1705,7 @@
         "systematic only: perfectly matched schematic, mismatch not covered",
         "sampled coverage: each edge is the nearest verified passing sample; the true transition lies within the stated bracket on the non-passing side (initial scan <= 50 mV, transitions refined to <= 5 mV)",
         "the bench-validity tolerances (1 mV saturation tolerance, 0.10 V output tolerance) are not ratified bounds; 15 passing samples have a negative saturation margin inside the 1 mV tolerance",
-        "470 of 6165 samples are invalid (never passing, never bridged); see the record's validity-failure section",
-        "the record has an addendum (sim/input-common-mode/records/20261009-222613-871d1a6-addendum/ADDENDUM.md, sha256 225e2360d2b970d8) with disclosures and presentation corrections; read it with the record",
+        "468 of 6165 samples are invalid (never passing, never bridged); see the record's validity-failure section",
         "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
@@ -1732,12 +1713,12 @@
       "row": "Input common-mode range",
       "source": {
         "experiment": "input-common-mode",
-        "path": "sim/input-common-mode/records/20261009-222613-871d1a6.md",
-        "record_id": "20261009-222613-871d1a6",
-        "sha256": "663492386732d44808422a134aae0d2411b9c23d9a8f99d80ea69639ec93fa6d"
+        "path": "sim/input-common-mode/records/20261010-164310-0127eb7.md",
+        "record_id": "20261010-164310-0127eb7",
+        "sha256": "c5e1b08cc96015fd8823ce00ab4c95f6da6b4c05e3e56ab0f8561307d6e07ce3"
       },
       "spec_bound": "proposed, not ratified: 1.20 V ≤ VCM ≤ 2.70 V at all PVT points [DR-5]",
-      "spec_status": "Proposed [DR-5] — measured: covered at all 45 PVT points (conservative 45-point intersection [1.185, 2.705] V at 5 mV brackets; 1.20 V passes 45/45, smallest margin XM5 +11.1 mV at SS / −40 °C / 2.97 V — a thin low edge; record 20261009-222613-871d1a6)",
+      "spec_status": "Proposed [DR-5] — measured: covered at all 45 PVT points (conservative 45-point intersection [1.185, 2.705] V at 5 mV brackets; 1.20 V passes 45/45, smallest margin XM5 +11.1 mV at SS / −40 °C / 2.97 V — a thin low edge; record 20261010-164310-0127eb7)",
       "status": "proposed-not-graded",
       "verdict": null,
       "worst": null,
@@ -1781,17 +1762,16 @@
       "limitations": [
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's",
-        "supplementary side study `sim/slew-swing-power/records/20261010-094234-fe6599f.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Output swing >= 2.3 Vpp: 27/27 cells pass, 0 fail; range 2.465 .. 2.893 Vpp; worst 2.465 Vpp at ss / 125 C / 2.97 V, RZ typical, CC typical"
+        "supplementary side study `sim/slew-swing-power/records/20261010-162823-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Output swing >= 2.3 Vpp: 27/27 cells pass, 0 fail; range 2.465 .. 2.893 Vpp; worst 2.465 Vpp at ss / 125 C / 2.97 V, RZ best, CC typical"
       ],
       "points_pass": 45,
       "points_total": 45,
       "row": "Output swing",
       "source": {
         "experiment": "slew-swing-power",
-        "path": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md",
-        "record_id": "20261009-143715-4d5aa43",
-        "sha256": "badbc0401e0dc014e6eb7a93ba5f086d5714dd57993f11239972793c7e5f741d"
+        "path": "sim/slew-swing-power/records/20261010-161852-0127eb7.md",
+        "record_id": "20261010-161852-0127eb7",
+        "sha256": "a49ee8cbead1e3a69857d37ed8dc4fd67aa229b1300f6a296a987af61f180379"
       },
       "spec_bound": "≥ 2.3 Vpp",
       "status": "measured-verdict",
@@ -1826,17 +1806,16 @@
       "limitations": [
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's",
-        "supplementary side study `sim/slew-swing-power/records/20261010-094234-fe6599f.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Quiescent power <= 350 uW: 27/27 cells pass, 0 fail; range 239.2 .. 273.7 uW; worst 273.7 uW at typical / 27 C / 3.30 V, RZ best, CC typical"
+        "supplementary side study `sim/slew-swing-power/records/20261010-162823-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Quiescent power <= 350 uW: 27/27 cells pass, 0 fail; range 239.2 .. 273.7 uW; worst 273.7 uW at typical / 27 C / 3.30 V, RZ typical, CC typical"
       ],
       "points_pass": 45,
       "points_total": 45,
       "row": "Quiescent power",
       "source": {
         "experiment": "slew-swing-power",
-        "path": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
-        "record_id": "20261009-142137-1dab1db",
-        "sha256": "bab53389699eb212e5b7b8c15b292539db6d6659cef3833ec0ebbc430aa3c286"
+        "path": "sim/slew-swing-power/records/20261010-161852-0127eb7.md",
+        "record_id": "20261010-161852-0127eb7",
+        "sha256": "a49ee8cbead1e3a69857d37ed8dc4fd67aa229b1300f6a296a987af61f180379"
       },
       "spec_bound": "≤ 350 uW",
       "status": "measured-verdict",
@@ -1886,49 +1865,50 @@
   "sources": {
     "cmrr": {
       "backend": "aws-batch-fleet",
-      "dut_sha256": "81fbd914f8254a49",
+      "dut_sha256": "33b58dac62c747de",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g5c94de0ebbfe",
+      "klt_client": "0.7.0+g21e45ce7233b",
       "measurement_config": {
-        "detail": "this record predates measurement fingerprinting",
-        "status": "unknown"
+        "fingerprint": "0c7316e5bf0c313fbe2a74855452101cb88ce5a62d075536001923bab3e8177e",
+        "status": "current",
+        "version": 1
       },
       "ngspice_engine": "46",
       "ngspice_local": "46",
-      "path": "sim/cmrr/records/20261009-105631-30ec86d.md",
-      "pdk_client_resolved": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
+      "path": "sim/cmrr/records/20261010-163601-0127eb7.md",
+      "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261009-105631-30ec86d",
-      "sha256": "30ab2d2c36eb50d084559b3ae4b6329d54b1e57e0aca5486cb932a834a64e23e"
+      "record_id": "20261010-163601-0127eb7",
+      "sha256": "677dd92c6045134c8dc6e4eed73cb4bb3b0536151f149236faed25e79a36c5ae"
     },
     "cmrr-mc": {
       "backend": "aws-batch-fleet",
-      "dut_sha256": "81fbd914f8254a49",
+      "dut_sha256": "33b58dac62c747de",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g8eec069c7576",
+      "klt_client": "0.7.0+g39f6da54ae4c",
       "measurement_config": {
         "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
         "status": "unknown"
       },
       "ngspice_engine": "46",
       "ngspice_local": "46",
-      "path": "sim/cmrr-mc/records/20261010-035206-978f088.md",
+      "path": "sim/cmrr-mc/records/20261010-202454-e4be1ac.md",
       "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261010-035206-978f088",
+      "record_id": "20261010-202454-e4be1ac",
       "retained_evidence": {
-        "path": "sim/cmrr-mc/corners/20261010-035206-978f088/samples.csv",
+        "path": "sim/cmrr-mc/corners/20261010-202454-e4be1ac/samples.csv",
         "points": 5,
         "samples": 1500,
-        "sha256": "1b828d1d084c2df0f73b542299ad6abb40eab1239e4081e455aeb959a5d8ee61"
+        "sha256": "b3dda575ae07715ae0ecd48ba3d434e0ed904ce3020a37360b7736dba58cc378"
       },
-      "sha256": "85029ad341f586587d09e4e7bf3dfcb8ec9dece19e0c2ea35eb3d2380a3ba142"
+      "sha256": "73aab6eac9d54511de790f167b9645c52541ab1a6ff4749815454990f214fd87"
     },
     "gain-gbw-pm": {
       "backend": "aws-batch-fleet",
-      "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
+      "dut_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g5e5b55992a7f",
+      "klt_client": "0.7.0+g21e45ce7233b",
       "measurement_config": {
         "fingerprint": "119be23b64384405bce75b641537e5dd3a9520e053b67a7f9e9c5d96178aaf90",
         "status": "current",
@@ -1936,51 +1916,52 @@
       },
       "ngspice_engine": "46",
       "ngspice_local": "46",
-      "path": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
+      "path": "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md",
       "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261010-020141-1e51d1c",
-      "sha256": "37ae04a15b0b92cff7cb781f9c95da8c6b39926c841af46515f07c6177a1904b"
+      "record_id": "20261010-161514-0127eb7",
+      "sha256": "8de10b83158eb44d5944229b2c1959c48510ddd253ac93fbff0d0545e7ce34bc"
     },
     "input-common-mode": {
       "backend": "aws-batch-fleet",
-      "dut_sha256": "81fbd914f8254a49",
+      "dut_sha256": "33b58dac62c747de",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+gb82427b30c96",
+      "klt_client": "0.7.0+g21e45ce7233b",
       "measurement_config": {
         "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
         "status": "unknown"
       },
       "ngspice_engine": "46",
-      "ngspice_local": "42",
-      "path": "sim/input-common-mode/records/20261009-222613-871d1a6.md",
-      "pdk_client_resolved": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "ngspice_local": "46",
+      "path": "sim/input-common-mode/records/20261010-164310-0127eb7.md",
+      "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261009-222613-871d1a6",
-      "sha256": "663492386732d44808422a134aae0d2411b9c23d9a8f99d80ea69639ec93fa6d"
+      "record_id": "20261010-164310-0127eb7",
+      "sha256": "c5e1b08cc96015fd8823ce00ab4c95f6da6b4c05e3e56ab0f8561307d6e07ce3"
     },
     "noise": {
       "backend": "aws-batch-fleet",
-      "dut_sha256": "81fbd914f8254a49",
+      "dut_sha256": "33b58dac62c747de",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g4cbdfa769875",
+      "klt_client": "0.7.0+g21e45ce7233b",
       "measurement_config": {
-        "detail": "this record predates measurement fingerprinting",
-        "status": "unknown"
+        "fingerprint": "33de8feba00cb8e250c775f92248fa3183f2d6ca90ddf0d8c1d247715fc53b4a",
+        "status": "current",
+        "version": 1
       },
       "ngspice_engine": null,
-      "ngspice_local": "42",
-      "path": "sim/noise/records/20261009-082007-68b4567.md",
+      "ngspice_local": "46",
+      "path": "sim/noise/records/20261010-163507-0127eb7.md",
       "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261009-082007-68b4567",
-      "sha256": "37976fec70bd2f39f71818878af601ff7d331f43d0d45f00a17720e25fe57356"
+      "record_id": "20261010-163507-0127eb7",
+      "sha256": "b7e691379c34082eeaea2a6d62265773b44b25cc27203994d77c7ac409fd3a84"
     },
     "offset-mc": {
       "backend": "aws-batch-fleet",
-      "dut_sha256": "81fbd914f8254a49",
+      "dut_sha256": "33b58dac62c747de",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g5e5b55992a7f",
+      "klt_client": "0.7.0+g21e45ce7233b",
       "measurement_config": {
         "fingerprint": "d433e96768d0fd07b324bfe95537379bd8e9782e81503771e86a6e443fb2d348",
         "status": "current",
@@ -1988,73 +1969,58 @@
       },
       "ngspice_engine": null,
       "ngspice_local": "46",
-      "path": "sim/offset-mc/records/20261010-083043-ddf96db.md",
+      "path": "sim/offset-mc/records/20261010-185141-e4be1ac.md",
       "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261010-083043-ddf96db",
-      "sha256": "f64e28119b83d5c3e5d81a39166ff0534be976748197830f2701fd36174d1913"
+      "record_id": "20261010-185141-e4be1ac",
+      "sha256": "6d7f3da43d4c3c7a363d95931c52bf4b46b63635c6eb64dc9792cf7dfebec817"
     },
     "psrr": {
       "backend": "aws-batch-fleet",
-      "dut_sha256": "81fbd914f8254a49",
+      "dut_sha256": "33b58dac62c747de",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g5c94de0ebbfe",
+      "klt_client": "0.7.0+g21e45ce7233b",
       "measurement_config": {
-        "detail": "this record predates measurement fingerprinting",
-        "status": "unknown"
+        "fingerprint": "dd5160da057749da9ace5d6fd8bf1bf715538f5d25724e13b7ca20c9d1dde37e",
+        "status": "current",
+        "version": 1
       },
       "ngspice_engine": "46",
       "ngspice_local": "46",
-      "path": "sim/psrr/records/20261009-105929-30ec86d.md",
-      "pdk_client_resolved": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
-      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261009-105929-30ec86d",
-      "sha256": "5e97c2ff265200f6c36afcdfaa008a2cd6e241ee158cbbd682baf19458333f0c"
-    },
-    "slew-swing-power (20261009-142137-1dab1db)": {
-      "backend": "aws-batch-fleet",
-      "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
-      "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g4cbdfa769875",
-      "measurement_config": {
-        "detail": "this record predates measurement fingerprinting",
-        "status": "unknown"
-      },
-      "ngspice_engine": "46",
-      "ngspice_local": "42",
-      "path": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
+      "path": "sim/psrr/records/20261010-163854-0127eb7.md",
       "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261009-142137-1dab1db",
-      "sha256": "bab53389699eb212e5b7b8c15b292539db6d6659cef3833ec0ebbc430aa3c286"
+      "record_id": "20261010-163854-0127eb7",
+      "sha256": "bf895436b24b672ff09dd6cb5c3edb0814474572350f8ba634735e2e81bb8a69"
     },
-    "slew-swing-power (20261009-143715-4d5aa43)": {
+    "slew-swing-power": {
       "backend": "aws-batch-fleet",
-      "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
+      "dut_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g4cbdfa769875",
+      "klt_client": "0.7.0+g21e45ce7233b",
       "measurement_config": {
-        "detail": "this record predates measurement fingerprinting",
-        "status": "unknown"
+        "fingerprint": "8852d144c517b585d5f39954ef7878af5a32303d4b0a0af85d196ce692987877",
+        "status": "current",
+        "version": 1
       },
       "ngspice_engine": "46",
-      "ngspice_local": "42",
-      "path": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md",
+      "ngspice_local": "46",
+      "path": "sim/slew-swing-power/records/20261010-161852-0127eb7.md",
       "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261009-143715-4d5aa43",
-      "sha256": "badbc0401e0dc014e6eb7a93ba5f086d5714dd57993f11239972793c7e5f741d"
+      "record_id": "20261010-161852-0127eb7",
+      "sha256": "a49ee8cbead1e3a69857d37ed8dc4fd67aa229b1300f6a296a987af61f180379"
     }
   },
   "spec": {
     "path": "spec/target-spec.md",
-    "sha256": "9110e7a4436ebeeaa6a6c7e8f149d66940c1fe911d3b92ebad99e8d5e6d87593"
+    "sha256": "6c546ac380cfb4a83ff652317040d9833a287493115ba0f80023bb4423083f3a"
   },
   "summary": {
-    "fail": 1,
+    "fail": 0,
     "measured_no_bound": 2,
     "not_measured": 2,
-    "pass": 5,
+    "pass": 6,
     "proposed_not_graded": 3,
     "ratified_rows_judged": 6
   },
@@ -2065,197 +2031,57 @@
         "matches_current_netlist": true,
         "matches_selected_records": true
       },
-      "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
+      "dut_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
       "experiment": "gain-gbw-pm",
       "figures": {
         "gbw": {
           "bound_text": ">= 10 MHz",
           "bound_value": 10.0,
-          "fail": 3,
-          "failing_cells": [
-            {
-              "cc": "worst",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "typical",
-              "value": "9.663"
-            },
-            {
-              "cc": "worst",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "best",
-              "value": "9.656"
-            },
-            {
-              "cc": "worst",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "worst",
-              "value": "9.673"
-            }
-          ],
+          "fail": 0,
+          "failing_cells": [],
           "label": "GBW",
-          "pass": 24,
+          "pass": 27,
           "range": [
-            "9.656",
-            "14.361"
+            "10.726",
+            "19.095"
           ],
           "sense": ">=",
           "total": 27,
           "unit": "MHz",
-          "verdict_in_record": "FAIL",
+          "verdict_in_record": "PASS",
           "worst": {
             "cc": "worst",
             "point": "ss / 125 C / 2.97 V",
             "rz": "best",
-            "value": "9.656"
+            "value": "10.726"
           }
         },
         "pm": {
           "bound_text": ">= 60 deg",
           "bound_value": 60.0,
-          "fail": 20,
-          "failing_cells": [
-            {
-              "cc": "typical",
-              "point": "fs / 125 C / 2.97 V",
-              "rz": "typical",
-              "value": "57.34"
-            },
-            {
-              "cc": "best",
-              "point": "fs / 125 C / 2.97 V",
-              "rz": "typical",
-              "value": "54.41"
-            },
-            {
-              "cc": "worst",
-              "point": "fs / 125 C / 2.97 V",
-              "rz": "typical",
-              "value": "59.86"
-            },
-            {
-              "cc": "typical",
-              "point": "fs / 125 C / 2.97 V",
-              "rz": "best",
-              "value": "56.51"
-            },
-            {
-              "cc": "best",
-              "point": "fs / 125 C / 2.97 V",
-              "rz": "best",
-              "value": "53.63"
-            },
-            {
-              "cc": "worst",
-              "point": "fs / 125 C / 2.97 V",
-              "rz": "best",
-              "value": "59.00"
-            },
-            {
-              "cc": "typical",
-              "point": "fs / 125 C / 2.97 V",
-              "rz": "worst",
-              "value": "58.16"
-            },
-            {
-              "cc": "best",
-              "point": "fs / 125 C / 2.97 V",
-              "rz": "worst",
-              "value": "55.19"
-            },
-            {
-              "cc": "typical",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "typical",
-              "value": "58.34"
-            },
-            {
-              "cc": "best",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "typical",
-              "value": "55.49"
-            },
-            {
-              "cc": "typical",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "best",
-              "value": "57.55"
-            },
-            {
-              "cc": "best",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "best",
-              "value": "54.74"
-            },
-            {
-              "cc": "worst",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "best",
-              "value": "60.00"
-            },
-            {
-              "cc": "typical",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "worst",
-              "value": "59.12"
-            },
-            {
-              "cc": "best",
-              "point": "ss / 125 C / 2.97 V",
-              "rz": "worst",
-              "value": "56.23"
-            },
-            {
-              "cc": "typical",
-              "point": "typical / 27 C / 3.30 V",
-              "rz": "typical",
-              "value": "59.49"
-            },
-            {
-              "cc": "best",
-              "point": "typical / 27 C / 3.30 V",
-              "rz": "typical",
-              "value": "56.52"
-            },
-            {
-              "cc": "typical",
-              "point": "typical / 27 C / 3.30 V",
-              "rz": "best",
-              "value": "58.44"
-            },
-            {
-              "cc": "best",
-              "point": "typical / 27 C / 3.30 V",
-              "rz": "best",
-              "value": "55.52"
-            },
-            {
-              "cc": "best",
-              "point": "typical / 27 C / 3.30 V",
-              "rz": "worst",
-              "value": "57.51"
-            }
-          ],
+          "fail": 0,
+          "failing_cells": [],
           "label": "Phase margin",
-          "pass": 7,
+          "pass": 27,
           "range": [
-            "53.63",
-            "63.17"
+            "64.47",
+            "84.93"
           ],
           "sense": ">=",
           "total": 27,
           "unit": "deg",
-          "verdict_in_record": "FAIL",
+          "verdict_in_record": "PASS",
           "worst": {
             "cc": "best",
             "point": "fs / 125 C / 2.97 V",
             "rz": "best",
-            "value": "53.63"
+            "value": "64.47"
           }
         }
       },
       "fleet_runner_mismatch": true,
       "graded": false,
-      "klt_client": "0.7.0+g5e5b55992a7f",
+      "klt_client": "0.7.0+g21e45ce7233b",
       "limitations": [
         "side study: not a selected verdict record; its cells are not counted in any row's points or verdict nor in the ratified-row summary",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
@@ -2270,9 +2096,9 @@
       "not_measured": {
         "gain": "the study measures PM and GBW only (no DC-gain column): no gain observation"
       },
-      "path": "sim/gain-gbw-pm/records/20261009-234014-55b400c.md",
+      "path": "sim/gain-gbw-pm/records/20261010-161720-0127eb7.md",
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261009-234014-55b400c",
+      "record_id": "20261010-161720-0127eb7",
       "rows": [
         "gain",
         "gbw",
@@ -2298,7 +2124,7 @@
         ],
         "text": "3 selected MOS/T/VDD points (fs / 125 C / 2.97 V; ss / 125 C / 2.97 V; typical / 27 C / 3.30 V) x 3 RZ levels x 3 CC levels (typical, best, worst) = 27 cells; not a full passive-by-PVT cross product"
       },
-      "sha256": "07f307d8e3ba7f2526050d1e1a54c356c420661d610f143aa149f77658485c8f"
+      "sha256": "fa2e7d93d7e9d567da20e03927bfc9ab0d7bff0e5df52cf287ec049ffdbf679d"
     },
     "slew-swing-power-passive-corners": {
       "backend": "aws-batch-fleet",
@@ -2306,7 +2132,7 @@
         "matches_current_netlist": true,
         "matches_selected_records": true
       },
-      "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
+      "dut_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
       "experiment": "slew-swing-power",
       "figures": {
         "power": {
@@ -2327,7 +2153,7 @@
           "worst": {
             "cc": "typical",
             "point": "typical / 27 C / 3.30 V",
-            "rz": "best",
+            "rz": "typical",
             "value": "273.7"
           }
         },
@@ -2339,8 +2165,8 @@
           "label": "Slew rate (slower of rise/fall, CL = 2 pF)",
           "pass": 27,
           "range": [
-            "13.40",
-            "16.37"
+            "14.25",
+            "17.82"
           ],
           "sense": ">=",
           "total": 27,
@@ -2349,8 +2175,8 @@
           "worst": {
             "cc": "worst",
             "point": "ss / 125 C / 2.97 V",
-            "rz": "worst",
-            "value": "13.40"
+            "rz": "best",
+            "value": "14.25"
           }
         },
         "swing": {
@@ -2371,14 +2197,14 @@
           "worst": {
             "cc": "typical",
             "point": "ss / 125 C / 2.97 V",
-            "rz": "typical",
+            "rz": "best",
             "value": "2.465"
           }
         }
       },
       "fleet_runner_mismatch": true,
       "graded": false,
-      "klt_client": "0.7.0+g5e5b55992a7f",
+      "klt_client": "0.7.0+g21e45ce7233b",
       "limitations": [
         "side study: not a selected verdict record; its cells are not counted in any row's points or verdict nor in the ratified-row summary",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
@@ -2391,9 +2217,9 @@
       "ngspice_engine": null,
       "ngspice_local": "46",
       "not_measured": {},
-      "path": "sim/slew-swing-power/records/20261010-094234-fe6599f.md",
+      "path": "sim/slew-swing-power/records/20261010-162823-0127eb7.md",
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261010-094234-fe6599f",
+      "record_id": "20261010-162823-0127eb7",
       "rows": [
         "power",
         "slew",
@@ -2419,7 +2245,7 @@
         ],
         "text": "3 selected MOS/T/VDD points (fs / 125 C / 2.97 V; ss / 125 C / 2.97 V; typical / 27 C / 3.30 V) x 3 RZ levels x 3 CC levels (typical, best, worst) = 27 cells; not a full passive-by-PVT cross product"
       },
-      "sha256": "e6c60cdd5a1a54593acf1d0aace257a4830e8e94376ba675a5ed82efeca82ea0"
+      "sha256": "a78e325795de32850ddc89d15ab9dbcc130dfa442c8ba8da73b3e9a49768432c"
     }
   },
   "title": "gf180-opamp characterization report (generated; not evidence)",

@@ -37,7 +37,7 @@ IBIAS_SWEEP_A = [8e-6, 9e-6, 10e-6, 11e-6, 12e-6]
 CL_SWEEP_F = [1e-12, 2e-12, 4e-12, 10e-12]
 
 #: Named corner tuples (process, T in C, VDD in V), from the selected records
-#: `gain-gbw-pm/20261010-020141-1e51d1c` and `slew-swing-power/20261009-142137-1dab1db`.
+#: `gain-gbw-pm/20261010-161514-0127eb7` and `slew-swing-power/20261010-161852-0127eb7`.
 NOMINAL = ("typical", 27.0, 3.30)
 PM_BINDING = ("fs", 125.0, 2.97)
 GBW_BINDING = ("ss", 125.0, 2.97)  # also the slew-binding point

@@ -200,5 +200,5 @@ expect_fail report test_spec_citation_check.py report/spec_citation_check.py \
   'elif c["rid"] != sel:' 'elif False:'
 expect_fail report spec_citation_check.py ../spec/target-spec.md \
   "data: gain row cites the older gain-gbw-pm record again" \
-  '[record `20261010-020141-1e51d1c`](../sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md)' \
-  '[record `20261009-055759-2524b3e`](../sim/gain-gbw-pm/records/20261009-055759-2524b3e.md)'
+  '[record `20261010-161514-0127eb7`](../sim/gain-gbw-pm/records/20261010-161514-0127eb7.md)' \
+  '[record `20261010-020141-1e51d1c`](../sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md)'

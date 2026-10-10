@@ -176,19 +176,67 @@ Design point, in the order the choices were actually made:
    keeps the mirror load's Vth mismatch from dominating input-referred
    offset.
 4. **`CC` from GBW**: `CC = gm1/(2*pi*GBW) = 60.3 µS / (2π·15 MHz) = 0.64 pF`.
-   Drawn as a 17.4 µm × 17.4 µm `cap_mim_2f0_m4m5_noshield` — 302.8 µm² at
-   2 fF/µm² ≈ 0.61 pF nominal; the PDK model, measured in ngspice at
-   `mimcap_typical`/27 °C, gives **0.619 pF** including fringe.
-5. **`RZ` = 1/gm6** = 1/510 µS = 1.96 kΩ, drawn as `ppolyf_u_1k` at
-   W = 2 µm / L = 4 µm (2 squares of a 1 kΩ/□ unsilicided p-poly). The PDK
-   model, measured in ngspice at `res_typical`/27 °C, gives **2.11 kΩ** —
-   3 % above 1/gm6, which places the zero in the *left* half-plane rather
-   than leaving a marginal RHP one.
+   First-pass draw: 17.4 µm × 17.4 µm `cap_mim_2f0_m4m5_noshield`, 0.619 pF
+   (PDK model at `mimcap_typical`/27 °C, including fringe). **Retuned
+   (issue #42, see "Compensation retune" below): 16.8 µm × 16.8 µm,
+   0.578 pF.**
+5. **`RZ` = 1/gm6** = 1/510 µS = 1.96 kΩ, first drawn as `ppolyf_u_1k` at
+   W = 2 µm / L = 4 µm (2 squares of a 1 kΩ/□ unsilicided p-poly; PDK model
+   at `res_typical`/27 °C: 2.11 kΩ, 3 % above 1/gm6, zero just inside the
+   left half-plane). **That first draw was not enough on the PVT grid;
+   retuned (issue #42) to W = 2 µm / L = 22 µm, 11.23 kΩ.**
 
    `RZ` is a fixed poly resistor and therefore does not track `1/gm6` over
-   PVT; that is a known limitation to be quantified by the AC/PVT testbench
-   (tracker #7 item 5), not here. A triode-PMOS `RZ` that does track is the
-   standard remedy if the PVT sweep shows it is needed.
+   PVT. Its PVT/passive-corner sensitivity is quantified in "RZ tracking and
+   passive sensitivity" below. A triode-PMOS `RZ` that does track remains the
+   fallback if a future grid needs it; it was not needed for the ratified
+   rows.
+
+### Compensation retune (issue #42)
+
+The first full 45-point AC grid on the 1/gm6 design
+(`sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md`) passed gain and GBW
+everywhere but missed the ratified PM >= 60 deg at 30/45 points (worst 57.34
+deg at fs / 125 C / 2.97 V; GBW worst 10.42 MHz at ss / 125 C / 2.97 V, ~4 %
+margin). Only `RZ` and `CC` were changed: no transistor was resized, the
+operating point is unchanged (RZ and CC carry no DC current), and the public
+pins, 3.3 V device flavour, CL = 2 pF and external ibias = 10 uA are unchanged.
+
+| Quantity | Before | After | Why |
+|---|---|---|---|
+| `RZ` | 2.11 kΩ (2 x 4 µm) | **11.23 kΩ (2 x 22 µm)** | `RZ >> 1/gm6` moves the nulling zero well into the LHP (zero ~ 1/(CC(RZ - 1/gm6))) so its phase lead recovers phase at the crossover instead of merely cancelling the RHP zero |
+| `CC` | 0.619 pF (17.4 µm sq.) | **0.578 pF (16.8 µm sq.)** | a small reduction restores GBW headroom lost to the larger lead: `GBW ~ gm1/(2π·CC)` rises ~7 %, and slew `Itail/CC` rises with it |
+
+GBW-versus-phase trade, made explicit: a larger `CC` would raise PM but
+lowers GBW and slew against bounds with thin margin; the retune instead
+buys PM through `RZ` and gives a little GBW back through `CC`. Measured
+result (45-point grid, record `sim/gain-gbw-pm/records/20261010-161514-0127eb7.md`,
+typical passives): PM worst 71.99 deg at fs / 125 C / 2.97 V (was 57.34 deg),
+GBW worst 11.910 MHz at ss / 125 C / 2.97 V (was 10.422 MHz), gain worst
+93.79 dB (unchanged). The chosen point was selected from nominal and
+worst-corner single-point probes before the one full-grid run; the run
+itself is the evidence, the probes are not cited.
+
+### RZ tracking and passive sensitivity (DR-3 section (d))
+
+`RZ` is `ppolyf_u_1k` and `CC` is `cap_mim_2f0_m4m5_noshield`, a fixed
+resistor against a `1/gm6` that moves with PVT. The standard 45-point grid
+holds both passives at `res_typical` / `mimcap_typical` and therefore does
+**not** show passive-corner compliance. The supplementary study
+(`sim/gain-gbw-pm/records/20261010-161720-0127eb7.md`, one batch request,
+27 cells) sweeps RZ over `res_typical`/`res_ff` (0.8x)/`res_ss` (1.2x) and CC
+over `mimcap_typical`/`mimcap_ff` (0.9x)/`mimcap_ss` (1.1x), all nine
+combinations, at fs / 125 C / 2.97 V (PM binding), ss / 125 C / 2.97 V (GBW
+binding) and typical / 27 C / 3.30 V. Result: PM >= 60 deg in 27/27 cells
+(worst 64.47 deg: fs / 125 C / 2.97 V, RZ and CC both at the ff sections),
+GBW >= 10 MHz in 27/27 cells (worst 10.726 MHz: ss / 125 C / 2.97 V, RZ ff,
+CC ss). The matching large-signal/power study
+(`sim/slew-swing-power/records/20261010-162823-0127eb7.md`) passes 27/27 per
+row (slew worst 14.25 V/us). Coverage limits: three MOS/T/V points, not the
+full 45; passive sections vary only the PDK's own ff/ss labels (no
+independent temperature coefficient sweep beyond the point's temperature);
+no mismatch or Monte Carlo on RZ/CC. These cells give the quantified
+tracking sensitivity; they are not a full independent passive x PVT grid.
 
 ### Systematic-offset (balance) condition
 
@@ -218,8 +266,8 @@ ratio — the layout-friendly form.
 | M6 | `pfet_03v3` | stage-2 CS gain device | 1 | 200 mV | 60 µA | 8.51 | 0.7686 µA/µm | 78.1 µm | **W = 72 µm, nf = 24** |
 | M7 | `nfet_03v3` | stage-2 current sink | 2 | 200 mV | 60 µA | 8.22 | 1.6888 µA/µm | 35.5 µm | **W = 36 µm, nf = 12** |
 | MB1 | `nfet_03v3` | bias mirror diode | 2 | 200 mV | 10 µA | 8.22 | 1.6888 µA/µm | 5.92 µm | **W = 6 µm, nf = 2** |
-| CC | `cap_mim_2f0_m4m5_noshield` | Miller capacitor | — | — | — | — | — | 0.64 pF → 302.8 µm² | **17.4 µm × 17.4 µm (0.619 pF)** |
-| RZ | `ppolyf_u_1k` | nulling resistor | — | — | — | — | — | 1.96 kΩ → 2 squares | **W = 2 µm, L = 4 µm (2.11 kΩ)** |
+| CC | `cap_mim_2f0_m4m5_noshield` | Miller capacitor | — | — | — | — | — | 0.64 pF → 302.8 µm² | **16.8 µm × 16.8 µm (0.578 pF)** after #42 (first pass 17.4 µm, 0.619 pF) |
+| RZ | `ppolyf_u_1k` | nulling resistor | — | — | — | — | — | 1.96 kΩ → 2 squares | **W = 2 µm, L = 22 µm (11.23 kΩ)** after #42 (first pass L = 4 µm, 2.11 kΩ) |
 
 Rounding notes: M3/M4 go 6.51 → 6 µm and M6 78.1 → 72 µm *together*, keeping
 the 1 : 12 ratio exact (the balance condition above matters more than either
@@ -242,9 +290,9 @@ Using only the record's `gm/gds` rows at the chosen lengths and overdrives:
 | `gds7` | 0.874 µS | `gm7`/564.0 (`nfet_03v3`, L = 2 µm, Vov = 200 mV) |
 | stage-2 gain | 289 (49.2 dB) | `gm6/(gds6+gds7)` |
 | **open-loop DC gain** | **76 600 (97.7 dB)** | product |
-| **GBW** | **15.5 MHz** | `gm1/(2π·CC)`, CC = 0.619 pF |
+| **GBW** | **15.5 MHz** (first-pass CC = 0.619 pF; ~16.6 MHz at the retuned 0.578 pF) | `gm1/(2π·CC)` |
 | non-dominant pole | 40.6 MHz (2.6× GBW) | `gm6/(2π·CL)`, CL = 2 pF — clears the ≥ 2.2× the 60° PM row needs |
-| **slew rate** | **16.2 V/µs** | `Itail/CC` |
+| **slew rate** | **16.2 V/µs** (first-pass CC; ~17.3 V/µs at 0.578 pF) | `Itail/CC` |
 | `gm6/gm1` | 8.5 | the ratio `RZ` exists to make acceptable (≥ 10 would be needed without it) |
 | **quiescent power** | **264 µW** | 80 µA × 3.3 V (10 µA bias + 10 µA tail + 60 µA output) |
 
@@ -317,8 +365,9 @@ closed-loop output sits on the input common mode.
   phase margin, slew rate, gain and power above are predictions. Filling
   `spec/target-spec.md` §2 needs the PVT-cornered testbench under `sim/`
   that tracker #7 item 5 tracks.
-- **`RZ` does not track `1/gm6` over PVT** (see §4.5). Quantify before
-  ratifying a phase-margin number.
+- **`RZ` does not track `1/gm6` over PVT** (see §4.5). Quantified at three
+  MOS/T/V points x 9 passive-corner cells after the #42 retune; the coverage
+  limits are listed under "RZ tracking and passive sensitivity" in §4.
 - **Input-referred offset has no statistical basis yet.** The input pair's
   3.6 µm² gate area and the `gm1 > gm3` choice are the two design decisions
   that bear on it; the `3σ, mismatch MC N≥300` basis `spec/target-spec.md`
