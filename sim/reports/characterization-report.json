@@ -59,9 +59,10 @@
       ],
       "key": "gain",
       "limitations": [
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "provisional gain/GBW/PM records are superseded by this one and are not used as evidence"
+        "provisional gain/GBW/PM records are superseded by this one and are not used as evidence",
+        "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) [20261009-234014-55b400c](sim/gain-gbw-pm/records/20261009-234014-55b400c.md) does not issue a gain verdict"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -103,9 +104,10 @@
       "figures": [],
       "key": "gbw",
       "limitations": [
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "provisional gain/GBW/PM records are superseded by this one and are not used as evidence"
+        "provisional gain/GBW/PM records are superseded by this one and are not used as evidence",
+        "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) [20261009-234014-55b400c](sim/gain-gbw-pm/records/20261009-234014-55b400c.md) finds GBW PASS at 24/27 cells and FAIL at 3/27 cells, all at ss / 125 C / 2.97 V with CC worst (one MOS/T/VDD point, RZ typical/best/worst = 9.663/9.656/9.673 MHz); worst 9.656 MHz is below the 10 MHz bound"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -147,9 +149,10 @@
       "figures": [],
       "key": "pm",
       "limitations": [
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "provisional gain/GBW/PM records are superseded by this one and are not used as evidence"
+        "provisional gain/GBW/PM records are superseded by this one and are not used as evidence",
+        "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) [20261009-234014-55b400c](sim/gain-gbw-pm/records/20261009-234014-55b400c.md) finds PM >= 60 deg at only 7/27 cells (53.63 .. 63.17 deg)"
       ],
       "points_pass": 15,
       "points_total": 45,
@@ -191,7 +194,7 @@
       "figures": [],
       "key": "slew",
       "limitations": [
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
@@ -266,7 +269,7 @@
       ],
       "key": "noise",
       "limitations": [
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "no ratified bound and no ratified integration band (DR-3 residual e1); the bands are candidates",
         "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
@@ -339,7 +342,7 @@
       ],
       "key": "offset",
       "limitations": [
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "nominal T/VDD only (27 C, 3.30 V): no temperature or supply axis",
         "mismatch Monte Carlo of the offset only; no numeric bound proposed (DR-3 residual e2)",
@@ -419,7 +422,7 @@
       "limitations": [
         "bound proposed by a decision record and not ratified: this report grades ratified rows only, so the row is not graded and is counted neither among the ratified rows judged nor as not measured; see the spec status column for the evidence it cites",
         "the figures listed for this row come from the selected systematic (mismatch-free) PVT record and are information only: they are NOT the statistic of the proposed row, which is stated on a mismatch-inclusive basis (see the spec statistical-basis and status columns for the record it cites); this report does not ingest that record, and the systematic figures are optimistic against it",
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "systematic figure of a perfectly matched schematic; mismatch-limited CMRR (Monte Carlo) is not covered",
         "no ratified bound (DR-3 residual e3)",
@@ -528,7 +531,7 @@
       "key": "psrr",
       "limitations": [
         "bound proposed by a decision record and not ratified: this report grades ratified rows only, so the row is not graded and is counted neither among the ratified rows judged nor as not measured; see the spec status column for the evidence it cites",
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "PSRR-: Avss changes sign across the grid, so low-frequency PSRR- near the flip is a cancellation, not design margin; the worst-case figure is the one to use",
         "systematic figure of a perfectly matched schematic; mismatch-limited PSRR is not covered",
@@ -606,7 +609,7 @@
       ],
       "key": "swing",
       "limitations": [
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
@@ -650,7 +653,7 @@
       "figures": [],
       "key": "power",
       "limitations": [
-        "passives at typical only: RZ/CC passive corners are not swept",
+        "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],

@@ -180,10 +180,25 @@ def coverage_text(c: dict) -> str:
 # --------------------------------------------------------------------------
 # per-experiment extraction
 # --------------------------------------------------------------------------
+#: Cited (never selected) passive-corner side study for gain/GBW/PM (issue #70).
+PASSIVE_STUDY_ID = "20261009-234014-55b400c"
+PASSIVE_STUDY_REL = f"sim/gain-gbw-pm/records/{PASSIVE_STUDY_ID}.md"
+PASSIVE_STUDY_NOTE = {
+    "gain": "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) "
+            f"[{PASSIVE_STUDY_ID}]({PASSIVE_STUDY_REL}) does not issue a gain verdict",
+    "gbw": "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) "
+           f"[{PASSIVE_STUDY_ID}]({PASSIVE_STUDY_REL}) finds GBW PASS at 24/27 cells and FAIL at 3/27 cells, all at "
+           "ss / 125 C / 2.97 V with CC worst (one MOS/T/VDD point, RZ typical/best/worst = 9.663/9.656/9.673 MHz); "
+           "worst 9.656 MHz is below the 10 MHz bound",
+    "pm": "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) "
+          f"[{PASSIVE_STUDY_ID}]({PASSIVE_STUDY_REL}) finds PM >= 60 deg at only 7/27 cells (53.63 .. 63.17 deg)",
+}
+
+
 def common_limitations(text: str, prov: dict, cov: dict) -> list:
     lim = []
     if "res_typical" in text:
-        lim.append("passives at typical only: RZ/CC passive corners are not swept")
+        lim.append("passives at typical only in this record: it does not sweep RZ/CC passive corners")
     if prov["fleet_runner_mismatch"]:
         lim.append("fleet runner klt version differs from the client's (compatibility mismatch)")
     if cov["points"] != FULL_GRID and "mc_samples_per_corner" not in cov:
@@ -839,6 +854,7 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                        points_total=r["total"], worst=r["worst"], worst_corner=r["worst_corner"],
                        coverage=ex["coverage"], limitations=list(ex["limitations"]), source=src("gain-gbw-pm"))
             row["spec_bound"] = r["bound_text"].replace(">=", "≥")
+            row["limitations"].append(PASSIVE_STUDY_NOTE[k])
             if k == "gain" and ex["stretch_gain_70db"]:
                 row["figures"].append({"label": "stretch >= 70 dB (not a mandatory row), points holding",
                                        "value": ex["stretch_gain_70db"], "corner": None})
