@@ -18,22 +18,37 @@ resolves outside it):
 cd layout/pilot/evidence && rm -f _rq.json ../ref/_bad.spice
 ```
 
-Equivalent cleanup with absolute paths inside the current worktree. Identify
-the worktree root first, then quote every path so a root containing spaces
-still works:
+Equivalent cleanup with absolute paths inside the current worktree, in two
+separate steps.
 
-```bash
-WT_ROOT="$(git rev-parse --show-toplevel)"
-rm -f "$WT_ROOT/layout/pilot/evidence/_rq.json" "$WT_ROOT/layout/pilot/ref/_bad.spice"
-```
+1. Print the worktree root on its own:
+
+   ```bash
+   git rev-parse --show-toplevel
+   ```
+
+2. Paste that output into the cleanup as **literal text**, in place of
+   `<worktree-root>` below. Quote every path so a root containing spaces
+   still works:
+
+   ```bash
+   rm -f "<worktree-root>/layout/pilot/evidence/_rq.json" "<worktree-root>/layout/pilot/ref/_bad.spice"
+   ```
+
+Do not store the root in a shell variable or splice it in with `$(...)`
+(for example `"$WT_ROOT/..."` or `"$(git rev-parse --show-toplevel)/..."`).
+The guard does not expand variables or command substitution in `rm` targets.
+It treats them as unresolved and denies them, so the target must be a literal
+path.
 
 Name only the specific disposable scratch files you created. Do not use
 globs or directory removal for this workaround.
 
 ### Not covered by this workaround
 
-- Unresolved directory expressions (for example `cd "$UNKNOWN_DIR"`); the
-  guard cannot prove where the targets land and denies them.
+- Unresolved directory or target expressions (for example `cd "$UNKNOWN_DIR"`,
+  or shell variables and `$(...)` inside `rm` targets); the guard cannot
+  prove where the targets land and denies them.
 - Symlink escapes: do not use this for scratch targets, or ancestors of
   them, that are symlinks.
 - Protected paths.
@@ -44,5 +59,4 @@ a target is disposable; confirm that yourself before deleting.
 
 Do not edit the generated hook, disable guards, or look for a bypass. For
 future guard investigations, the canonical source is Repo Skills:
-[`hooks/repo/guard-destructive.sh`](https://github.com/rjwalters/repo)
-(https://github.com/rjwalters/repo).
+[`hooks/repo/guard-destructive.sh`](https://github.com/rjwalters/repo/blob/main/hooks/repo/guard-destructive.sh).
