@@ -1624,7 +1624,22 @@ def _delta(a: Metrics | None, b: Metrics | None, attr: str, fmt: str) -> str:
 def build_fixed_vcm_record(
     *, record, stamp, pdk, ngspice, klt_version, backend_desc, report, op_report_remote, op_error,
     vcm, want, results, baseline, baseline_id, op, nominal_op, problems, smoke_line, dut_sha, req,
+    testbench_text: str | None = None, supersedes: str | None = None, supersede_note: str = "",
+    nominal_op_lines: list[str] | None = None,
 ) -> str:
+    """Fixed-VCM diagnostic record.
+
+    `testbench_text` is the bench the grid actually ran (default: the committed
+    file); the fingerprint header AND the retained canonical-inputs block are
+    both derived from it, so the JSON in the record rehashes to the header.
+    `supersedes` marks a record regenerated without a simulator from a
+    committed record's data (`--recompute-fixed-vcm`): per-point data and the
+    netlist snapshot stay under that id and are referenced, not copied, and
+    `nominal_op_lines` carries the superseded record's local operating-point
+    lines verbatim (that single unit's report is not retained as data).
+    """
+    tb_text = TESTBENCH.read_text() if testbench_text is None else testbench_text
+    data_id = supersedes or record
     L: list[str] = []
     add = L.append
     remote = (report.get("environment") or {}).get("remote") or {}
@@ -1640,6 +1655,8 @@ def build_fixed_vcm_record(
     add("")
     add(f"- **Record ID**: {record}")
     add(f"- **Date (UTC)**: {stamp:%Y-%m-%d %H:%M:%S}")
+    if supersedes:
+        add(f"- **Supersedes**: `{supersedes}` -- {supersede_note}")
     add("- **Issue**: #125 (evidence for #42, the phase-margin repair; Tier 1 integration evidence)")
     add(
         f"- **Claim (diagnostic only)**: open-loop DC gain, GBW and phase margin of the committed sized "
@@ -1670,8 +1687,8 @@ def build_fixed_vcm_record(
     if op_error:
         add(f"  - operating-point request FAILED (no local fallback): {op_error}")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (wrapper-normalised, device body verbatim; normalised "
-        f"sha256 `{dut_sha}`), snapshotted in `netlist-snapshots/{record}.spice`")
-    for ln in mc.fingerprint_lines(TESTBENCH.read_text(), vcm):
+        f"sha256 `{dut_sha}`), snapshotted in `netlist-snapshots/{data_id}.spice`")
+    for ln in mc.fingerprint_lines(tb_text, vcm):
         add(ln)
     add("- **Source guards**: the committed testbench and DUT passed `guard_testbench` / `guard_dut` before every "
         "simulation (no transistor declared in the bench; every export device present once); the committed "
@@ -1752,7 +1769,9 @@ def build_fixed_vcm_record(
     add("")
     add("## Nominal device-level operating point (local single unit)")
     add("")
-    if nominal_op and nominal_op["vals"].get("vout_v") is not None:
+    if nominal_op_lines is not None:
+        L.extend(nominal_op_lines)
+    elif nominal_op and nominal_op["vals"].get("vout_v") is not None:
         v = nominal_op["vals"]
         add(f"- typical / 27 C / 3.30 V, VCM {nominal_op['vcm']:g} V: vout {v['vout_v']:.4f} V, vinn {v.get('vinn_v', float('nan')):.4f} V, "
             f"tail {v.get('itail_a', float('nan')) * 1e6:.2f} uA, stage-2 {v.get('iout_a', float('nan')) * 1e6:.2f} uA; level `{nominal_op['level']}`")
@@ -1769,13 +1788,148 @@ def build_fixed_vcm_record(
     add("- An ICMR endpoint check (`sim/input-common-mode/`) does not substitute for this dynamic evidence, and a "
         "single VCM point is not a VCM sweep.")
     add("")
+    L.extend(mc.inputs_section(tb_text, vcm))
     add("## Artifacts")
     add("")
     add(f"- Runner: `sim/gain-gbw-pm/run_gain_gbw_pm.py --vcm-fixed {vcm:g}`; tests: `sim/gain-gbw-pm/test_gain_gbw_pm.py`")
-    add(f"- Per-point logs, decks, data and the sanitised klt report(s): `sim/gain-gbw-pm/fixed-vcm/corners/{record}/`")
-    add(f"- Netlist snapshot (request, DUT, testbench): `sim/gain-gbw-pm/fixed-vcm/netlist-snapshots/{record}.spice`")
+    if supersedes:
+        add(f"- Regenerated without a simulator: `sim/gain-gbw-pm/run_gain_gbw_pm.py --recompute-fixed-vcm {supersedes}`")
+    add(f"- Per-point logs, decks, data and the sanitised klt report(s): `sim/gain-gbw-pm/fixed-vcm/corners/{data_id}/`")
+    add(f"- Netlist snapshot (request, DUT, testbench): `sim/gain-gbw-pm/fixed-vcm/netlist-snapshots/{data_id}.spice`")
     add("")
     return "\n".join(L)
+
+
+def fixed_vcm_misses(results: dict[Key, Metrics], want: list[Key]) -> list[str]:
+    """Ratified rows (spec/target-spec.md bounds, unchanged) that miss at any
+    grid point; a missing or invalid point counts as a miss, as in `judge`."""
+    out = []
+    for _rid, label, attr, bound, unit in ROWS:
+        n = sum(1 for k in want if k in results and point_passes(results[k], attr, bound))
+        if n < len(want):
+            out.append(f"{label} >= {bound:g} {unit}: passes at {n}/{len(want)} points")
+    return out
+
+
+SNAPSHOT_TB_MARKER = "* ---- testbench (verbatim) ----\n"
+
+
+def snapshot_testbench(snapshot_text: str) -> str:
+    """The testbench a fixed-VCM run retained verbatim at the end of its snapshot."""
+    if snapshot_text.count(SNAPSHOT_TB_MARKER) != 1:
+        raise ValueError("netlist snapshot has no single verbatim-testbench section")
+    tail = snapshot_text.split(SNAPSHOT_TB_MARKER, 1)[1]
+    if not tail.endswith("\n"):
+        raise ValueError("netlist snapshot testbench section is truncated")
+    return tail[:-1]  # the snapshot writer appends exactly one "\n" after the bench
+
+
+def recompute_fixed_vcm(source: str, *, root: Path = FIXED_VCM_DIR, now=None) -> tuple[str, str]:
+    """Rebuild a fixed-VCM record from a committed record's evidence, no simulator.
+
+    Per-point metrics are re-extracted from the committed `corners/<source>/*.dat`
+    and cross-checked against ngspice's `.meas` values in the committed
+    `klt-report.json`; the grid operating-point flags come from the committed
+    `klt-op-report.json`; the baseline is re-extracted from the default record
+    the superseded one names. The canonical fingerprint inputs are rebuilt from
+    the testbench retained verbatim in the committed netlist snapshot and must
+    rehash to the fingerprint the superseded record printed. Conditions (PDK,
+    tools, execution, DUT hash, smoke point, local nominal operating point) are
+    carried over verbatim. Returns (new record id, markdown); the caller writes it.
+    """
+    old_md = (root / "records" / f"{source}.md").read_text()
+    cdir = root / "corners" / source
+    report = json.loads((cdir / "klt-report.json").read_text())
+    vcm = float(_record_field(old_md, r"^- \*\*Common-mode policy\*\*: `fixed:([0-9.]+)`", "Common-mode policy").group(1))
+    vcm = validate_vcm_fixed(vcm)
+    tb_text = snapshot_testbench((root / "netlist-snapshots" / f"{source}.spice").read_text())
+    old_fp = _record_field(old_md, r"^- \*\*Measurement fingerprint\*\*: version \S+, sha256 `([0-9a-f]{64})`",
+                           "Measurement fingerprint").group(1)
+    if mc.fingerprint(tb_text, vcm) != old_fp:
+        raise ValueError(f"{source}: the snapshot testbench at VCM {vcm:g} does not rehash to the recorded "
+                         f"fingerprint {old_fp}")
+
+    want = expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
+    seen = {point_key(c): c for c in report.get("corners", [])}
+    if set(seen) != set(want):
+        raise ValueError(f"{source}: klt-report.json points do not match the 45-point grid")
+    bad = vcm_mismatches(report, vcm)
+    if bad:
+        raise ValueError(f"{source}: klt-report.json does not carry VCM {vcm:g}: " + "; ".join(bad))
+    results: dict[Key, Metrics] = {}
+    problems: list[str] = []
+    for k in want:
+        a = np.loadtxt(cdir / f"{point_stem(k)}.dat")
+        freq, h, vdiff = a[:, 0], a[:, 1] + 1j * a[:, 2], a[:, 3] + 1j * a[:, 4]
+        m = extract_metrics(freq, h)
+        vals = {x["name"]: x.get("value") for x in seen[k].get("measurements", [])}
+        if m.valid:
+            problems += crosscheck(k, vals, h[0] * vdiff[0], m)
+        results[k] = m
+    if problems:
+        raise ValueError("cross-check against the committed .meas values failed: " + "; ".join(problems))
+    op = op_remote = None
+    op_path = cdir / "klt-op-report.json"
+    if op_path.is_file():
+        oreport = json.loads(op_path.read_text())
+        op = op_flags(oreport, want)
+        op_remote = (oreport.get("environment") or {}).get("remote")
+
+    pdk_m = _record_field(old_md, r"^- \*\*PDK revision\*\*: (\S+), open_pdks `([^`]+)` \(via (.+)\)$", "PDK revision")
+    pdk = argparse.Namespace(variant=pdk_m.group(1), version=pdk_m.group(2), source=pdk_m.group(3))
+    tools = _record_field(old_md, r"^- \*\*Tools\*\*: ngspice \(local: (.+); engine as run by klt: `[^`]*`\), klt `([^`]+)`$",
+                          "Tools")
+    backend_desc = _record_field(old_md, r"^- \*\*Execution\*\*: (.+)$", "Execution").group(1)
+    dut_sha = _record_field(old_md, r"normalised sha256 `([0-9a-f]{64})`", "DUT hash").group(1)
+    closure = {e.get("sha256") for e in (report.get("environment") or {}).get("netlist_closure", [])}
+    if dut_sha not in closure:
+        raise ValueError(f"{source}: DUT sha256 in the record is not in klt-report.json's netlist closure")
+    smoke_line = _record_field(old_md, r"^- \*\*Smoke point before submission\*\*: (.+)$", "Smoke point").group(1)
+    baseline_id = _record_field(old_md, r"re-extracted from `sim/gain-gbw-pm/corners/([^/`]+)/`", "Baseline").group(1)
+    op_error_m = re.search(r"^  - operating-point request FAILED \(no local fallback\): (.+)$", old_md, re.M)
+    nm = re.search(r"^## Nominal device-level operating point \(local single unit\)\n\n(.*?)\n\n## ", old_md, re.M | re.S)
+    if not nm:
+        raise ValueError("superseded record has no nominal operating-point section")
+    baseline = load_baseline(HERE / "corners" / baseline_id, want)
+
+    if now is None:
+        record, stamp = allocate_record_id(REPO_ROOT)
+    else:  # tests: deterministic id, no git call
+        stamp = now
+        record = f"{stamp:%Y%m%d-%H%M%S}-test"
+    measured = old_md.split("**Date (UTC)**: ", 1)[1].split(chr(10), 1)[0]
+    note = (f"regenerated with NO new simulation from `{source}`'s committed `fixed-vcm/corners/{source}/` data "
+            f"(`.dat` per point + `klt-report.json` / `klt-op-report.json`, fleet job "
+            f"`{((report.get('environment') or {}).get('remote') or {}).get('job_id', 'n/a')}`, measured {measured} UTC). "
+            f"Correction: `{source}` printed the measurement-fingerprint header but omitted the "
+            "'Measurement fingerprint inputs' section it refers to; that section is added below, rebuilt from the "
+            f"testbench retained verbatim in `fixed-vcm/netlist-snapshots/{source}.spice`, and rehashes to the same "
+            f"fingerprint `{old_fp}`. Every table and count is re-derived from the committed data and unchanged; "
+            f"corner data and the netlist snapshot stay under `{source}`.")
+    md = build_fixed_vcm_record(
+        record=record, stamp=stamp, pdk=pdk, ngspice=tools.group(1), klt_version=tools.group(2),
+        backend_desc=backend_desc, report=report, op_report_remote=op_remote,
+        op_error=op_error_m.group(1) if op_error_m else None, vcm=vcm, want=want, results=results,
+        baseline=baseline, baseline_id=baseline_id, op=op, nominal_op=None, problems=[],
+        smoke_line=smoke_line, dut_sha=dut_sha, req=None, testbench_text=tb_text,
+        supersedes=source, supersede_note=note, nominal_op_lines=nm.group(1).split("\n"),
+    )
+    return record, md
+
+
+def run_recompute_fixed_vcm(source: str) -> int:
+    try:
+        record, md = recompute_fixed_vcm(source)
+    except (OSError, ValueError, VcmRequestError) as exc:
+        print(f"ERROR: cannot regenerate from {source}; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
+        return 2
+    out = FIXED_VCM_DIR / "records" / f"{record}.md"
+    if out.exists():
+        print(f"ERROR: {out} already exists; evidence is append-only", file=sys.stderr)
+        return 2
+    out.write_text(md)
+    print(f"wrote {out}")
+    return 0
 
 
 def run_fixed_vcm(pdk: Pdk, args, vcm: float) -> int:
@@ -1882,6 +2036,12 @@ def run_fixed_vcm(pdk: Pdk, args, vcm: float) -> int:
     if problems or any(k not in results or not results[k].valid for k in want):
         print("INCOMPLETE: failed/missing/invalid points are listed in the record", file=sys.stderr)
         return 1
+    misses = fixed_vcm_misses(results, want)
+    for ms in misses:
+        print(f"  ratified bound missed (diagnostic grid): {ms}")
+    if getattr(args, "strict", False) and misses:
+        print("STRICT: a ratified row misses at fixed VCM; evidence retained in the record, exit 1", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -1913,6 +2073,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--recompute-passive", metavar="RECORD",
                     help="no simulator: write a new record superseding passive-corner RECORD, "
                     "regenerated from its committed corners/RECORD/ data")
+    ap.add_argument("--recompute-fixed-vcm", metavar="RECORD",
+                    help="no simulator: write a new record superseding fixed-VCM RECORD, regenerated "
+                    "from its committed fixed-vcm/corners/RECORD/ data and netlist snapshot")
     ap.add_argument("--vcm-fixed", type=float, metavar="VOLTS", default=None,
                     help="opt-in (issue #125): hold the input common mode at VOLTS at every supply "
                     "point instead of tracking VDD/2 (the LDO consumer input is 1.20). Writes a "
@@ -1932,8 +2095,9 @@ def main(argv: list[str] | None = None) -> int:
 
     # Validate BEFORE any tool is touched or anything is submitted (issue #125).
     if args.vcm_fixed is not None:
-        if args.passive_corners or args.recompute_passive:
-            ap.error("--vcm-fixed cannot be combined with --passive-corners / --recompute-passive")
+        if args.passive_corners or args.recompute_passive or args.recompute_fixed_vcm:
+            ap.error("--vcm-fixed cannot be combined with --passive-corners / --recompute-passive / "
+                     "--recompute-fixed-vcm")
         try:
             args.vcm_fixed = validate_vcm_fixed(args.vcm_fixed)
         except VcmRequestError as exc:
@@ -1941,6 +2105,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.recompute_passive:
         return run_recompute_passive(args.recompute_passive)
+    if args.recompute_fixed_vcm:
+        return run_recompute_fixed_vcm(args.recompute_fixed_vcm)
     pdk = find_pdk()
     if args.smoke:
         return smoke(pdk, args.vcm_fixed)

@@ -183,7 +183,7 @@ python3 sim/gain-gbw-pm/run_gain_gbw_pm.py --vcm-fixed 1.20           # smoke, t
 
 - The value is validated before any tool is touched or anything is submitted
   (finite, > 0 V, below every supply point; not combinable with
-  `--passive-corners` / `--recompute-passive`). The driver runs the nominal
+  `--passive-corners` / `--recompute-passive` / `--recompute-fixed-vcm`). The driver runs the nominal
   point locally first and does not submit the grid if it fails, then checks the
   klt report really carried the requested VCM at every point.
 - Same bench, extraction, bounds, ideal 10 uA bias, 2 pF, typical passives. The
@@ -195,13 +195,22 @@ python3 sim/gain-gbw-pm/run_gain_gbw_pm.py --vcm-fixed 1.20           # smoke, t
   45-point cross-checks (`latest_gain_dir`) keep selecting the VDD/2 records.
   Failed, missing or invalid points are listed explicitly in the record (exit 1);
   a failed submit writes no record and never falls back to a local grid (exit 2).
+- Exit semantics match the default grid: a ratified-bound miss is a diagnostic
+  result (exit 0, misses printed); with `--strict` it exits 1 **after** the
+  record and corner data are written.
+- Records retain the canonical measurement-fingerprint inputs (JSON that
+  rehashes to the header fingerprint). `--recompute-fixed-vcm RECORD` writes a
+  new record superseding RECORD from its committed `fixed-vcm/corners/RECORD/`
+  data and the testbench in its netlist snapshot, with no simulator.
 - The record compares each point with the newest VDD/2 record's stored data
   (gain, GBW, PM deltas) and reports the per-point DC follower error
   `|vout - VCM|` from an operating-point request on the same grid (vout-only on
   the fleet) plus one local device-level nominal operating point.
 
-Result, record `fixed-vcm/records/20261010-133217-43b32f6.md` (45/45 points
-valid): relative to the VDD/2 baseline, DC gain moves -0.60 .. +0.42 dB, GBW
+Result, record `fixed-vcm/records/20261010-134147-1739a3d.md` (supersedes
+`20261010-133217-43b32f6`, which omitted its fingerprint-inputs section;
+regenerated from that record's committed data, no new simulation, every
+number unchanged; 45/45 points valid): relative to the VDD/2 baseline, DC gain moves -0.60 .. +0.42 dB, GBW
 -2.7 .. -0.3 %, PM +0.04 .. +0.62 deg; the pass counts against the unchanged
 bounds are identical (gain 45/45, GBW 45/45, PM 15/45), worst PM 57.38 deg
 (fs / 125 C / 2.97 V) versus 57.34 deg, and the nominal follower error is zero
