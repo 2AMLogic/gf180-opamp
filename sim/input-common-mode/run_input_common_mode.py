@@ -71,7 +71,6 @@ import argparse
 import csv
 import gzip
 import hashlib
-import importlib.util
 import io
 import json
 import math
@@ -104,19 +103,14 @@ from harness import (  # noqa: E402
     remote_of,
     run_klt,
     run_klt_retrying,
+    load_sibling,
     sanitise_report,
 )
 
 # The CMRR driver owns the servo-bench guards, materialisation, the excitation
 # checks and the joint Ad/Acm solve; reuse them unchanged so the benches stay
 # structurally identical (it in turn reuses the gain driver's DUT guards).
-if "cmrr_driver" in sys.modules:
-    C = sys.modules["cmrr_driver"]
-else:
-    _spec = importlib.util.spec_from_file_location("cmrr_driver", REPO_ROOT / "sim" / "cmrr" / "run_cmrr.py")
-    C = importlib.util.module_from_spec(_spec)
-    sys.modules["cmrr_driver"] = C
-    _spec.loader.exec_module(C)
+C = load_sibling("cmrr_driver", "sim/cmrr/run_cmrr.py")
 G = C.G
 
 TESTBENCH = HERE / "testbench" / "tb_input_common_mode.spice"

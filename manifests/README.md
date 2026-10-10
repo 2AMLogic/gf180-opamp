@@ -54,12 +54,13 @@ campaign (item 6). There is still no layout (no `klt drc`/`lvs`/`pex`). The
 committed `sim/` Markdown records are narrative evidence and are not `klt`
 envelopes. An honest `unmet`/`no_evidence` row beats stale prose.
 
-**Pinned grader vs. the stricter policy.** The pinned klt 0.5.0 grader checks
+**Pinned grader vs. the stricter policy.** The pinned klt 0.7.0 grader checks
 mechanically: envelope kind (generic only accepted for item 8), check status
-`pass`, and the `content_hash` pin. The topical policy in the vendored
-checklist (what an artifact must actually show) is stricter than what 0.5.0
-enforces — for example 0.5.0's kind restriction table is narrower than the
-per-item rules described below — so a `met` row is only as meaningful as the
+`pass`, and the `content_hash` pin, plus the per-item rules its grading
+ruleset carries (the record's `build.grading_ruleset_id`; rows the build
+grades itself carry `graded_by_build`). The topical policy in the vendored
+checklist (what an artifact must actually show) can still be stricter than
+what the grader enforces, so a `met` row is only as meaningful as the
 artifact cited; do not rely on permissive grading to cite unrelated files.
 
 ## The integrator view (`integrator.json`)
@@ -77,8 +78,22 @@ are explicit `null`s until layout lands — never omitted keys, never
 placeholder numbers. `rung` is `"below-T1"` while
 `gf180-opamp.signoff.json`'s `tier` is `null`.
 
-**Consistency obligations** — manual until the artifacts they mirror exist
-(the signoff CI does not check them):
+**Consistency obligations** — `manifests/check_integrator.py` (run by the
+signoff CI, with `manifests/test_check_integrator.py`) enforces the
+`top_cell`/`ports`/`netlist`/`rung` obligations and the shape of populated
+`gds`/`area`, offline (stdlib only; no simulator, PDK, or network). It checks
+that the netlist exists, `top_cell` and the ordered port names match its
+`.subckt` declaration (including `+` continuations and xschem's `**.subckt`
+form), port directions match `design/opamp_two_stage.sym`, `rung` agrees with
+the signoff record's `tier`, all keys are present, and a populated `gds` is an
+existing repository file with a finite positive `area` in mm². **It checks
+interface consistency only** — it does not validate that `area` matches real
+geometry, that a `gds` is the full op-amp rather than a pilot cell, or that the
+signoff tier itself is correct (that is `klt signoff`'s job). Run it locally
+with `python3 manifests/check_integrator.py`; diagnostics name the field and
+the artifact it disagrees with. Update procedure: change the port, symbol,
+netlist, or tier, then edit `integrator.json` in the same commit and re-run the
+checker.
 
 - **`rung` ↔ `gf180-opamp.signoff.json`'s `tier`**: `tier: null` ⇒
   `"below-T1"`; a `T1`–`T4` verdict ⇒ the same string. Update `rung` in the
@@ -93,6 +108,22 @@ placeholder numbers. `rung` is `"below-T1"` while
 [`2AMLogic/2am` `repos.yml`](https://github.com/2AMLogic/2am/blob/main/repos.yml)
 updates `spec/target-spec.md`'s "Consumers (non-normative)" section — not
 this file.
+
+## Stale-DUT gate and the rerun path
+
+The report generator (and `--check`, which CI runs without a simulator)
+compares every selected record's DUT hash with the current
+`design/netlist/opamp_two_stage.spice`, normalised by
+`sim/harness.py:normalize_dut_text` (the same normaliser the drivers hash).
+After any netlist change it fails with `stale DUT: ...` and names the
+experiments needing a rerun. Rerun path: run `sim/characterize.sh` (or the
+named `sim/<experiment>/run_*.py` drivers) to append new records, then
+`python3 sim/report/characterization_report.py --latest --update-manifest`,
+and regenerate the signoff record as below. Existing records are never
+edited. For a historical, non-signoff report use
+`characterization_report.py --archival --out-dir <dir>` (or `--stdout`): it is
+labelled ARCHIVAL, writes no evidence sidecar, and refuses `--check`,
+`--latest` and the default `sim/reports` directory.
 
 ## Regenerating the record
 
@@ -117,13 +148,16 @@ byte-comparison.
 ## Why the checklist is vendored
 
 `klt` bundles its own copy of `design-evidence-tiers.md`, but the klt release
-pinned in CI (**0.5.0**, published 2026-09-15) predates the checklist's
-eleventh item — "**Power delivery (structural)**", added upstream in
+pinned in CI (**0.7.0**) now bundles the same document as the upstream
+`v0.7.0` tag (the vendored copy is byte-identical to the wheel's bundled
+`klayout_tools/data/design-evidence-tiers.md`). It was vendored separately
+while the pin was 0.5.0, whose bundle predated the checklist's eleventh item —
+"**Power delivery (structural)**", added upstream in
 [klayout-tools#2025](https://github.com/2AMLogic/klayout-tools/pull/2025)
-commit `428951e` (2026-09-19). Against the bundled copy this manifest would
-render only ten rows and leave #23's "item 11 has a row, even if `unmet`"
-unsatisfiable. The vendored copy is taken verbatim from klayout-tools at
-commit `b15edf5e`, pinned so that every report states which checklist
+commit `428951e` (2026-09-19) — and would have rendered only ten rows. The
+vendored copy is taken verbatim from klayout-tools at tag `v0.7.0` (commit
+`0e2362bd`, the commit the PyPI 0.7.0 release wheel reports in the record's
+`build` block), pinned so that every report states which checklist
 revision graded it: the record quotes each item's text, so editing or
 re-vendoring the checklist changes the record and fails CI until the record
 is regenerated in the same change.
@@ -160,17 +194,32 @@ restated from the [upstream contract](https://github.com/2AMLogic/klayout-tools/
   unrelated envelope to green a row is the exact hand-read dishonesty this
   manifest exists to end. Leave them `unmet`/`no_evidence` until an artifact
   that genuinely backs the claim exists.
-- **Do not cite item 11 while the klt pin is 0.5.0.** Item-11 grading rules
-  (`klt erc`/`lvs`/`place-and-route` supply evidence) are newer than this
-  release; under a build without them a citation falls through to the
-  unrestricted grading path and could render `met` from rules that do not
-  exist in the running build. Upgrade the klt pin first (below), then cite.
+- **Item 11 is graded by the 0.7.0 build** (`klt erc`/`lvs`/`place-and-route`
+  supply evidence; the record reports `build_t1_item_count: 11`). Cite it only
+  with an artifact that genuinely meets the vendored item-11 rules; the
+  pre-0.7.0 caution (a build without the rules would grade a citation through
+  the unrestricted path) no longer applies, but do not pad it either. If the
+  pin is ever moved back below a build with item-11 rules, stop citing it.
 
 ## The klt pin
 
-CI installs `klayout-tools==0.5.0` — the same code that produced the
-committed record, whose exit the byte-comparison holds. When a newer
-klayout-tools release ships (in particular one with item-11 grading and the
-graded-by-build machinery), bump the pin in `.github/workflows/signoff.yml`,
-regenerate `gf180-opamp.signoff.json`, and commit both in the same PR.
-Until then the record stays exactly reproducible from the pinned release.
+CI installs `klayout-tools==0.7.0` — the same code that produced the
+committed record, whose exit the byte-comparison holds. To bump the pin to a
+newer klayout-tools release: change it in `.github/workflows/signoff.yml`,
+re-vendor the checklist from the matching upstream tag (see above), regenerate
+`gf180-opamp.signoff.json` with the **PyPI release wheel** in a fresh
+throwaway venv (the command in "Regenerating the record"):
+
+```bash
+python3 -m venv .venv-klt
+.venv-klt/bin/pip install --no-cache-dir "klayout-tools==X.Y.Z"
+.venv-klt/bin/klt signoff ...   # then delete .venv-klt
+```
+
+and commit all three in the same PR. Before committing, check the record's
+`build` block: `is_release` must be `true`, `git_tag` must be `vX.Y.Z`, and
+`version` must carry no `+g<hash>` local suffix. A cached `uvx` environment can
+resolve a non-release build of the same version, which records a different
+`build` block than the wheel CI installs, so the byte-comparison fails. The separate
+`SELFTEST_KLT_VERSION` pin in `selftest.yml` is independent; leave it alone.
+The record stays exactly reproducible from the pinned release.

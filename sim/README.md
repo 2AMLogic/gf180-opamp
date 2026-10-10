@@ -20,7 +20,8 @@ Mirrors `gf180-comparator`'s `characterize.sh`/`selftest.sh` split. See
 `.github/workflows/selftest.yml` runs `./selftest.sh` on every push to `main`
 and every PR: ngspice (apt, `ubuntu-24.04` = ngspice 42), the selftest klt and
 the pinned gf180mcu PDK are provisioned, `ci_prereqs.py` fails naming any
-missing tool (`klt`, `ngspice`) or the PDK with every path searched, and
+missing tool (`klt`, `ngspice`, `xschem`), an xschem other than the pinned
+release, or the PDK with every path searched, and
 `SIM_REQUIRE_PREREQS=1` turns the suites' skip-when-unavailable paths (PDK /
 klt / ngspice / committed gain dataset) into failures; local runs without the
 variable still skip. `ci_regression_check.sh` then breaks a copy of the
@@ -28,12 +29,42 @@ gain-bench source guard and extraction on purpose and requires the unit suite
 to fail. The job fails if it leaves any file modified or created (no
 `records/`). It never runs a PVT/Monte Carlo grid and needs no credentials.
 
+The selftest also runs `ci_netlist_check.py` (issue #76): it exports
+`design/opamp_two_stage.sch` with xschem into a scratch temp dir and compares
+it with the committed `design/netlist/opamp_two_stage.spice`, ignoring only the
+checkout-specific `** sch_path:` comment. Missing xschem, a failed or empty
+export, a missing symbol or an empty subcircuit fail it. Reproduce locally
+with `python3 sim/ci_netlist_check.py` (tests: `python3 sim/test_netlist_check.py`);
+a mismatch means regenerate the netlist per `design/README.md`.
+
+**xschem pin: 3.4.7**, built from upstream commit
+`92dd8fe5f4d5c1057489710d8a22f18fdc9d7ed0` (what tag `3.4.7` points at),
+not from apt (ubuntu-24.04 ships 3.4.4, which formats the export differently).
+Three places hold it and must agree: `selftest.yml` `SELFTEST_XSCHEM_VERSION`
+(plus `XSCHEM_COMMIT` for the source build, cached on that commit), and
+`ci_netlist_check.py` `PINNED_XSCHEM_VERSION`. `ci_prereqs.py` fails if the
+workflow variable disagrees with the constant or if `xschem --version` on
+PATH is not `XSCHEM V3.4.7`; `ci_netlist_check.py` also stops with exit 2 on
+a version mismatch instead of reporting a diff. `test_netlist_check.py`
+checks the workflow pin statically and the version gate with fake xschem
+binaries. To get the pinned xschem locally (build deps as in the workflow;
+installs to `/usr/local` unless you pass `--prefix`):
+
+```bash
+git init xschem-src && cd xschem-src
+git remote add origin https://github.com/StefanSchippers/xschem.git
+git fetch --depth 1 origin 92dd8fe5f4d5c1057489710d8a22f18fdc9d7ed0
+git checkout FETCH_HEAD
+./configure && make -j2 && sudo make install     # or ./configure --prefix=$HOME/xschem-3.4.7
+xschem --no_x -q --version | head -1             # must print XSCHEM V3.4.7
+```
+
 **Two distinct klt pins** (do not conflate):
 
 | Where | Pin | Role |
 |---|---|---|
 | `selftest.yml` `SELFTEST_KLT_VERSION` | `klayout-tools==0.7.0` | client that runs the smoke simulations |
-| `signoff.yml` | `klayout-tools==0.5.0` | grader whose output must reproduce `manifests/gf180-opamp.signoff.json` |
+| `signoff.yml` | `klayout-tools==0.7.0` | grader whose output must reproduce `manifests/gf180-opamp.signoff.json` |
 
 Bump each independently; the signoff pin moves only with a regenerated record
 (`manifests/README.md`). The PDK pin is `GF180_PDK_REV`, which must equal
@@ -47,7 +78,7 @@ on scratch fixtures in the volare layout (pinned passes; wrong revision,
 pinned-named dir with wrong contents, and unknown provenance fail) without
 needing the real PDK. volare itself is pinned (`VOLARE_VERSION`).
 
-Reproduce locally (needs `klt`, `ngspice`, numpy/matplotlib, and the PDK):
+Reproduce locally (needs `klt`, `ngspice`, xschem 3.4.7 (above), numpy/matplotlib, and the PDK):
 
 ```bash
 volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b
@@ -124,11 +155,47 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 - Existing records have no structured sidecars, so the verdict/worst-case
   lines are extracted from the Markdown (cross-checked against each record's
   own per-point table); historical records are never modified.
+- Measurement-configuration freshness (issue #85), additive to the DUT gate:
+  a record may carry a versioned `**Measurement fingerprint**` header line
+  plus the canonical inputs it hashes (`## Measurement fingerprint inputs`).
+  The report verifies the inputs hash to the stated value, recomputes the
+  CURRENT effective inputs offline (`sim/<experiment>/measurement_config.py`
+  plus the committed bench) and rejects a mismatch like a stale DUT, naming
+  the experiment to rerun and the input groups that changed (`--archival`
+  downgrades it to a disclosed limitation). Normalisation (`harness.py`,
+  `canonical_bench_lines`): comments, blank lines, whitespace, case and
+  `.include` paths are ignored; values are not numerically re-parsed. Excluded:
+  record IDs, workspace paths, backend/retry options, extraction code. Instrumented
+  experiments (issues #85, #89): `gain-gbw-pm`, `noise`, `offset-mc`, `cmrr`,
+  `psrr` and `slew-swing-power`, each with a stdlib
+  `sim/<experiment>/measurement_config.py` that its runner imports its
+  fingerprinted constants from (one source; per-experiment tests compare the
+  runner's klt request with the fingerprint inputs, and
+  `sim/test_measurement_config.py` fails when a configuration constant does
+  not move the fingerprint). Beyond the bench and corner/model axes each
+  fingerprints what is specific to its figure: noise bands, spot frequencies
+  and fit window; offset-MC sample count, seed, `vary` mode and the
+  `sw_stat_mismatch` switch; CMRR/PSRR excitation modes, servo and isolation
+  settings and the operating-point print; slew/swing/power timing, sweep and
+  criterion settings **per figure** (the record retains only the figures it
+  measured, so a power-only record never certifies slew or swing
+  configuration, and the report recomputes exactly that figure set). Records
+  written before the migration, and every older record, are reported as
+  "measurement-configuration freshness unknown" (per source, per row and in
+  the report limitations), never as current. To migrate a further experiment,
+  give it a `measurement_config.py` exposing `EXPERIMENT`,
+  `FINGERPRINT_VERSION`, `TESTBENCHES_REL` and `inputs(texts, retained)` (see
+  `noise/measurement_config.py`), emit the header line and inputs block from
+  its driver (`harness.fingerprint_header_lines` /
+  `fingerprint_inputs_section`), and register it in `MEASUREMENT_CONFIG`.
+  Historical
+  records are never edited and no historical fingerprint is fabricated.
 - Regenerate: `python3 sim/report/characterization_report.py` (after editing
   `selection.json`); verify the committed copy: `... --check` (exit 1 if
   stale). `characterize.sh` ends with `--latest --update-manifest`, selecting
   the newest record of each experiment (for `slew-swing-power`, the newest
-  record that judged each row); `selftest.sh` runs
+  record that judged each row; side-study records such as the gain-gbw-pm
+  `--passive-corners` study are never selected); `selftest.sh` runs
   `report/test_report.py` and `--check`.
 
 ## Experiments

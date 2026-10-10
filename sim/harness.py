@@ -46,8 +46,10 @@ another backend) is fixed in one place.
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -58,6 +60,149 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 #: The committed xschem export of the DUT (every bench measures this).
 DUT_EXPORT = REPO_ROOT / "design" / "netlist" / "opamp_two_stage.spice"
+
+
+def load_sibling(module_name: str, relpath: str):
+    """Import a sibling driver by repo-relative path (issue #68).
+
+    Experiment directories contain hyphens, so the drivers cannot be imported
+    by name. Guarded by `sys.modules`: a driver already loaded under
+    `module_name` (by a test, or by another driver) is reused, so every
+    importer shares ONE copy of the module.
+    """
+    if module_name in sys.modules:
+        return sys.modules[module_name]
+    path = REPO_ROOT / relpath
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = mod
+    # The loaded driver's own directory is on sys.path while it executes, as it
+    # would be when run as a script (issue #85: a driver importing a helper that
+    # sits next to it must not depend on which directory the importer ran from).
+    here = str(path.resolve().parent)
+    sys.path.insert(0, here)
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        sys.modules.pop(module_name, None)
+        raise
+    finally:
+        try:
+            sys.path.remove(here)
+        except ValueError:
+            pass
+    return mod
+
+#: Measurement-configuration fingerprint (issue #85). Version of the
+#: normalisation rules below; bump it when they change so old fingerprints are
+#: reported as "different rules" rather than silently compared.
+FINGERPRINT_VERSION = 1
+
+
+def canonical_bench_lines(text: str) -> list[str]:
+    """Canonical form of a SPICE bench body for freshness comparison.
+
+    Rules (version 1): continuation lines (`+`) are joined to their parent;
+    full-line `*` comments, `;`/`$` trailing comments and blank lines are
+    dropped; whitespace runs collapse to one space; text is lower-cased
+    (SPICE is case-insensitive); `.include`/`.inc` targets are reduced to
+    their basename (the driver rewrites them to per-run absolute paths, which
+    must not change the fingerprint). Component values are NOT numerically
+    re-parsed: `2p` and `2e-12` fingerprint differently, deliberately.
+    """
+    logical: list[str] = []
+    for raw in text.splitlines():
+        ln = raw.strip()
+        if ln.startswith("+") and logical:
+            logical[-1] += " " + ln[1:].strip()
+        else:
+            logical.append(ln)
+    out: list[str] = []
+    for ln in logical:
+        if not ln or ln.startswith("*"):
+            continue
+        ln = ln.split(";", 1)[0]
+        ln = ln.split(" $", 1)[0]
+        ln = " ".join(ln.split()).lower()
+        m = re.match(r"^(\.(?:include|inc))\s+['\"]?([^'\"\s]+)['\"]?$", ln)
+        if m:
+            ln = f"{m.group(1)} '{m.group(2).replace(chr(92), '/').rsplit('/', 1)[-1]}'"
+        if ln:
+            out.append(ln)
+    return out
+
+
+def fingerprint_json(inputs: dict) -> str:
+    """Deterministic JSON of a fingerprint-input dict (sorted keys, no spaces)."""
+    return json.dumps(inputs, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+
+def measurement_fingerprint(inputs: dict) -> str:
+    """sha256 over the canonical JSON of the effective measurement inputs."""
+    import hashlib
+
+    return hashlib.sha256(fingerprint_json(inputs).encode()).hexdigest()
+
+
+def load_config_module(path: Path, name: str | None = None):
+    """Load a stdlib `measurement_config.py` by file path (issues #85, #89).
+
+    Cached per resolved path (not per name), so a scratch checkout used by the
+    offline report never shares a module with the real repository. Compiled
+    from source (no bytecode cache) so an edited module is never shadowed by a
+    stale `.pyc`. `purge_config_modules()` drops the cache.
+    """
+    import types
+
+    path = Path(path).resolve()
+    if name is None:
+        try:
+            name = "_mcfg_" + re.sub(r"\W", "_", path.relative_to(REPO_ROOT).as_posix())
+        except ValueError:  # a scratch checkout: key by its full path
+            name = "_mcfg_" + re.sub(r"\W", "_", path.as_posix())
+    if name in sys.modules:
+        return sys.modules[name]
+    mod = types.ModuleType(name)
+    mod.__file__ = str(path)
+    sys.modules[name] = mod
+    try:
+        exec(compile(path.read_text(), str(path), "exec"), mod.__dict__)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
+    return mod
+
+
+def purge_config_modules() -> None:
+    """Forget every config module loaded by `load_config_module`."""
+    for k in [k for k in sys.modules if k.startswith("_mcfg_")]:
+        del sys.modules[k]
+
+
+def fingerprint_header_lines(inputs: dict, covers: str) -> list[str]:
+    """The `**Measurement fingerprint**` header line a record embeds."""
+    return [
+        f"- **Measurement fingerprint**: version {inputs['fingerprint_version']}, sha256 "
+        f"`{measurement_fingerprint(inputs)}` over the canonical inputs retained in "
+        f"the 'Measurement fingerprint inputs' section ({covers}; excludes record IDs, "
+        "paths and backend scheduling)",
+    ]
+
+
+def fingerprint_inputs_section(inputs: dict, module_rel: str) -> list[str]:
+    """The `## Measurement fingerprint inputs` block a record embeds."""
+    return [
+        "## Measurement fingerprint inputs",
+        "",
+        "Canonical JSON (sorted keys, compact separators); its sha256 is the fingerprint in the header. "
+        f"Recompute with `{module_rel}`.",
+        "",
+        "```json",
+        fingerprint_json(inputs),
+        "```",
+        "",
+    ]
+
 
 DEFAULT_VARIANT = "gf180mcuD"
 # Pinned open_pdks revision of the gf180mcu PDK (full hash). CI's
@@ -207,20 +352,25 @@ def run_corner(deck: str, corner: str, temp_c: float, workdir: Path) -> "tuple[s
 # --------------------------------------------------------------------------
 
 
-def load_dut_text() -> str:
-    """The committed export as an includable subcircuit.
+def normalize_dut_text(export_text: str) -> str:
+    """Normalise an xschem export text into the includable subcircuit.
 
     Reuses `subckt_from_export()` from `design/check_dc_op.py` unchanged, so
-    the DC operating-point check and every testbench consume the export
-    through one conversion: uncomment xschem's `**.subckt`/`**.ends`, drop
-    `.end`.
+    the DC operating-point check, every testbench and the report's stale-DUT
+    gate (issue #75) consume the export through one conversion: uncomment
+    xschem's `**.subckt`/`**.ends`, drop `.end`.
     """
     design = str(REPO_ROOT / "design")
     if design not in sys.path:
         sys.path.insert(0, design)
     from check_dc_op import subckt_from_export
 
-    return subckt_from_export(DUT_EXPORT.read_text())
+    return subckt_from_export(export_text)
+
+
+def load_dut_text() -> str:
+    """The committed export as an includable subcircuit (see normalize_dut_text)."""
+    return normalize_dut_text(DUT_EXPORT.read_text())
 
 
 # --------------------------------------------------------------------------

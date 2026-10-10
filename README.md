@@ -19,7 +19,12 @@ below:
 
 - **Measured against a ratified bound (45-point PVT grid, schematic level):**
   DC gain and GBW pass at 45/45 points (worst 93.79 dB and 10.42 MHz, both at
-  SS / 125 C / 2.97 V); phase margin **fails** its 60 degree target, passing
+  SS / 125 C / 2.97 V); slew rate, output swing and quiescent power also pass
+  at 45/45 points (worst 14.51 V/us at SS / 125 C / 2.97 V, 2.46 Vpp at
+  SS / 125 C / 2.97 V, and 310.98 uW at FF / -40 C / 3.63 V; record
+  [`20261009-142137-1dab1db`](sim/slew-swing-power/records/20261009-142137-1dab1db.md));
+  these PASS verdicts cover the MOS / temperature / supply grid only, with
+  passives at typical; phase margin **fails** its 60 degree target, passing
   at only 15/45 points (worst 57.34 degrees at FS / 125 C / 2.97 V). Record:
   [`20261009-055759-2524b3e`](sim/gain-gbw-pm/records/20261009-055759-2524b3e.md).
   The circuit repair is tracked in [#42](https://github.com/2AMLogic/gf180-opamp/issues/42).
@@ -33,9 +38,8 @@ below:
   ([`20261009-105929-30ec86d`](sim/psrr/records/20261009-105929-30ec86d.md)),
   both systematic-only (matched devices, 45 points). Their numeric bounds are
   not ratified.
-- **Not yet measured:** slew rate, output swing and quiescent power (ratified
-  targets, no committed bench), and post-layout verification (no layout
-  evidence; area is open).
+- **Not yet measured:** post-layout verification (no layout evidence; area is
+  open).
 
 All circuit results use typical passives only. The `klt signoff` verdict of
 record ([`manifests/`](manifests/README.md)) is still below T1; no T1 claim

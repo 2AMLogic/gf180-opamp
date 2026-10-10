@@ -81,7 +81,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import math
 import re
@@ -111,24 +110,21 @@ from harness import (  # noqa: E402
     remote_of,
     run_klt,
     run_klt_retrying,
+    load_sibling,
     sanitise_report,
 )
 
 # The gain driver owns the committed-DUT guards, the request shape and the grid
 # bookkeeping (the klt wrapper itself is in `harness`); reuse them unchanged so both benches stay structurally identical.
-_spec = importlib.util.spec_from_file_location(
-    "gain_gbw_pm_driver", REPO_ROOT / "sim" / "gain-gbw-pm" / "run_gain_gbw_pm.py"
-)
-G = importlib.util.module_from_spec(_spec)
-sys.modules["gain_gbw_pm_driver"] = G
-_spec.loader.exec_module(G)
+G = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
 
 TESTBENCH = HERE / "testbench" / "tb_noise.spice"
-GAIN_DIR = REPO_ROOT / "sim" / "gain-gbw-pm"
 
-CORNERS = G.CORNERS
-TEMPS_C = G.TEMPS_C
-SUPPLIES_V = G.SUPPLIES_V
+# One source for everything the fingerprint covers (issue #89).
+mc = load_sibling("noise_measurement_config", "sim/noise/measurement_config.py")
+CORNERS = mc.CORNERS
+TEMPS_C = mc.TEMPS_C
+SUPPLIES_V = mc.SUPPLIES_V
 NOMINAL = G.NOMINAL
 Key = G.Key
 fmt_key = G.fmt_key
@@ -140,20 +136,12 @@ expected_keys = G.expected_keys
 # Sweep, spot frequencies, bands
 # --------------------------------------------------------------------------
 
-F_START, F_STOP, PPD = 0.1, 1e7, 20
-DENSE_PPD = 200
-SPOT_HZ = (10.0, 100.0, 1e3, 1e4, 1e5)
-#: (label, f_lo, f_hi). The first is the sg13g2-opamp twin precedent named in
-#: DR-3 residual (e1); the others are alternatives so the band choice can be
-#: argued from data. None is ratified.
-BANDS = (
-    ("100 Hz - 1 MHz", 100.0, 1e6),
-    ("10 Hz - 100 kHz", 10.0, 1e5),
-    ("100 Hz - 100 kHz", 100.0, 1e5),
-    ("1 Hz - 10 kHz", 1.0, 1e4),
-)
-PRIMARY = 0
-FIT_LO, FIT_HI = 1.0, 1e7
+F_START, F_STOP, PPD = mc.F_START, mc.F_STOP, mc.PPD
+DENSE_PPD = mc.DENSE_PPD
+SPOT_HZ = mc.SPOT_HZ
+BANDS = mc.BANDS
+PRIMARY = mc.PRIMARY
+FIT_LO, FIT_HI = mc.FIT_LO, mc.FIT_HI
 FIT_RESID_MAX = 0.05  # rms relative residual of S for the floor/corner fit to be reported
 FLICKER_VISIBLE = 10.0  # 1/f power at 1 Hz must exceed this multiple of the floor
 
@@ -165,13 +153,9 @@ TOL_DENSE_VS_GRID_REL = 0.005
 TOL_DENSE_INOISE_REL = 0.01
 TOL_ISO_REL = 0.005
 MIN_PPD = 20
-ISOLATION_VALUES = (1e8, 1e10)
-
-ANALYSIS_TAIL = "\nprint noise2.inoise_total noise2.onoise_total\nsetplot noise1"
-
-
-def analysis_args(ppd: int = PPD) -> str:
-    return f"v(vout) Vcm dec {ppd:g} {F_START:g} {F_STOP:g}" + ANALYSIS_TAIL
+ISOLATION_VALUES = mc.ISOLATION_VALUES
+ANALYSIS_TAIL = mc.ANALYSIS_TAIL
+analysis_args = mc.analysis_args
 
 
 # --------------------------------------------------------------------------
@@ -425,22 +409,10 @@ def sweep_problems(spec: Spectrum, ppd: int, label: str) -> list[str]:
 # --------------------------------------------------------------------------
 
 
-def latest_gain_dir() -> Path | None:
-    """Newest gain-bench corner directory holding a full 45-point dataset."""
-    base = GAIN_DIR / "corners"
-    if not base.is_dir():
-        return None
-    for d in sorted((p for p in base.iterdir() if p.is_dir()), reverse=True):
-        if len(list(d.glob("*.dat"))) >= 45:
-            return d
-    return None
-
-
 def gain_db_from_gain_bench(gdir: Path, k: Key, freq: np.ndarray) -> np.ndarray | None:
-    p = gdir / f"{point_stem(k)}.dat"
-    if not p.is_file():
+    d = G.load_gain_bench(gdir, k)
+    if d is None:
         return None
-    d = np.loadtxt(p)
     if d.shape[0] < len(freq) or np.any(np.abs(d[: len(freq), 0] / freq - 1) > 1e-6):
         return None
     return 20 * np.log10(np.abs(d[: len(freq), 1] + 1j * d[: len(freq), 2]))
@@ -748,6 +720,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, report, results, arts, au
     add("")
     add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; commit `{record.rsplit('-', 1)[-1]}`; issue #46")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include `{dut_sha[:16]}`), unchanged")
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
+        add(ln)
     add(f"- **PDK**: {pdk.variant} (open_pdks `{pdk.version}`); tools: ngspice local `{ngspice}`, klt `{kver}`")
     if remote:
         add(f"- **Execution**: `klt sim` backend `{remote.get('provider')}`, job `{remote.get('job_id', remote.get('job'))}`, "
@@ -909,6 +883,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, report, results, arts, au
     add("Evidence: `corners/" + record + "/` (per point `.dat` = freq, inoise, onoise; ngspice `.log` with the "
         "integrated totals; klt-generated `.cir` deck), `netlist-snapshots/" + record + ".spice`.")
     add("")
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}))
     for p in plots:
         add(f"![{p}]({record}-plots/{p})")
     add("")
@@ -967,7 +942,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ERROR: {sub} already exists; evidence is append-only", file=sys.stderr)
             return 2
     ngspice, kver = ngspice_version(), klt_version()
-    gdir = latest_gain_dir()
+    gdir = G.latest_gain_dir()
     print(f"record {record}: {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
     with tempfile.TemporaryDirectory(prefix="noise-") as scratch:

@@ -338,5 +338,42 @@ class SimControlTests(unittest.TestCase):
         self.assertLess(abs(base.offset_v), r.IMBALANCE_MIN_SHIFT_V)
 
 
+class MeasurementFingerprint(unittest.TestCase):
+    """Issue #89: the runner and the fingerprint share ONE configuration source."""
+
+    TB = r.TESTBENCH.read_text()
+
+    def inp(self):
+        return r.mc.inputs({"bench": self.TB})
+
+    def test_runner_constants_are_the_fingerprinted_ones(self):
+        for n in ("CORNERS", "PASSIVE_SECTIONS", "MEASUREMENTS"):
+            self.assertIs(getattr(r, n), getattr(r.mc, n), n)
+        for n in ("TEMP_C", "VDD_V", "VCM_V", "MC_N", "MC_SEED", "MC_VARY", "CONTROL_N", "SIM_ARGS",
+                  "IMBALANCE_DEVICE", "IMBALANCE_W_FROM", "IMBALANCE_W_TO"):
+            self.assertEqual(getattr(r, n), getattr(r.mc, n), n)
+
+    def test_mc_request_is_what_the_fingerprint_hashes(self):
+        pdk = Pdk(Path("/nonexistent"), "gf180mcuD", "test")
+        req = r.mc_request(Path("/x/tb.spice"), pdk, r.CORNERS, r.MC_N, r.MC_SEED, r.MC_VARY)
+        inp = self.inp()
+        self.assertEqual(req["monte_carlo"], {k: inp["monte_carlo"][k] for k in ("n", "seed", "vary")})
+        self.assertEqual(req["analysis"], {"kind": inp["analysis"]["kind"], "args": inp["analysis"]["args"]})
+        self.assertEqual(req["measurements"], inp["analysis"]["measurements"])
+        self.assertEqual(req["corners"]["temperature_c"], inp["corners"]["temperature_c"])
+        self.assertEqual(req["corners"]["supply_v"], {"vdd": inp["corners"]["supply_v"], "vcm": inp["corners"]["vcm_v"]})
+        self.assertEqual(req["models"]["lib"], inp["models"]["lib"])
+
+    def test_model_switch_in_the_bench_moves_the_fingerprint(self):
+        self.assertIn("sw_stat_mismatch=1", self.TB)
+        self.assertNotEqual(r.mc.fingerprint({"bench": self.TB.replace("sw_stat_mismatch=1", "sw_stat_mismatch=0")}),
+                            r.mc.fingerprint({"bench": self.TB}))
+
+    def test_record_embeds_header_and_inputs(self):
+        blob = "\n".join(r.mc.fingerprint_lines({"bench": self.TB}) + r.mc.inputs_section({"bench": self.TB}))
+        self.assertIn(r.mc.fingerprint({"bench": self.TB}), blob)
+        self.assertIn("## Measurement fingerprint inputs", blob)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

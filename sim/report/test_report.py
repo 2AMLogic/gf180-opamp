@@ -35,6 +35,15 @@ def make_root(tmp: Path) -> Path:
         dst = tmp / p.relative_to(REPO)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(p, dst)
+    net = tmp / "design" / "netlist"
+    net.mkdir(parents=True, exist_ok=True)
+    shutil.copy(REPO / "design" / "netlist" / "opamp_two_stage.spice", net / "opamp_two_stage.spice")
+    for exp in ("gain-gbw-pm", "noise", "offset-mc", "cmrr", "psrr", "slew-swing-power"):
+        mc = tmp / "sim" / exp
+        (mc / "testbench").mkdir(parents=True, exist_ok=True)
+        shutil.copy(REPO / "sim" / exp / "measurement_config.py", mc / "measurement_config.py")
+        for tb in (REPO / "sim" / exp / "testbench").glob("*.spice"):
+            shutil.copy(tb, mc / "testbench" / tb.name)
     (tmp / "spec").mkdir(parents=True, exist_ok=True)
     shutil.copy(REPO / "spec" / "target-spec.md", tmp / "spec" / "target-spec.md")
     return tmp
@@ -109,7 +118,7 @@ class CommittedReport(unittest.TestCase):
         self.assertEqual((r["gain"]["verdict"], r["gain"]["worst"]), ("PASS", "93.79 dB"))
         self.assertEqual((r["gbw"]["verdict"], r["gbw"]["worst"]), ("PASS", "10.422 MHz"))
         self.assertEqual(rep["dut"]["normalised_sha256_prefix"], "81fbd914f8254a49")
-        self.assertEqual(rep["sources"]["gain-gbw-pm"]["record_id"], "20261009-055759-2524b3e")
+        self.assertEqual(rep["sources"]["gain-gbw-pm"]["record_id"], "20261010-020141-1e51d1c")
 
     def test_slew_swing_power_rows(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
@@ -199,6 +208,31 @@ class CommittedReport(unittest.TestCase):
             self.assertNotIn(bad, src, bad)
         self.assertNotIn("ngspice -b", src)
 
+GAIN = "sim/gain-gbw-pm/records/"
+TB = "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice"
+MCFG = "sim/gain-gbw-pm/measurement_config.py"
+OLD_GAIN_REC = "20261009-055759-2524b3e"
+
+
+def fingerprint_record(root: Path, rec: str) -> None:
+    """Fixture: stamp a copy of a gain record with the fingerprint block the
+    driver would write for the CURRENT bench in `root` (never touches the repo)."""
+    import types
+    sys.path.insert(0, str(REPO / "sim"))
+    mod = types.ModuleType("_mcfg_fixture")
+    mod.__file__ = str(root / MCFG)
+    exec(compile((root / MCFG).read_text(), str(root / MCFG), "exec"), mod.__dict__)
+    sys.path.pop(0)
+    tb = (root / TB).read_text()
+    p = root / GAIN / f"{rec}.md"
+    text = p.read_text()
+    text = re.sub(r"(?m)^- \*\*Measurement fingerprint\*\*:.*\n", "", text)
+    text = re.sub(r"(?ms)^## Measurement fingerprint inputs\n.*?^```\n\n", "", text)
+    text = text.replace("- **Corner matrix run**:", "\n".join(mod.fingerprint_lines(tb)) + "\n- **Corner matrix run**:", 1)
+    text = text.replace("## Plots", "\n".join(mod.inputs_section(tb)) + "\n## Plots", 1)
+    p.write_text(text)
+
+
 class Mutations(unittest.TestCase):
     def setUp(self):
         self._t = tempfile.TemporaryDirectory()
@@ -218,6 +252,54 @@ class Mutations(unittest.TestCase):
 
     def test_unmodified_copy_matches_committed(self):
         self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
+
+    NET = "design/netlist/opamp_two_stage.spice"
+
+    def test_stale_dut_width_change_rejected(self):
+        # all records retained; only the current netlist changes (issue #75)
+        p = self.root / self.NET
+        t = p.read_text()
+        self.assertIn("W=72u", t)
+        p.write_text(t.replace("W=72u", "W=73u", 1))
+        with self.assertRaisesRegex(cr.ReportError, r"stale DUT.*Experiments needing a rerun: cmrr, gain-gbw-pm"):
+            self.build()
+
+    def test_stale_dut_check_cli_fails_and_writes_nothing(self):
+        p = self.root / self.NET
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        out = self.root / "o"
+        self.assertEqual(cr.main(["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(out), "--check"]), 2)
+        self.assertFalse(out.exists())
+
+    def test_wrapper_and_whitespace_normalisation_passes(self):
+        p = self.root / self.NET
+        t = p.read_text()
+        self.assertRegex(t, r"(?m)^\*\*\.subckt")
+        t2 = re.sub(r"(?m)^\*\*\.(subckt|ends)", r".\1", t)  # already-uncommented wrapper
+        t2 = "\n".join(l + "  " if l.startswith("M") else l for l in t2.splitlines()) + "\n"
+        self.assertNotEqual(t, t2)
+        p.write_text(t2)
+        self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
+
+    def test_archival_marks_report_and_skips_gate(self):
+        p = self.root / self.NET
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        rep = cr.build(self.root, manifest(), archival=True)
+        self.assertTrue(rep["archival"])
+        self.assertIn("ARCHIVAL", cr.render_md(rep))
+
+    def test_archival_cannot_supply_signoff_outputs(self):
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        base = ["--root", str(self.root), "--manifest", str(mp), "--archival"]
+        self.assertEqual(cr.main(base), 2)  # needs explicit destination
+        self.assertEqual(cr.main(base + ["--out-dir", str(self.root / "o"), "--check"]), 2)
+        self.assertEqual(cr.main(base + ["--out-dir", str(self.root / cr.OUT_DIR_REL)]), 2)
+        out = self.root / "o"
+        self.assertEqual(cr.main(base + ["--out-dir", str(out)]), 0)
+        self.assertFalse((out / f"{cr.OUT_NAME}.evidence.json").exists())
 
     def test_missing_record(self):
         (self.root / "sim/noise/records/20261009-082007-68b4567.md").unlink()
@@ -286,7 +368,7 @@ class Mutations(unittest.TestCase):
             self.build()
 
     def test_verdict_table_must_agree_with_point_table(self):
-        self.edit("sim/gain-gbw-pm/records/20261009-055759-2524b3e.md", "| **FAIL** | 15/45 |", "| **FAIL** | 16/45 |")
+        self.edit("sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md", "| **FAIL** | 15/45 |", "| **FAIL** | 16/45 |")
         with self.assertRaisesRegex(cr.ReportError, "disagrees with its own per-point table"):
             self.build()
 
@@ -402,8 +484,355 @@ class Mutations(unittest.TestCase):
 
     def test_latest_selection_skips_nothing_superseded(self):
         sel = cr.latest_selection(self.root)
-        self.assertEqual(sel["gain-gbw-pm"], "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md")
+        self.assertEqual(sel["gain-gbw-pm"], "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md")
         self.assertEqual(sel, json.loads(MANIFEST.read_text())["experiments"])
+
+    def test_latest_selection_ignores_side_study_records(self):
+        # a newer passive-corner study record (issue #70) is not a grid record
+        rec = self.root / "sim/gain-gbw-pm/records/29991231-235959-0000000.md"
+        rec.write_text("# gain/GBW/PM passive-corner study (RZ x CC) -- record 29991231-235959-0000000\n")
+        self.assertEqual(cr.latest_selection(self.root)["gain-gbw-pm"],
+                         "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md")
+
+
+
+
+class MeasurementConfigFreshness(unittest.TestCase):
+    """Issue #85: measurement-configuration fingerprint alongside DUT identity."""
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+        self.gain = json.loads(MANIFEST.read_text())["experiments"]["gain-gbw-pm"]
+        self.rec = Path(self.gain).stem
+        self.m = manifest()
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def edit(self, rel, old, new):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertIn(old, t)
+        p.write_text(t.replace(old, new, 1))
+
+    def stamped(self):
+        fingerprint_record(self.root, self.rec)
+
+    def test_unfingerprinted_records_disclosed_as_unknown(self):
+        rep = cr.build(self.root, manifest())
+        for e, s in rep["sources"].items():
+            if e == "gain-gbw-pm" and "Measurement fingerprint" in (REPO / self.gain).read_text():
+                continue
+            self.assertEqual(s["measurement_config"]["status"], "unknown", e)
+        joined = " ".join(rep["limitations"])
+        self.assertIn("cmrr: measurement-configuration freshness unknown", joined)
+        self.assertIn("freshness unknown", cr.render_md(rep))
+
+    def test_matching_fingerprint_is_current(self):
+        self.stamped()
+        rep = cr.build(self.root, self.m)
+        self.assertEqual(rep["sources"]["gain-gbw-pm"]["measurement_config"]["status"], "current")
+        self.assertFalse(any(l.startswith("gain-gbw-pm: measurement-configuration") for l in rep["limitations"]))
+
+    def test_changed_load_bias_or_analysis_invalidates_with_unchanged_dut(self):
+        for rel, old, new, what in (
+            (TB, "CL vout 0 2p", "CL vout 0 5p", "CL"),
+            (TB, "dc 10u", "dc 12u", "Ibias"),
+            (MCFG, "AC_FSTOP, AC_PPD = 0.1, 1e9, 20", "AC_FSTOP, AC_PPD = 0.1, 1e9, 10", "AC"),
+        ):
+            with self.subTest(what):
+                self.setUp(); self.stamped()
+                self.edit(rel, old, new)
+                with self.assertRaisesRegex(cr.ReportError,
+                                            r"stale measurement configuration.*Experiments needing a rerun: gain-gbw-pm"):
+                    cr.build(self.root, self.m)
+                self.tearDown()
+
+    def test_stale_config_names_changed_inputs_and_archival_still_works(self):
+        self.stamped()
+        self.edit(TB, "CL vout 0 2p", "CL vout 0 5p")
+        with self.assertRaisesRegex(cr.ReportError, r"changed bench"):
+            cr.build(self.root, self.m)
+        rep = cr.build(self.root, self.m, archival=True)
+        self.assertEqual(rep["sources"]["gain-gbw-pm"]["measurement_config"]["status"], "stale")
+        self.assertTrue(any("archival report only" in l for l in rep["limitations"]))
+
+    def test_formatting_comments_and_paths_do_not_change_fingerprint(self):
+        self.stamped()
+        t = (self.root / TB).read_text()
+        t2 = "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl   vout  0   2p   ; load")
+        t2 = t2.replace("'design.ngspice'", "'/some/other/checkout/work/design.ngspice'")
+        (self.root / TB).write_text(t2)
+        rep = cr.build(self.root, self.m)
+        self.assertEqual(rep["sources"]["gain-gbw-pm"]["measurement_config"]["status"], "current")
+
+    def test_fingerprint_independent_of_record_id_and_checkout(self):
+        self.stamped()
+        a = cr.build(self.root, self.m)["sources"]["gain-gbw-pm"]["measurement_config"]["fingerprint"]
+        with tempfile.TemporaryDirectory() as d:
+            root2 = make_root(Path(d) / "elsewhere")
+            fingerprint_record(root2, self.rec)
+            b = cr.build(root2, self.m)["sources"]["gain-gbw-pm"]["measurement_config"]["fingerprint"]
+        self.assertEqual(a, b)
+
+    def test_tampered_inputs_block_rejected(self):
+        self.stamped()
+        self.edit(GAIN + self.rec + ".md", "cl vout 0 2p", "cl vout 0 3p")
+        with self.assertRaisesRegex(cr.ReportError, r"retained measurement-fingerprint inputs hash"):
+            cr.build(self.root, self.m)
+
+    def test_fingerprint_line_without_inputs_rejected(self):
+        self.stamped()
+        p = self.root / GAIN / f"{self.rec}.md"
+        p.write_text(re.sub(r"(?ms)^## Measurement fingerprint inputs\n.*?^```\n\n", "", p.read_text()))
+        with self.assertRaisesRegex(cr.ReportError, r"retains no inputs block"):
+            cr.build(self.root, self.m)
+
+    def test_dut_gate_still_applies(self):
+        self.stamped()
+        p = self.root / "design/netlist/opamp_two_stage.spice"
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        with self.assertRaisesRegex(cr.ReportError, r"stale DUT"):
+            cr.build(self.root, self.m)
+
+
+def stamp_record(root: Path, exp: str, rec_rel: str, figures: tuple | None = None) -> None:
+    """Fixture: stamp a copy of a record with the fingerprint header line and
+    inputs block its driver would write for the CURRENT configuration in
+    `root` (never touches the repo). `figures` selects the measured figures of
+    a slew/swing/power record."""
+    import types
+    h = cr._harness()
+    mpath = root / cr.MEASUREMENT_CONFIG[exp]
+    h.purge_config_modules()
+    mod = types.ModuleType("_mcfg_fixture")
+    mod.__file__ = str(mpath)
+    exec(compile(mpath.read_text(), str(mpath), "exec"), mod.__dict__)
+    h.purge_config_modules()
+    texts = {k: (root / rel).read_text() for k, rel in mod.TESTBENCHES_REL.items()}
+    sel = {"figures": {f: True for f in figures}} if figures else None
+    p = root / rec_rel
+    text = p.read_text()
+    text = re.sub(r"(?m)^- \*\*Measurement fingerprint\*\*:.*\n", "", text)
+    text = re.sub(r"(?ms)^## Measurement fingerprint inputs\n.*?^```\n\n", "", text)
+    text, n = re.subn(r"(?m)^(- \*\*DUT\*\*:.*\n)", lambda m: m.group(1) + "\n".join(mod.fingerprint_lines(texts, sel)) + "\n", text, count=1)
+    assert n == 1
+    p.write_text(text.rstrip("\n") + "\n\n" + "\n".join(mod.inputs_section(texts, sel)))
+
+
+EXP_BENCH = {
+    "noise": "sim/noise/testbench/tb_noise.spice",
+    "offset-mc": "sim/offset-mc/testbench/tb_offset_mc.spice",
+    "cmrr": "sim/cmrr/testbench/tb_cmrr.spice",
+    "psrr": "sim/psrr/testbench/tb_psrr.spice",
+}
+#: (experiment, file, old, new, changed-input group named in the rejection)
+STALE_CASES = [
+    ("noise", EXP_BENCH["noise"], "CL vout 0 2p", "CL vout 0 3p", "bench"),
+    ("noise", "sim/noise/measurement_config.py", "F_START, F_STOP, PPD = 0.1, 1e7, 20", "F_START, F_STOP, PPD = 0.1, 1e7, 10", "analysis"),
+    ("noise", "sim/noise/measurement_config.py", '("100 Hz - 1 MHz", 100.0, 1e6),', '("100 Hz - 1 MHz", 100.0, 2e6),', "bands"),
+    ("noise", "sim/noise/measurement_config.py", "ISOLATION_VALUES = (1e8, 1e10)", "ISOLATION_VALUES = (1e8, 1e11)", "controls"),
+    ("offset-mc", EXP_BENCH["offset-mc"], ".param sw_stat_mismatch=1", ".param sw_stat_mismatch=0", "bench"),
+    ("offset-mc", "sim/offset-mc/measurement_config.py", "MC_N = 300", "MC_N = 200", "monte_carlo"),
+    ("offset-mc", "sim/offset-mc/measurement_config.py", "MC_SEED = 45", "MC_SEED = 46", "monte_carlo"),
+    ("offset-mc", "sim/offset-mc/measurement_config.py", 'MC_VARY = "mismatch"', 'MC_VARY = "process"', "monte_carlo"),
+    ("offset-mc", "sim/offset-mc/measurement_config.py", "TEMP_C = 27.0", "TEMP_C = 85.0", "corners"),
+    ("cmrr", EXP_BENCH["cmrr"], "CL vout 0 2p", "CL vout 0 3p", "bench"),
+    ("cmrr", "sim/cmrr/measurement_config.py", '"cm": {"acp": 1.0, "acn": 1.0},', '"cm": {"acp": 1.0, "acn": 0.5},', "excitation"),
+    ("cmrr", "sim/cmrr/measurement_config.py", 'SERVO_NOMINAL = {"rsv": 1e9, "csv": 1e9}', 'SERVO_NOMINAL = {"rsv": 1e8, "csv": 1e9}', "excitation"),
+    ("cmrr", "sim/gain-gbw-pm/measurement_config.py", "AC_FSTOP, AC_PPD = 0.1, 1e9, 20", "AC_FSTOP, AC_PPD = 0.1, 1e9, 10", "analysis"),
+    ("psrr", EXP_BENCH["psrr"], "CL vout 0 2p", "CL vout 0 3p", "bench"),
+    ("psrr", "sim/psrr/measurement_config.py", '"vss": {**QUIET, "acss": 1.0},', '"vss": {**QUIET, "acss": 2.0},', "excitation"),
+    ("psrr", "sim/psrr/measurement_config.py", "FEEDTHROUGH_R = 100e3", "FEEDTHROUGH_R = 50e3", "controls"),
+    ("psrr", "sim/cmrr/measurement_config.py", "ISOLATION_CSV = (1e7, 1e11)", "ISOLATION_CSV = (1e7, 1e12)", "controls"),
+]
+CLEAN_CASES = [
+    # (experiment, replacement producing an equivalent bench)
+    ("noise", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl   vout  0   2p ; load")),
+    ("offset-mc", lambda t: "* extra comment\n\n" + t.replace("Ibias vdd ibias dc 10u", "ibias  vdd ibias   dc 10u $ bias")),
+    ("cmrr", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
+    ("psrr", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
+]
+
+
+class MigratedExperimentFreshness(unittest.TestCase):
+    """Issue #89: noise, offset MC, CMRR, PSRR and slew/swing/power join the
+    measurement-configuration gate."""
+
+    SSP_REC = "sim/slew-swing-power/records/" + FULL_SSP_REC + ".md"
+    SWING_REC = "sim/slew-swing-power/records/" + SWING_REC + ".md"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+        self.sel = json.loads(MANIFEST.read_text())["experiments"]
+        self.m = manifest()
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def fresh(self):
+        """A pristine scratch root (for subTest loops that mutate it)."""
+        self._t.cleanup()
+        self.setUp()
+
+    def edit(self, rel, old, new):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertEqual(t.count(old), 1, f"{rel}: {old!r} must occur exactly once")
+        p.write_text(t.replace(old, new, 1))
+
+    def stamp(self, exp):
+        stamp_record(self.root, exp, self.sel[exp])
+
+    def test_all_selected_experiments_are_registered(self):
+        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG), sorted(self.sel))
+
+    def test_committed_legacy_records_stay_unknown(self):
+        rep = cr.build(REPO, manifest())
+        for e, src in rep["sources"].items():
+            if e == "gain-gbw-pm":
+                continue
+            self.assertEqual(src["measurement_config"]["status"], "unknown", e)
+            self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"], e)
+        joined = " ".join(rep["limitations"])
+        for e in ("noise", "offset-mc", "cmrr", "psrr"):
+            self.assertIn(f"{e}: measurement-configuration freshness unknown", joined)
+        self.assertIn("slew-swing-power (", joined)
+
+    def test_stamped_records_are_current_and_others_stay_unknown(self):
+        for exp in EXP_BENCH:
+            with self.subTest(exp):
+                self.fresh()
+                self.stamp(exp)
+                rep = cr.build(self.root, self.m)
+                self.assertEqual(rep["sources"][exp]["measurement_config"]["status"], "current")
+                for e, src in rep["sources"].items():
+                    if e not in (exp, "gain-gbw-pm"):
+                        self.assertEqual(src["measurement_config"]["status"], "unknown", e)
+                self.assertFalse(any(l.startswith(f"{exp}: measurement-configuration") for l in rep["limitations"]))
+
+    def test_changed_input_with_unchanged_dut_is_rejected_naming_experiment_and_group(self):
+        for exp, rel, old, new, group in STALE_CASES:
+            with self.subTest(f"{exp}: {group}: {old[:30]}"):
+                self.fresh()
+                self.stamp(exp)
+                self.edit(rel, old, new)
+                with self.assertRaisesRegex(
+                        cr.ReportError,
+                        rf"stale measurement configuration.*{re.escape(exp)}: changed [^;]*{group}.*"
+                        rf"Experiments needing a rerun: {re.escape(exp)}"):
+                    cr.build(self.root, self.m)
+
+    def test_archival_discloses_stale_config(self):
+        for exp, rel, old, new, group in STALE_CASES[::4]:
+            with self.subTest(exp):
+                self.fresh()
+                self.stamp(exp)
+                self.edit(rel, old, new)
+                rep = cr.build(self.root, self.m, archival=True)
+                self.assertEqual(rep["sources"][exp]["measurement_config"]["status"], "stale")
+                self.assertTrue(any(l.startswith(f"{exp}: measurement configuration differs") and "archival report only" in l
+                                    for l in rep["limitations"]))
+
+    def test_formatting_comments_and_workspace_paths_do_not_change_fingerprint(self):
+        for exp, f in CLEAN_CASES:
+            with self.subTest(exp):
+                self.fresh()
+                self.stamp(exp)
+                p = self.root / EXP_BENCH[exp]
+                t = f(p.read_text()).replace("'design.ngspice'", "'/some/other/checkout/work/design.ngspice'")
+                self.assertNotEqual(t, p.read_text())
+                p.write_text(t)
+                rep = cr.build(self.root, self.m)
+                self.assertEqual(rep["sources"][exp]["measurement_config"]["status"], "current")
+
+    def test_fingerprint_independent_of_record_id_and_checkout(self):
+        for exp in EXP_BENCH:
+            with self.subTest(exp):
+                self.fresh()
+                self.stamp(exp)
+                a = cr.build(self.root, self.m)["sources"][exp]["measurement_config"]["fingerprint"]
+                with tempfile.TemporaryDirectory() as d:
+                    root2 = make_root(Path(d) / "elsewhere")
+                    rel = self.sel[exp]
+                    other = rel.replace(Path(rel).stem, "20991231-235959-0000000")
+                    shutil.move(root2 / rel, root2 / other)
+                    stamp_record(root2, exp, other)
+                    m2 = manifest(**{exp.replace("-", "_"): other})
+                    b = cr.build(root2, m2)["sources"][exp]["measurement_config"]["fingerprint"]
+                self.assertEqual(a, b)
+
+    def test_tampered_inputs_block_rejected(self):
+        for exp in EXP_BENCH:
+            with self.subTest(exp):
+                self.fresh()
+                self.stamp(exp)
+                p = self.root / self.sel[exp]
+                t = p.read_text()
+                self.assertIn('"experiment":"' + exp + '"', t)
+                p.write_text(t.replace('"fingerprint_version":1', '"fingerprint_version":1,"extra":0', 1))
+                with self.assertRaisesRegex(cr.ReportError, r"retained measurement-fingerprint inputs hash"):
+                    cr.build(self.root, self.m)
+
+    def test_dut_gate_still_applies(self):
+        self.stamp("noise")
+        p = self.root / "design/netlist/opamp_two_stage.spice"
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        with self.assertRaisesRegex(cr.ReportError, r"stale DUT"):
+            cr.build(self.root, self.m)
+
+    # ---- slew / swing / power: per-figure selection ----
+
+    def ssp_key(self, rec):
+        return f"slew-swing-power ({Path(rec).stem})"
+
+    def test_ssp_full_record_stale_names_the_changed_figure(self):
+        for rel, old, new, fig in (
+            ("sim/slew-swing-power/testbench/tb_slew.spice", "CL vout 0 2p", "CL vout 0 3p", "slew"),
+            ("sim/slew-swing-power/testbench/tb_power.spice", "Ibias vdd ibias dc 10u", "Ibias vdd ibias dc 12u", "power"),
+            ("sim/slew-swing-power/measurement_config.py", "SWING_VIN_STEP_V = 5e-3", "SWING_VIN_STEP_V = 1e-2", "swing"),
+            ("sim/slew-swing-power/measurement_config.py", "SLEW_STEP_V = 1.0 ", "SLEW_STEP_V = 0.8 ", "slew"),
+        ):
+            with self.subTest(f"{fig}: {old[:25]}"):
+                self.fresh()
+                stamp_record(self.root, "slew-swing-power", self.SSP_REC, ("power", "slew", "swing"))
+                self.edit(rel, old, new)
+                with self.assertRaisesRegex(cr.ReportError, rf"slew-swing-power \([^)]*\): changed [^;]*figures\.{fig}\."):
+                    cr.build(self.root, self.m)
+
+    def test_ssp_swing_only_record_is_not_invalidated_by_other_figures(self):
+        stamp_record(self.root, "slew-swing-power", self.SWING_REC, ("swing",))
+        self.edit("sim/slew-swing-power/testbench/tb_slew.spice", "CL vout 0 2p", "CL vout 0 3p")
+        self.edit("sim/slew-swing-power/testbench/tb_power.spice", "Ibias vdd ibias dc 10u", "Ibias vdd ibias dc 12u")
+        self.edit("sim/slew-swing-power/measurement_config.py", "SLEW_STEP_V = 1.0 ", "SLEW_STEP_V = 0.8 ")
+        rep = cr.build(self.root, self.m)
+        self.assertEqual(rep["sources"][self.ssp_key(self.SWING_REC)]["measurement_config"]["status"], "current")
+        # ... while its own figure's bench still invalidates it
+        self.edit("sim/slew-swing-power/testbench/tb_swing.spice", "Rf vout vinn 1Meg", "Rf vout vinn 2Meg")
+        with self.assertRaisesRegex(cr.ReportError, r"changed [^;]*figures\.swing\.bench"):
+            cr.build(self.root, self.m)
+
+    def test_ssp_swing_only_record_retains_only_swing(self):
+        stamp_record(self.root, "slew-swing-power", self.SWING_REC, ("swing",))
+        fp = cr.parse_fingerprint((self.root / self.SWING_REC).read_text(), "swing")
+        self.assertEqual(sorted(fp["inputs"]["figures"]), ["swing"])
+
+    def test_ssp_formatting_does_not_change_fingerprint(self):
+        stamp_record(self.root, "slew-swing-power", self.SSP_REC, ("power", "slew", "swing"))
+        p = self.root / "sim/slew-swing-power/testbench/tb_slew.spice"
+        p.write_text("* more\n\n" + p.read_text().replace("CL vout 0 2p", "cl  vout  0 2p ; x")
+                     .replace("'design.ngspice'", "'/elsewhere/design.ngspice'"))
+        rep = cr.build(self.root, self.m)
+        self.assertEqual(rep["sources"][self.ssp_key(self.SSP_REC)]["measurement_config"]["status"], "current")
+
+    def test_ssp_archival_discloses_stale(self):
+        stamp_record(self.root, "slew-swing-power", self.SSP_REC, ("power", "slew", "swing"))
+        self.edit("sim/slew-swing-power/testbench/tb_slew.spice", "CL vout 0 2p", "CL vout 0 3p")
+        rep = cr.build(self.root, self.m, archival=True)
+        self.assertEqual(rep["sources"][self.ssp_key(self.SSP_REC)]["measurement_config"]["status"], "stale")
+        self.assertTrue(any("archival report only" in l and "figures.slew.bench" in l for l in rep["limitations"]))
 
 
 if __name__ == "__main__":
