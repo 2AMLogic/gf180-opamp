@@ -291,7 +291,11 @@ ratified bounds at 45/45 points; the slew and power binding corners
 (ss / 125 C / 2.97 V and ff / -40 C / 3.63 V) differ in temperature from the
 spec's predicted SS / -40 C / low VDD and FF / 125 C / 3.63 V (see
 `slew-swing-power/README.md`). Common
-limitations: passives (RZ/CC) are at typical only; offset covers five process
+limitations: each selected record is at typical passives (RZ/CC); only gain/GBW/PM
+have a separate passive-corner study
+([`gain-gbw-pm/records/20261009-234014-55b400c.md`](gain-gbw-pm/records/20261009-234014-55b400c.md):
+PM 7/27 cells pass; GBW 24/27 pass, 3/27 fail at one SS / 125 C / 2.97 V point
+with CC worst, across RZ typical/best/worst, worst 9.656 MHz); offset covers five process
 corners x 300 samples at 27 C / 3.30 V only (no temperature or supply axis);
 CMRR and PSRR are systematic-only (matched devices). Noise, offset, CMRR and
 PSRR are measured without a verdict because their numeric bounds are not

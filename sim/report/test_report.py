@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -73,6 +74,44 @@ class CommittedReport(unittest.TestCase):
         self.assertEqual((out / f"{cr.OUT_NAME}.md").read_text(), a[0], "committed report.md is stale")
         self.assertEqual((out / f"{cr.OUT_NAME}.json").read_text(), a[1], "committed report.json is stale")
         self.assertEqual(cr.main(["--check"]), 0)
+
+    def test_passive_study_cited_only_for_gain_gbw_pm(self):
+        """Issue #95: typical-passive limitation scoped per record; study cited for gain/GBW/PM only."""
+        rep = json.loads((REPO / cr.OUT_DIR_REL / f"{cr.OUT_NAME}.json").read_text())
+        rows = rows_by_key(rep)
+        study = (REPO / cr.PASSIVE_STUDY_REL).read_text()
+        self.assertIn("passes at 24/27 study cells (fails at 3/27)", study)
+        self.assertIn("passes at 7/27 study cells", study)
+        for k in ("gain", "gbw", "pm"):
+            lim = " ".join(rows[k]["limitations"])
+            self.assertIn(cr.PASSIVE_STUDY_ID, lim)
+            self.assertNotIn("are not swept", lim)
+        gbw = " ".join(rows["gbw"]["limitations"])
+        for frag in ("24/27", "3/27", "9.656"):
+            self.assertIn(frag, gbw)
+        self.assertIn("7/27", " ".join(rows["pm"]["limitations"]))
+        for k in ("slew", "swing", "power", "noise"):
+            if k in rows:
+                lim = " ".join(rows[k]["limitations"])
+                self.assertIn("passives at typical only", lim)
+                self.assertNotIn(cr.PASSIVE_STUDY_ID, lim)
+        self.assertEqual(rows["gbw"]["verdict"], "PASS")
+        self.assertEqual(rows["pm"]["verdict"], "FAIL")
+
+    def test_md_links_resolve_from_report_dir(self):
+        """Issue #95 review: md links (incl. the passive study) resolve relative to sim/reports/."""
+        md_path = REPO / cr.OUT_DIR_REL / f"{cr.OUT_NAME}.md"
+        md = md_path.read_text()
+        study_link = os.path.relpath(cr.PASSIVE_STUDY_REL, cr.OUT_DIR_REL).replace(os.sep, "/")
+        self.assertIn(f"]({study_link})", md)
+        self.assertTrue((md_path.parent / study_link).resolve().is_file())
+        targets = re.findall(r"\]\(([^)\s]+)\)", md)
+        self.assertTrue(targets)
+        for t in targets:
+            if "://" in t or t.startswith("#"):
+                continue
+            self.assertTrue((md_path.parent / t.split("#")[0]).resolve().exists(),
+                            f"broken md link from {cr.OUT_DIR_REL}: {t}")
 
     def test_evidence_sidecar_binds_report_bytes(self):
         out = REPO / cr.OUT_DIR_REL
