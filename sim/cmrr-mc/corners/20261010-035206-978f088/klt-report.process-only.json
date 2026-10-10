@@ -1,0 +1,697 @@
+{
+ "corner_count": 20,
+ "corners": [
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc0",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1260490571,
+    "sample_index": 0,
+    "seed": 257056038
+   },
+   "process": "typical",
+   "runtime_s": 1.253,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc1",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 737513366,
+    "sample_index": 1,
+    "seed": 2030232154
+   },
+   "process": "typical",
+   "runtime_s": 1.298,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc2",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 2112353612,
+    "sample_index": 2,
+    "seed": 425456957
+   },
+   "process": "typical",
+   "runtime_s": 1.256,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc3",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 82185809,
+    "sample_index": 3,
+    "seed": 1785879541
+   },
+   "process": "typical",
+   "runtime_s": 1.298,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc4",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 793457258,
+    "sample_index": 4,
+    "seed": 1669262258
+   },
+   "process": "typical",
+   "runtime_s": 1.295,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc5",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 87792402,
+    "sample_index": 5,
+    "seed": 122324959
+   },
+   "process": "typical",
+   "runtime_s": 1.295,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc6",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1769412280,
+    "sample_index": 6,
+    "seed": 32312880
+   },
+   "process": "typical",
+   "runtime_s": 1.193,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc7",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1013640949,
+    "sample_index": 7,
+    "seed": 151272806
+   },
+   "process": "typical",
+   "runtime_s": 1.301,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc8",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1137582558,
+    "sample_index": 8,
+    "seed": 2035840422
+   },
+   "process": "typical",
+   "runtime_s": 0.138,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc9",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1374931004,
+    "sample_index": 9,
+    "seed": 900021227
+   },
+   "process": "typical",
+   "runtime_s": 0.081,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc10",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1329039632,
+    "sample_index": 10,
+    "seed": 462488414
+   },
+   "process": "typical",
+   "runtime_s": 0.13,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc11",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1180319858,
+    "sample_index": 11,
+    "seed": 82094954
+   },
+   "process": "typical",
+   "runtime_s": 0.226,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc12",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1948498166,
+    "sample_index": 12,
+    "seed": 1662013089
+   },
+   "process": "typical",
+   "runtime_s": 0.982,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc13",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 222374809,
+    "sample_index": 13,
+    "seed": 336866284
+   },
+   "process": "typical",
+   "runtime_s": 1.09,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc14",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 74316378,
+    "sample_index": 14,
+    "seed": 893499493
+   },
+   "process": "typical",
+   "runtime_s": 1.041,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc15",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1760563349,
+    "sample_index": 15,
+    "seed": 1892720564
+   },
+   "process": "typical",
+   "runtime_s": 1.078,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc16",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1422151570,
+    "sample_index": 16,
+    "seed": 889671636
+   },
+   "process": "typical",
+   "runtime_s": 1.049,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc17",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 284887008,
+    "sample_index": 17,
+    "seed": 954904973
+   },
+   "process": "typical",
+   "runtime_s": 1.084,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc18",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 791632877,
+    "sample_index": 18,
+    "seed": 2046005139
+   },
+   "process": "typical",
+   "runtime_s": 0.993,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc19",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 848919274,
+    "process_seed": 1206930416,
+    "sample_index": 19,
+    "seed": 14292582
+   },
+   "process": "typical",
+   "runtime_s": 0.907,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  }
+ ],
+ "coverage": {
+  "checked": [],
+  "corners_simulated": 20,
+  "inapplicable": [],
+  "known": true,
+  "measurements_declared": 0,
+  "measurements_with_limits": 0,
+  "nothing_checked": true,
+  "nothing_checked_reasons": [
+   "no_requested_measurements"
+  ],
+  "schema_version": 1,
+  "skipped": [
+   {
+    "id": "corner:[0,\"typical/vcm=1.650_vdd=3.300V/27C/mc0\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[1,\"typical/vcm=1.650_vdd=3.300V/27C/mc1\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[10,\"typical/vcm=1.650_vdd=3.300V/27C/mc10\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[11,\"typical/vcm=1.650_vdd=3.300V/27C/mc11\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[12,\"typical/vcm=1.650_vdd=3.300V/27C/mc12\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[13,\"typical/vcm=1.650_vdd=3.300V/27C/mc13\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[14,\"typical/vcm=1.650_vdd=3.300V/27C/mc14\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[15,\"typical/vcm=1.650_vdd=3.300V/27C/mc15\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[16,\"typical/vcm=1.650_vdd=3.300V/27C/mc16\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[17,\"typical/vcm=1.650_vdd=3.300V/27C/mc17\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[18,\"typical/vcm=1.650_vdd=3.300V/27C/mc18\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[19,\"typical/vcm=1.650_vdd=3.300V/27C/mc19\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[2,\"typical/vcm=1.650_vdd=3.300V/27C/mc2\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[3,\"typical/vcm=1.650_vdd=3.300V/27C/mc3\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[4,\"typical/vcm=1.650_vdd=3.300V/27C/mc4\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[5,\"typical/vcm=1.650_vdd=3.300V/27C/mc5\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[6,\"typical/vcm=1.650_vdd=3.300V/27C/mc6\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[7,\"typical/vcm=1.650_vdd=3.300V/27C/mc7\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[8,\"typical/vcm=1.650_vdd=3.300V/27C/mc8\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[9,\"typical/vcm=1.650_vdd=3.300V/27C/mc9\"]",
+    "reason": "no_requested_measurements"
+   }
+  ],
+  "unknown": [],
+  "unrecognized_limit_keys": []
+ },
+ "diagnostic_counts": {
+  "by_code": {},
+  "by_severity": {},
+  "corners_with_diagnostics": 0
+ },
+ "environment": {
+  "engine": "ngspice",
+  "engine_version": "46",
+  "models_lib": {
+   "path": null,
+   "scope": "external"
+  },
+  "models_lib_sha256": "6edba54d23b38a2c60f8ffdbaa3eb75a7568c615e4820808969bd1121b77b1aa",
+  "monte_carlo": {
+   "n": 20,
+   "seed": 45,
+   "vary": "process"
+  },
+  "netlist_closure": [
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "b0c2f4ad7ce59b99e3a620226a48d9b4f417fe3202e4acca42cc16c9dd78778a"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860"
+   }
+  ],
+  "netlist_sha256": "b0c2f4ad7ce59b99e3a620226a48d9b4f417fe3202e4acca42cc16c9dd78778a",
+  "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+  "remote": {
+   "ami_id": "ami-0e40e3245f1923ac8",
+   "availability_zone": "us-east-1f",
+   "bucket": "2am-batch-jobs-221082181346",
+   "client_klt_version": "0.7.0+g8eec069c7576",
+   "concurrency": "1",
+   "elapsed_seconds": 9,
+   "exit_code": "0",
+   "instance_id": "i-0f3abccb716a57766",
+   "instance_type": "c7i.4xlarge",
+   "job_id": "klt-sim-69775f83a8b5",
+   "lifecycle": "spot",
+   "physical_cores": "8",
+   "provider": "aws-batch-fleet",
+   "region": "us-east-1",
+   "runner_compatibility": "mismatch",
+   "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g8eec069c7576; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+   "runner_klt_version": "0.5.0",
+   "spot": true,
+   "state": "done"
+  }
+ },
+ "errored": 0,
+ "failed": 0,
+ "inconclusive": 0,
+ "measurements": [],
+ "metrics": {
+  "sim__corner__count": 20,
+  "sim__corner__errored_count": 0,
+  "sim__corner__failed_count": 0,
+  "sim__corner__inconclusive_count": 0,
+  "sim__corner__passed_count": 20
+ },
+ "netlist": {
+  "path": null,
+  "scope": "external"
+ },
+ "passed": 20,
+ "provenance": {
+  "deck": {
+   "content_hash": "sha256:6edba54d23b38a2c60f8ffdbaa3eb75a7568c615e4820808969bd1121b77b1aa",
+   "name": "sm141064.ngspice",
+   "released": false
+  },
+  "input": {
+   "content_hash": "sha256:b0c2f4ad7ce59b99e3a620226a48d9b4f417fe3202e4acca42cc16c9dd78778a",
+   "role": "netlist"
+  },
+  "klayout_version": "0.30.12",
+  "klt_version": "0.7.0+g8eec069c7576",
+  "pdk": {
+   "name": "gf180mcuD",
+   "source": "search root: ~/.volare",
+   "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  }
+ },
+ "schema_version": 3,
+ "status": "not_checked"
+}
