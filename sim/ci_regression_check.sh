@@ -1,45 +1,122 @@
 #!/usr/bin/env bash
-# sim/ci_regression_check.sh -- prove the selftest can actually fail (issue #52).
+# sim/ci_regression_check.sh -- prove the selftest can actually fail (issues #52, #107).
 #
 # Copies the repo's sim/ and design/ trees to a scratch dir, deliberately
-# breaks the gain-bench testbench source guard (so a testbench that no longer
-# includes the DUT is accepted) and an extraction (GBW off by 2x), and requires
-# the simulator-free unit suite to FAIL for each. A green run of this script
-# means the guard/extraction tests have teeth. No simulator, no records written
-# to the real tree.
+# breaks one testbench source guard and one extraction in EACH simulator-free
+# experiment (gain-gbw-pm, noise, offset-mc, cmrr, cmrr-mc, psrr,
+# slew-swing-power, input-common-mode), and requires that experiment's unit
+# suite to FAIL for each (after a control run of the unmutated suite). A green
+# run of this script means the guard/extraction tests have teeth. No
+# simulator, no records written to the real tree.
 set -euo pipefail
 repo="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
+# expect_fail EXPERIMENT TEST_FILE SOURCE_FILE NAME PATTERN REPLACEMENT
+#   EXPERIMENT   sim/ subdirectory whose unit suite must fail
+#   TEST_FILE    that suite's test script (relative to the experiment dir)
+#   SOURCE_FILE  file mutated, relative to sim/ (may be a shared driver the
+#                experiment imports, e.g. cmrr/run_cmrr.py for input-common-mode)
+# The first occurrence of PATTERN is replaced; a missing anchor is fatal.
 expect_fail() {
-  local name="$1" pattern="$2" replacement="$3"
+  local exp="$1" test="$2" src="$3" name="$4" pattern="$5" replacement="$6"
   rm -rf "$work/t"; mkdir "$work/t"
   cp -R "$repo/sim" "$repo/design" "$work/t/"
-  local f="$work/t/sim/gain-gbw-pm/run_gain_gbw_pm.py"
-  python3 - "$f" "$pattern" "$replacement" <<'PY'
+  python3 - "$work/t/sim/$src" "$pattern" "$replacement" <<'PY'
 import sys
 p, a, b = sys.argv[1:]
 s = open(p).read()
 if a not in s:
-    sys.exit(f"mutation anchor not found: {a!r}")
+    sys.exit(f"mutation anchor not found in {p}: {a!r}")
 open(p, "w").write(s.replace(a, b, 1))
 PY
-  if python3 "$work/t/sim/gain-gbw-pm/test_gain_gbw_pm.py" >"$work/out.txt" 2>&1; then
-    echo "FAIL: deliberate regression '$name' was NOT caught by the unit suite" >&2
+  if python3 "$work/t/sim/$exp/$test" >"$work/out.txt" 2>&1; then
+    echo "FAIL: [$exp] deliberate regression '$name' was NOT caught by the unit suite" >&2
     tail -20 "$work/out.txt" >&2
     exit 1
   fi
-  echo "ok: deliberate regression '$name' is caught (suite failed as required)"
+  echo "ok: [$exp] deliberate regression '$name' is caught (suite failed as required)"
 }
 
-# Control: the unmutated copy must pass, otherwise the failures above prove nothing.
-python3 "$repo/sim/gain-gbw-pm/test_gain_gbw_pm.py" >"$work/ctl.txt" 2>&1 \
-  || { echo "FAIL: unmutated suite does not pass" >&2; tail -20 "$work/ctl.txt" >&2; exit 1; }
-echo "ok: control (unmutated) suite passes"
+# control EXPERIMENT TEST_FILE: the unmutated suite must pass, otherwise the
+# failures below prove nothing.
+control() {
+  python3 "$repo/sim/$1/$2" >"$work/ctl.txt" 2>&1 \
+    || { echo "FAIL: [$1] unmutated suite does not pass" >&2; tail -20 "$work/ctl.txt" >&2; exit 1; }
+  echo "ok: [$1] control (unmutated) suite passes"
+}
 
-expect_fail "guard: DUT include no longer required" \
+control gain-gbw-pm test_gain_gbw_pm.py
+expect_fail gain-gbw-pm test_gain_gbw_pm.py gain-gbw-pm/run_gain_gbw_pm.py \
+  "guard: DUT include no longer required" \
   'if DUT_INCLUDE_NAME not in targets:' 'if False:'
-
-expect_fail "extraction: phase margin offset by 10 degrees" \
+expect_fail gain-gbw-pm test_gain_gbw_pm.py gain-gbw-pm/run_gain_gbw_pm.py \
+  "extraction: phase margin offset by 10 degrees" \
   '    pm = 180.0 + ph' '    pm = 190.0 + ph'
+
+control noise test_noise.py
+expect_fail noise test_noise.py noise/run_noise.py \
+  "guard: Cfb AC ground no longer required" \
+  'if not any(re.match(r"^Cfb\s+vinn\s+0\s+\{cfb\}\s*$", ln, re.I) for ln in code):' 'if False:'
+expect_fail noise test_noise.py noise/run_noise.py \
+  "extraction: band-integrated noise doubled" \
+  'band_uv={name: math.sqrt(integrate_power(f, di, lo, hi)) * 1e6' 'band_uv={name: 2 * math.sqrt(integrate_power(f, di, lo, hi)) * 1e6'
+
+control offset-mc test_offset_mc.py
+expect_fail offset-mc test_offset_mc.py offset-mc/run_offset_mc.py \
+  "guard: DUT include no longer required" \
+  'if DUT_INCLUDE_NAME not in targets:' 'if False:'
+expect_fail offset-mc test_offset_mc.py offset-mc/run_offset_mc.py \
+  "extraction: offset sample shifted by 1 mV" \
+  '        off = vos
+' '        off = vos + 1e-3
+'
+
+control cmrr test_cmrr.py
+expect_fail cmrr test_cmrr.py cmrr/run_cmrr.py \
+  "guard: gain-bench Lfb/Cfb arrangement no longer rejected" \
+  'if any(re.match(r"^Lfb\b", ln, re.I) or' 'if False and any(re.match(r"^Lfb\b", ln, re.I) or'
+expect_fail cmrr test_cmrr.py cmrr/run_cmrr.py \
+  "extraction: Acm doubled" \
+  '        ad, acm = solve_ad_acm(dm, cm)' '        ad, acm = solve_ad_acm(dm, cm); acm = acm * 2'
+
+control cmrr-mc test_cmrr_mc.py
+expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
+  "guard: circuit-identical-to-systematic-bench check removed" \
+  'if _circuit_lines(text) != _circuit_lines(SYSTEMATIC_TB.read_text()):' 'if False:'
+expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
+  "extraction: duplicate sample index accepted" \
+  'if idx is None or idx in seen[k]:' 'if False:'
+
+control psrr test_psrr.py
+expect_fail psrr test_psrr.py psrr/run_psrr.py \
+  "guard: supply-run Vss AC-drive line no longer required" \
+  '"testbench lost `Vss vss 0 dc 0 ac {acss}`", errs)' '"x", [])'
+expect_fail psrr test_psrr.py psrr/run_psrr.py \
+  "extraction: supply-run rail excitation check disabled" \
+  'if err > C.EXC_TOL:' 'if False:'
+
+control slew-swing-power test_slew_swing_power.py
+# slew-swing-power reuses the gain driver's testbench guard (`g.guard_testbench`),
+# so the guard mutation lands in gain-gbw-pm/run_gain_gbw_pm.py.
+expect_fail slew-swing-power test_slew_swing_power.py gain-gbw-pm/run_gain_gbw_pm.py \
+  "guard: shared gain-driver DUT-include check removed" \
+  'if DUT_INCLUDE_NAME not in targets:' 'if False:'
+expect_fail slew-swing-power test_slew_swing_power.py slew-swing-power/run_slew_swing_power.py \
+  "extraction: supply power doubled" \
+  'power_uw=idd * vdd * 1e6' 'power_uw=idd * vdd * 2e6'
+
+# input-common-mode reuses the CMRR driver's servo-bench guard, so the guard
+# mutation lands in cmrr/run_cmrr.py and must fail the input-common-mode suite.
+control input-common-mode test_input_common_mode.py
+expect_fail input-common-mode test_input_common_mode.py cmrr/run_cmrr.py \
+  "guard: shared servo-bench guard rejects nothing" \
+  'errs = G.guard_testbench(text)
+    code = code_lines(text)
+    for pat in _SERVO_LINES:' 'return []
+    code = code_lines(text)
+    for pat in _SERVO_LINES:'
+expect_fail input-common-mode test_input_common_mode.py input-common-mode/run_input_common_mode.py \
+  "extraction: paired-operating-point agreement check disabled" \
+  'if worst > OP_AGREE_V:' 'if False:'
