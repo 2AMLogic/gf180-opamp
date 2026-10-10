@@ -671,9 +671,16 @@ def submit(tag: str, tb: Path, pdk: Pdk, corners, temps, supplies, n: int, args,
     req["batch"] = batch_block(args)
     units = len(corners) * len(temps) * len(supplies) * n
     print(f"  submitting `{tag}` ({units} units)...", flush=True)
+    cache = work / tag / "report.cache.json"
     t0 = time.time()
+    if cache.exists():  # --keep-work rerun: reuse the report the fleet already returned (never re-simulate)
+        saved = json.loads(cache.read_text())
+        rep, wall = saved["report"], saved["wall"]
+        print(f"  `{tag}` reused from {cache}", flush=True)
+        return rep, req, wall
     rep = _run(req, work / tag / "out", args, work / tag)
     wall = time.time() - t0
+    cache.write_text(json.dumps({"report": rep, "wall": wall}))
     rem = remote_of(rep)
     print(f"  `{tag}` done in {wall:.0f} s (job {rem.get('job_id', 'local')})", flush=True)
     return rep, req, wall
@@ -1045,7 +1052,7 @@ def main(argv: list[str] | None = None) -> int:
     import contextlib
 
     if args.keep_work:
-        args.keep_work.mkdir(parents=True, exist_ok=False)
+        args.keep_work.mkdir(parents=True, exist_ok=True)
         ctx = contextlib.nullcontext(str(args.keep_work.resolve()))
     else:
         ctx = tempfile.TemporaryDirectory(prefix="cmrr-mc-")
