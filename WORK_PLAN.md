@@ -7,7 +7,7 @@ Current Loom label state. Tracking and blocked items do not constitute ready wor
 
 Judge-approved PRs stuck under a `loom:operator` merge-risk hold — implementation work is done, only a human merge decision is missing.
 
-_None._
+- **#79**: feat(#77): GF180 layout device pilot (isolated cells, regen recipe, DRC/LVS evidence)
 
 ## Operator Priority
 
@@ -19,14 +19,14 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#61**: spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4)
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#60**: spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown
-- **#61**: spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4)
+- **#89**: Extend measurement freshness checks to the remaining selected characterization experiments
+- **#90**: Include measured input common-mode evidence in the aggregate report without ratifying its bound
 
 ## PRs Awaiting Review
 
@@ -38,15 +38,15 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#79**: feat(#77): GF180 layout device pilot (isolated cells, regen recipe, DRC/LVS evidence)
 
 ## Proposed
 
 Issues carrying `loom:curated`.
 
 - **#7**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
-- **#60**: spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown *(curated)*
 - **#61**: spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4) *(curated)*
+- **#90**: Include measured input common-mode evidence in the aggregate report without ratifying its bound *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -60,12 +60,12 @@ _None._
 
 | Tier | Count |
 |------|-------|
-| Operator merge-risk holds | 0 |
+| Operator merge-risk holds | 1 |
 | Operator priority | 0 |
-| Ready (`loom:issue`) | 0 |
+| Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
+| Approved PRs awaiting merge | 1 |
 | Curated | 3 |
 | Architect / Hermit proposals | 1 |
 | Active epics | 0 |
