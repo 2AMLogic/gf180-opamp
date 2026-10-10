@@ -113,8 +113,12 @@ PVT points ([record `20261009-142137-1dab1db`](../sim/slew-swing-power/records/2
 Area and post-layout verification depend on layout, which has no committed
 evidence. All measured results above are schematic-level with passives at
 typical only: the PVT grid varies the MOS corner, temperature and supply, and
-independent resistor/capacitor corners are not covered (record policy line,
-see also `20261009-143715-4d5aa43`), so "PASS" means MOS/T/VDD-grid only.
+independent resistor/capacitor corners are not covered by the 45-point grid
+records (record policy line, see also `20261009-143715-4d5aa43`), so "PASS"
+means MOS/T/VDD-grid only. A separate SIDE STUDY
+([`20261010-094234-fe6599f`](../sim/slew-swing-power/records/20261010-094234-fe6599f.md))
+sweeps RZ x CC for slew, swing and power at three of the 45 MOS/T/VDD points
+(27 cells, PASS 27/27); it does not upgrade any row verdict.
 
 The input common-mode range row is **not** one of
 [DR-3](decision-records/0003-target-spec-ratification.md)'s dispositions.
