@@ -129,12 +129,30 @@ nominal run, with `vinp` checked against that point's own VDD/2 (which also
 proves the supply/VCM alters were applied); klt's per-point rollup is
 cross-checked; the same controls run at typical / 27 °C / 3.30 V.
 
+The request is sharded over `request.remote.hosts = 3` fleet jobs: one job is
+capped at 3600 s and a timed-out job returns no per-unit results
+(2AMLogic/klayout-tools#2833; the unsharded 13 500-unit request ran 3688 s and
+was lost). klt derives every seed over the whole request, so sharding changes
+no sample. A shard whose launch the fleet refuses (shared concurrency cap,
+klayout-tools#2917) is lost; the driver then re-submits the whole request
+through `klt sim` (never locally), up to `--batch-submit-retries` times.
+
 The grid record (title `# Offset Monte Carlo PVT grid record`) is a separate
 append-only record: mean, sigma, 3 sigma and the linear 3-sigma offset
 |mean| + 3 sigma per point, a T × VDD summary of the worst corner, the worst
 point, and the worst figure set next to the 27 °C / 3.30 V record's
 (`20261009-072205-96bf3cc`, recomputed from its committed samples). It
-proposes no bound (spec issue #62 decides that). Its measurement fingerprint
+proposes no bound (spec issue #62 decides that).
+
+Grid record: [`records/20261010-083043-ddf96db.md`](records/20261010-083043-ddf96db.md)
+(13 500 samples, all valid; 3 fleet jobs). Worst linear 3-sigma offset over
+the 45 points **15.458 mV** at typical / 27 °C / 3.30 V (sigma 4.946 mV, the
+grid's largest), against **15.635 mV** (sf) in the 27 °C / 3.30 V record.
+Per-point sigma is 4.29–4.95 mV and |mean| ≤ 0.70 mV. The 45 sigmas scatter by
+0.20 mV (standard deviation) around 4.60 mV, about the 0.19 mV that sampling
+alone gives at N = 300. So the grid shows no temperature or supply dependence
+of the mismatch spread that can be told apart from sampling noise. These are
+measurements, not verdicts. Its measurement fingerprint
 covers the full-grid axes (`"grid": "full"` in the inputs); the nominal
 fingerprint is unchanged. The characterization report still cites the 27 °C
 record for the offset row (the grid record is listed as a side study in

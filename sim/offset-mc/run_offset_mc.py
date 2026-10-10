@@ -861,7 +861,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, report, stats, worst, sta
 def build_grid_record(*, record, stamp, pdk, ngspice, kver, report, stats: dict, worst: dict, stats_problems,
                       sw_off: DetRun, imb: DetRun, proc_stats: Stats | None, proc_note: str,
                       off_stats: Stats | None, off_note: str, wall_s: float, dut_sha: str, n_units: int,
-                      nominal_ref: dict[str, Stats]) -> str:
+                      nominal_ref: dict[str, Stats], resubmits: int = 0) -> str:
     """The issue #106 record: per-point statistics over the 45-point grid, the
     worst point, and the worst linear 3-sigma offset next to the committed
     27 C / 3.30 V record's figure. Proposes and judges no bound."""
@@ -892,7 +892,8 @@ def build_grid_record(*, record, stamp, pdk, ngspice, kver, report, stats: dict,
     add(f"- **Request**: ONE `klt sim` request: {len(CORNERS)} MOS corners x T {', '.join(f'{t:g} C' for t in temps)} x "
         f"VDD {', '.join(f'{v:.2f} V' for v in supplies)} (VCM = VDD/2: {', '.join(f'{v:g} V' for v in vcms)}) = "
         f"{len(keys)} points, `monte_carlo = {{n: {MC_N}, seed: {MC_SEED}, vary: \"{MC_VARY}\"}}` per point = "
-        f"{n_units} units, wall time {wall_s:.0f} s (client-side, submit to report)")
+        f"{n_units} units, wall time {wall_s:.0f} s (client-side, first submit to final report"
+        + (f", including {resubmits} whole-request re-submit(s) after refused shard launches)" if resubmits else ")"))
     add(f"- **Seeds**: base seed {MC_SEED}; klt derives every per-sample seed (rndseed / mismatch_seed / process_seed) "
         f"from it; all of them are in `corners/{record}/offset_samples.csv`")
     add("- **Passive sections**: every point uses `res_typical` and `mimcap_typical` (RZ/CC passive spread is NOT sampled; "
@@ -1166,7 +1167,7 @@ def run_grid(pdk: Pdk, args) -> int:
             record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, kver=kver, report=report, stats=stats, worst=worst,
             stats_problems=stats_problems, sw_off=sw_off, imb=imb, proc_stats=proc_stats, proc_note=proc_note,
             off_stats=off_stats, off_note=off_note, wall_s=wall_s, dut_sha=dut_sha, n_units=n_units,
-            nominal_ref=nominal_reference(),
+            nominal_ref=nominal_reference(), resubmits=attempt,
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)

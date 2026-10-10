@@ -528,13 +528,14 @@ class GridTests(unittest.TestCase):
             pdk=self.pdk, ngspice="ngspice-x", kver="klt x", report=rep, stats=stats,
             worst=r.worst_points(stats), stats_problems=list(problems), sw_off=det, imb=imb, proc_stats=None,
             proc_note="n/a", off_stats=off, off_note="", wall_s=1.0, dut_sha="0" * 64, n_units=45 * 2,
-            nominal_ref=r.nominal_reference())
+            nominal_ref=r.nominal_reference(), resubmits=2)
 
     def test_grid_record_states_worst_point_next_to_the_27c_figure_without_a_bound(self):
         st = r.grid_stats(r.extract_grid(grid_report(4), "full", 4)[0])
         md = self._record(st)
         self.assertTrue(md.startswith("# Offset Monte Carlo PVT grid record"))
         self.assertIn("`klt-sim-test123`", md)
+        self.assertIn("including 2 whole-request re-submit(s)", md)
         self.assertIn("Worst linear 3-sigma offset over the 45-point grid", md)
         self.assertIn("27 C / 3.30 V figure", md)
         self.assertIn(r.NOMINAL_RECORD, md)
