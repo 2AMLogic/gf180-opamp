@@ -22,6 +22,10 @@ echo "== sim/report: characterization report generator tests + staleness check (
 python3 report/test_report.py
 python3 report/characterization_report.py --check
 
+echo "== sim/report: spec/target-spec.md Sec. 2 record citations vs selection.json (no simulator; issue #112) =="
+python3 report/test_spec_citation_check.py
+python3 report/spec_citation_check.py
+
 echo "== sim: per-experiment measurement-configuration fingerprint modules (no simulator) =="
 python3 test_measurement_config.py
 

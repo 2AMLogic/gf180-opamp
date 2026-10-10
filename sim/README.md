@@ -26,7 +26,13 @@ release, or the PDK with every path searched, and
 klt / ngspice / committed gain dataset) into failures; local runs without the
 variable still skip. `ci_regression_check.sh` then breaks a copy of the
 gain-bench source guard and extraction on purpose and requires the unit suite
-to fail. The job fails if it leaves any file modified or created (no
+to fail. The selftest also runs `report/spec_citation_check.py` (issue #112,
+no simulator): every record cited in the Status column of
+`spec/target-spec.md` §2 must exist, and must be the record
+`report/selection.json` selects for that row's experiment unless its clause
+labels it `superseded`/`historical` or the `passive-corner` study (records of
+another experiment, such as the CMRR row's `cmrr-mc` record, are checked for
+existence only); `ci_regression_check.sh` proves it can fail. The job fails if it leaves any file modified or created (no
 `records/`). It never runs a PVT/Monte Carlo grid and needs no credentials.
 
 The selftest also runs `ci_netlist_check.py` (issue #76): it exports
