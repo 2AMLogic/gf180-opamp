@@ -339,15 +339,48 @@ def process_axis(corners: list[str]) -> list[dict]:
     return [{"name": c, "sections": [c, *PASSIVE_SECTIONS]} for c in corners]
 
 
-def ac_request(netlist: Path, pdk: Pdk, corners, temps, supplies) -> dict:
+class VcmRequestError(ValueError):
+    """An invalid fixed-common-mode request; raised BEFORE any submission."""
+
+
+def validate_vcm_fixed(vcm_v, supplies=None) -> float | None:
+    """Validate an explicit fixed common-mode request (issue #125).
+
+    `None` is the default VDD/2-tracking policy. Otherwise the value must be a
+    finite number, strictly positive and strictly below every supply point (a
+    common mode at or above VDD is not a bias point of this amplifier).
+    """
+    if vcm_v is None:
+        return None
+    if isinstance(vcm_v, bool) or not isinstance(vcm_v, (int, float)) or not math.isfinite(vcm_v):
+        raise VcmRequestError(f"fixed VCM must be a finite number of volts, got {vcm_v!r}")
+    if vcm_v <= 0:
+        raise VcmRequestError(f"fixed VCM must be > 0 V, got {vcm_v:g}")
+    lo = min(SUPPLIES_V if supplies is None else supplies)
+    if vcm_v >= lo:
+        raise VcmRequestError(f"fixed VCM {vcm_v:g} V must be below every supply point (lowest {lo:g} V)")
+    return float(vcm_v)
+
+
+def vcm_axis(supplies, vcm_fixed: float | None = None) -> list[float]:
+    """The `vcm` values swept by index alongside `vdd`: VDD/2 by default, or
+    the one fixed value at every supply point."""
+    vcm_fixed = validate_vcm_fixed(vcm_fixed, supplies)
+    if vcm_fixed is None:
+        return [round(v / 2, 6) for v in supplies]
+    return [vcm_fixed for _ in supplies]
+
+
+def ac_request(netlist: Path, pdk: Pdk, corners, temps, supplies, vcm_fixed: float | None = None) -> dict:
     return {
         "netlist": str(netlist),
         "engine": "ngspice",
         "models": {"pdk": pdk.variant, "lib": MODEL_LIB},
         "corners": {
             "process": process_axis(list(corners)),
-            # vdd and vcm sweep together by index: VCM tracks VDD/2.
-            "supply_v": {"vdd": list(supplies), "vcm": [round(v / 2, 6) for v in supplies]},
+            # vdd and vcm sweep together by index: VCM tracks VDD/2 (default),
+            # or stays at one explicit value (opt-in `--vcm-fixed`, issue #125).
+            "supply_v": {"vdd": list(supplies), "vcm": vcm_axis(supplies, vcm_fixed)},
             "temperature_c": list(temps),
         },
         "analysis": {"kind": "ac", "args": f"dec {AC_PPD:g} {AC_FSTART:g} {AC_FSTOP:g}"},
@@ -365,10 +398,10 @@ def ac_request(netlist: Path, pdk: Pdk, corners, temps, supplies) -> dict:
     }
 
 
-def op_request_grid(netlist: Path, pdk: Pdk, corners, temps, supplies) -> dict:
+def op_request_grid(netlist: Path, pdk: Pdk, corners, temps, supplies, vcm_fixed: float | None = None) -> dict:
     """Operating point of every grid point as a one-step DC sweep of `Ibias`
     (`.meas dc ... AT=` works on any runner; there is no `.meas op`)."""
-    req = ac_request(netlist, pdk, corners, temps, supplies)
+    req = ac_request(netlist, pdk, corners, temps, supplies, vcm_fixed)
     req["analysis"] = {"kind": "dc", "args": "Ibias 10u 11u 1u"}
     req["measurements"] = [
         {"name": "vout_v", "spice": ".meas dc vout_v FIND v(vout) AT=10u", "unit": "V"},
@@ -379,9 +412,9 @@ def op_request_grid(netlist: Path, pdk: Pdk, corners, temps, supplies) -> dict:
     return req
 
 
-def op_request_nominal(netlist: Path, pdk: Pdk, corners, temps, supplies) -> dict:
+def op_request_nominal(netlist: Path, pdk: Pdk, corners, temps, supplies, vcm_fixed: float | None = None) -> dict:
     """Device-level operating point (needs `expr`; local single unit only)."""
-    req = ac_request(netlist, pdk, corners, temps, supplies)
+    req = ac_request(netlist, pdk, corners, temps, supplies, vcm_fixed)
     req["analysis"] = {"kind": "op", "args": ""}
     meas = [
         {"name": "vout_v", "expr": "v(vout)", "unit": "V"},
@@ -815,7 +848,7 @@ class StudyRun:
 
 def run_single(
     name: str, desc: str, pdk: Pdk, work: Path, *, dut_text=None, lfb=None, ibias_a=None,
-    allow_missing: tuple[str, ...] = (),
+    allow_missing: tuple[str, ...] = (), vcm_fixed: float | None = None,
 ) -> StudyRun:
     """One nominal-corner point, run as its own single-unit `klt sim`, LOCAL.
 
@@ -825,7 +858,7 @@ def run_single(
     wd = work / name
     tb = materialise(wd, pdk, dut_text=dut_text, lfb=lfb, ibias_a=ibias_a, allow_missing=allow_missing)
     proc, temp, vdd = NOMINAL
-    req = ac_request(tb, pdk, [proc], [temp], [vdd])
+    req = ac_request(tb, pdk, [proc], [temp], [vdd], vcm_fixed)
     try:
         rep = run_klt(req, wd / "out", "local", wd)
         res, arts, problems = analyse_ac_report(rep, [NOMINAL])
@@ -841,7 +874,7 @@ def run_single(
     )
 
 
-def run_nominal_op(pdk: Pdk, work: Path) -> dict | None:
+def run_nominal_op(pdk: Pdk, work: Path, vcm_fixed: float | None = None) -> dict | None:
     """Device-level operating point of the nominal point: ONE local `op` unit.
 
     Gives the device saturation margins even when the grid's executing runner
@@ -852,7 +885,7 @@ def run_nominal_op(pdk: Pdk, work: Path) -> dict | None:
     tb = materialise(wd, pdk)
     proc, temp, vdd = NOMINAL
     try:
-        rep = run_klt(op_request_nominal(tb, pdk, [proc], [temp], [vdd]), wd / "out", "local", wd)
+        rep = run_klt(op_request_nominal(tb, pdk, [proc], [temp], [vdd], vcm_fixed), wd / "out", "local", wd)
     except KltError:
         return None
     res = op_flags(rep, [NOMINAL])
@@ -1542,10 +1575,320 @@ def run_recompute_passive(source: str) -> int:
     return 0
 
 
-def smoke(pdk: Pdk) -> int:
-    print(f"smoke test: {NOMINAL} only, local, PDK={pdk.path}")
+# --------------------------------------------------------------------------
+# Opt-in fixed-common-mode grid (issue #125): VCM = 1.20 V at every supply
+# --------------------------------------------------------------------------
+
+FIXED_VCM_DIR = HERE / "fixed-vcm"  # kept out of corners/ and records/: those are
+# globbed by the shared 45-point cross-checks and the report generator, which
+# must keep selecting the VDD/2 default records.
+
+
+def load_baseline(gdir: Path | None, want: list[Key]) -> dict[Key, Metrics]:
+    """Re-extract the committed VDD/2 baseline from its stored per-point data."""
+    out: dict[Key, Metrics] = {}
+    if gdir is None:
+        return out
+    for k in want:
+        tab = load_gain_bench(gdir, k)
+        if tab is None:
+            continue
+        out[k] = extract_metrics(tab[:, 0], tab[:, 1] + 1j * tab[:, 2])
+    return out
+
+
+def vcm_mismatches(report: dict, vcm: float) -> list[str]:
+    """Every reported grid point must carry exactly the requested VCM."""
+    bad = []
+    for c in report.get("corners", []):
+        got = (c.get("supply_v") or {}).get("vcm")
+        if got is None or abs(float(got) - vcm) > 1e-9:
+            bad.append(f"{fmt_key(point_key(c))}: reported vcm {got!r} != {vcm:g}")
+    return bad
+
+
+def _cell(m: Metrics | None, attr: str, fmt: str) -> str:
+    if m is None:
+        return "n/a"
+    if not m.valid:
+        return "INVALID"
+    return fmt.format(getattr(m, attr))
+
+
+def _delta(a: Metrics | None, b: Metrics | None, attr: str, fmt: str) -> str:
+    if a is None or b is None or not (a.valid and b.valid):
+        return "n/a"
+    return fmt.format(getattr(a, attr) - getattr(b, attr))
+
+
+def build_fixed_vcm_record(
+    *, record, stamp, pdk, ngspice, klt_version, backend_desc, report, op_report_remote, op_error,
+    vcm, want, results, baseline, baseline_id, op, nominal_op, problems, smoke_line, dut_sha, req,
+) -> str:
+    L: list[str] = []
+    add = L.append
+    remote = (report.get("environment") or {}).get("remote") or {}
+    env = report.get("environment") or {}
+    failed = [k for k in want if k not in results]
+    invalid = [k for k in want if k in results and not results[k].valid]
+    ok = [k for k in want if k in results and results[k].valid]
+
+    def n_pass(attr, bound):
+        return sum(1 for k in want if k in results and point_passes(results[k], attr, bound))
+
+    add(f"# gain/GBW/PM at fixed VCM = {vcm:g} V (diagnostic grid) -- record {record}")
+    add("")
+    add(f"- **Record ID**: {record}")
+    add(f"- **Date (UTC)**: {stamp:%Y-%m-%d %H:%M:%S}")
+    add("- **Issue**: #125 (evidence for #42, the phase-margin repair; Tier 1 integration evidence)")
+    add(
+        f"- **Claim (diagnostic only)**: open-loop DC gain, GBW and phase margin of the committed sized "
+        f"schematic with the amplifier inputs held at a FIXED common mode of {vcm:g} V (the documented nominal "
+        "LDO input, `spec/decision-records/0005-input-common-mode-range-row.md`) over the same 45-point "
+        "MOS x temperature x supply grid as the default bench, ideal 10 uA bias, CL = 2 pF, typical passives. "
+        "No consumer contract is claimed: the consumer's common-mode tolerance is unspecified and none is "
+        "invented. This record does not complete T1, does not resize the DUT and relaxes no bound."
+    )
+    add(f"- **Common-mode policy**: `{mc.vcm_rule(vcm)}` -- VCM = {vcm:g} V at every supply point "
+        "(the default bench tracks VDD/2 and is unchanged; its newest 45-point record is the baseline below).")
+    add(f"- **Baseline (VDD/2)**: gain/GBW/PM data re-extracted from `sim/gain-gbw-pm/corners/{baseline_id}/` "
+        f"({len(baseline)}/{len(want)} points available)")
+    add(f"- **Coverage**: {len(ok)}/{len(want)} points measured and valid; "
+        f"{len(failed)} failed/missing, {len(invalid)} invalid (listed under 'Failed, missing and invalid points').")
+    add(f"- **Smoke point before submission**: {smoke_line}")
+    add(f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (via {pdk.source})")
+    add(f"- **Tools**: ngspice (local: {ngspice}; engine as run by klt: `{env.get('engine')} {env.get('engine_version')}`), "
+        f"klt `{klt_version}`")
+    add(f"- **Execution**: {backend_desc}")
+    if remote:
+        add(f"  - `environment.remote`: provider `{remote.get('provider')}`, job id `{remote.get('job_id')}`, "
+            f"instance type `{remote.get('instance_type')}`, state `{remote.get('state')}`, runner klt "
+            f"`{remote.get('runner_klt_version')}` vs client klt `{remote.get('client_klt_version')}` "
+            f"(compatibility `{remote.get('runner_compatibility')}`)")
+    if op_report_remote:
+        add(f"  - operating-point job id `{op_report_remote.get('job_id')}`")
+    if op_error:
+        add(f"  - operating-point request FAILED (no local fallback): {op_error}")
+    add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (wrapper-normalised, device body verbatim; normalised "
+        f"sha256 `{dut_sha}`), snapshotted in `netlist-snapshots/{record}.spice`")
+    for ln in mc.fingerprint_lines(TESTBENCH.read_text(), vcm):
+        add(ln)
+    add("- **Source guards**: the committed testbench and DUT passed `guard_testbench` / `guard_dut` before every "
+        "simulation (no transistor declared in the bench; every export device present once); the committed "
+        "testbench is used verbatim -- `Vcm` is set per point by the `supply_v.vcm` axis of the klt request.")
+    add("- **Corner matrix**: process " + ", ".join(CORNERS) + "; temperature "
+        + ", ".join(f"{t:g} C" for t in TEMPS_C) + "; VDD " + ", ".join(f"{v:.2f} V" for v in SUPPLIES_V)
+        + f"; VCM {vcm:g} V (all points); passive sections `{PASSIVE_SECTIONS[0]}`, `{PASSIVE_SECTIONS[1]}` "
+        "(no independent RZ/CC corners).")
+    add("")
+    add("## Summary against the existing bounds (not a new contract)")
+    add("")
+    add("Bounds are the ratified `spec/target-spec.md` rows, unchanged; missing/invalid points count as not passing.")
+    add("")
+    base_ok = {k: baseline[k] for k in want if k in baseline}
+
+    def bn(attr, bound):
+        return sum(1 for m in base_ok.values() if point_passes(m, attr, bound))
+
+    add("| Row | Bound | Fixed VCM: points passing | VDD/2 baseline: points passing |")
+    add("|---|---|---|---|")
+    for rid, label, attr, bound, unit in ROWS:
+        add(f"| {label} | >= {bound:g} {unit} | {n_pass(attr, bound)}/{len(want)} | {bn(attr, bound)}/{len(base_ok)} |")
+    add(f"| DC gain stretch | >= {GAIN_STRETCH_DB:g} dB | {n_pass('dc_gain_db', GAIN_STRETCH_DB)}/{len(want)} | "
+        f"{bn('dc_gain_db', GAIN_STRETCH_DB)}/{len(base_ok)} |")
+    add("")
+    for rid, label, attr, bound, unit in ROWS:
+        pts = [(getattr(results[k], attr), k) for k in ok]
+        if pts:
+            w, kk = min(pts, key=lambda t: t[0])
+            add(f"- Worst {label}: {w:.4g} {unit} at {fmt_key(kk)}"
+                + (f" (baseline worst {min(getattr(m, attr) for m in base_ok.values() if m.valid):.4g} {unit})"
+                   if any(m.valid for m in base_ok.values()) else ""))
+    add("")
+    add("## Per-point results and differences from the VDD/2 baseline")
+    add("")
+    add("`dX` = fixed-VCM minus baseline (positive = higher at fixed VCM). The baseline VCM at 2.97 / 3.30 / 3.63 V is "
+        "1.485 / 1.650 / 1.815 V. `|vout-VCM|` is the closed-loop DC follower error from the operating-point request "
+        "(flag threshold " + f"{OP_VOUT_TOL_V * 1e3:g} mV; vout-only level on the grid -- device saturation was "
+        "not checked per point on the fleet).")
+    add("")
+    add("| Point | Gain (dB) | dGain | GBW (MHz) | dGBW (%) | PM (deg) | dPM | gain>=60 | GBW>=10M | PM>=60 | vout-VCM (mV) | op flags |")
+    add("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for k in want:
+        m = results.get(k)
+        b = baseline.get(k)
+        if m is None:
+            add(f"| {fmt_key(k)} | MISSING/FAILED | | | | | | FAIL | FAIL | FAIL | | |")
+            continue
+        if not m.valid:
+            add(f"| {fmt_key(k)} | INVALID: {m.reason} | | | | | | FAIL | FAIL | FAIL | | |")
+            continue
+        gp = "PASS" if m.dc_gain_db >= GAIN_MIN_DB else "FAIL"
+        bp = "PASS" if m.gbw_hz >= GBW_MIN_HZ else "FAIL"
+        pp = "PASS" if m.pm_deg >= PM_MIN_DEG else "FAIL"
+        dg = ("n/a" if not (b and b.valid) else f"{100 * (m.gbw_hz / b.gbw_hz - 1):+.1f}")
+        o = (op or {}).get(k)
+        if o and o["vals"].get("vout_v") is not None:
+            ov = f"{(o['vals']['vout_v'] - o['vcm']) * 1e3:+.1f}"
+            of = "; ".join(o["flags"]) or "none"
+        else:
+            ov, of = "n/a", "operating point not returned"
+        add(f"| {fmt_key(k)} | {m.dc_gain_db:.2f} | {_delta(m, b, 'dc_gain_db', '{:+.2f}')} | "
+            f"{m.gbw_hz / 1e6:.3f} | {dg} | {m.pm_deg:.2f} | {_delta(m, b, 'pm_deg', '{:+.2f}')} | "
+            f"{gp} | {bp} | {pp} | {ov} | {of} |")
+    add("")
+    add("## Failed, missing and invalid points")
+    add("")
+    if not (failed or invalid or problems):
+        add("None: all 45 points were returned by the executing runner, extracted valid, and agreed with the "
+            "ngspice-native `.meas` cross-checks.")
+    else:
+        for k in failed:
+            add(f"- MISSING/FAILED: {fmt_key(k)}")
+        for k in invalid:
+            add(f"- INVALID: {fmt_key(k)} -- {results[k].reason}")
+        for pr in problems:
+            add(f"- problem reported: {pr}")
+    add("")
+    add("## Nominal device-level operating point (local single unit)")
+    add("")
+    if nominal_op and nominal_op["vals"].get("vout_v") is not None:
+        v = nominal_op["vals"]
+        add(f"- typical / 27 C / 3.30 V, VCM {nominal_op['vcm']:g} V: vout {v['vout_v']:.4f} V, vinn {v.get('vinn_v', float('nan')):.4f} V, "
+            f"tail {v.get('itail_a', float('nan')) * 1e6:.2f} uA, stage-2 {v.get('iout_a', float('nan')) * 1e6:.2f} uA; level `{nominal_op['level']}`")
+        add("- flags: " + ("; ".join(nominal_op["flags"]) or "none (all DUT MOSFETs saturated, |vout-VCM| within tolerance)"))
+    else:
+        add("- not returned (the single local op unit failed); no device-level claim is made.")
+    add("")
+    add("## Interpretation limits")
+    add("")
+    add("- The measurement is the unchanged DC-closed / AC-open bench with only the VCM axis changed; extraction, "
+        "validity checks and bounds are identical to the default grid.")
+    add("- Shortfalls against the existing bounds are disclosed above and not resolved here: no DUT resize, no bound "
+        "relaxed, no consumer tolerance assumed. #42 owns the phase-margin repair; this grid is input to it.")
+    add("- An ICMR endpoint check (`sim/input-common-mode/`) does not substitute for this dynamic evidence, and a "
+        "single VCM point is not a VCM sweep.")
+    add("")
+    add("## Artifacts")
+    add("")
+    add(f"- Runner: `sim/gain-gbw-pm/run_gain_gbw_pm.py --vcm-fixed {vcm:g}`; tests: `sim/gain-gbw-pm/test_gain_gbw_pm.py`")
+    add(f"- Per-point logs, decks, data and the sanitised klt report(s): `sim/gain-gbw-pm/fixed-vcm/corners/{record}/`")
+    add(f"- Netlist snapshot (request, DUT, testbench): `sim/gain-gbw-pm/fixed-vcm/netlist-snapshots/{record}.spice`")
+    add("")
+    return "\n".join(L)
+
+
+def run_fixed_vcm(pdk: Pdk, args, vcm: float) -> int:
+    import hashlib
+
+    want = expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
+    record, stamp = allocate_record_id(REPO_ROOT)
+    paths = claim_record_paths(FIXED_VCM_DIR, record, plots=False)
+    ngspice = ngspice_version()
+    kver = klt_version()
+    print(f"record {record}: fixed-VCM {vcm:g} V grid, {len(want)} points, PDK={pdk.path}, klt {kver}")
+    with tempfile.TemporaryDirectory(prefix="gainpm-vcm-") as scratch:
+        work = Path(scratch)
+        # Nominal smoke point FIRST (one local single unit); a bad bench never reaches the fleet.
+        sm = run_single("smoke-fixed-vcm", "nominal, fixed VCM", pdk, work, vcm_fixed=vcm)
+        if sm.error or sm.metrics is None or not sm.metrics.valid:
+            why = sm.error or (sm.metrics.reason if sm.metrics else "no metrics")
+            print(f"ERROR: nominal smoke point failed ({why}); grid NOT submitted, NO RECORD WRITTEN.", file=sys.stderr)
+            return 2
+        m0 = sm.metrics
+        smoke_line = (f"typical / 27 C / 3.30 V at VCM {vcm:g} V, local single unit: gain {m0.dc_gain_db:.2f} dB, "
+                      f"GBW {fmt_hz(m0.gbw_hz)}, PM {m0.pm_deg:.2f} deg (valid)")
+        print("  smoke: " + smoke_line)
+
+        tb = materialise(work / "grid", pdk)
+        req = ac_request(tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V, vcm)
+        req["batch"] = batch_block(args)
+        try:
+            report = run_klt_retrying(
+                req, work / "grid" / "out", args.backend, work / "grid",
+                retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s,
+            )
+        except KltError as exc:
+            print(f"ERROR: the grid request could not be run; NO RECORD WRITTEN, NO LOCAL FALLBACK.\n{exc}", file=sys.stderr)
+            return 2
+        bad = vcm_mismatches(report, vcm)
+        if bad:
+            print("ERROR: the report does not carry the requested VCM; NO RECORD WRITTEN:", file=sys.stderr)
+            for b in bad:
+                print(f"  - {b}", file=sys.stderr)
+            return 2
+        results, arts, problems = analyse_ac_report(report, want)
+        remote = (report.get("environment") or {}).get("remote") or {}
+        backend_desc = (
+            f"`klt sim` backend `{remote.get('provider', 'local')}`"
+            + (f" ({'Spot' if remote.get('spot') else 'on-demand'} {remote.get('instance_type')})" if remote else "")
+            + "; the 45 points are ONE `klt sim` corner-matrix request"
+        )
+
+        op = op_remote = op_error = oreport = None
+        try:
+            op_tb = materialise(work / "op", pdk)
+            oreq = op_request_grid(op_tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V, vcm)
+            oreq["batch"] = batch_block(args)
+            oreport = run_klt_retrying(
+                oreq, work / "op" / "out", args.backend, work / "op",
+                retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s,
+            )
+            op = op_flags(oreport, want)
+            op_remote = (oreport.get("environment") or {}).get("remote")
+        except KltError as exc:
+            op_error = str(exc).splitlines()[0][:300] if str(exc) else "unknown"
+            print(f"WARNING: operating-point request failed: {exc}", file=sys.stderr)
+        nominal_op = run_nominal_op(pdk, work, vcm)
+
+        cdir = paths["corners"]
+        cdir.mkdir(parents=True, exist_ok=False)
+        for k, a in arts.items():
+            stem = point_stem(k)
+            if a["log"]:
+                shutil.copyfile(a["log"], cdir / f"{stem}.log")
+            if a["deck"]:
+                shutil.copyfile(a["deck"], cdir / f"{stem}.cir")
+            np.savetxt(
+                cdir / f"{stem}.dat",
+                np.column_stack([a["freq"], a["h"].real, a["h"].imag, a["vdiff"].real, a["vdiff"].imag]),
+                header="freq_hz re(vout/vdiff) im(vout/vdiff) re(vdiff) im(vdiff)",
+            )
+        (cdir / "klt-report.json").write_text(json.dumps(sanitise_report(report), indent=1))
+        if oreport is not None:
+            (cdir / "klt-op-report.json").write_text(json.dumps(sanitise_report(oreport), indent=1))
+
+        dut_text = load_dut_text()
+        dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()
+        paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
+        paths["snapshot"].write_text("\n".join([
+            f"* netlist snapshot for record {record} (issue #125, fixed VCM {vcm:g} V)",
+            "* ---- conditions: klt sim request (grid) ----",
+            *("* " + ln for ln in json.dumps({k: v for k, v in req.items() if k != "netlist"}, indent=1).splitlines()),
+            "", "* ---- DUT (wrapper-normalised) ----", dut_text,
+            "* ---- testbench (verbatim) ----", TESTBENCH.read_text(), "",
+        ]))
+        gdir = latest_gain_dir()
+        baseline = load_baseline(gdir, want)
+        md = build_fixed_vcm_record(
+            record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, klt_version=kver, backend_desc=backend_desc,
+            report=report, op_report_remote=op_remote, op_error=op_error, vcm=vcm, want=want, results=results,
+            baseline=baseline, baseline_id=gdir.name if gdir else "none", op=op, nominal_op=nominal_op,
+            problems=problems, smoke_line=smoke_line, dut_sha=dut_sha, req=req,
+        )
+        paths["record"].parent.mkdir(parents=True, exist_ok=True)
+        paths["record"].write_text(md)
+    print(f"wrote {paths['record']}")
+    if problems or any(k not in results or not results[k].valid for k in want):
+        print("INCOMPLETE: failed/missing/invalid points are listed in the record", file=sys.stderr)
+        return 1
+    return 0
+
+
+def smoke(pdk: Pdk, vcm_fixed: float | None = None) -> int:
+    print(f"smoke test: {NOMINAL} only, local, PDK={pdk.path}, VCM {'VDD/2' if vcm_fixed is None else f'{vcm_fixed:g} V'}")
     with tempfile.TemporaryDirectory(prefix="gainpm-smoke-") as scratch:
-        run = run_single("smoke", "nominal", pdk, Path(scratch))
+        run = run_single("smoke", "nominal", pdk, Path(scratch), vcm_fixed=vcm_fixed)
     if run.error or run.metrics is None:
         print(f"SMOKE TEST FAILED: {run.error}")
         return 1
@@ -1570,6 +1913,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--recompute-passive", metavar="RECORD",
                     help="no simulator: write a new record superseding passive-corner RECORD, "
                     "regenerated from its committed corners/RECORD/ data")
+    ap.add_argument("--vcm-fixed", type=float, metavar="VOLTS", default=None,
+                    help="opt-in (issue #125): hold the input common mode at VOLTS at every supply "
+                    "point instead of tracking VDD/2 (the LDO consumer input is 1.20). Writes a "
+                    "separate record under fixed-vcm/; default records are untouched. With --smoke it "
+                    "runs the one local nominal point at that VCM.")
     ap.add_argument("--strict", action="store_true", help="exit 1 when a ratified row misses")
     ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None,
                     help="forward batch.runner_version_check (only meaningful on the batch backend)")
@@ -1582,11 +1930,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
     args = ap.parse_args(argv)
 
+    # Validate BEFORE any tool is touched or anything is submitted (issue #125).
+    if args.vcm_fixed is not None:
+        if args.passive_corners or args.recompute_passive:
+            ap.error("--vcm-fixed cannot be combined with --passive-corners / --recompute-passive")
+        try:
+            args.vcm_fixed = validate_vcm_fixed(args.vcm_fixed)
+        except VcmRequestError as exc:
+            ap.error(str(exc))
+
     if args.recompute_passive:
         return run_recompute_passive(args.recompute_passive)
     pdk = find_pdk()
     if args.smoke:
-        return smoke(pdk)
+        return smoke(pdk, args.vcm_fixed)
+    if args.vcm_fixed is not None:
+        return run_fixed_vcm(pdk, args, args.vcm_fixed)
     if args.passive_corners:
         return run_passive(pdk, args)
 

@@ -166,6 +166,49 @@ the driver refuses to overwrite an existing id:
   binding corners, all 45 points, operating-point and polarity checks,
   isolation study, controls, and the PDK revision used.
 
+## Fixed common-mode option (`--vcm-fixed`, issue #125)
+
+The default bench tracks VCM = VDD/2 and is unchanged. `--vcm-fixed VOLTS`
+holds the amplifier input common mode at one value at every supply point (the
+`supply_v.vcm` axis of the same one-request klt matrix becomes a constant); the
+LDO consumer's documented nominal input is 1.20 V
+(`spec/decision-records/0005-input-common-mode-range-row.md`, which also records
+the 15 mV low-side headroom at SS and that the consumer tolerance is
+unspecified -- none is invented here).
+
+```bash
+python3 sim/gain-gbw-pm/run_gain_gbw_pm.py --smoke --vcm-fixed 1.20   # one local nominal point
+python3 sim/gain-gbw-pm/run_gain_gbw_pm.py --vcm-fixed 1.20           # smoke, then the 45-point grid
+```
+
+- The value is validated before any tool is touched or anything is submitted
+  (finite, > 0 V, below every supply point; not combinable with
+  `--passive-corners` / `--recompute-passive`). The driver runs the nominal
+  point locally first and does not submit the grid if it fails, then checks the
+  klt report really carried the requested VCM at every point.
+- Same bench, extraction, bounds, ideal 10 uA bias, 2 pF, typical passives. The
+  common-mode policy is part of the measurement fingerprint (`vcm_rule` is
+  `fixed:1.2`, versus `vdd/2`; default fingerprints are byte-identical to before)
+  and of the record header.
+- Evidence is written under `fixed-vcm/{records,corners,netlist-snapshots}/`,
+  **not** `records/` / `corners/`, so the report generator and the shared
+  45-point cross-checks (`latest_gain_dir`) keep selecting the VDD/2 records.
+  Failed, missing or invalid points are listed explicitly in the record (exit 1);
+  a failed submit writes no record and never falls back to a local grid (exit 2).
+- The record compares each point with the newest VDD/2 record's stored data
+  (gain, GBW, PM deltas) and reports the per-point DC follower error
+  `|vout - VCM|` from an operating-point request on the same grid (vout-only on
+  the fleet) plus one local device-level nominal operating point.
+
+Result, record `fixed-vcm/records/20261010-133217-43b32f6.md` (45/45 points
+valid): relative to the VDD/2 baseline, DC gain moves -0.60 .. +0.42 dB, GBW
+-2.7 .. -0.3 %, PM +0.04 .. +0.62 deg; the pass counts against the unchanged
+bounds are identical (gain 45/45, GBW 45/45, PM 15/45), worst PM 57.38 deg
+(fs / 125 C / 2.97 V) versus 57.34 deg, and the nominal follower error is zero
+with all DUT MOSFETs saturated. The PM shortfall therefore persists at the
+consumer's operating point; it is evidence for #42, not a consumer contract or a
+T1 completion claim.
+
 ## Guards
 
 `test_gain_gbw_pm.py` (stdlib `unittest`; no simulator) covers:

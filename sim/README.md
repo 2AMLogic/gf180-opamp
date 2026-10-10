@@ -249,6 +249,10 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   [`20261009-055759-2524b3e`](gain-gbw-pm/records/20261009-055759-2524b3e.md):
   gain and GBW pass at 45/45 points, phase margin fails its 60 degree target
   (15/45 pass, worst 57.34 degrees).
+  Opt-in `--vcm-fixed 1.20` re-runs the 45 points with the input common mode
+  held at the LDO consumer's 1.20 V instead of VDD/2 (issue #125; diagnostic
+  record under `gain-gbw-pm/fixed-vcm/`, default records untouched; evidence for
+  #42, no consumer contract).
 - [`offset-mc/`](offset-mc/README.md) — mismatch Monte Carlo of the
   **input offset** of the committed sized schematic (unity follower, DC):
   `typical/ff/ss/fs/sf` × N = 300 at 27 °C / 3.30 V, one `klt sim`

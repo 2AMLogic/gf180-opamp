@@ -47,8 +47,23 @@ MODEL_LIB = "libs.tech/ngspice/sm141064.ngspice"
 AC_FSTART, AC_FSTOP, AC_PPD = 0.1, 1e9, 20
 
 
-def inputs(testbench_text: str) -> dict:
-    """The effective measurement inputs, as a JSON-serialisable dict."""
+#: Documented nominal consumer (LDO) amplifier-input common mode (issue #125;
+#: spec/decision-records/0005-input-common-mode-range-row.md). Used ONLY by the
+#: opt-in `--vcm-fixed` mode; the default rule stays VDD/2.
+VCM_FIXED_CONSUMER_V = 1.20
+
+
+def vcm_rule(vcm_fixed_v: float | None = None) -> str:
+    """Common-mode policy label embedded in the fingerprint and records."""
+    return "vdd/2" if vcm_fixed_v is None else f"fixed:{float(vcm_fixed_v):g}"
+
+
+def inputs(testbench_text: str, vcm_fixed_v: float | None = None) -> dict:
+    """The effective measurement inputs, as a JSON-serialisable dict.
+
+    `vcm_fixed_v=None` (the default VDD/2 policy) yields exactly the inputs --
+    and fingerprint -- of every existing record.
+    """
     return {
         "experiment": EXPERIMENT,
         "fingerprint_version": FINGERPRINT_VERSION,
@@ -59,19 +74,19 @@ def inputs(testbench_text: str) -> dict:
             "passive_sections": list(PASSIVE_SECTIONS),
             "temperature_c": [float(t) for t in TEMPS_C],
             "supply_v": [float(v) for v in SUPPLIES_V],
-            "vcm_rule": "vdd/2",
+            "vcm_rule": vcm_rule(vcm_fixed_v),
         },
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},
     }
 
 
-def fingerprint(testbench_text: str) -> str:
-    return harness.measurement_fingerprint(inputs(testbench_text))
+def fingerprint(testbench_text: str, vcm_fixed_v: float | None = None) -> str:
+    return harness.measurement_fingerprint(inputs(testbench_text, vcm_fixed_v))
 
 
-def fingerprint_lines(testbench_text: str) -> list[str]:
+def fingerprint_lines(testbench_text: str, vcm_fixed_v: float | None = None) -> list[str]:
     """Markdown lines a record embeds (header line + retained inputs block)."""
-    inp = inputs(testbench_text)
+    inp = inputs(testbench_text, vcm_fixed_v)
     return [
         f"- **Measurement fingerprint**: version {FINGERPRINT_VERSION}, sha256 "
         f"`{harness.measurement_fingerprint(inp)}` over the canonical inputs retained in "
@@ -80,8 +95,8 @@ def fingerprint_lines(testbench_text: str) -> list[str]:
     ]
 
 
-def inputs_section(testbench_text: str) -> list[str]:
-    inp = inputs(testbench_text)
+def inputs_section(testbench_text: str, vcm_fixed_v: float | None = None) -> list[str]:
+    inp = inputs(testbench_text, vcm_fixed_v)
     return [
         "## Measurement fingerprint inputs",
         "",
