@@ -28,6 +28,10 @@ MANIFEST = HERE / "selection.json"
 FULL_SSP_REC = "20261009-142137-1dab1db"  # power + slew + swing (swing data vin/vout only)
 SWING_REC = "20261009-143715-4d5aa43"  # swing only, with the M6/M7 saturation vectors
 SSP = "sim/slew-swing-power/records/"
+ICMR = "sim/input-common-mode"
+ICMR_REC = "20261009-222613-871d1a6"
+ICMR_MD = f"{ICMR}/records/{ICMR_REC}.md"
+ICMR_CSV = f"{ICMR}/corners/{ICMR_REC}/samples.csv"
 
 
 def make_root(tmp: Path) -> Path:
@@ -47,6 +51,11 @@ def make_root(tmp: Path) -> Path:
             shutil.copy(tb, mc / "testbench" / tb.name)
     (tmp / "spec").mkdir(parents=True, exist_ok=True)
     shutil.copy(REPO / "spec" / "target-spec.md", tmp / "spec" / "target-spec.md")
+    # ICMR (issue #90): the retained per-sample evidence and the record addendum are report inputs
+    for p in list((REPO / ICMR).glob("corners/*/samples.csv")) + list((REPO / ICMR).glob("records/*-addendum/ADDENDUM.md")):
+        dst = tmp / p.relative_to(REPO)
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(p, dst)
     return tmp
 
 
@@ -225,7 +234,8 @@ class CommittedReport(unittest.TestCase):
         r = rows_by_key(rep)["input-common-mode-range"]
         self.assertEqual(r["status"], "proposed-not-graded")
         self.assertIsNone(r["verdict"])
-        self.assertIsNone(r["source"])
+        self.assertIsNone(r["worst"])
+        self.assertEqual(r["source"]["record_id"], ICMR_REC)  # issue #90: measured, source-pinned, still ungraded
         self.assertIn("20261009-222613-871d1a6", r["spec_status"])
         s = rep["summary"]
         self.assertEqual(s["proposed_not_graded"], 3)  # ICMR [DR-5], CMRR and PSRR [DR-6]
@@ -547,11 +557,16 @@ class Mutations(unittest.TestCase):
             self.build()
 
     def test_proposed_classification_follows_the_in_row_tag(self):
-        # without the in-row "proposed, not ratified" tag the row is an ordinary unmeasured row
+        # without the in-row "proposed, not ratified" tag and without an ICMR record, the row is an
+        # ordinary unmeasured row
         self.edit("spec/target-spec.md", "[DR-5] — proposed, not ratified**", "[DR-5]**")
-        r = rows_by_key(self.build())["input-common-mode-range"]
+        m = manifest(input_common_mode=None)
+        r = rows_by_key(self.build(m))["input-common-mode-range"]
         self.assertEqual(r["status"], "not-measured")
-        self.assertEqual(self.build()["summary"]["proposed_not_graded"], 2)  # CMRR, PSRR still proposed
+        self.assertEqual(self.build(m)["summary"]["proposed_not_graded"], 2)  # CMRR, PSRR still proposed
+        # with the ICMR record selected, a ratified ICMR bound is never silently left ungraded (issue #90)
+        with self.assertRaisesRegex(cr.ReportError, "no grader for the input common-mode range"):
+            self.build()
 
     def test_proposed_dr6_classification_follows_the_in_row_tag(self):
         # without the tag, a CMRR/PSRR row backed by its record reverts to measured-no-bound with the
@@ -782,12 +797,16 @@ class MigratedExperimentFreshness(unittest.TestCase):
         stamp_record(self.root, exp, self.sel[exp])
 
     def test_all_selected_experiments_are_registered(self):
-        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG), sorted(self.sel))
+        # the ICMR record (issue #90) is not instrumented yet: disclosed as unknown, never "current"
+        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG), sorted(e for e in self.sel if e != cr.ICMR_EXP))
+        mc = cr.build(REPO, manifest())["sources"][cr.ICMR_EXP]["measurement_config"]
+        self.assertEqual(mc["status"], "unknown")
+        self.assertIn("not instrumented", mc["detail"])
 
     def test_committed_legacy_records_stay_unknown(self):
         rep = cr.build(REPO, manifest())
         for e, src in rep["sources"].items():
-            if e == "gain-gbw-pm":
+            if e in ("gain-gbw-pm", cr.ICMR_EXP):  # ICMR: not instrumented (see above)
                 continue
             self.assertEqual(src["measurement_config"]["status"], "unknown", e)
             self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"], e)
@@ -928,6 +947,256 @@ class MigratedExperimentFreshness(unittest.TestCase):
         rep = cr.build(self.root, self.m, archival=True)
         self.assertEqual(rep["sources"][self.ssp_key(self.SSP_REC)]["measurement_config"]["status"], "stale")
         self.assertTrue(any("archival report only" in l and "figures.slew.bench" in l for l in rep["limitations"]))
+
+
+class ICMREvidence(unittest.TestCase):
+    """Issue #90: the committed ICMR record is selected, extracted and cross-checked against its
+    retained per-sample evidence, and attached to the proposed row without grading it."""
+
+    PT = "ss / -40 C / 2.97 V"
+    NEW = "29991231-235959-0000000"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def edit(self, rel, old, new, count=1):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertIn(old, t)
+        p.write_text(t.replace(old, new, count))
+
+    def build(self, m=None):
+        return cr.build(self.root, m or manifest())
+
+    # ---- the committed row ----
+
+    def test_committed_row_is_structured_measured_and_ungraded(self):
+        rep = cr.build(REPO, cr.load_manifest(MANIFEST))
+        r = rows_by_key(rep)[cr.ICMR_ROW_KEY]
+        self.assertEqual((r["status"], r["verdict"], r["worst"], r["worst_corner"], r["points_total"], r["points_pass"]),
+                         ("proposed-not-graded", None, None, None, None, None))
+        self.assertTrue(r["spec_bound"].startswith("proposed, not ratified: "))
+        src = rep["sources"][cr.ICMR_EXP]
+        self.assertEqual(src["path"], ICMR_MD)
+        self.assertEqual(src["sha256"], hashlib.sha256((REPO / ICMR_MD).read_bytes()).hexdigest())
+        self.assertEqual(r["source"]["sha256"], src["sha256"])
+        self.assertEqual(src["dut_sha256"], "81fbd914f8254a49")
+        self.assertEqual(src["pdk_open_pdks"], "c6d73a35f524070e85faff4a6a9eef49553ebc2b")
+        self.assertEqual(r["coverage"]["points"], 45)
+        ic = r["icmr"]
+        self.assertFalse(ic["graded"])
+        self.assertEqual([(c["low_mv"], c["high_mv"]) for c in ic["common_interval_components"]], [(1185, 2705)])
+        comp = ic["component_containing_1v20"]
+        self.assertEqual((comp["low_binding_point"], comp["high_binding_point"]), (self.PT, "fs / 125 C / 2.97 V"))
+        self.assertEqual((comp["low_bracket_mv"], comp["high_bracket_mv"]), (5, 5))
+        self.assertEqual(ic["transition_resolution"]["max_endpoint_bracket_mv"], 5)
+        self.assertEqual(ic["explicit_1v20"], {"verdict_in_record": "meets", "points": 45, "pass": 45, "fail": 0,
+                                               "invalid": 0})
+        sm = ic["smallest_saturation_margin"]
+        self.assertEqual((sm["at_1v20"]["device"], sm["at_1v20"]["margin_mv"], sm["at_1v20"]["point"]),
+                         ("XM5", 11.1, self.PT))
+        self.assertEqual((sm["inside_component"]["margin_mv"], sm["inside_component"]["vcm_mv"]), (0.6, 1185))
+        self.assertEqual(len(ic["per_point_intervals"]), 45)
+        self.assertEqual(ic["samples"]["total"], 6165)
+        rv = ic["retained_evidence"]
+        self.assertEqual((rv["path"], rv["samples"], rv["points"]), (ICMR_CSV, 6165, 45))
+        self.assertEqual(rv["sha256"], hashlib.sha256((REPO / ICMR_CSV).read_bytes()).hexdigest())
+        self.assertEqual(ic["provenance"]["record_sha256"], src["sha256"])
+        self.assertTrue(r["figures"])
+        self.assertTrue(all("information only" in f["label"] for f in r["figures"]))
+        joined = " ".join(r["limitations"])
+        for frag in ("not ratified", "follower-biased", "mismatch not covered", "freshness unknown", "addendum"):
+            self.assertIn(frag, joined)
+        # excluded from ratified compliance counts
+        s = rep["summary"]
+        self.assertEqual((s["ratified_rows_judged"], s["proposed_not_graded"]), (6, 3))
+        md = cr.render_md(rep)
+        line = next(l for l in md.splitlines() if l.startswith("| Input common-mode range |"))
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        self.assertEqual(cells[2:7], ["proposed-not-graded", "none", "-", "-", "-"])
+        self.assertIn(ICMR_REC, cells[7])
+        self.assertNotIn("1.185", line)
+        self.assertIn(f"`{ICMR}/corners/{ICMR_REC}/samples.csv`", md)
+
+    def test_latest_selection_includes_icmr(self):
+        self.assertEqual(cr.latest_selection(REPO)[cr.ICMR_EXP], ICMR_MD)
+        self.assertEqual(json.loads(MANIFEST.read_text())["experiments"][cr.ICMR_EXP], ICMR_MD)
+
+    # ---- missing evidence ----
+
+    def test_missing_icmr_evidence_stays_explicitly_missing(self):
+        rep = self.build(manifest(input_common_mode=None))
+        r = rows_by_key(rep)[cr.ICMR_ROW_KEY]
+        self.assertEqual(r["status"], "proposed-not-graded")
+        self.assertIsNone(r["source"])
+        self.assertIsNone(r["coverage"])
+        self.assertEqual(r["figures"], [])
+        self.assertNotIn("icmr", r)
+        self.assertNotIn(cr.ICMR_EXP, rep["sources"])
+        self.assertTrue(any("explicitly missing" in l for l in r["limitations"]))
+        self.assertTrue(any(l.startswith(f"no record selected for {cr.ICMR_EXP}") and "explicitly missing" in l
+                            for l in rep["limitations"]))
+        # the spec prose cites a record and numbers; none of it becomes a measurement
+        self.assertIn("1.185", r["spec_status"])
+        self.assertNotIn("1.185", json.dumps(r["figures"]))
+        self.assertEqual(rep["summary"]["proposed_not_graded"], 3)
+
+    def test_missing_retained_evidence_rejected(self):
+        (self.root / ICMR_CSV).unlink()
+        with self.assertRaisesRegex(cr.ReportError, "retained per-point evidence is missing"):
+            self.build()
+
+    # ---- stale DUT ----
+
+    def test_stale_icmr_dut_rejected(self):
+        only = {"experiments": {cr.ICMR_EXP: ICMR_MD}}
+        self.edit(ICMR_MD, "`81fbd914f8254a49`", "`0123456789abcdef`")
+        with self.assertRaisesRegex(cr.ReportError, r"stale DUT.*Experiments needing a rerun: input-common-mode"):
+            self.build(only)
+        with self.assertRaisesRegex(cr.ReportError, "different DUT versions"):
+            self.build()
+
+    def test_netlist_change_names_icmr_for_rerun(self):
+        p = self.root / "design/netlist/opamp_two_stage.spice"
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        with self.assertRaisesRegex(cr.ReportError, r"stale DUT.*rerun: [^.]*input-common-mode"):
+            self.build()
+
+    # ---- superseded / newer selection ----
+
+    def mint_newer(self, supersedes: bool) -> str:
+        """Fixture: a newer copy of the ICMR record (and its retained samples) under a new id."""
+        text = (self.root / ICMR_MD).read_text().replace(ICMR_REC, self.NEW)
+        if supersedes:
+            text = re.sub(r"(?m)^(- \*\*DUT\*\*:.*\n)", lambda m: m.group(1) + f"- **Supersedes**: `{ICMR_REC}`\n",
+                          text, count=1)
+        rel = f"{ICMR}/records/{self.NEW}.md"
+        (self.root / rel).write_text(text)
+        dst = self.root / ICMR / "corners" / self.NEW / "samples.csv"
+        dst.parent.mkdir(parents=True)
+        shutil.copy(self.root / ICMR_CSV, dst)
+        return rel
+
+    def test_superseded_icmr_selection_rejected(self):
+        self.mint_newer(supersedes=True)
+        with self.assertRaisesRegex(cr.ReportError, f"superseded by {self.NEW}"):
+            self.build()
+
+    def test_latest_selects_newly_minted_icmr_record(self):
+        rel = self.mint_newer(supersedes=True)
+        sel = cr.latest_selection(self.root)
+        self.assertEqual(sel[cr.ICMR_EXP], rel)
+        rep = cr.build(self.root, {"experiments": sel})
+        self.assertEqual(rows_by_key(rep)[cr.ICMR_ROW_KEY]["source"]["record_id"], self.NEW)
+        self.assertEqual(rep["sources"][cr.ICMR_EXP]["record_id"], self.NEW)
+
+    # ---- malformed / inconsistent interval data ----
+
+    CASES = (
+        # (what, old, new, expected error)
+        ("headline intersection", "(every contiguous component): [1.185, 2.705] V.",
+         "(every contiguous component): [1.180, 2.705] V.", "headline intersection .* disagrees"),
+        ("headline flattens a gap", "(every contiguous component): [1.185, 2.705] V.",
+         "(every contiguous component): [1.185, 2.400] V, [2.500, 2.705] V.", "headline intersection .* disagrees"),
+        ("per-point edge", "| ss / -40 C / 2.97 V | [1.185, 2.785] V | 52 |", "| ss / -40 C / 2.97 V | [1.190, 2.785] V | 52 |",
+         "disagrees with its own per-point table"),
+        ("malformed interval", "| ss / -40 C / 2.97 V | [1.185, 2.785] V |", "| ss / -40 C / 2.97 V | [1.185 .. 2.785] V |",
+         "malformed interval"),
+        ("low above high", "| ss / -40 C / 2.97 V | [1.185, 2.785] V |", "| ss / -40 C / 2.97 V | [2.785, 1.185] V |",
+         "low > high"),
+        ("overlapping components", "| ss / -40 C / 2.97 V | [1.185, 2.785] V | 52 | 5 mV | fail | 5 mV | fail | pass | [1.185, 2.785] V |",
+         ("| ss / -40 C / 2.97 V | [1.185, 2.785] V | 52 | 5 mV | fail | 5 mV | fail | pass | [1.185, 2.785] V |\n"
+          "| ss / -40 C / 2.97 V | [2.700, 2.900] V | 3 | 5 mV | fail | 5 mV | fail | pass | [1.185, 2.785] V |"),
+         "overlap"),
+        ("1.20 V status vs interval", "| ss / -40 C / 2.97 V | [1.185, 2.785] V | 52 | 5 mV | fail | 5 mV | fail | pass |",
+         "| ss / -40 C / 2.97 V | [1.185, 2.785] V | 52 | 5 mV | fail | 5 mV | fail | fail |", "1.20 V status"),
+        ("bracket", "| ss / -40 C / 2.97 V | [1.185, 2.785] V | 52 | 5 mV |", "| ss / -40 C / 2.97 V | [1.185, 2.785] V | 52 | 50 mV |",
+         "(exceeds the record's stated refinement|disagrees)"),
+        ("binding corner", "low endpoint 1.185 V set by ss / -40 C / 2.97 V", "low endpoint 1.185 V set by ss / 27 C / 2.97 V",
+         "binding corners"),
+        ("1.20 V count", "**MEETS** (45 pass, 0 fail", "**MEETS** (44 pass, 1 fail", "1.20 V sample line disagrees"),
+        ("1.20 V margin", "Smallest device margin at 1.20 V: XM5 +11.1 mV", "Smallest device margin at 1.20 V: XM5 +12.1 mV",
+         "smallest 1.20 V margin"),
+        ("component margin", "Smallest device margin inside that component: XM5 +0.6 mV",
+         "Smallest device margin inside that component: XM5 +1.6 mV", "retained evidence"),
+        ("sample counts", "3450 pass, 2245 fail, 470 invalid.", "3451 pass, 2244 fail, 470 invalid.", "retained evidence|holds"),
+        ("missing point", "| typical / 27 C / 3.30 V | [1.060, 3.095] V | 84 | 5 mV | fail | 5 mV | fail | pass | [1.060, 3.090] V |\n",
+         "", "claims 45 PVT points|explicit 1.20 V table covers"),
+    )
+
+    def test_malformed_or_inconsistent_interval_data_rejected(self):
+        for what, old, new, err in self.CASES:
+            with self.subTest(what):
+                self.tearDown(); self.setUp()
+                self.edit(ICMR_MD, old, new)
+                with self.assertRaisesRegex(cr.ReportError, err):
+                    self.build()
+
+    def test_record_disagreeing_with_retained_samples_rejected(self):
+        p = self.root / ICMR_CSV
+        lines = p.read_text().splitlines(keepends=True)
+        i = next(n for n, l in enumerate(lines) if l.startswith("typical,27,3.300,2.000,pass,"))
+        lines[i] = lines[i].replace("typical,27,3.300,2.000,pass,pass,", "typical,27,3.300,2.000,fail,fail,", 1)
+        # keep the header counts consistent, so only the per-point intervals can disagree
+        j = next(n for n, l in enumerate(lines) if l.startswith("typical,27,3.300,0.600,fail,fail,"))
+        lines[j] = lines[j].replace("typical,27,3.300,0.600,fail,fail,", "typical,27,3.300,0.600,pass,pass,", 1)
+        p.write_text("".join(lines))
+        with self.assertRaisesRegex(cr.ReportError, r"typical / 27 C / 3\.30 V disagree with the retained evidence"):
+            self.build()
+
+    def test_malformed_retained_samples_rejected(self):
+        p = self.root / ICMR_CSV
+        t = p.read_text()
+        first = t.splitlines()[1]
+        p.write_text(t + first + "\n")  # duplicate sample
+        with self.assertRaisesRegex(cr.ReportError, "duplicate sample"):
+            self.build()
+
+    def test_disjoint_intervals_preserved_not_flattened(self):
+        """A point whose passing range splits yields two common components, never one bridged range."""
+        old_row = "| typical / 27 C / 3.30 V | [1.060, 3.095] V | 84 | 5 mV | fail | 5 mV | fail | pass | [1.060, 3.090] V |"
+        split = ("| typical / 27 C / 3.30 V | [1.060, 2.400] V | 60 | 5 mV | fail | 5 mV | fail | pass | [1.060, 3.090] V |\n"
+                 "| typical / 27 C / 3.30 V | [2.500, 3.095] V | 24 | 5 mV | fail | 5 mV | fail | pass | [1.060, 3.090] V |")
+        text = (REPO / ICMR_MD).read_text()
+        self.assertIn(old_row, text)
+        text = text.replace(old_row, split)
+        # the record's own headline still claims one range: rejected rather than flattened
+        with self.assertRaisesRegex(cr.ReportError, "headline intersection .* disagrees"):
+            cr.extract_icmr(text, "fixture")
+        text = (text.replace("(every contiguous component): [1.185, 2.705] V.",
+                             "(every contiguous component): [1.185, 2.400] V, [2.500, 2.705] V.")
+                .replace("Intersection with the 1 mV tolerance: [1.185, 2.705] V;",
+                         "Intersection with the 1 mV tolerance: [1.185, 2.400] V, [2.500, 2.705] V;")
+                .replace("**Component containing 1.20 V**: [1.185, 2.705] V;", "**Component containing 1.20 V**: [1.185, 2.400] V;")
+                .replace("high endpoint 2.705 V set by fs / 125 C / 2.97 V", "high endpoint 2.400 V set by typical / 27 C / 3.30 V")
+                .replace("at fs / 125 C / 2.97 V / VCM 2.705 V.", "at fs / 125 C / 2.97 V / VCM 2.400 V.")
+                .replace("Interval endpoints (of 90)", "Interval endpoints (of 92)"))
+        ex = cr.extract_icmr(text, "fixture")
+        self.assertEqual([(c["lo"], c["hi"]) for c in ex["intersection"]], [(1185, 2400), (2500, 2705)])
+        self.assertEqual((ex["component"]["lo"], ex["component"]["hi"]), (1185, 2400))
+        self.assertEqual(ex["component"]["hi_src"], "typical / 27 C / 3.30 V")
+        ex["retained"] = {"path": ICMR_CSV}
+        figs = cr.icmr_figures(ex)
+
+        def fig(prefix):
+            return next(f["value"] for f in figs if f["label"].startswith(prefix))
+        self.assertEqual(fig("conservative common interval over all 45 PVT points"), "[1.185, 2.400] V, [2.500, 2.705] V")
+        self.assertTrue(fig("PVT points with disjoint passing intervals").startswith("1 of 45: typical / 27 C / 3.30 V"))
+
+    def test_generation_is_offline_and_deterministic_with_icmr(self):
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        args = ["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(self.root / "o")]
+        self.assertEqual(cr.main(args), 0)
+        first = (self.root / "o" / f"{cr.OUT_NAME}.json").read_bytes()
+        self.assertEqual(cr.main(args + ["--check"]), 0)
+        self.assertEqual(cr.main(args), 0)
+        self.assertEqual(first, (self.root / "o" / f"{cr.OUT_NAME}.json").read_bytes())
+        self.assertNotIn(str(self.root), first.decode())
 
 
 if __name__ == "__main__":
