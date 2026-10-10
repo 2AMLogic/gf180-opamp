@@ -72,10 +72,25 @@ def load_sibling(module_name: str, relpath: str):
     """
     if module_name in sys.modules:
         return sys.modules[module_name]
-    spec = importlib.util.spec_from_file_location(module_name, REPO_ROOT / relpath)
+    path = REPO_ROOT / relpath
+    spec = importlib.util.spec_from_file_location(module_name, path)
     mod = importlib.util.module_from_spec(spec)
     sys.modules[module_name] = mod
-    spec.loader.exec_module(mod)
+    # The loaded driver's own directory is on sys.path while it executes, as it
+    # would be when run as a script (issue #85: a driver importing a helper that
+    # sits next to it must not depend on which directory the importer ran from).
+    here = str(path.resolve().parent)
+    sys.path.insert(0, here)
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        sys.modules.pop(module_name, None)
+        raise
+    finally:
+        try:
+            sys.path.remove(here)
+        except ValueError:
+            pass
     return mod
 
 #: Measurement-configuration fingerprint (issue #85). Version of the

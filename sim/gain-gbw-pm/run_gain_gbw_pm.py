@@ -91,17 +91,23 @@ from harness import (  # noqa: E402
     sanitise_report,
 )
 
-import measurement_config as mc  # noqa: E402
-from measurement_config import (  # noqa: E402  (single source for the fingerprinted constants)
-    AC_FSTART,
-    AC_FSTOP,
-    AC_PPD,
-    CORNERS,
-    MODEL_LIB,
-    PASSIVE_SECTIONS,
-    SUPPLIES_V,
-    TEMPS_C,
-)
+from harness import load_sibling  # noqa: E402
+
+# Loaded by path under an experiment-unique name, NOT `import measurement_config`:
+# sibling drivers load this driver through `harness.load_sibling`, which does not
+# put this directory on sys.path, and every experiment will grow its own
+# `measurement_config.py` (see that module's extension contract), so a bare
+# top-level name would either fail to resolve or collide in sys.modules.
+mc = load_sibling("gain_gbw_pm_measurement_config", "sim/gain-gbw-pm/measurement_config.py")
+# Single source for the fingerprinted constants.
+AC_FSTART = mc.AC_FSTART
+AC_FSTOP = mc.AC_FSTOP
+AC_PPD = mc.AC_PPD
+CORNERS = mc.CORNERS
+MODEL_LIB = mc.MODEL_LIB
+PASSIVE_SECTIONS = mc.PASSIVE_SECTIONS
+SUPPLIES_V = mc.SUPPLIES_V
+TEMPS_C = mc.TEMPS_C
 
 TESTBENCH = HERE / "testbench" / "tb_gain_gbw_pm.spice"
 
