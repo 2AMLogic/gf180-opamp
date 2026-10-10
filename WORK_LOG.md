@@ -2,6 +2,33 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-10
+
+- **PR #91**: docs(#82): document absolute scratch cleanup paths in layout/README
+- **PR #87**: feat(#85): track measurement-configuration freshness alongside DUT identity
+- **PR #86**: feat(#84): validate integrator view against interface and signoff tier
+- **PR #81**: Reject characterization evidence that no longer matches the current DUT
+- **PR #80**: refactor(#68): consolidate sibling-driver loader and gain-bench reader
+- **PR #78**: ci(#76): check committed netlist matches xschem export of the schematic
+- **Issue #85** (closed): Track measurement-configuration freshness alongside DUT identity in characterization evidence
+- **Issue #84** (closed): Validate the integrator view against the committed interface and signoff tier
+- **Issue #83** (closed): Auditor Capability Request: Python unavailable for local report validation
+- **Issue #82** (closed): layout: document absolute scratch cleanup paths for validation
+- **Issue #76** (closed): Check that the committed simulation netlist still represents the xschem schematic
+- **Issue #75** (closed): Reject characterization evidence that no longer matches the current DUT
+- **Issue #68** (closed): Consolidate sibling-driver loader and gain-bench reader duplicated across sim runners
+
+### 2026-10-09
+
+- **PR #74**: sim(gain-gbw-pm): RZ x CC passive-corner axis and record (#70)
+- **PR #73**: signoff: bump pinned klt grader to 0.7.0 and regenerate the signoff record
+- **PR #72**: docs: reconcile slew/swing/power status with committed PASS record (#69)
+- **PR #67**: sim+spec: follower-biased input common-mode range (45 PVT x VCM scan) and proposed ICMR row via DR-0005 (#60)
+- **Issue #71** (closed): signoff: bump the pinned klt grader past 0.5.0 and regenerate the signoff record
+- **Issue #70** (closed): T1 item 5: quantify RZ/CC passive-corner sensitivity of phase margin, GBW and slew (DR-3 section d obligation)
+- **Issue #69** (closed): docs: reconcile README and target-spec status for slew, swing and power with committed PASS records
+- **Issue #60** (closed): spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown
+
 ### 2026-10-09
 
 - **PR #65**: refactor(sim): move duplicated klt sim wrapper helpers into harness.py
