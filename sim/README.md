@@ -296,6 +296,14 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   explicit 1.20 V sample. Two `klt sim` requests per scan/refinement round
   (paired `vdd`/`vcm` axes on the batch fleet); measured evidence for the ICMR
   row proposed by decision record 0005 (issue #60).
+- [`step-response/`](step-response/README.md) — **closed-loop follower step
+  response** of the committed sized schematic: unity-gain follower, CL = 2 pF,
+  a 100 mV step about VCM (rising and falling edge), overshoot, 1 % and 0.1 %
+  settling time and monotonicity across the same 45-point grid as one
+  `klt sim` request, worst points identified, alongside the gain record's PM.
+  Evidence only: no spec row exists for settling/overshoot and none is
+  proposed (that would need a `spec/` decision record) (issue #113; context
+  #42).
 
 ## Coverage and gaps
 
