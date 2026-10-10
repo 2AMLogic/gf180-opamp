@@ -32,6 +32,12 @@ ICMR = "sim/input-common-mode"
 ICMR_REC = "20261009-222613-871d1a6"
 ICMR_MD = f"{ICMR}/records/{ICMR_REC}.md"
 ICMR_CSV = f"{ICMR}/corners/{ICMR_REC}/samples.csv"
+OFF = "sim/offset-mc"
+OFF_GRID_REC = "20261010-083043-ddf96db"  # issue #106: 45-point PVT grid, N=300 per point (selected, issue #120)
+OFF_NOM_REC = "20261009-072205-96bf3cc"  # issue #45: 5 corners at 27 C / 3.30 V
+OFF_GRID_MD = f"{OFF}/records/{OFF_GRID_REC}.md"
+OFF_NOM_MD = f"{OFF}/records/{OFF_NOM_REC}.md"
+OFF_GRID_CSV = f"{OFF}/corners/{OFF_GRID_REC}/offset_samples.csv"
 
 
 def make_root(tmp: Path) -> Path:
@@ -52,7 +58,9 @@ def make_root(tmp: Path) -> Path:
     (tmp / "spec").mkdir(parents=True, exist_ok=True)
     shutil.copy(REPO / "spec" / "target-spec.md", tmp / "spec" / "target-spec.md")
     # ICMR (issue #90): the retained per-sample evidence and the record addendum are report inputs
-    for p in list((REPO / ICMR).glob("corners/*/samples.csv")) + list((REPO / ICMR).glob("records/*-addendum/ADDENDUM.md")):
+    # offset grid (issue #120): its retained per-sample evidence is a report input too
+    for p in (list((REPO / ICMR).glob("corners/*/samples.csv")) + list((REPO / ICMR).glob("records/*-addendum/ADDENDUM.md"))
+              + list((REPO / OFF).glob("corners/*/offset_samples.csv"))):
         dst = tmp / p.relative_to(REPO)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(p, dst)
@@ -206,7 +214,7 @@ class CommittedReport(unittest.TestCase):
         md = cr.render_md(rep)
         self.assertNotRegex(md, r"(noise|offset|CMRR|PSRR)[^|\n]*\|[^|\n]*\|[^|\n]*\| \*\*(PASS|FAIL)")
         self.assertIn("open (no ratified bound)", md)
-        self.assertIn("5.006", r["offset"]["worst"])
+        self.assertIn("15.458", r["offset"]["worst"])
         # the systematic CMRR record stays visible, but only as information, never as the row's statistic
         sys_dc = r["cmrr"]["figures"][0]  # first row of the record's worst-case table: the DC plateau
         self.assertEqual(sys_dc["value"].split(" dB")[0], "95.42")
@@ -280,12 +288,16 @@ class CommittedReport(unittest.TestCase):
     def test_coverage_differs_and_is_reported(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
         r = rows_by_key(rep)
-        self.assertEqual(r["offset"]["coverage"]["points"], 5)
-        self.assertEqual(r["offset"]["coverage"]["mc_samples_per_corner"], 300)
-        self.assertEqual(r["offset"]["coverage"]["temps_c"], [27])
+        # issue #120: the offset row now covers the same 45-point grid as the AC rows
+        self.assertEqual(r["offset"]["coverage"]["points"], 45)
+        self.assertEqual(r["offset"]["coverage"]["mc_samples_per_point"], 300)
+        self.assertEqual(r["offset"]["coverage"]["temps_c"], [-40, 27, 125])
         for k in ("gain", "noise", "cmrr", "psrr", "slew", "swing", "power"):
             self.assertEqual(r[k]["coverage"]["points"], 45, k)
-        self.assertTrue(any("coverage differs" in l for l in rep["limitations"]))
+        self.assertFalse(any("coverage differs" in l for l in rep["limitations"]))
+        # ... and a nominal offset selection is still disclosed as a coverage difference
+        rep2 = cr.build(REPO, manifest(offset_mc=OFF_NOM_MD))
+        self.assertTrue(any("coverage differs" in l for l in rep2["limitations"]))
         self.assertTrue(any("PDK revision differs" in l for l in rep["limitations"]))
         self.assertTrue(any("ngspice versions differ" in l for l in rep["limitations"]))
         for s in rep["sources"].values():
@@ -604,12 +616,10 @@ class Mutations(unittest.TestCase):
         self.assertEqual(cr.latest_selection(self.root)["gain-gbw-pm"],
                          "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md")
 
-    def test_latest_selection_ignores_the_offset_pvt_grid_record(self):
-        # issue #106: the full-grid offset record is not read by the offset extractor
-        rec = self.root / "sim/offset-mc/records/29991231-235959-0000000.md"
-        rec.write_text("# Offset Monte Carlo PVT grid record `29991231-235959-0000000`\n")
-        self.assertEqual(cr.latest_selection(self.root)["offset-mc"],
-                         "sim/offset-mc/records/20261009-072205-96bf3cc.md")
+    def test_latest_selection_picks_the_offset_pvt_grid_record(self):
+        # issue #120: the full-grid offset record is read by the offset extractor, not a side study
+        self.assertNotIn("offset-mc", cr.STUDY_TITLES)
+        self.assertEqual(cr.latest_selection(self.root)["offset-mc"], OFF_GRID_MD)
 
 
 
@@ -638,8 +648,10 @@ class MeasurementConfigFreshness(unittest.TestCase):
 
     def test_unfingerprinted_records_disclosed_as_unknown(self):
         rep = cr.build(self.root, manifest())
+        sel = json.loads(MANIFEST.read_text())["experiments"]
         for e, s in rep["sources"].items():
-            if e == "gain-gbw-pm" and "Measurement fingerprint" in (REPO / self.gain).read_text():
+            if e in ("gain-gbw-pm", "offset-mc") and "Measurement fingerprint" in (REPO / sel[e]).read_text():
+                self.assertEqual(s["measurement_config"]["status"], "current", e)
                 continue
             self.assertEqual(s["measurement_config"]["status"], "unknown", e)
         joined = " ".join(rep["limitations"])
@@ -714,11 +726,12 @@ class MeasurementConfigFreshness(unittest.TestCase):
             cr.build(self.root, self.m)
 
 
-def stamp_record(root: Path, exp: str, rec_rel: str, figures: tuple | None = None) -> None:
+def stamp_record(root: Path, exp: str, rec_rel: str, figures: tuple | None = None, grid: str | None = None) -> None:
     """Fixture: stamp a copy of a record with the fingerprint header line and
     inputs block its driver would write for the CURRENT configuration in
     `root` (never touches the repo). `figures` selects the measured figures of
-    a slew/swing/power record."""
+    a slew/swing/power record; `grid` overrides the offset grid the inputs name
+    (default: "full" for an offset grid record, as its driver writes)."""
     import types
     h = cr._harness()
     mpath = root / cr.MEASUREMENT_CONFIG[exp]
@@ -731,8 +744,12 @@ def stamp_record(root: Path, exp: str, rec_rel: str, figures: tuple | None = Non
     sel = {"figures": {f: True for f in figures}} if figures else None
     p = root / rec_rel
     text = p.read_text()
+    if grid is None and text.startswith(cr.OFFSET_GRID_TITLE):
+        grid = "full"  # an offset grid record's retained inputs name its grid (issue #106)
+    if grid is not None:
+        sel = {"grid": grid}
     text = re.sub(r"(?m)^- \*\*Measurement fingerprint\*\*:.*\n", "", text)
-    text = re.sub(r"(?ms)^## Measurement fingerprint inputs\n.*?^```\n\n", "", text)
+    text = re.sub(r"(?ms)^## Measurement fingerprint inputs\n.*?^```\n(\n|\Z)", "", text)
     text, n = re.subn(r"(?m)^(- \*\*DUT\*\*:.*\n)", lambda m: m.group(1) + "\n".join(mod.fingerprint_lines(texts, sel)) + "\n", text, count=1)
     assert n == 1
     p.write_text(text.rstrip("\n") + "\n\n" + "\n".join(mod.inputs_section(texts, sel)))
@@ -754,7 +771,8 @@ STALE_CASES = [
     ("offset-mc", "sim/offset-mc/measurement_config.py", "MC_N = 300", "MC_N = 200", "monte_carlo"),
     ("offset-mc", "sim/offset-mc/measurement_config.py", "MC_SEED = 45", "MC_SEED = 46", "monte_carlo"),
     ("offset-mc", "sim/offset-mc/measurement_config.py", 'MC_VARY = "mismatch"', 'MC_VARY = "process"', "monte_carlo"),
-    ("offset-mc", "sim/offset-mc/measurement_config.py", "TEMP_C = 27.0", "TEMP_C = 85.0", "corners"),
+    # the selected offset record is the full grid (issue #120): its VCM axis (VDD/2), not TEMP_C
+    ("offset-mc", "sim/offset-mc/measurement_config.py", "round(v / 2, 6)", "round(v / 2 + 0.01, 6)", "corners"),
     ("cmrr", EXP_BENCH["cmrr"], "CL vout 0 2p", "CL vout 0 3p", "bench"),
     ("cmrr", "sim/cmrr/measurement_config.py", '"cm": {"acp": 1.0, "acn": 1.0},', '"cm": {"acp": 1.0, "acn": 0.5},', "excitation"),
     ("cmrr", "sim/cmrr/measurement_config.py", 'SERVO_NOMINAL = {"rsv": 1e9, "csv": 1e9}', 'SERVO_NOMINAL = {"rsv": 1e8, "csv": 1e9}', "excitation"),
@@ -813,12 +831,15 @@ class MigratedExperimentFreshness(unittest.TestCase):
     def test_committed_legacy_records_stay_unknown(self):
         rep = cr.build(REPO, manifest())
         for e, src in rep["sources"].items():
-            if e in ("gain-gbw-pm", cr.ICMR_EXP):  # ICMR: not instrumented (see above)
+            if e in ("gain-gbw-pm", "offset-mc", cr.ICMR_EXP):  # ICMR: not instrumented (see above)
                 continue
             self.assertEqual(src["measurement_config"]["status"], "unknown", e)
             self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"], e)
+        # issue #120: the selected offset grid record carries its own fingerprint and is current
+        self.assertEqual(rep["sources"]["offset-mc"]["measurement_config"]["status"], "current")
         joined = " ".join(rep["limitations"])
-        for e in ("noise", "offset-mc", "cmrr", "psrr"):
+        self.assertNotIn("offset-mc: measurement-configuration freshness unknown", joined)
+        for e in ("noise", "cmrr", "psrr"):
             self.assertIn(f"{e}: measurement-configuration freshness unknown", joined)
         self.assertIn("slew-swing-power (", joined)
 
@@ -830,7 +851,7 @@ class MigratedExperimentFreshness(unittest.TestCase):
                 rep = cr.build(self.root, self.m)
                 self.assertEqual(rep["sources"][exp]["measurement_config"]["status"], "current")
                 for e, src in rep["sources"].items():
-                    if e not in (exp, "gain-gbw-pm"):
+                    if e not in (exp, "gain-gbw-pm", "offset-mc"):  # both selected records are fingerprinted
                         self.assertEqual(src["measurement_config"]["status"], "unknown", e)
                 self.assertFalse(any(l.startswith(f"{exp}: measurement-configuration") for l in rep["limitations"]))
 
@@ -880,6 +901,9 @@ class MigratedExperimentFreshness(unittest.TestCase):
                     rel = self.sel[exp]
                     other = rel.replace(Path(rel).stem, "20991231-235959-0000000")
                     shutil.move(root2 / rel, root2 / other)
+                    corners = root2 / "sim" / exp / "corners"  # retained evidence follows the record id
+                    if (corners / Path(rel).stem).is_dir():
+                        shutil.move(corners / Path(rel).stem, corners / "20991231-235959-0000000")
                     stamp_record(root2, exp, other)
                     m2 = manifest(**{exp.replace("-", "_"): other})
                     b = cr.build(root2, m2)["sources"][exp]["measurement_config"]["fingerprint"]
@@ -954,6 +978,208 @@ class MigratedExperimentFreshness(unittest.TestCase):
         rep = cr.build(self.root, self.m, archival=True)
         self.assertEqual(rep["sources"][self.ssp_key(self.SSP_REC)]["measurement_config"]["status"], "stale")
         self.assertTrue(any("archival report only" in l and "figures.slew.bench" in l for l in rep["limitations"]))
+
+
+class OffsetGridRecord(unittest.TestCase):
+    """Issue #120: the committed full-PVT offset Monte Carlo record (issue #106) is selected,
+    validated point by point and cross-checked against its retained samples; the nominal
+    format stays supported; the row stays measured-no-bound (spec issue #62 owns the bound)."""
+
+    WORST_ROW = "| typical | 27 | 3.30 | 300 | -0.619 | 4.946 | 14.839 | 15.458 | -11.254 | +12.615 | +0.12 | -0.59 |"
+    OTHER_ROW = "| ff | 125 | 3.63 | 300 | +0.275 | 4.832 | 14.497 | 14.772 | -12.374 | +11.787 | -0.06 | -0.38 |"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def edit(self, rel, old, new, count=1):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertIn(old, t)
+        p.write_text(t.replace(old, new, count))
+
+    def build(self, m=None):
+        return cr.build(self.root, m or manifest())
+
+    def rejects(self, rx, m=None):
+        with self.assertRaisesRegex(cr.ReportError, rx):
+            self.build(m)
+
+    # ---- the committed row ----
+
+    def test_committed_grid_row(self):
+        rep = cr.build(REPO, cr.load_manifest(MANIFEST))
+        r = rows_by_key(rep)["offset"]
+        self.assertEqual(json.loads(MANIFEST.read_text())["experiments"]["offset-mc"], OFF_GRID_MD)
+        self.assertEqual((r["status"], r["verdict"], r["points_pass"], r["bound_open"]),
+                         ("measured-no-bound", None, None, True))
+        self.assertEqual(r["points_total"], 45)
+        self.assertEqual(r["worst_corner"], "typical / 27 C / 3.30 V")
+        self.assertTrue(r["worst"].startswith("|mean| + 3 sigma 15.458 mV"), r["worst"])
+        cov = r["coverage"]
+        self.assertEqual((cov["points"], cov["mc_samples_per_point"], cov["temps_c"], cov["vdd_v"], cov["corners"]),
+                         (45, 300, [-40, 27, 125], ["2.97", "3.30", "3.63"], ["typical", "ff", "ss", "fs", "sf"]))
+        self.assertIn("N=300 mismatch samples per point", cr.coverage_text(cov))
+        fig = {f["label"]: f for f in r["figures"]}
+        ws = fig["worst sigma over the grid"]
+        self.assertEqual((ws["value"], ws["corner"]), ("4.946 mV (3 sigma 14.839 mV)", "typical / 27 C / 3.30 V"))
+        self.assertEqual(fig["sigma range over the 45 points, N=300 each"]["value"], "4.286 .. 4.946 mV")
+        self.assertEqual(sum(1 for l in fig if l.startswith("worst |mean| + 3 sigma at ")), 9)
+        self.assertIn("13500 samples at 45 points agree", fig["per-point statistics re-derived from the retained samples"]["value"])
+        self.assertTrue(any("#62" in l for l in r["limitations"]))
+        src = rep["sources"]["offset-mc"]
+        self.assertEqual((src["record_id"], src["measurement_config"]["status"]), (OFF_GRID_REC, "current"))
+        self.assertEqual(r["source"]["sha256"], hashlib.sha256((REPO / OFF_GRID_MD).read_bytes()).hexdigest())
+        md = cr.render_md(rep)
+        line = next(l for l in md.splitlines() if l.startswith("| Input-referred offset |"))
+        self.assertEqual(len(cr.split_cells(line.replace("\\|", "/"))), 8, line)  # escaped |mean| keeps 8 columns
+        self.assertIn("\\|mean\\| + 3 sigma 15.458 mV", line)
+        self.assertNotRegex(line, r"\*\*(PASS|FAIL)\*\*")
+
+    def test_statistics_match_the_driver(self):
+        # the report re-implements the driver's stats_of (no import of a simulation driver); pin them together
+        sys.path.insert(0, str(REPO / "sim" / "offset-mc"))
+        try:
+            import run_offset_mc as drv
+        finally:
+            sys.path.pop(0)
+        import csv
+        by: dict = {}
+        with (REPO / OFF_GRID_CSV).open(newline="") as fh:
+            for row in csv.DictReader(fh):
+                by.setdefault((row["corner"], row["temperature_c"], row["vdd_v"]), []).append(float(row["offset_v"]))
+        for k in list(by)[:5] + list(by)[-2:]:
+            a, b = cr.offset_stats(by[k]), drv.stats_of(by[k])
+            for mine, theirs in (("mean", b.mean * 1e3), ("sigma", b.sigma * 1e3), ("abs3", b.worst_extreme * 1e3),
+                                 ("min", b.vmin * 1e3), ("max", b.vmax * 1e3), ("skew", b.skew), ("ex_kurt", b.ex_kurt)):
+                self.assertAlmostEqual(a[mine], theirs, places=9, msg=f"{k} {mine}")
+
+    def test_nominal_format_still_supported(self):
+        rep = self.build(manifest(offset_mc=OFF_NOM_MD))
+        r = rows_by_key(rep)["offset"]
+        self.assertEqual((r["status"], r["verdict"], r["points_total"]), ("measured-no-bound", None, 5))
+        self.assertEqual(r["worst"], "sigma 5.006 mV (3 sigma 15.017 mV)")
+        self.assertEqual(r["worst_corner"], "sf (corner only; 27 C / 3.30 V)")
+        self.assertIn({"label": "worst |mean| + 3 sigma", "value": "15.635 mV", "corner": "sf"}, r["figures"])
+        self.assertEqual(r["coverage"]["mc_samples_per_corner"], 300)
+        self.assertEqual(rep["sources"]["offset-mc"]["measurement_config"]["status"], "unknown")
+
+    def test_unknown_offset_format_rejected(self):
+        self.edit(OFF_GRID_MD, "# Offset Monte Carlo PVT grid record", "# Offset Monte Carlo sweep")
+        self.rejects(r"unknown offset record format")
+
+    # ---- point set and sample count ----
+
+    def test_missing_point_rejected(self):
+        self.edit(OFF_GRID_MD, self.OTHER_ROW + "\n", "")
+        self.rejects(r"per-point table is missing 1 of 45 grid points \(first: ff / 125 C / 3.63 V\)")
+
+    def test_duplicate_point_rejected(self):
+        self.edit(OFF_GRID_MD, self.OTHER_ROW + "\n", self.OTHER_ROW + "\n" + self.OTHER_ROW + "\n")
+        self.rejects(r"duplicate grid point ff / 125 C / 3.63 V")
+
+    def test_unexpected_point_rejected(self):
+        self.edit(OFF_GRID_MD, self.OTHER_ROW, self.OTHER_ROW.replace("| ff | 125 | 3.63 |", "| ff | 85 | 3.63 |"))
+        self.rejects(r"unexpected grid point ff / 85 C / 3.63 V")
+
+    def test_insufficient_samples_in_table_rejected(self):
+        self.edit(OFF_GRID_MD, self.OTHER_ROW, self.OTHER_ROW.replace("| 300 |", "| 299 |"))
+        self.rejects(r"insufficient samples at ff / 125 C / 3.63 V: N=299")
+
+    def test_insufficient_samples_in_retained_evidence_rejected(self):
+        p = self.root / OFF_GRID_CSV
+        lines = p.read_text().splitlines(keepends=True)
+        drop = next(i for i, l in enumerate(lines) if l.startswith("sf,125.0,3.63,"))
+        p.write_text("".join(lines[:drop] + lines[drop + 1:]))
+        self.rejects(r"insufficient samples in .*offset_samples\.csv at sf / 125 C / 3\.63 V: 299")
+
+    def test_request_below_the_ratified_sample_count_rejected(self):
+        # a grid measured at N=200 (fingerprint-consistent) still fails the N >= 300 basis
+        self.edit(f"{OFF}/measurement_config.py", "MC_N = 300", "MC_N = 200")
+        stamp_record(self.root, "offset-mc", OFF_GRID_MD)
+        self.rejects(r"insufficient samples: .*N=200 per point.*N >= 300")
+
+    def test_duplicate_sample_index_rejected(self):
+        p = self.root / OFF_GRID_CSV
+        lines = p.read_text().splitlines(keepends=True)
+        i = next(i for i, l in enumerate(lines) if l.startswith("ss,27.0,2.97,1.485,7,"))
+        lines[i + 1] = re.sub(r"^(ss,27\.0,2\.97,1\.485,)8,", r"\g<1>7,", lines[i + 1])
+        p.write_text("".join(lines))
+        self.rejects(r"duplicate sample index 7 at ss / 27 C / 2\.97 V")
+
+    def test_missing_retained_evidence_rejected(self):
+        (self.root / OFF_GRID_CSV).unlink()
+        self.rejects(r"retained per-sample evidence is missing: sim/offset-mc/corners/20261010-083043-ddf96db")
+
+    # ---- summaries vs each other and vs the samples ----
+
+    def test_internally_inconsistent_summary_rejected(self):
+        self.edit(OFF_GRID_MD, self.WORST_ROW, self.WORST_ROW.replace("| 4.946 |", "| 4.996 |"))
+        self.rejects(r"inconsistent summary at typical / 27 C / 3\.30 V")
+
+    def test_summary_disagreeing_with_samples_rejected(self):
+        # self-consistent columns, but the skew disagrees with the committed samples
+        self.edit(OFF_GRID_MD, self.OTHER_ROW, self.OTHER_ROW.replace("| -0.06 |", "| +0.06 |"))
+        self.rejects(r"inconsistent summary at ff / 125 C / 3\.63 V: the record's skew .*retained evidence")
+
+    def test_tampered_sample_rejected(self):
+        p = self.root / OFF_GRID_CSV
+        lines = p.read_text().splitlines(keepends=True)
+        i = next(i for i, l in enumerate(lines) if l.startswith("fs,-40.0,3.3,1.65,0,"))
+        cells = lines[i].rstrip("\n").split(",")
+        cells[-1] = repr(float(cells[-1]) + 0.002)
+        lines[i] = ",".join(cells) + "\n"
+        p.write_text("".join(lines))
+        self.rejects(r"inconsistent summary at fs / -40 C / 3\.30 V: .*retained evidence")
+
+    def test_wrong_vcm_in_samples_rejected(self):
+        self.edit(OFF_GRID_CSV, "typical,-40.0,2.97,1.485,0,", "typical,-40.0,2.97,1.65,0,")
+        self.rejects(r"invalid sample 0 at typical / -40 C / 2\.97 V .*not the commanded 1\.485 V")
+
+    def test_headline_worst_disagreeing_rejected(self):
+        self.edit(OFF_GRID_MD, "**15.458 mV** at `typical / 27 C / 3.30 V`", "**15.458 mV** at `sf / 27 C / 3.30 V`")
+        self.rejects(r"headline worst \|mean\| \+ 3 sigma")
+        self.tearDown(); self.setUp()
+        self.edit(OFF_GRID_MD, "**Worst sigma over the grid**: 4.946 mV", "**Worst sigma over the grid**: 4.938 mV")
+        self.rejects(r"headline worst sigma")
+
+    def test_temperature_supply_table_disagreeing_rejected(self):
+        self.edit(OFF_GRID_MD, "| 27 C | 14.843 (fs) | 15.458 (typical) |", "| 27 C | 14.843 (fs) | 15.458 (ff) |")
+        self.rejects(r"temperature x supply table at 27 C / 3\.30 V")
+
+    def test_validation_problems_rejected(self):
+        self.edit(OFF_GRID_MD, "Result: all 13500 samples valid;", "**Problems:**\n- something;")
+        self.rejects(r"extraction validation does not state all 13500 samples valid")
+
+    # ---- freshness ----
+
+    def test_grid_record_without_fingerprint_rejected(self):
+        p = self.root / OFF_GRID_MD
+        p.write_text(re.sub(r"(?m)^- \*\*Measurement fingerprint\*\*:.*\n", "", p.read_text()))
+        self.rejects(r"carries no measurement fingerprint")
+
+    def test_nominal_inputs_on_a_grid_record_rejected(self):
+        # hash-consistent nominal inputs on a grid record: the population would be mislabelled
+        stamp_record(self.root, "offset-mc", OFF_GRID_MD, grid="nominal")
+        self.rejects(r"do not describe a full offset grid")
+
+    def test_stale_grid_configuration_rejected_and_archival_discloses(self):
+        self.edit(f"{OFF}/measurement_config.py", "round(v / 2, 6)", "round(v / 2 + 0.01, 6)")
+        self.rejects(r"stale measurement configuration.*offset-mc: changed corners\.vcm_v.*needing a rerun: offset-mc")
+        rep = cr.build(self.root, manifest(), archival=True)
+        self.assertEqual(rep["sources"]["offset-mc"]["measurement_config"]["status"], "stale")
+
+    def test_stale_dut_names_offset(self):
+        p = self.root / "design/netlist/opamp_two_stage.spice"
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        self.rejects(r"stale DUT.*Experiments needing a rerun: .*offset-mc")
+
+    def test_mixed_dut_rejected(self):
+        self.edit(OFF_GRID_MD, "81fbd914f8254a49", "0123456789abcdef")
+        self.rejects(r"different DUT versions")
 
 
 class ICMREvidence(unittest.TestCase):
