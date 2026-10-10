@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "generator": "res_array",
+  "cell_name": "pilot_rpoly_rz",
+  "gds_path": "gds/pilot_rpoly_rz.gds",
+  "pdk": {
+    "name": "gf180mcuD",
+    "variant": "gf180mcuD",
+    "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  },
+  "dbu_um": 0.0005,
+  "bbox_um": {
+    "x0": 0.0,
+    "y0": 0.0,
+    "x1": 4.84,
+    "y1": 2.0
+  },
+  "device_count": 1,
+  "ports": [
+    {
+      "name": "R0_A",
+      "net": null,
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 0.21000000000000002,
+      "y_um": 1.0,
+      "width_um": 2.0,
+      "direction_deg": 180
+    },
+    {
+      "name": "R0_B",
+      "net": null,
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 4.63,
+      "y_um": 1.0,
+      "width_um": 2.0,
+      "direction_deg": 0
+    }
+  ],
+  "navigable_regions": [],
+  "drc_hints": {
+    "min_spacing_um": 0.5,
+    "foreign_clearance_um": 0.4,
+    "matched_group_id": "res_array:1",
+    "snapped_to_grid": false,
+    "notes": []
+  },
+  "warnings": [],
+  "provenance": {
+    "klt_version": "0.7.0+g5e5b55992a7f",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "gf180mcuD",
+      "source": "search root: ~/.volare",
+      "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+    },
+    "deck": null,
+    "input": null
+  }
+}

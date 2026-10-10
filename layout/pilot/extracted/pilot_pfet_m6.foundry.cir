@@ -1,0 +1,5 @@
+* Extracted by KLayout with GF180MCU LVS runset on : 10/10/2026 00:18
+
+.SUBCKT pilot_pfet_m6 B S D G
+M$1 D G S B pfet_03v3 L=1U W=72U AS=21.51P AD=21.51P PS=89.34U PD=89.34U
+.ENDS pilot_pfet_m6

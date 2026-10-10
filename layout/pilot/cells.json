@@ -1,0 +1,16 @@
+{
+  "schema": "gf180-opamp.layout-pilot.cells/1",
+  "scope": "isolated device test cells; NOT a floorplan, NOT block layout, NOT an area measurement",
+  "schematic": "design/netlist/opamp_two_stage.spice",
+  "pdk": "gf180mcuD",
+  "foundry_variant": "D",
+  "cells": [
+    {"cell": "pilot_nfet_mb1_m5", "schematic_instances": ["XMB1", "XM5"],  "kind": "mos", "flavor": "nfet"},
+    {"cell": "pilot_nfet_m1_m2",  "schematic_instances": ["XM1", "XM2"],   "kind": "mos", "flavor": "nfet"},
+    {"cell": "pilot_nfet_m7",     "schematic_instances": ["XM7"],          "kind": "mos", "flavor": "nfet"},
+    {"cell": "pilot_pfet_m3_m4",  "schematic_instances": ["XM3", "XM4"],   "kind": "mos", "flavor": "pfet"},
+    {"cell": "pilot_pfet_m6",     "schematic_instances": ["XM6"],          "kind": "mos", "flavor": "pfet"},
+    {"cell": "pilot_mim_cc",      "schematic_instances": ["XCC"],          "kind": "mim"},
+    {"cell": "pilot_rpoly_rz",    "schematic_instances": ["XRZ"],          "kind": "res"}
+  ]
+}

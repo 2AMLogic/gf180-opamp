@@ -1,0 +1,659 @@
+{
+  "schema": "gf180-opamp.layout-pilot.results/1",
+  "cells": [
+    {
+      "cell": "pilot_nfet_mb1_m5",
+      "kind": "mos",
+      "schematic_instances": [
+        "XMB1",
+        "XM5"
+      ],
+      "model": "nfet_03v3",
+      "gen_params": {
+        "w_um": 3.0,
+        "l_um": 2.0,
+        "fingers": 2,
+        "rows": 1,
+        "cols": 1,
+        "dummy": 0,
+        "flavor": "nfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "labels_added": 7,
+      "terminal_mapping_schematic_net_to_cell_pin": {
+        "D": "ibias",
+        "G": "ibias",
+        "S": "vss",
+        "B": "vss"
+      },
+      "bbox_um": [
+        8.04,
+        7.92
+      ],
+      "drc_foundry": {
+        "runset": "gf180mcu run_drc.py --variant=D (flat)",
+        "rc": 1,
+        "violations": 32,
+        "rules": {
+          "contact_OFFGRID": {
+            "count": 32,
+            "rule": "OFFGRID : OFFGRID vertex on contact"
+          }
+        },
+        "status": "fail"
+      },
+      "drc_klt_curated": {
+        "status": "clean",
+        "violations": 0,
+        "rules_checked": 20,
+        "rules_skipped": 36
+      },
+      "extract_klt": {
+        "status": "extracted",
+        "device_counts": {
+          "nfet": 2
+        },
+        "warnings": [
+          "deck 'gf180mcu' declares MOS flavour '06v0' scoped by marker layer 55/0, but that layer has no shapes in the layout; every MOS device binds to the deck's default flavour"
+        ]
+      },
+      "lvs_klt": {
+        "status": "match",
+        "mismatch_count": 2,
+        "errors": 0,
+        "counts": {
+          "nets": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          },
+          "devices": {
+            "layout": 1,
+            "reference": 1,
+            "matched": 1
+          },
+          "pins": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          }
+        },
+        "parameters_compared": {
+          "nfet": [
+            "W",
+            "L"
+          ]
+        }
+      },
+      "lvs_foundry": {
+        "runset": "gf180mcu run_lvs.py --variant=D (flat)",
+        "status": "pass",
+        "rc": 0,
+        "log_tail": [
+          "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
+          "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
+          "10-Oct-2026 00:17:33 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "10-Oct-2026 00:17:33 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_nfet_mb1_m5.gds on cell pilot_nfet_mb1_m5"
+        ]
+      }
+    },
+    {
+      "cell": "pilot_nfet_m1_m2",
+      "kind": "mos",
+      "schematic_instances": [
+        "XM1",
+        "XM2"
+      ],
+      "model": "nfet_03v3",
+      "gen_params": {
+        "w_um": 1.8,
+        "l_um": 1.0,
+        "fingers": 2,
+        "rows": 1,
+        "cols": 1,
+        "dummy": 0,
+        "flavor": "nfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "labels_added": 7,
+      "terminal_mapping_schematic_net_to_cell_pin": {
+        "D": "n1",
+        "G": "vinn",
+        "S": "tail",
+        "B": "vss"
+      },
+      "bbox_um": [
+        6.04,
+        6.72
+      ],
+      "drc_foundry": {
+        "runset": "gf180mcu run_drc.py --variant=D (flat)",
+        "rc": 1,
+        "violations": 32,
+        "rules": {
+          "contact_OFFGRID": {
+            "count": 32,
+            "rule": "OFFGRID : OFFGRID vertex on contact"
+          }
+        },
+        "status": "fail"
+      },
+      "drc_klt_curated": {
+        "status": "clean",
+        "violations": 0,
+        "rules_checked": 20,
+        "rules_skipped": 36
+      },
+      "extract_klt": {
+        "status": "extracted",
+        "device_counts": {
+          "nfet": 2
+        },
+        "warnings": [
+          "deck 'gf180mcu' declares MOS flavour '06v0' scoped by marker layer 55/0, but that layer has no shapes in the layout; every MOS device binds to the deck's default flavour"
+        ]
+      },
+      "lvs_klt": {
+        "status": "match",
+        "mismatch_count": 2,
+        "errors": 0,
+        "counts": {
+          "nets": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          },
+          "devices": {
+            "layout": 1,
+            "reference": 1,
+            "matched": 1
+          },
+          "pins": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          }
+        },
+        "parameters_compared": {
+          "nfet": [
+            "W",
+            "L"
+          ]
+        }
+      },
+      "lvs_foundry": {
+        "runset": "gf180mcu run_lvs.py --variant=D (flat)",
+        "status": "pass",
+        "rc": 0,
+        "log_tail": [
+          "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
+          "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
+          "10-Oct-2026 00:17:45 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "10-Oct-2026 00:17:45 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_nfet_m1_m2.gds on cell pilot_nfet_m1_m2"
+        ]
+      }
+    },
+    {
+      "cell": "pilot_nfet_m7",
+      "kind": "mos",
+      "schematic_instances": [
+        "XM7"
+      ],
+      "model": "nfet_03v3",
+      "gen_params": {
+        "w_um": 3.0,
+        "l_um": 2.0,
+        "fingers": 12,
+        "rows": 1,
+        "cols": 1,
+        "dummy": 0,
+        "flavor": "nfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "labels_added": 7,
+      "terminal_mapping_schematic_net_to_cell_pin": {
+        "D": "vout",
+        "G": "ibias",
+        "S": "vss",
+        "B": "vss"
+      },
+      "bbox_um": [
+        33.84,
+        7.92
+      ],
+      "drc_foundry": {
+        "runset": "gf180mcu run_drc.py --variant=D (flat)",
+        "rc": 1,
+        "violations": 32,
+        "rules": {
+          "contact_OFFGRID": {
+            "count": 32,
+            "rule": "OFFGRID : OFFGRID vertex on contact"
+          }
+        },
+        "status": "fail"
+      },
+      "drc_klt_curated": {
+        "status": "clean",
+        "violations": 0,
+        "rules_checked": 20,
+        "rules_skipped": 36
+      },
+      "extract_klt": {
+        "status": "extracted",
+        "device_counts": {
+          "nfet": 12
+        },
+        "warnings": [
+          "deck 'gf180mcu' declares MOS flavour '06v0' scoped by marker layer 55/0, but that layer has no shapes in the layout; every MOS device binds to the deck's default flavour"
+        ]
+      },
+      "lvs_klt": {
+        "status": "match",
+        "mismatch_count": 2,
+        "errors": 0,
+        "counts": {
+          "nets": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          },
+          "devices": {
+            "layout": 1,
+            "reference": 1,
+            "matched": 1
+          },
+          "pins": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          }
+        },
+        "parameters_compared": {
+          "nfet": [
+            "W",
+            "L"
+          ]
+        }
+      },
+      "lvs_foundry": {
+        "runset": "gf180mcu run_lvs.py --variant=D (flat)",
+        "status": "pass",
+        "rc": 0,
+        "log_tail": [
+          "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
+          "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
+          "10-Oct-2026 00:17:58 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "10-Oct-2026 00:17:58 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_nfet_m7.gds on cell pilot_nfet_m7"
+        ]
+      }
+    },
+    {
+      "cell": "pilot_pfet_m3_m4",
+      "kind": "mos",
+      "schematic_instances": [
+        "XM3",
+        "XM4"
+      ],
+      "model": "pfet_03v3",
+      "gen_params": {
+        "w_um": 3.0,
+        "l_um": 1.0,
+        "fingers": 2,
+        "rows": 1,
+        "cols": 1,
+        "dummy": 0,
+        "flavor": "pfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "labels_added": 7,
+      "terminal_mapping_schematic_net_to_cell_pin": {
+        "D": "n1",
+        "G": "n1",
+        "S": "vdd",
+        "B": "vdd"
+      },
+      "bbox_um": [
+        6.04,
+        7.92
+      ],
+      "drc_foundry": {
+        "runset": "gf180mcu run_drc.py --variant=D (flat)",
+        "rc": 1,
+        "violations": 32,
+        "rules": {
+          "contact_OFFGRID": {
+            "count": 32,
+            "rule": "OFFGRID : OFFGRID vertex on contact"
+          }
+        },
+        "status": "fail"
+      },
+      "drc_klt_curated": {
+        "status": "clean",
+        "violations": 0,
+        "rules_checked": 23,
+        "rules_skipped": 33
+      },
+      "extract_klt": {
+        "status": "extracted",
+        "device_counts": {
+          "pfet": 2
+        },
+        "warnings": [
+          "deck 'gf180mcu' declares MOS flavour '06v0' scoped by marker layer 55/0, but that layer has no shapes in the layout; every MOS device binds to the deck's default flavour"
+        ]
+      },
+      "lvs_klt": {
+        "status": "match",
+        "mismatch_count": 2,
+        "errors": 0,
+        "counts": {
+          "nets": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          },
+          "devices": {
+            "layout": 1,
+            "reference": 1,
+            "matched": 1
+          },
+          "pins": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          }
+        },
+        "parameters_compared": {
+          "pfet": [
+            "W",
+            "L"
+          ]
+        }
+      },
+      "lvs_foundry": {
+        "runset": "gf180mcu run_lvs.py --variant=D (flat)",
+        "status": "pass",
+        "rc": 0,
+        "log_tail": [
+          "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
+          "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
+          "10-Oct-2026 00:18:10 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "10-Oct-2026 00:18:10 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_pfet_m3_m4.gds on cell pilot_pfet_m3_m4"
+        ]
+      }
+    },
+    {
+      "cell": "pilot_pfet_m6",
+      "kind": "mos",
+      "schematic_instances": [
+        "XM6"
+      ],
+      "model": "pfet_03v3",
+      "gen_params": {
+        "w_um": 3.0,
+        "l_um": 1.0,
+        "fingers": 24,
+        "rows": 1,
+        "cols": 1,
+        "dummy": 0,
+        "flavor": "pfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "labels_added": 7,
+      "terminal_mapping_schematic_net_to_cell_pin": {
+        "D": "vout",
+        "G": "n2",
+        "S": "vdd",
+        "B": "vdd"
+      },
+      "bbox_um": [
+        40.8,
+        7.92
+      ],
+      "drc_foundry": {
+        "runset": "gf180mcu run_drc.py --variant=D (flat)",
+        "rc": 1,
+        "violations": 32,
+        "rules": {
+          "contact_OFFGRID": {
+            "count": 32,
+            "rule": "OFFGRID : OFFGRID vertex on contact"
+          }
+        },
+        "status": "fail"
+      },
+      "drc_klt_curated": {
+        "status": "clean",
+        "violations": 0,
+        "rules_checked": 23,
+        "rules_skipped": 33
+      },
+      "extract_klt": {
+        "status": "extracted",
+        "device_counts": {
+          "pfet": 24
+        },
+        "warnings": [
+          "deck 'gf180mcu' declares MOS flavour '06v0' scoped by marker layer 55/0, but that layer has no shapes in the layout; every MOS device binds to the deck's default flavour"
+        ]
+      },
+      "lvs_klt": {
+        "status": "match",
+        "mismatch_count": 2,
+        "errors": 0,
+        "counts": {
+          "nets": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          },
+          "devices": {
+            "layout": 1,
+            "reference": 1,
+            "matched": 1
+          },
+          "pins": {
+            "layout": 4,
+            "reference": 4,
+            "matched": 4
+          }
+        },
+        "parameters_compared": {
+          "pfet": [
+            "W",
+            "L"
+          ]
+        }
+      },
+      "lvs_foundry": {
+        "runset": "gf180mcu run_lvs.py --variant=D (flat)",
+        "status": "pass",
+        "rc": 0,
+        "log_tail": [
+          "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
+          "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
+          "10-Oct-2026 00:18:22 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "10-Oct-2026 00:18:22 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_pfet_m6.gds on cell pilot_pfet_m6"
+        ]
+      }
+    },
+    {
+      "cell": "pilot_mim_cc",
+      "kind": "mim",
+      "schematic_instances": [
+        "XCC"
+      ],
+      "model": "cap_mim_2f0_m4m5_noshield",
+      "gen_params": {
+        "plate_w_um": 17.4,
+        "plate_h_um": 17.4,
+        "num": 1
+      },
+      "labels_added": 2,
+      "terminal_mapping_schematic_net_to_cell_pin": {
+        "BOT": "n2",
+        "TOP": "nz"
+      },
+      "bbox_um": [
+        19.52,
+        20.48
+      ],
+      "drc_foundry": {
+        "runset": "gf180mcu run_drc.py --variant=D (flat)",
+        "rc": 0,
+        "violations": 0,
+        "rules": {},
+        "status": "pass"
+      },
+      "drc_klt_curated": {
+        "status": "clean",
+        "violations": 0,
+        "rules_checked": 11,
+        "rules_skipped": 45
+      },
+      "extract_klt": {
+        "status": "extracted",
+        "device_counts": {
+          "cap_mim_2f0_m4m5_noshield": 1
+        },
+        "warnings": [
+          "deck 'gf180mcu' declares MOS flavour '06v0' scoped by marker layer 55/0, but that layer has no shapes in the layout; every MOS device binds to the deck's default flavour"
+        ]
+      },
+      "lvs_klt": {
+        "status": "match",
+        "mismatch_count": 5,
+        "errors": 0,
+        "counts": {
+          "nets": {
+            "layout": 2,
+            "reference": 2,
+            "matched": 2
+          },
+          "devices": {
+            "layout": 1,
+            "reference": 1,
+            "matched": 1
+          },
+          "pins": {
+            "layout": 2,
+            "reference": 2,
+            "matched": 2
+          }
+        },
+        "parameters_compared": {
+          "cap_mim_2f0_m4m5_noshield": [
+            "C",
+            "A"
+          ]
+        }
+      },
+      "lvs_foundry": {
+        "status": "not-run",
+        "reason": "foundry comparer rejected every capacitor reference-card form tried (device params A/P read as 0 from the reference); unresolved, see README"
+      }
+    },
+    {
+      "cell": "pilot_rpoly_rz",
+      "kind": "res",
+      "schematic_instances": [
+        "XRZ"
+      ],
+      "model": "ppolyf_u_1k",
+      "gen_params": {
+        "length_um": 4.0,
+        "width_um": 2.0,
+        "num": 1,
+        "dummy": 0,
+        "flavor": "1k"
+      },
+      "labels_added": 2,
+      "terminal_mapping_schematic_net_to_cell_pin": {
+        "A": "vout",
+        "B": "nz",
+        "VSUB": "vss"
+      },
+      "bbox_um": [
+        4.84,
+        2.0
+      ],
+      "drc_foundry": {
+        "runset": "gf180mcu run_drc.py --variant=D (flat)",
+        "rc": 1,
+        "violations": 4,
+        "rules": {
+          "SB.4": {
+            "count": 2,
+            "rule": ""
+          },
+          "SB.10": {
+            "count": 2,
+            "rule": ""
+          }
+        },
+        "status": "fail"
+      },
+      "drc_klt_curated": {
+        "status": "clean",
+        "violations": 0,
+        "rules_checked": 8,
+        "rules_skipped": 48
+      },
+      "extract_klt": {
+        "status": "extracted",
+        "device_counts": {
+          "ppolyf_u_1k": 1
+        },
+        "warnings": [
+          "deck 'gf180mcu' declares MOS flavour '06v0' scoped by marker layer 55/0, but that layer has no shapes in the layout; every MOS device binds to the deck's default flavour"
+        ]
+      },
+      "lvs_klt": {
+        "status": "match",
+        "mismatch_count": 6,
+        "errors": 0,
+        "counts": {
+          "nets": {
+            "layout": 3,
+            "reference": 3,
+            "matched": 3
+          },
+          "devices": {
+            "layout": 1,
+            "reference": 1,
+            "matched": 1
+          },
+          "pins": {
+            "layout": 3,
+            "reference": 3,
+            "matched": 3
+          }
+        },
+        "parameters_compared": {
+          "ppolyf_u_1k": [
+            "L",
+            "W"
+          ]
+        }
+      },
+      "lvs_foundry": {
+        "runset": "gf180mcu run_lvs.py --variant=D (flat)",
+        "status": "pass",
+        "rc": 0,
+        "log_tail": [
+          "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
+          "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
+          "10-Oct-2026 00:18:43 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "10-Oct-2026 00:18:43 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_rpoly_rz.gds on cell pilot_rpoly_rz"
+        ]
+      }
+    }
+  ]
+}

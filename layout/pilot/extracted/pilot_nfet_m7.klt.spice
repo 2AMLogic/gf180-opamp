@@ -1,0 +1,33 @@
+* extracted by klt extract --deck gf180mcu
+
+* cell pilot_nfet_m7
+* pin B
+* pin D
+* pin G
+* pin S
+.SUBCKT pilot_nfet_m7 B D G S
+* device instance $1 r0 *1 1.5,2.32 nfet
+X$1 D G S B nfet_03v3 L=2U W=3U AS=1.5P AD=0.87P PS=7U PD=3.58U
+* device instance $2 r0 *1 4.08,2.32 nfet
+X$2 S G D B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $3 r0 *1 6.66,2.32 nfet
+X$3 D G S B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $4 r0 *1 9.24,2.32 nfet
+X$4 S G D B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $5 r0 *1 11.82,2.32 nfet
+X$5 D G S B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $6 r0 *1 14.4,2.32 nfet
+X$6 S G D B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $7 r0 *1 16.98,2.32 nfet
+X$7 D G S B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $8 r0 *1 19.56,2.32 nfet
+X$8 S G D B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $9 r0 *1 22.14,2.32 nfet
+X$9 D G S B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $10 r0 *1 24.72,2.32 nfet
+X$10 S G D B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $11 r0 *1 27.3,2.32 nfet
+X$11 D G S B nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $12 r0 *1 29.88,2.32 nfet
+X$12 S G D B nfet_03v3 L=2U W=3U AS=0.87P AD=1.5P PS=3.58U PD=7U
+.ENDS pilot_nfet_m7

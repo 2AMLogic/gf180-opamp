@@ -1,0 +1,4 @@
+* schematic-derived reference, foundry-runset form, for pilot_rpoly_rz
+.subckt pilot_rpoly_rz A B gf180mcu_gnd
+R1 A B gf180mcu_gnd 2000 ppolyf_u_1k L=4u W=2u
+.ends

@@ -1,0 +1,4 @@
+* schematic-derived reference for pilot_pfet_m3_m4 (dimensions from XM3+XM4; ad/as/pd/ps omitted)
+.subckt pilot_pfet_m3_m4 D G S B
+XM1 D G S B pfet_03v3 L=1u W=6u nf=2 m=1
+.ends

@@ -1,0 +1,9 @@
+* extracted by klt extract --deck gf180mcu
+
+* cell pilot_mim_cc
+* pin BOT
+* pin TOP
+.SUBCKT pilot_mim_cc BOT TOP
+* device instance $1 r0 *1 9.76,9.76 cap_mim_2f0_m4m5_noshield
+X$1 BOT TOP cap_mim_2f0_m4m5_noshield c_length=17.4U c_width=17.4U
+.ENDS pilot_mim_cc

@@ -1,0 +1,5 @@
+* Extracted by KLayout with GF180MCU LVS runset on : 10/10/2026 00:17
+
+.SUBCKT pilot_nfet_mb1_m5 B D S G
+M$1 D G S B nfet_03v3 L=2U W=6U AS=2.37P AD=2.37P PS=10.58U PD=10.58U
+.ENDS pilot_nfet_mb1_m5
