@@ -26,23 +26,67 @@ env:
   # Must equal sim/harness.py PINNED_PDK_REV; sim/ci_prereqs.py fails otherwise.
   GF180_PDK_REV: "c6d73a35f524070e85faff4a6a9eef49553ebc2b"
   VOLARE_VERSION: "0.20.6"
+  # xschem that exported design/netlist/opamp_two_stage.spice (issue #76).
+  # Must equal sim/ci_netlist_check.py PINNED_XSCHEM_VERSION; sim/ci_prereqs.py
+  # fails otherwise, and also fails if `xschem --version` on PATH differs.
+  # Built from source at XSCHEM_COMMIT, the commit the upstream `3.4.7` tag
+  # points at (a tag can move, a commit cannot; verify at
+  # https://github.com/StefanSchippers/xschem/releases/tag/3.4.7 before bumping).
+  # Not apt: ubuntu-24.04 ships xschem 3.4.4, whose export formatting differs.
+  SELFTEST_XSCHEM_VERSION: "3.4.7"
+  XSCHEM_COMMIT: "92dd8fe5f4d5c1057489710d8a22f18fdc9d7ed0"
   # CI-strict switch: skips for missing klt/ngspice/PDK/dataset become failures.
   SIM_REQUIRE_PREREQS: "1"
 
 jobs:
   selftest:
-    # Pinned image (not ubuntu-latest) so the apt ngspice (42) is stable.
+    # Pinned image (not ubuntu-latest) so the apt ngspice (42) is stable. Pinning
+    # the image does NOT pin xschem precisely enough, so xschem is built from a
+    # pinned upstream commit below instead of installed from apt.
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
 
-      - name: Install ngspice and Python deps
+      - name: Install ngspice, Python deps and xschem build dependencies
+        # xschem itself is deliberately NOT installed from apt (see XSCHEM_COMMIT).
+        # Build deps mirror xschem's own CI at the pinned tag:
+        # https://github.com/StefanSchippers/xschem/blob/3.4.7/.github/workflows/ci.yaml
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ngspice python3-numpy python3-matplotlib
+          sudo apt-get install -y --no-install-recommends ngspice python3-numpy python3-matplotlib \
+            make gcc flex bison gawk tcl tcl-dev tk tk-dev \
+            libcairo2 libcairo2-dev xcb libxcb1 libxcb1-dev libxrender-dev \
+            libxpm-dev libxcb-render0-dev libx11-xcb1 libx11-xcb-dev
           ngspice -v | head -3
+
+      - name: Cache the pinned xschem build
+        id: cache-xschem
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0
+        with:
+          path: ~/xschem-src
+          key: xschem-${{ env.XSCHEM_COMMIT }}-${{ runner.os }}-ubuntu-24.04-v1
+
+      - name: Build xschem from the pinned commit
+        if: steps.cache-xschem.outputs.cache-hit != 'true'
+        run: |
+          rm -rf ~/xschem-src
+          git init -q ~/xschem-src
+          cd ~/xschem-src
+          git remote add origin https://github.com/StefanSchippers/xschem.git
+          git fetch -q --depth 1 origin "$XSCHEM_COMMIT"
+          git checkout -q FETCH_HEAD
+          test "$(git rev-parse HEAD)" = "$XSCHEM_COMMIT"
+          ./configure
+          make -j"$(nproc)"
+
+      - name: Install the pinned xschem
+        run: |
+          sudo make -C ~/xschem-src install
+          hash -r
+          echo "xschem on PATH: $(command -v xschem)"
+          xschem --no_x -q --version | head -1
 
       - name: Install the selftest klt
         run: pipx install "klayout-tools==${SELFTEST_KLT_VERSION}"
@@ -62,7 +106,7 @@ jobs:
           pipx install "volare==${VOLARE_VERSION}"
           volare enable --pdk gf180mcu "$GF180_PDK_REV"
 
-      - name: Check prerequisites (klt, ngspice, PDK at the pinned open_pdks revision)
+      - name: Check prerequisites (klt, ngspice, xschem at the pinned version, PDK at the pinned open_pdks revision)
         run: python3 sim/ci_prereqs.py
 
       - name: Prove the PDK revision gate rejects a wrong or unknown revision
