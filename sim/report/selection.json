@@ -1,7 +1,7 @@
 {
   "experiments": {
     "cmrr": "sim/cmrr/records/20261009-105631-30ec86d.md",
-    "gain-gbw-pm": "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md",
+    "gain-gbw-pm": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
     "noise": "sim/noise/records/20261009-082007-68b4567.md",
     "offset-mc": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
     "psrr": "sim/psrr/records/20261009-105929-30ec86d.md",

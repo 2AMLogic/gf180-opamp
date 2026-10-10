@@ -5,13 +5,19 @@
     "normalised_sha256_prefix": "81fbd914f8254a49"
   },
   "limitations": [
+    "cmrr: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
+    "noise: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
+    "offset-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
+    "psrr: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
+    "slew-swing-power (20261009-142137-1dab1db): measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
+    "slew-swing-power (20261009-143715-4d5aa43): measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), gain-gbw-pm (recorded), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (20261009-142137-1dab1db) (recorded), slew-swing-power (20261009-143715-4d5aa43) (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
-    "ngspice versions differ: ngspice 42 <- gain-gbw-pm (local), noise (local), offset-mc (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (klt engine), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)",
+    "ngspice versions differ: ngspice 42 <- noise (local), offset-mc (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)",
     "coverage differs between sources (see each row's coverage; e.g. the offset Monte Carlo is 5 corner points at nominal T/VDD while the AC rows are full 45-point grids)"
   ],
   "manifest_selection": {
     "cmrr": "sim/cmrr/records/20261009-105631-30ec86d.md",
-    "gain-gbw-pm": "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md",
+    "gain-gbw-pm": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
     "noise": "sim/noise/records/20261009-082007-68b4567.md",
     "offset-mc": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
     "psrr": "sim/psrr/records/20261009-105929-30ec86d.md",
@@ -62,9 +68,9 @@
       "row": "Open-loop DC gain",
       "source": {
         "experiment": "gain-gbw-pm",
-        "path": "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md",
-        "record_id": "20261009-055759-2524b3e",
-        "sha256": "7215efcb4dee51deebdbc1c4e3e795fb1f3a83f50882e06b9010a659a2bfb066"
+        "path": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
+        "record_id": "20261010-020141-1e51d1c",
+        "sha256": "37ae04a15b0b92cff7cb781f9c95da8c6b39926c841af46515f07c6177a1904b"
       },
       "spec_bound": "≥ 60 dB",
       "status": "measured-verdict",
@@ -106,9 +112,9 @@
       "row": "GBW",
       "source": {
         "experiment": "gain-gbw-pm",
-        "path": "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md",
-        "record_id": "20261009-055759-2524b3e",
-        "sha256": "7215efcb4dee51deebdbc1c4e3e795fb1f3a83f50882e06b9010a659a2bfb066"
+        "path": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
+        "record_id": "20261010-020141-1e51d1c",
+        "sha256": "37ae04a15b0b92cff7cb781f9c95da8c6b39926c841af46515f07c6177a1904b"
       },
       "spec_bound": "≥ 10 MHz",
       "status": "measured-verdict",
@@ -150,9 +156,9 @@
       "row": "Phase margin",
       "source": {
         "experiment": "gain-gbw-pm",
-        "path": "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md",
-        "record_id": "20261009-055759-2524b3e",
-        "sha256": "7215efcb4dee51deebdbc1c4e3e795fb1f3a83f50882e06b9010a659a2bfb066"
+        "path": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
+        "record_id": "20261010-020141-1e51d1c",
+        "sha256": "37ae04a15b0b92cff7cb781f9c95da8c6b39926c841af46515f07c6177a1904b"
       },
       "spec_bound": "≥ 60 deg",
       "status": "measured-verdict",
@@ -186,7 +192,8 @@
       "key": "slew",
       "limitations": [
         "passives at typical only: RZ/CC passive corners are not swept",
-        "fleet runner klt version differs from the client's (compatibility mismatch)"
+        "fleet runner klt version differs from the client's (compatibility mismatch)",
+        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -261,7 +268,8 @@
       "limitations": [
         "passives at typical only: RZ/CC passive corners are not swept",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "no ratified bound and no ratified integration band (DR-3 residual e1); the bands are candidates"
+        "no ratified bound and no ratified integration band (DR-3 residual e1); the bands are candidates",
+        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": 45,
@@ -335,7 +343,8 @@
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "nominal T/VDD only (27 C, 3.30 V): no temperature or supply axis",
         "mismatch Monte Carlo of the offset only; no numeric bound proposed (DR-3 residual e2)",
-        "sigma relative standard error ~ 4.1 % at the stated N"
+        "sigma relative standard error ~ 4.1 % at the stated N",
+        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": 5,
@@ -411,7 +420,8 @@
         "passives at typical only: RZ/CC passive corners are not swept",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "systematic figure of a perfectly matched schematic; mismatch-limited CMRR (Monte Carlo) is not covered",
-        "no ratified bound (DR-3 residual e3)"
+        "no ratified bound (DR-3 residual e3)",
+        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": 45,
@@ -518,7 +528,8 @@
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "PSRR-: Avss changes sign across the grid, so low-frequency PSRR- near the flip is a cancellation, not design margin; the worst-case figure is the one to use",
         "systematic figure of a perfectly matched schematic; mismatch-limited PSRR is not covered",
-        "no ratified bound (DR-3 residual e4)"
+        "no ratified bound (DR-3 residual e4)",
+        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": 45,
@@ -591,7 +602,8 @@
       "key": "swing",
       "limitations": [
         "passives at typical only: RZ/CC passive corners are not swept",
-        "fleet runner klt version differs from the client's (compatibility mismatch)"
+        "fleet runner klt version differs from the client's (compatibility mismatch)",
+        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -634,7 +646,8 @@
       "key": "power",
       "limitations": [
         "passives at typical only: RZ/CC passive corners are not swept",
-        "fleet runner klt version differs from the client's (compatibility mismatch)"
+        "fleet runner klt version differs from the client's (compatibility mismatch)",
+        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -696,6 +709,10 @@
       "dut_sha256": "81fbd914f8254a49",
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g5c94de0ebbfe",
+      "measurement_config": {
+        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "status": "unknown"
+      },
       "ngspice_engine": "46",
       "ngspice_local": "46",
       "path": "sim/cmrr/records/20261009-105631-30ec86d.md",
@@ -708,20 +725,29 @@
       "backend": "aws-batch-fleet",
       "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g4cbdfa769875",
+      "klt_client": "0.7.0+g5e5b55992a7f",
+      "measurement_config": {
+        "fingerprint": "119be23b64384405bce75b641537e5dd3a9520e053b67a7f9e9c5d96178aaf90",
+        "status": "current",
+        "version": 1
+      },
       "ngspice_engine": "46",
-      "ngspice_local": "42",
-      "path": "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md",
+      "ngspice_local": "46",
+      "path": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
       "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261009-055759-2524b3e",
-      "sha256": "7215efcb4dee51deebdbc1c4e3e795fb1f3a83f50882e06b9010a659a2bfb066"
+      "record_id": "20261010-020141-1e51d1c",
+      "sha256": "37ae04a15b0b92cff7cb781f9c95da8c6b39926c841af46515f07c6177a1904b"
     },
     "noise": {
       "backend": "aws-batch-fleet",
       "dut_sha256": "81fbd914f8254a49",
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g4cbdfa769875",
+      "measurement_config": {
+        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "status": "unknown"
+      },
       "ngspice_engine": null,
       "ngspice_local": "42",
       "path": "sim/noise/records/20261009-082007-68b4567.md",
@@ -735,6 +761,10 @@
       "dut_sha256": "81fbd914f8254a49",
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g4cbdfa769875",
+      "measurement_config": {
+        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "status": "unknown"
+      },
       "ngspice_engine": null,
       "ngspice_local": "42",
       "path": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
@@ -748,6 +778,10 @@
       "dut_sha256": "81fbd914f8254a49",
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g5c94de0ebbfe",
+      "measurement_config": {
+        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "status": "unknown"
+      },
       "ngspice_engine": "46",
       "ngspice_local": "46",
       "path": "sim/psrr/records/20261009-105929-30ec86d.md",
@@ -761,6 +795,10 @@
       "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g4cbdfa769875",
+      "measurement_config": {
+        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "status": "unknown"
+      },
       "ngspice_engine": "46",
       "ngspice_local": "42",
       "path": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
@@ -774,6 +812,10 @@
       "dut_sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860",
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g4cbdfa769875",
+      "measurement_config": {
+        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "status": "unknown"
+      },
       "ngspice_engine": "46",
       "ngspice_local": "42",
       "path": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md",

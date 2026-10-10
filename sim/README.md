@@ -155,6 +155,24 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 - Existing records have no structured sidecars, so the verdict/worst-case
   lines are extracted from the Markdown (cross-checked against each record's
   own per-point table); historical records are never modified.
+- Measurement-configuration freshness (issue #85), additive to the DUT gate:
+  a record may carry a versioned `**Measurement fingerprint**` header line
+  plus the canonical inputs it hashes (`## Measurement fingerprint inputs`).
+  The report verifies the inputs hash to the stated value, recomputes the
+  CURRENT effective inputs offline (`sim/<experiment>/measurement_config.py`
+  plus the committed bench) and rejects a mismatch like a stale DUT, naming
+  the experiment to rerun and the input groups that changed (`--archival`
+  downgrades it to a disclosed limitation). Normalisation (`harness.py`,
+  `canonical_bench_lines`): comments, blank lines, whitespace, case and
+  `.include` paths are ignored; values are not numerically re-parsed. Excluded:
+  record IDs, workspace paths, backend/retry options, extraction code. Only
+  `gain-gbw-pm` is instrumented so far; older gain records and every other
+  experiment are reported as "measurement-configuration freshness unknown"
+  (per source, per row and in the report limitations), never as current. To
+  migrate an experiment, give it a stdlib `measurement_config.py` (see
+  `gain-gbw-pm/measurement_config.py`), emit the header line and inputs block
+  from its driver, and register it in `MEASUREMENT_CONFIG`. Historical
+  records are never edited and no historical fingerprint is fabricated.
 - Regenerate: `python3 sim/report/characterization_report.py` (after editing
   `selection.json`); verify the committed copy: `... --check` (exit 1 if
   stale). `characterize.sh` ends with `--latest --update-manifest`, selecting

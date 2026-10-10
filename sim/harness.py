@@ -49,6 +49,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -76,6 +77,57 @@ def load_sibling(module_name: str, relpath: str):
     sys.modules[module_name] = mod
     spec.loader.exec_module(mod)
     return mod
+
+#: Measurement-configuration fingerprint (issue #85). Version of the
+#: normalisation rules below; bump it when they change so old fingerprints are
+#: reported as "different rules" rather than silently compared.
+FINGERPRINT_VERSION = 1
+
+
+def canonical_bench_lines(text: str) -> list[str]:
+    """Canonical form of a SPICE bench body for freshness comparison.
+
+    Rules (version 1): continuation lines (`+`) are joined to their parent;
+    full-line `*` comments, `;`/`$` trailing comments and blank lines are
+    dropped; whitespace runs collapse to one space; text is lower-cased
+    (SPICE is case-insensitive); `.include`/`.inc` targets are reduced to
+    their basename (the driver rewrites them to per-run absolute paths, which
+    must not change the fingerprint). Component values are NOT numerically
+    re-parsed: `2p` and `2e-12` fingerprint differently, deliberately.
+    """
+    logical: list[str] = []
+    for raw in text.splitlines():
+        ln = raw.strip()
+        if ln.startswith("+") and logical:
+            logical[-1] += " " + ln[1:].strip()
+        else:
+            logical.append(ln)
+    out: list[str] = []
+    for ln in logical:
+        if not ln or ln.startswith("*"):
+            continue
+        ln = ln.split(";", 1)[0]
+        ln = ln.split(" $", 1)[0]
+        ln = " ".join(ln.split()).lower()
+        m = re.match(r"^(\.(?:include|inc))\s+['\"]?([^'\"\s]+)['\"]?$", ln)
+        if m:
+            ln = f"{m.group(1)} '{m.group(2).replace(chr(92), '/').rsplit('/', 1)[-1]}'"
+        if ln:
+            out.append(ln)
+    return out
+
+
+def fingerprint_json(inputs: dict) -> str:
+    """Deterministic JSON of a fingerprint-input dict (sorted keys, no spaces)."""
+    return json.dumps(inputs, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+
+def measurement_fingerprint(inputs: dict) -> str:
+    """sha256 over the canonical JSON of the effective measurement inputs."""
+    import hashlib
+
+    return hashlib.sha256(fingerprint_json(inputs).encode()).hexdigest()
+
 
 DEFAULT_VARIANT = "gf180mcuD"
 # Pinned open_pdks revision of the gf180mcu PDK (full hash). CI's
