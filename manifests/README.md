@@ -78,8 +78,22 @@ are explicit `null`s until layout lands — never omitted keys, never
 placeholder numbers. `rung` is `"below-T1"` while
 `gf180-opamp.signoff.json`'s `tier` is `null`.
 
-**Consistency obligations** — manual until the artifacts they mirror exist
-(the signoff CI does not check them):
+**Consistency obligations** — `manifests/check_integrator.py` (run by the
+signoff CI, with `manifests/test_check_integrator.py`) enforces the
+`top_cell`/`ports`/`netlist`/`rung` obligations and the shape of populated
+`gds`/`area`, offline (stdlib only; no simulator, PDK, or network). It checks
+that the netlist exists, `top_cell` and the ordered port names match its
+`.subckt` declaration (including `+` continuations and xschem's `**.subckt`
+form), port directions match `design/opamp_two_stage.sym`, `rung` agrees with
+the signoff record's `tier`, all keys are present, and a populated `gds` is an
+existing repository file with a finite positive `area` in mm². **It checks
+interface consistency only** — it does not validate that `area` matches real
+geometry, that a `gds` is the full op-amp rather than a pilot cell, or that the
+signoff tier itself is correct (that is `klt signoff`'s job). Run it locally
+with `python3 manifests/check_integrator.py`; diagnostics name the field and
+the artifact it disagrees with. Update procedure: change the port, symbol,
+netlist, or tier, then edit `integrator.json` in the same commit and re-run the
+checker.
 
 - **`rung` ↔ `gf180-opamp.signoff.json`'s `tier`**: `tier: null` ⇒
   `"below-T1"`; a `T1`–`T4` verdict ⇒ the same string. Update `rung` in the

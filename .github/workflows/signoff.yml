@@ -26,6 +26,13 @@ jobs:
           python3 sim/report/characterization_report.py --check
           python3 sim/report/test_report.py
 
+      # Integrator view vs netlist/symbol/signoff tier (issue #84). Offline;
+      # interface consistency only, not layout or signoff correctness.
+      - name: Check integrator view consistency
+        run: |
+          python3 manifests/check_integrator.py
+          python3 manifests/test_check_integrator.py
+
       - name: Install the pinned klt
         run: pipx install "klayout-tools==0.7.0"
 
