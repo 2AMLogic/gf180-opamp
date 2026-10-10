@@ -7,7 +7,7 @@
 # and each experiment's own README for the cold-start prerequisites (ngspice,
 # the pinned gf180mcu PDK revision, numpy/matplotlib).
 #
-# Currently runs seven experiments (sim/gain-gbw-pm/: open-loop gain / GBW /
+# Currently runs eight experiments (sim/gain-gbw-pm/: open-loop gain / GBW /
 # phase margin of the committed sized schematic over the full 45-point PVT
 # grid, issues #19 and #38; sim/offset-mc/: mismatch Monte Carlo of the
 # input offset, 5 corners x N=300, issue #45; sim/noise/: input-referred
@@ -17,7 +17,9 @@
 # rate, output swing and quiescent power over the same grid, one request per
 # figure, issue #44; sim/input-common-mode/: follower-biased input common-mode
 # range, a VCM scan 0..VDD inside each of the 45 PVT points plus 5 mV
-# transition refinement, issue #60); sim/gm-id-characterization/ predates this script
+# transition refinement, issue #60; sim/cmrr-mc/: mismatch-aware CMRR, 5 corners
+# x N=300 with both excitations of each sample in one deck, issue #61);
+# sim/gm-id-characterization/ predates this script
 # and is still run directly (`python3 sim/gm-id-characterization/run_gmid.py`)
 # per its own README, since this script's job is the *one-command driver*
 # acceptance criterion for the newly-added spec-row testbenches, not a
@@ -64,6 +66,9 @@ python3 slew-swing-power/run_slew_swing_power.py "$@"
 
 echo "== sim/input-common-mode: follower-biased ICMR, VCM scan 0..VDD per PVT point + 5 mV refinement =="
 python3 input-common-mode/run_input_common_mode.py "$@"
+
+echo "== sim/cmrr-mc: mismatch-aware CMRR Monte Carlo, 5 MOS corners x N=300 (+ controls) =="
+python3 cmrr-mc/run_cmrr_mc.py "$@"
 
 echo "== sim/report: aggregate characterization report from the newly minted records =="
 python3 report/characterization_report.py --latest --update-manifest
