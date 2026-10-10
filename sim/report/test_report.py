@@ -143,16 +143,27 @@ class CommittedReport(unittest.TestCase):
     def test_unratified_rows_have_no_verdict(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
         r = rows_by_key(rep)
-        for k in ("noise", "offset", "cmrr", "psrr"):
+        for k in ("noise", "offset"):
             self.assertEqual(r[k]["status"], "measured-no-bound", k)
             self.assertIsNone(r[k]["verdict"], k)
             self.assertTrue(r[k]["bound_open"], k)
             self.assertTrue(r[k]["worst"], k)
+        # CMRR/PSRR carry DR-6 bounds tagged "proposed, not ratified": never graded either
+        for k in ("cmrr", "psrr"):
+            self.assertEqual(r[k]["status"], "proposed-not-graded", k)
+            self.assertIsNone(r[k]["verdict"], k)
+            self.assertFalse(r[k]["bound_open"], k)
+            self.assertTrue(r[k]["spec_bound"].startswith("proposed, not ratified: "), k)
+            self.assertIn("[DR-6]", r[k]["spec_bound"], k)
         md = cr.render_md(rep)
         self.assertNotRegex(md, r"(noise|offset|CMRR|PSRR)[^|\n]*\|[^|\n]*\|[^|\n]*\| \*\*(PASS|FAIL)")
         self.assertIn("open (no ratified bound)", md)
-        self.assertEqual(r["cmrr"]["worst"].split(" dB")[0], "95.42")
         self.assertIn("5.006", r["offset"]["worst"])
+        # the systematic CMRR record stays visible, but only as information, never as the row's statistic
+        sys_dc = r["cmrr"]["figures"][0]  # first row of the record's worst-case table: the DC plateau
+        self.assertEqual(sys_dc["value"].split(" dB")[0], "95.42")
+        self.assertIn("not the row's statistic", sys_dc["label"])
+        self.assertTrue(any("NOT the statistic of the proposed row" in l for l in r["cmrr"]["limitations"]))
 
     def test_all_spec_rows_present(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
@@ -178,7 +189,7 @@ class CommittedReport(unittest.TestCase):
         self.assertIsNone(r["source"])
         self.assertIn("20261009-222613-871d1a6", r["spec_status"])
         s = rep["summary"]
-        self.assertEqual(s["proposed_not_graded"], 1)
+        self.assertEqual(s["proposed_not_graded"], 3)  # ICMR [DR-5], CMRR and PSRR [DR-6]
         self.assertEqual(s["ratified_rows_judged"], sum(1 for x in rep["rows"] if x["verdict"]))
         self.assertEqual(s["not_measured"], sum(1 for x in rep["rows"] if x["status"] == "not-measured"))
         md = cr.render_md(rep)
@@ -186,7 +197,36 @@ class CommittedReport(unittest.TestCase):
         self.assertIn("proposed, not ratified", line)
         self.assertNotIn("no record", line)
         self.assertNotIn("not-measured", line)
-        self.assertIn("1 proposed, not ratified (not graded)", md)
+        self.assertIn("3 proposed, not ratified (not graded)", md)
+
+    def test_proposed_rows_backed_by_a_selected_record_are_not_graded(self):
+        # DR-6: CMRR and PSRR have selected records, yet a proposed bound is never graded and the
+        # record's worst value is never placed beside it (the systematic CMRR figure is optimistic)
+        rep = cr.build(REPO, cr.load_manifest(MANIFEST))
+        r = rows_by_key(rep)
+        md = cr.render_md(rep)
+        for k, name in (("cmrr", "CMRR"), ("psrr", "PSRR")):
+            row = r[k]
+            self.assertEqual(row["status"], "proposed-not-graded", k)
+            self.assertIsNone(row["verdict"], k)
+            self.assertIsNone(row["worst"], k)
+            self.assertIsNone(row["worst_corner"], k)
+            self.assertIsNone(row["points_total"], k)
+            self.assertIsNotNone(row["source"], k)  # still traceable, just not graded
+            self.assertIn(k, rep["sources"])
+            self.assertIn("DR-6", row["spec_status"], k)
+            self.assertTrue(row["figures"], k)
+            self.assertTrue(all("information only" in f["label"] for f in row["figures"]), k)
+            line = next(l for l in md.splitlines() if l.startswith(f"| {name} |"))
+            cells = [c.strip() for c in line.strip("|").split("|")]
+            self.assertTrue(cells[1].startswith("proposed, not ratified: "), line)
+            self.assertEqual(cells[2], "proposed-not-graded", line)
+            self.assertEqual(cells[3], "none", line)
+            self.assertEqual(cells[4:7], ["-", "-", "-"], line)
+            self.assertNotIn("dB (", cells[5])
+        self.assertIn("20261010-035206-978f088", r["cmrr"]["spec_status"])  # the mismatch-inclusive record
+        cmrr_line = next(l for l in md.splitlines() if l.startswith("| CMRR |"))
+        self.assertNotIn("95.42", cmrr_line)
 
     def test_coverage_differs_and_is_reported(self):
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
@@ -327,7 +367,10 @@ class Mutations(unittest.TestCase):
     def test_absent_experiment_is_not_measured(self):
         rep = self.build(manifest(psrr=None, noise=None))
         r = rows_by_key(rep)
-        self.assertEqual(r["psrr"]["status"], "not-measured")
+        # PSRR's bound is proposed (DR-6): without a record it stays "proposed, not graded",
+        # never a "not measured" row of the ratified table
+        self.assertEqual(r["psrr"]["status"], "proposed-not-graded")
+        self.assertEqual(r["psrr"]["figures"], [])
         self.assertEqual(r["noise"]["status"], "not-measured")
         self.assertIsNone(r["psrr"]["source"])
         self.assertEqual(r["pm"]["verdict"], "FAIL")
@@ -336,8 +379,10 @@ class Mutations(unittest.TestCase):
 
     def test_empty_selection_still_lists_every_row(self):
         rep = self.build({"experiments": {}})
-        self.assertTrue(all(r["status"] == "not-measured" for r in rep["rows"] if r["key"] != "input-common-mode-range"))
-        self.assertEqual(rows_by_key(rep)["input-common-mode-range"]["status"], "proposed-not-graded")
+        proposed = ("input-common-mode-range", "cmrr", "psrr")
+        self.assertTrue(all(r["status"] == "not-measured" for r in rep["rows"] if r["key"] not in proposed))
+        for k in proposed:
+            self.assertEqual(rows_by_key(rep)[k]["status"], "proposed-not-graded", k)
         self.assertEqual(len(rep["rows"]), len(cr.parse_spec(self.root / "spec/target-spec.md")) + 1)
 
     def test_superseded_gain_record_rejected(self):
@@ -467,7 +512,18 @@ class Mutations(unittest.TestCase):
         self.edit("spec/target-spec.md", "[DR-5] — proposed, not ratified**", "[DR-5]**")
         r = rows_by_key(self.build())["input-common-mode-range"]
         self.assertEqual(r["status"], "not-measured")
-        self.assertEqual(self.build()["summary"]["proposed_not_graded"], 0)
+        self.assertEqual(self.build()["summary"]["proposed_not_graded"], 2)  # CMRR, PSRR still proposed
+
+    def test_proposed_dr6_classification_follows_the_in_row_tag(self):
+        # without the tag, a CMRR/PSRR row backed by its record reverts to measured-no-bound with the
+        # record's worst value (the pre-DR-6 behaviour); with it, the row is not graded
+        self.edit("spec/target-spec.md", "≥ 50 dB each at 10 kHz [DR-6] — proposed, not ratified**",
+                  "≥ 50 dB each at 10 kHz [DR-6]**")
+        r = rows_by_key(self.build())
+        self.assertEqual(r["psrr"]["status"], "measured-no-bound")
+        self.assertTrue(r["psrr"]["worst"].startswith("PSRR+ "))
+        self.assertEqual(r["cmrr"]["status"], "proposed-not-graded")
+        self.assertIsNone(r["cmrr"]["worst"])
 
     def test_ssp_bound_must_match_spec(self):
         self.edit("spec/target-spec.md", "**≤ 350 µW worst-case corner", "**≤ 340 µW worst-case corner")

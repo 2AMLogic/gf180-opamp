@@ -17,7 +17,9 @@ Status vocabulary (per spec row):
                       report grades ratified rows only, so it issues no verdict
                       and counts the row neither as judged nor as not measured
                       (the spec's own status text, which cites any record, is
-                      reproduced verbatim)
+                      reproduced verbatim); a selected record's figures for
+                      such a row are listed in the row details as information
+                      only, never as a worst value beside the proposed bound
 
 Existing records are Markdown only (no structured sidecars), so this module
 carries a narrow, tested extraction of the verdict / worst-case lines and
@@ -806,6 +808,20 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
         exp = skey.split(" (")[0]
         return {"experiment": exp, "record_id": s["record_id"], "path": s["path"], "sha256": s["sha256"]}
 
+    def proposed_row(row, sr, coverage=None, source=None, extra=()):
+        """A row whose bound is tagged in-row "proposed, not ratified": never graded.
+
+        No verdict, no worst value or point count beside the bound (a selected record's figures,
+        if any, are listed in the row details as information only), counted neither among the
+        ratified rows judged nor as not measured; the spec's own status text is quoted verbatim.
+        """
+        row.update(status="proposed-not-graded", spec_bound=f"proposed, not ratified: {sr['target']}",
+                   coverage=coverage, source=source, spec_status=sr["status"])
+        row["limitations"] = ["bound proposed by a decision record and not ratified: this report grades "
+                              "ratified rows only, so the row is not graded and is counted neither among "
+                              "the ratified rows judged nor as not measured; see the spec status column "
+                              "for the evidence it cites"] + list(extra)
+
     for sr in spec_rows:
         k = sr["key"]
         row = base(sr)
@@ -870,31 +886,45 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
             ex = extracted["cmrr"]
             tbl = ex["figures"]["CMRR"]
             dc = tbl[0]
-            row.update(status="measured-no-bound", worst=f"{dc['worst_db']} dB ({dc['figure']}, lowest)",
-                       worst_corner=dc["worst_corner"], coverage=ex["coverage"],
-                       limitations=list(ex["limitations"]), source=src("cmrr"),
-                       points_total=ex["coverage"]["points"])
-            for t in tbl:
-                row["figures"].append({"label": f"CMRR {t['figure']}, lowest", "value": f"{t['worst_db']} dB",
-                                       "corner": t["worst_corner"]})
+            if sr["proposed"]:
+                # the systematic (mismatch-free) record is NOT the proposed row's statistic: never
+                # place its optimistic worst value beside the proposed bound
+                proposed_row(row, sr, coverage=ex["coverage"], source=src("cmrr"), extra=[
+                    "the figures listed for this row come from the selected systematic (mismatch-free) PVT "
+                    "record and are "
+                    "information only: they are NOT the statistic of the proposed row, which is stated on a "
+                    "mismatch-inclusive basis (see the spec statistical-basis and status columns for the record "
+                    "it cites); this report does not ingest that record, and the systematic figures are "
+                    "optimistic against it"] + list(ex["limitations"]))
+                for t in tbl:
+                    row["figures"].append({"label": f"systematic (mismatch-free) CMRR {t['figure']}, lowest "
+                                                    "(information only, not the row's statistic)",
+                                           "value": f"{t['worst_db']} dB", "corner": t["worst_corner"]})
+            else:
+                row.update(status="measured-no-bound", worst=f"{dc['worst_db']} dB ({dc['figure']}, lowest)",
+                           worst_corner=dc["worst_corner"], coverage=ex["coverage"],
+                           limitations=list(ex["limitations"]), source=src("cmrr"),
+                           points_total=ex["coverage"]["points"])
+                for t in tbl:
+                    row["figures"].append({"label": f"CMRR {t['figure']}, lowest", "value": f"{t['worst_db']} dB",
+                                           "corner": t["worst_corner"]})
         elif k == "psrr" and "psrr" in extracted:
             ex = extracted["psrr"]
             dc = ex["figures"]["PSRR+"][0]
-            row.update(status="measured-no-bound", worst=f"PSRR+ {dc['worst_db']} dB ({dc['figure']}, lowest)",
-                       worst_corner=dc["worst_corner"], coverage=ex["coverage"],
-                       limitations=list(ex["limitations"]), source=src("psrr"),
-                       points_total=ex["coverage"]["points"])
+            info = " (information only, not graded)" if sr["proposed"] else ""
+            if sr["proposed"]:
+                proposed_row(row, sr, coverage=ex["coverage"], source=src("psrr"), extra=list(ex["limitations"]))
+            else:
+                row.update(status="measured-no-bound", worst=f"PSRR+ {dc['worst_db']} dB ({dc['figure']}, lowest)",
+                           worst_corner=dc["worst_corner"], coverage=ex["coverage"],
+                           limitations=list(ex["limitations"]), source=src("psrr"),
+                           points_total=ex["coverage"]["points"])
             for side in ("PSRR+", "PSRR-"):
                 for t in ex["figures"][side]:
-                    row["figures"].append({"label": f"{side} {t['figure']}, lowest", "value": f"{t['worst_db']} dB",
+                    row["figures"].append({"label": f"{side} {t['figure']}, lowest{info}", "value": f"{t['worst_db']} dB",
                                            "corner": t["worst_corner"]})
         elif sr["proposed"]:
-            row.update(status="proposed-not-graded")
-            row["limitations"] = ["bound proposed by a decision record and not ratified: this report grades "
-                                  "ratified rows only, so the row is not graded and is counted neither among "
-                                  "the ratified rows judged nor as not measured; see the spec status column "
-                                  "for the evidence it cites"]
-            row["spec_status"] = sr["status"]
+            proposed_row(row, sr)
         else:
             row["limitations"] = ["no committed record in sim/ for this row"]
             row["spec_status"] = sr["status"]
@@ -975,7 +1005,7 @@ def render_md(rep: dict) -> str:
             bound = "open (no ratified bound)" if r["key"] != "post-layout" else r["spec_bound"]
         sc = f"[`{r['source']['record_id']}`]({link_from_reports(r['source']['path'])})" if r["source"] else "no record"
         if r["status"] == "proposed-not-graded":
-            bound = f"proposed, not ratified: {r['spec_bound']}"
+            bound = r["spec_bound"]  # carries the "proposed, not ratified: " qualifier
             sc = "not graded (see spec status)"
         a(f"| {r['row']} | {bound} | {r['status']} | {verdict} | {pts} | {r['worst'] or '-'} | "
           f"{r['worst_corner'] or '-'} | {sc} |")
