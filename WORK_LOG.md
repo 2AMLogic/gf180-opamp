@@ -4,6 +4,25 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-10
 
+- **PR #116**: sim: closed-loop follower step response (overshoot, settling) across the PVT grid (#113)
+- **PR #115**: feat(#112): check target-spec.md Sec. 2 record citations against selection.json
+- **PR #111**: feat: attach cross-checked ICMR evidence to the ungraded proposed row
+- **PR #110**: docs(#95): cite passive-corner study in README and aggregate report
+- **PR #109**: feat(#97): --passive-corners RZ x CC side study for slew/swing/power
+- **PR #108**: ci(#107): extend ci_regression_check.sh teeth coverage to every sim experiment
+- **PR #104**: refactor(#94): consolidate materialise() work-dir staging into harness.stage_workdir
+- **PR #103**: selftest: gate design/check_dc_op.py in CI (#96)
+- **PR #100**: spec: propose CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-6; #61)
+- **PR #92**: feat(#89): extend measurement freshness fingerprints to the remaining characterization experiments
+- **Issue #113** (closed): sim: closed-loop follower step response (overshoot and settling) across the PVT grid
+- **Issue #112** (closed): ci: check that target-spec.md measured-record citations match sim/report/selection.json
+- **Issue #90** (closed): Include measured input common-mode evidence in the aggregate report without ratifying its bound
+- **Issue #95** (closed): README and aggregate report: cite the passive-corner study instead of claiming passives were never swept
+- **Issue #107** (closed): ci: extend ci_regression_check.sh mutation (teeth) coverage to every sim experiment
+- **Issue #88** (closed): Auditor: review stash guard denial during isolated driver validation
+- **Issue #94** (closed): Consolidate duplicated materialise() work-dir staging into sim/harness.py
+- **Issue #96** (closed): selftest: run design/check_dc_op.py so the schematic bias smoke check is gated in CI
+- **Issue #61** (closed): spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4)
 - **PR #91**: docs(#82): document absolute scratch cleanup paths in layout/README
 - **PR #87**: feat(#85): track measurement-configuration freshness alongside DUT identity
 - **PR #86**: feat(#84): validate integrator view against interface and signoff tier
