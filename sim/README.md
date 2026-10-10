@@ -302,6 +302,13 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   explicit 1.20 V sample. Two `klt sim` requests per scan/refinement round
   (paired `vdd`/`vcm` axes on the batch fleet); measured evidence for the ICMR
   row proposed by decision record 0005 (issue #60).
+- [`ibias-cl-sensitivity/`](ibias-cl-sensitivity/README.md) — **sensitivity
+  data** (no verdict, no spec change) of GBW, PM, slew and quiescent power to
+  the external bias current (8–12 µA around 10 µA) and the load capacitance
+  (1, 2, 4, 10 pF) at the nominal and PM-/GBW-/slew-/power-binding corner
+  points, one small `klt sim` request per sweep value, reusing the
+  `gain-gbw-pm` and `slew-swing-power` benches; the 10 µA / 2 pF points are
+  controls against the committed records (issue #114; evidence for #42).
 - [`step-response/`](step-response/README.md) — **closed-loop follower step
   response** of the committed sized schematic: unity-gain follower, CL = 2 pF,
   a 100 mV step about VCM (rising and falling edge), overshoot, 1 % and 0.1 %
