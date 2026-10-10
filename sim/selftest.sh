@@ -75,3 +75,9 @@ python3 input-common-mode/test_input_common_mode.py
 
 echo "== sim/input-common-mode: smoke test (typical, 27C, 3.30 V, VCM 1.20 V and 1.65 V, both excitations, local) =="
 python3 input-common-mode/run_input_common_mode.py --smoke
+
+echo "== sim/ibias-cl-sensitivity: extraction + substitution + source-guard tests (no simulator) =="
+python3 ibias-cl-sensitivity/test_ibias_cl_sensitivity.py
+
+echo "== sim/ibias-cl-sensitivity: smoke test (typical, 27C, 3.30 V, one local point) =="
+python3 ibias-cl-sensitivity/run_ibias_cl_sensitivity.py --smoke
