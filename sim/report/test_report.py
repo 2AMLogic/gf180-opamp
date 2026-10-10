@@ -42,6 +42,8 @@ OFF_NOM_REC = "20261009-072205-96bf3cc"  # issue #45: 5 corners at 27 C / 3.30 V
 OFF_GRID_MD = f"{OFF}/records/{OFF_GRID_REC}.md"
 OFF_NOM_MD = f"{OFF}/records/{OFF_NOM_REC}.md"
 OFF_GRID_CSV = f"{OFF}/corners/{OFF_GRID_REC}/offset_samples.csv"
+GAIN_STUDY_MD = "sim/gain-gbw-pm/records/20261009-234014-55b400c.md"  # issue #70 side study (supplementary, #121)
+SSP_STUDY_MD = "sim/slew-swing-power/records/20261010-094234-fe6599f.md"  # issue #97 side study (supplementary, #121)
 
 
 def make_root(tmp: Path) -> Path:
@@ -97,36 +99,42 @@ class CommittedReport(unittest.TestCase):
         self.assertEqual((out / f"{cr.OUT_NAME}.json").read_text(), a[1], "committed report.json is stale")
         self.assertEqual(cr.main(["--check"]), 0)
 
-    def test_passive_study_cited_only_for_gain_gbw_pm(self):
-        """Issue #95: typical-passive limitation scoped per record; study cited for gain/GBW/PM only."""
+    def test_passive_studies_cited_only_for_their_rows(self):
+        """Issues #95/#121: typical-passive limitation scoped per record; each selected side study is
+        cited (derived, not hard-coded) for its own rows only."""
         rep = json.loads((REPO / cr.OUT_DIR_REL / f"{cr.OUT_NAME}.json").read_text())
         rows = rows_by_key(rep)
-        study = (REPO / cr.PASSIVE_STUDY_REL).read_text()
-        self.assertIn("passes at 24/27 study cells (fails at 3/27)", study)
-        self.assertIn("passes at 7/27 study cells", study)
+        gain_id, ssp_id = Path(GAIN_STUDY_MD).stem, Path(SSP_STUDY_MD).stem
         for k in ("gain", "gbw", "pm"):
             lim = " ".join(rows[k]["limitations"])
-            self.assertIn(cr.PASSIVE_STUDY_ID, lim)
+            self.assertIn(gain_id, lim)
+            self.assertNotIn(ssp_id, lim)
             self.assertNotIn("are not swept", lim)
         gbw = " ".join(rows["gbw"]["limitations"])
-        for frag in ("24/27", "3/27", "9.656"):
+        for frag in ("24/27 cells pass, 3 fail", "9.656", "9.663/9.656/9.673 MHz"):
             self.assertIn(frag, gbw)
-        self.assertIn("7/27", " ".join(rows["pm"]["limitations"]))
-        for k in ("slew", "swing", "power", "noise"):
-            if k in rows:
-                lim = " ".join(rows[k]["limitations"])
-                self.assertIn("passives at typical only", lim)
-                self.assertNotIn(cr.PASSIVE_STUDY_ID, lim)
+        self.assertIn("7/27 cells pass, 20 fail; range 53.63 .. 63.17 deg", " ".join(rows["pm"]["limitations"]))
+        for k in ("slew", "swing", "power"):
+            lim = " ".join(rows[k]["limitations"])
+            self.assertIn("passives at typical only", lim)
+            self.assertIn(ssp_id, lim)
+            self.assertNotIn(gain_id, lim)
+        self.assertIn("worst 13.40 V/us at ss / 125 C / 2.97 V, RZ worst, CC worst", " ".join(rows["slew"]["limitations"]))
+        noise = " ".join(rows["noise"]["limitations"])
+        self.assertIn("passives at typical only", noise)
+        self.assertNotIn(gain_id, noise)
+        self.assertNotIn(ssp_id, noise)
         self.assertEqual(rows["gbw"]["verdict"], "PASS")
         self.assertEqual(rows["pm"]["verdict"], "FAIL")
 
     def test_md_links_resolve_from_report_dir(self):
-        """Issue #95 review: md links (incl. the passive study) resolve relative to sim/reports/."""
+        """Issue #95 review: md links (incl. the passive studies) resolve relative to sim/reports/."""
         md_path = REPO / cr.OUT_DIR_REL / f"{cr.OUT_NAME}.md"
         md = md_path.read_text()
-        study_link = os.path.relpath(cr.PASSIVE_STUDY_REL, cr.OUT_DIR_REL).replace(os.sep, "/")
-        self.assertIn(f"]({study_link})", md)
-        self.assertTrue((md_path.parent / study_link).resolve().is_file())
+        for rel in (GAIN_STUDY_MD, SSP_STUDY_MD):
+            study_link = os.path.relpath(rel, cr.OUT_DIR_REL).replace(os.sep, "/")
+            self.assertIn(f"]({study_link})", md)
+            self.assertTrue((md_path.parent / study_link).resolve().is_file())
         targets = re.findall(r"\]\(([^)\s]+)\)", md)
         self.assertTrue(targets)
         for t in targets:
@@ -1668,6 +1676,252 @@ class ICMREvidence(unittest.TestCase):
         self.assertEqual(cr.main(args), 0)
         self.assertEqual(first, (self.root / "o" / f"{cr.OUT_NAME}.json").read_bytes())
         self.assertNotIn(str(self.root), first.decode())
+
+
+class SupplementaryPassiveStudies(unittest.TestCase):
+    """Issue #121: the explicitly selected passive-corner side studies are hashed, parsed and
+    checked, and their observations are derived from their tables -- outside every verdict."""
+
+    GKEY, SKEY = "gain-gbw-pm-passive-corners", "slew-swing-power-passive-corners"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def build(self, m=None, **kw):
+        return cr.build(self.root, m or manifest(), **kw)
+
+    def edit(self, rel, old, new, count=1):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertIn(old, t)
+        p.write_text(t.replace(old, new, count))
+
+    def rejects(self, rx, m=None, **kw):
+        with self.assertRaisesRegex(cr.ReportError, rx):
+            self.build(m, **kw)
+
+    def sup(self, **over):
+        m = manifest()
+        for k, v in over.items():
+            if v is None:
+                m["supplementary"].pop(k, None)
+            else:
+                m["supplementary"][k] = v
+        return m
+
+    # ---- positive ----
+    def test_committed_selection_is_explicit(self):
+        sel = json.loads(MANIFEST.read_text())
+        self.assertEqual(sel["supplementary"], {self.GKEY: GAIN_STUDY_MD, self.SKEY: SSP_STUDY_MD})
+        for rel in sel["supplementary"].values():  # never also a verdict source
+            self.assertNotIn(rel, json.dumps(sel["experiments"]))
+
+    def test_both_studies_hashed_with_exact_scope(self):
+        rep = self.build()
+        for key, rel in ((self.GKEY, GAIN_STUDY_MD), (self.SKEY, SSP_STUDY_MD)):
+            st = rep["supplementary"][key]
+            self.assertFalse(st["graded"])
+            self.assertEqual(st["path"], rel)
+            self.assertEqual(st["sha256"], hashlib.sha256((REPO / rel).read_bytes()).hexdigest())
+            self.assertEqual(st["dut_check"], {"matches_selected_records": True, "matches_current_netlist": True})
+            sc = st["scope"]
+            self.assertEqual(sc["cells"], 27)
+            self.assertFalse(sc["full_pvt_cross_product"])
+            self.assertEqual(sc["points"], ["fs / 125 C / 2.97 V", "ss / 125 C / 2.97 V", "typical / 27 C / 3.30 V"])
+            self.assertIn("not a full passive-by-PVT cross product", sc["text"])
+            self.assertEqual(st["measurement_config"]["status"], "unknown")
+            self.assertTrue(any("freshness unknown" in l for l in st["limitations"]))
+            self.assertTrue(any(l.startswith(f"supplementary {key}: measurement-configuration freshness unknown")
+                                for l in rep["limitations"]))
+
+    def test_gain_study_observations_derived_from_tables(self):
+        f = self.build()["supplementary"][self.GKEY]["figures"]
+        self.assertEqual((f["gbw"]["pass"], f["gbw"]["total"], f["gbw"]["fail"]), (24, 27, 3))
+        self.assertEqual((f["pm"]["pass"], f["pm"]["total"]), (7, 27))
+        self.assertEqual(f["pm"]["range"], ["53.63", "63.17"])
+        self.assertEqual(f["gbw"]["worst"], {"value": "9.656", "point": "ss / 125 C / 2.97 V", "rz": "best", "cc": "worst"})
+        self.assertEqual([(c["rz"], c["cc"], c["value"]) for c in f["gbw"]["failing_cells"]],
+                         [("typical", "worst", "9.663"), ("best", "worst", "9.656"), ("worst", "worst", "9.673")])
+        # the 60.00 deg cell is a FAIL in the record (59.99x): accepted within display precision
+        self.assertNotIn("gain", f)
+
+    def test_ssp_study_observations_derived_from_tables(self):
+        f = self.build()["supplementary"][self.SKEY]["figures"]
+        self.assertEqual(sorted(f), ["power", "slew", "swing"])
+        for k in f:
+            self.assertEqual((f[k]["pass"], f[k]["total"], f[k]["verdict_in_record"]), (27, 27, "PASS"))
+        self.assertEqual(f["slew"]["worst"]["value"], "13.40")
+        self.assertEqual(f["power"]["range"], ["239.2", "273.7"])
+        self.assertEqual(f["swing"]["worst"]["value"], "2.465")
+
+    def test_studies_never_change_verdicts_points_or_counts(self):
+        with_s = self.build()
+        without = self.build(self.sup(**{self.GKEY: None, self.SKEY: None}))
+        self.assertEqual(with_s["summary"], without["summary"])
+        self.assertEqual(without["supplementary"], {})
+        for a, b in zip(with_s["rows"], without["rows"]):
+            for k in ("status", "verdict", "points_pass", "points_total", "worst", "worst_corner", "coverage"):
+                self.assertEqual(a[k], b[k], (a["key"], k))
+        self.assertTrue(any(l.startswith(f"no supplementary study selected for {self.GKEY}")
+                            for l in without["limitations"]))
+        for k in ("gbw", "pm", "slew"):
+            self.assertFalse(any("side study" in l for l in rows_by_key(without)[k]["limitations"]))
+
+    def test_markdown_section_and_determinism(self):
+        md1, js1 = cr.generate(self.root, MANIFEST)
+        md2, js2 = cr.generate(self.root, MANIFEST)
+        self.assertEqual((md1, js1), (md2, js2))
+        self.assertIn("## Supplementary passive-corner studies (measured side evidence; not graded)", md1)
+        for rel in (GAIN_STUDY_MD, SSP_STUDY_MD):
+            self.assertIn(hashlib.sha256((REPO / rel).read_bytes()).hexdigest(), md1)
+
+    # ---- provenance hash and numeric changes ----
+    def test_changing_a_study_changes_its_hash_and_the_report(self):
+        before = cr.render_json(self.build())
+        self.edit(GAIN_STUDY_MD, "## Artifacts", "## Artifacts\n\n- note appended in a scratch copy")
+        rep = self.build()
+        self.assertNotEqual(rep["supplementary"][self.GKEY]["sha256"],
+                            json.loads(before)["supplementary"][self.GKEY]["sha256"])
+        self.assertNotEqual(cr.render_json(rep), before)
+
+    def test_consistent_numeric_change_is_reflected_not_stale_prose(self):
+        # move the worst PM cell in both the table and the header: the derived text follows
+        self.edit(GAIN_STUDY_MD, "| best | best | 53.63 |", "| best | best | 52.90 |")
+        self.edit(GAIN_STUDY_MD, "worst 53.63 deg at fs", "worst 52.90 deg at fs")
+        rep = self.build()
+        pm = " ".join(rows_by_key(rep)["pm"]["limitations"])
+        self.assertIn("range 52.90 .. 63.17 deg", pm)
+        self.assertNotIn("53.63", pm)
+
+    def test_table_change_contradicting_the_header_rejected(self):
+        self.edit(GAIN_STUDY_MD, "| best | best | 53.63 |", "| best | best | 52.90 |")
+        self.rejects(r"Phase margin summary .* disagrees with its own tables")
+
+    def test_cell_flip_contradicting_counts_rejected(self):
+        self.edit(GAIN_STUDY_MD, "| 9.663 | -7.3 | 0.909 | PASS | FAIL |", "| 10.663 | -7.3 | 0.909 | PASS | PASS |")
+        self.rejects(r"GBW summary .*24/27 pass.* disagrees with its own tables \(FAIL, 25/27 pass")
+
+    def test_cell_flag_contradicting_its_value_rejected(self):
+        self.edit(GAIN_STUDY_MD, "| 9.663 | -7.3 | 0.909 | PASS | FAIL |", "| 10.663 | -7.3 | 0.909 | PASS | FAIL |")
+        self.rejects(r"GBW cell ss / 125 C / 2.97 V, RZ typical, CC worst reads 10.663 MHz but is marked 'FAIL'")
+
+    def test_header_count_disagreeing_rejected(self):
+        self.edit(GAIN_STUDY_MD, "passes at 24/27 study cells (fails at 3/27)", "passes at 25/27 study cells (fails at 2/27)")
+        self.rejects(r"GBW summary .* disagrees with its own tables")
+
+    def test_ssp_summary_disagreeing_rejected(self):
+        self.edit(SSP_STUDY_MD, "worst 13.4 V/us at ss / 125 C / 2.97 V, RZ worst, CC worst",
+                  "worst 13.6 V/us at ss / 125 C / 2.97 V, RZ worst, CC worst")
+        self.rejects(r"Slew rate .* summary .* disagrees with its own tables")
+
+    def test_ssp_worst_cell_misnamed_rejected(self):
+        self.edit(SSP_STUDY_MD, "worst 13.4 V/us at ss / 125 C / 2.97 V, RZ worst, CC worst",
+                  "worst 13.4 V/us at ss / 125 C / 2.97 V, RZ worst, CC best")
+        self.rejects(r"Slew rate .* summary .* disagrees with its own tables")
+
+    # ---- malformed / missing ----
+    def test_missing_study_rejected(self):
+        (self.root / SSP_STUDY_MD).unlink()
+        self.rejects(r"supplementary slew-swing-power-passive-corners: selected record is missing")
+
+    def test_duplicate_cell_rejected(self):
+        self.edit(GAIN_STUDY_MD, "| worst | worst | 60.72 |", "| best | best | 60.72 |")
+        self.rejects(r"duplicate cell RZ best, CC best under '### fs / 125 C / 2.97 V'")
+
+    def test_missing_cell_rejected(self):
+        self.edit(SSP_STUDY_MD, "| worst | worst | 2.893 | +0.0 | PASS |\n", "")
+        self.rejects(r"'### Output swing -- typical / 27 C / 3.30 V .*' is missing 1 of 9 RZ x CC cells")
+
+    def test_malformed_cell_rejected(self):
+        self.edit(GAIN_STUDY_MD, "| best | best | 53.63 |", "| best | best | 53.6x |")
+        self.rejects(r"malformed value '53.6x'")
+
+    def test_unknown_level_rejected(self):
+        self.edit(GAIN_STUDY_MD, "| worst | worst | 60.72 |", "| worst | slow | 60.72 |")
+        self.rejects(r"malformed RZ x CC row")
+
+    def test_missing_point_table_rejected(self):
+        p = self.root / GAIN_STUDY_MD
+        t = p.read_text()
+        a, b = t.index("### typical / 27 C / 3.30 V"), t.index("## Sensitivity")
+        p.write_text(t[:a] + t[b:])
+        self.rejects(r"no results table for study point typical / 27 C / 3.30 V")
+
+    def test_missing_header_line_rejected(self):
+        self.edit(GAIN_STUDY_MD, "  - GBW >= 10 MHz: **FAIL**", "  - GBW at least 10 MHz: **FAIL**")
+        self.rejects(r"no 'GBW' verdict line")
+
+    # ---- selection / provenance ----
+    def test_stale_or_mixed_dut_rejected(self):
+        self.edit(SSP_STUDY_MD, "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860", "0" * 64)
+        self.rejects(r"side study measures DUT 0000000000000000, the selected records 81fbd914f8254a49")
+
+    def test_stale_dut_without_primary_selection_rejected(self):
+        self.edit(SSP_STUDY_MD, "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860", "0" * 64)
+        m = self.sup(**{self.GKEY: None})
+        m["experiments"] = {}
+        self.rejects(r"stale DUT: supplementary slew-swing-power-passive-corners", m)
+        st = self.build(m, archival=True)["supplementary"][self.SKEY]
+        self.assertEqual(st["dut_check"], {"matches_selected_records": None, "matches_current_netlist": None})
+
+    def test_grid_record_as_study_rejected(self):
+        self.rejects(r"is not a 'gain/GBW/PM passive-corner study' record",
+                     self.sup(**{self.GKEY: "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md"}))
+
+    def test_study_from_other_experiment_dir_rejected(self):
+        self.rejects(r"is not a record under sim/slew-swing-power/records",
+                     self.sup(**{self.SKEY: GAIN_STUDY_MD}))
+
+    def test_superseded_study_rejected(self):
+        self.rejects(r"superseded by 20261009-234014-55b400c",
+                     self.sup(**{self.GKEY: "sim/gain-gbw-pm/records/20261009-233341-95dfc2a.md"}))
+
+    def test_unknown_study_key_rejected(self):
+        p = self.root / "sel.json"
+        m = manifest()
+        m["supplementary"]["noise-passive-corners"] = "x.md"
+        p.write_text(json.dumps(m))
+        with self.assertRaisesRegex(cr.ReportError, r"unknown supplementary study"):
+            cr.load_manifest(p)
+
+    def test_study_bound_must_be_the_ratified_bound(self):
+        # internally consistent study, judged against a bound other than the ratified >= 10 V/us
+        self.edit(SSP_STUDY_MD, "vs ratified >= 10 V/us", "vs ratified >= 12 V/us")
+        self.edit(SSP_STUDY_MD, "(bound >= 10 V/us)", "(bound >= 12 V/us)", count=3)
+        self.rejects(r"study bound '>= 12 V/us' for Slew rate .* is not the current ratified bound")
+
+    def test_stale_fingerprint_follows_policy_and_unknown_is_disclosed(self):
+        h = cr._harness()
+        cur = cr.current_measurement_inputs(self.root, "gain-gbw-pm")
+        for inputs, want in ((cur, "current"), (dict(cur, analysis="changed-in-a-scratch-copy"), "stale")):
+            with self.subTest(want=want):
+                p = self.root / GAIN_STUDY_MD
+                orig = p.read_text()
+                text = orig.replace("- **Issue**:", "\n".join(h.fingerprint_header_lines(inputs, "test")) + "\n- **Issue**:", 1)
+                p.write_text(text + "\n" + "\n".join(h.fingerprint_inputs_section(inputs, "x")))
+                if want == "stale":
+                    self.rejects(r"stale measurement configuration: supplementary gain-gbw-pm-passive-corners")
+                    rep = self.build(archival=True)
+                    self.assertTrue(any(l.startswith(f"supplementary {self.GKEY}: measurement configuration differs")
+                                        for l in rep["limitations"]))
+                else:
+                    rep = self.build()
+                self.assertEqual(rep["supplementary"][self.GKEY]["measurement_config"]["status"], want)
+                p.write_text(orig)
+
+    def test_latest_update_manifest_keeps_explicit_studies(self):
+        import contextlib
+        import io
+        mp = self.root / "sel.json"
+        mp.write_text(MANIFEST.read_text())
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(cr.main(["--root", str(self.root), "--manifest", str(mp), "--latest",
+                                      "--update-manifest", "--stdout"]), 0)
+        self.assertEqual(json.loads(mp.read_text()), json.loads(MANIFEST.read_text()))
 
 
 if __name__ == "__main__":
