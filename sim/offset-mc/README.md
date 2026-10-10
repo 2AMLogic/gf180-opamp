@@ -154,9 +154,10 @@ alone gives at N = 300. So the grid shows no temperature or supply dependence
 of the mismatch spread that can be told apart from sampling noise. These are
 measurements, not verdicts. Its measurement fingerprint
 covers the full-grid axes (`"grid": "full"` in the inputs); the nominal
-fingerprint is unchanged. The characterization report still cites the 27 °C
-record for the offset row (the grid record is listed as a side study in
-`sim/report/characterization_report.py`).
+fingerprint is unchanged. The characterization report selects the grid
+record for the offset row (issue #120): `sim/report/characterization_report.py`
+parses both record formats and re-derives every per-point statistic and the
+worst points from `corners/<record>/offset_samples.csv`.
 
 ## Running
 

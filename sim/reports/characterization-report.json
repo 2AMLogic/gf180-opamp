@@ -8,20 +8,18 @@
     "cmrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "input-common-mode: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "noise: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
-    "offset-mc: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "psrr: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "slew-swing-power (20261009-142137-1dab1db): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "slew-swing-power (20261009-143715-4d5aa43): measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), gain-gbw-pm (recorded), input-common-mode (recorded), input-common-mode (klt client-resolved), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (20261009-142137-1dab1db) (recorded), slew-swing-power (20261009-143715-4d5aa43) (recorded); f6eeac7dad08 <- cmrr (klt client-resolved), psrr (klt client-resolved)",
-    "ngspice versions differ: ngspice 42 <- input-common-mode (local), noise (local), offset-mc (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), input-common-mode (klt engine), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)",
-    "coverage differs between sources (see each row's coverage; e.g. the offset Monte Carlo is 5 corner points at nominal T/VDD while the AC rows are full 45-point grids)"
+    "ngspice versions differ: ngspice 42 <- input-common-mode (local), noise (local), slew-swing-power (20261009-142137-1dab1db) (local), slew-swing-power (20261009-143715-4d5aa43) (local); ngspice 46 <- cmrr (local), cmrr (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), input-common-mode (klt engine), offset-mc (local), psrr (local), psrr (klt engine), slew-swing-power (20261009-142137-1dab1db) (klt engine), slew-swing-power (20261009-143715-4d5aa43) (klt engine)"
   ],
   "manifest_selection": {
     "cmrr": "sim/cmrr/records/20261009-105631-30ec86d.md",
     "gain-gbw-pm": "sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md",
     "input-common-mode": "sim/input-common-mode/records/20261009-222613-871d1a6.md",
     "noise": "sim/noise/records/20261009-082007-68b4567.md",
-    "offset-mc": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
+    "offset-mc": "sim/offset-mc/records/20261010-083043-ddf96db.md",
     "psrr": "sim/psrr/records/20261009-105929-30ec86d.md",
     "slew-swing-power": {
       "power": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
@@ -301,70 +299,107 @@
           "fs",
           "sf"
         ],
-        "mc_samples_per_corner": 300,
-        "points": 5,
+        "mc_samples_per_point": 300,
+        "points": 45,
         "temps_c": [
-          27
+          -40,
+          27,
+          125
         ],
         "vdd_v": [
-          "3.30"
+          "2.97",
+          "3.30",
+          "3.63"
         ]
       },
       "figures": [
         {
-          "corner": "sf",
-          "label": "worst |mean| + 3 sigma",
-          "value": "15.635 mV"
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "worst sigma over the grid",
+          "value": "4.946 mV (3 sigma 14.839 mV)"
         },
         {
-          "corner": "typical",
-          "label": "sigma, N=300",
-          "value": "4.902 mV"
+          "corner": null,
+          "label": "sigma range over the 45 points, N=300 each",
+          "value": "4.286 .. 4.946 mV"
         },
         {
-          "corner": "ff",
-          "label": "sigma, N=300",
-          "value": "4.354 mV"
+          "corner": null,
+          "label": "largest |mean| (systematic plus sampling) over the grid",
+          "value": "0.693 mV"
         },
         {
-          "corner": "ss",
-          "label": "sigma, N=300",
-          "value": "4.434 mV"
+          "corner": "typical / -40 C / 2.97 V",
+          "label": "worst |mean| + 3 sigma at -40 C / 2.97 V (over the MOS corners)",
+          "value": "14.631 mV"
         },
         {
-          "corner": "fs",
-          "label": "sigma, N=300",
-          "value": "4.340 mV"
+          "corner": "ff / -40 C / 3.30 V",
+          "label": "worst |mean| + 3 sigma at -40 C / 3.30 V (over the MOS corners)",
+          "value": "14.878 mV"
         },
         {
-          "corner": "sf",
-          "label": "sigma, N=300",
-          "value": "5.006 mV"
+          "corner": "ff / -40 C / 3.63 V",
+          "label": "worst |mean| + 3 sigma at -40 C / 3.63 V (over the MOS corners)",
+          "value": "14.570 mV"
+        },
+        {
+          "corner": "fs / 27 C / 2.97 V",
+          "label": "worst |mean| + 3 sigma at 27 C / 2.97 V (over the MOS corners)",
+          "value": "14.843 mV"
+        },
+        {
+          "corner": "typical / 27 C / 3.30 V",
+          "label": "worst |mean| + 3 sigma at 27 C / 3.30 V (over the MOS corners)",
+          "value": "15.458 mV"
+        },
+        {
+          "corner": "sf / 27 C / 3.63 V",
+          "label": "worst |mean| + 3 sigma at 27 C / 3.63 V (over the MOS corners)",
+          "value": "15.025 mV"
+        },
+        {
+          "corner": "fs / 125 C / 2.97 V",
+          "label": "worst |mean| + 3 sigma at 125 C / 2.97 V (over the MOS corners)",
+          "value": "14.776 mV"
+        },
+        {
+          "corner": "typical / 125 C / 3.30 V",
+          "label": "worst |mean| + 3 sigma at 125 C / 3.30 V (over the MOS corners)",
+          "value": "14.644 mV"
+        },
+        {
+          "corner": "sf / 125 C / 3.63 V",
+          "label": "worst |mean| + 3 sigma at 125 C / 3.63 V (over the MOS corners)",
+          "value": "15.041 mV"
+        },
+        {
+          "corner": null,
+          "label": "per-point statistics re-derived from the retained samples",
+          "value": "13500 samples at 45 points agree with the record (sim/offset-mc/corners/20261010-083043-ddf96db/offset_samples.csv, sha256 ced1f6105da1e6a1)"
         }
       ],
       "key": "offset",
       "limitations": [
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "nominal T/VDD only (27 C, 3.30 V): no temperature or supply axis",
-        "mismatch Monte Carlo of the offset only; no numeric bound proposed (DR-3 residual e2)",
-        "sigma relative standard error ~ 4.1 % at the stated N",
-        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
+        "mismatch Monte Carlo of the offset only; no numeric bound proposed or judged (DR-3 residual e2; the bound is spec issue #62's decision)",
+        "sigma relative standard error ~ 4.1 % at the stated N per point; the worst of 45 points is a maximum over noisy estimates, so it is biased high by a few standard errors"
       ],
       "points_pass": null,
-      "points_total": 5,
+      "points_total": 45,
       "row": "Input-referred offset",
       "source": {
         "experiment": "offset-mc",
-        "path": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
-        "record_id": "20261009-072205-96bf3cc",
-        "sha256": "41875da9bf6d443905603251c0b36e044f137e94f7f9a01faf4fce4f4f854e04"
+        "path": "sim/offset-mc/records/20261010-083043-ddf96db.md",
+        "record_id": "20261010-083043-ddf96db",
+        "sha256": "f64e28119b83d5c3e5d81a39166ff0534be976748197830f2701fd36174d1913"
       },
       "spec_bound": "open",
       "status": "measured-no-bound",
       "verdict": null,
-      "worst": "sigma 5.006 mV (3 sigma 15.017 mV)",
-      "worst_corner": "sf (corner only; 27 C / 3.30 V)"
+      "worst": "|mean| + 3 sigma 15.458 mV (mean -0.619 mV, sigma 4.946 mV)",
+      "worst_corner": "typical / 27 C / 3.30 V"
     },
     {
       "bound_open": false,
@@ -1446,18 +1481,19 @@
       "backend": "aws-batch-fleet",
       "dut_sha256": "81fbd914f8254a49",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g4cbdfa769875",
+      "klt_client": "0.7.0+g5e5b55992a7f",
       "measurement_config": {
-        "detail": "this record predates measurement fingerprinting",
-        "status": "unknown"
+        "fingerprint": "d433e96768d0fd07b324bfe95537379bd8e9782e81503771e86a6e443fb2d348",
+        "status": "current",
+        "version": 1
       },
       "ngspice_engine": null,
-      "ngspice_local": "42",
-      "path": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
+      "ngspice_local": "46",
+      "path": "sim/offset-mc/records/20261010-083043-ddf96db.md",
       "pdk_client_resolved": null,
       "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261009-072205-96bf3cc",
-      "sha256": "41875da9bf6d443905603251c0b36e044f137e94f7f9a01faf4fce4f4f854e04"
+      "record_id": "20261010-083043-ddf96db",
+      "sha256": "f64e28119b83d5c3e5d81a39166ff0534be976748197830f2701fd36174d1913"
     },
     "psrr": {
       "backend": "aws-batch-fleet",
@@ -1513,7 +1549,7 @@
   },
   "spec": {
     "path": "spec/target-spec.md",
-    "sha256": "b92134564488d774886b98aae3305709c2f97e8ddceb97af86e7cc847c67058f"
+    "sha256": "db1be1faa87b75cdc5f14df3fca4a15c714fa0fb516181b303fcc177a84561f2"
   },
   "summary": {
     "fail": 1,

@@ -60,13 +60,11 @@ MULTI_RECORD = {"slew-swing-power": ("power", "slew", "swing")}
 #: must not select them: the gain-gbw-pm RZ x CC passive-corner study
 #: (`run_gain_gbw_pm.py --passive-corners`, issue #70) and the slew/swing/power
 #: one (`run_slew_swing_power.py --passive-corners`, issue #97). The offset
-#: Monte Carlo PVT-grid record (`run_offset_mc.py --grid full`, issue #106)
-#: has its own per-point layout the offset extractor does not read; until the
-#: report learns it, the report keeps citing the 27 C / 3.30 V record.
+#: Monte Carlo PVT-grid record (`run_offset_mc.py --grid full`, issue #106) is
+#: NOT a side study: the offset extractor reads its per-point layout (issue #120).
 STUDY_TITLES = {
     "gain-gbw-pm": ("# gain/GBW/PM passive-corner study",),
     "slew-swing-power": ("# slew/swing/power passive-corner study",),  # issue #97
-    "offset-mc": ("# Offset Monte Carlo PVT grid record",),  # issue #106
 }
 CORNER_ORDER = ["typical", "ff", "ss", "fs", "sf"]
 FULL_GRID = 45
@@ -180,9 +178,10 @@ def coverage_text(c: dict) -> str:
         return (f"{len(c['corners'])} MOS corners ({', '.join(c['corners'])}) x "
                 f"N={c['mc_samples_per_corner']} mismatch samples at {c['temps_c'][0]} C, "
                 f"{c['vdd_v'][0]} V only ({c['points']} corner points)")
+    tail = (f", N={c['mc_samples_per_point']} mismatch samples per point" if "mc_samples_per_point" in c else "")
     return (f"{len(c['corners'])} MOS corners ({', '.join(c['corners'])}) x "
             f"{len(c['temps_c'])} T ({', '.join(str(t) for t in c['temps_c'])} C) x "
-            f"{len(c['vdd_v'])} VDD ({', '.join(c['vdd_v'])} V) = {c['points']} points")
+            f"{len(c['vdd_v'])} VDD ({', '.join(c['vdd_v'])} V) = {c['points']} points" + tail)
 
 
 # --------------------------------------------------------------------------
@@ -275,7 +274,264 @@ def extract_noise(text: str, label: str) -> dict:
             "floor": fl.groups() if fl else None, "limitations": lim}
 
 
+OFFSET_GRID_TITLE = "# Offset Monte Carlo PVT grid record"
+OFFSET_NOMINAL_TITLE = "# Offset Monte Carlo record"
+#: Ratified statistical basis of the offset row (spec Sec. 2, [DR-2]): mismatch MC N >= 300.
+OFFSET_MIN_N = 300
+#: Display precision of the grid record: mV values at 3 decimals, skew / excess kurtosis at 2.
+_MV_TOL = 0.0005 + 1e-6
+_MOM_TOL = 0.005 + 1e-6
+
+
 def extract_offset(text: str, label: str) -> dict:
+    """Offset Monte Carlo record of either committed format.
+
+    The issue #45 nominal record (five MOS corners at 27 C / 3.30 V) and the
+    issue #106 full PVT grid record (`run_offset_mc.py --grid full`) differ in
+    population and layout; the title line decides which parser reads it, and a
+    record that matches neither is rejected rather than guessed at.
+    """
+    head = text.lstrip()
+    if head.startswith(OFFSET_GRID_TITLE):
+        return extract_offset_grid(text, label)
+    if head.startswith(OFFSET_NOMINAL_TITLE):
+        return extract_offset_nominal(text, label)
+    raise ReportError(f"{label}: unknown offset record format (title is neither '{OFFSET_NOMINAL_TITLE}' "
+                      f"nor '{OFFSET_GRID_TITLE}')")
+
+
+def _okey(proc: str, t, v) -> tuple:
+    """Typed offset grid point key: (process, T in C as '%g', VDD in V as '%.2f')."""
+    return (str(proc), f"{float(t):g}", f"{float(v):.2f}")
+
+
+def offset_stats(values: list) -> dict:
+    """Per-point offset statistics in mV, the driver's definitions
+    (`sim/offset-mc/run_offset_mc.py` stats_of: sample sigma (n-1), population
+    skew / excess kurtosis); a parity test pins the two together."""
+    import math
+    import statistics
+    n = len(values)
+    if n < 2 or not all(math.isfinite(x) for x in values):
+        raise ValueError("need at least two finite samples")
+    mean = statistics.fmean(values)
+    sigma = statistics.stdev(values)
+    m2 = sum((x - mean) ** 2 for x in values) / n
+    skew = sum((x - mean) ** 3 for x in values) / n / m2 ** 1.5 if m2 > 0 else 0.0
+    kurt = sum((x - mean) ** 4 for x in values) / n / m2 ** 2 - 3.0 if m2 > 0 else 0.0
+    return {"n": n, "mean": mean * 1e3, "sigma": sigma * 1e3, "three_sigma": 3 * sigma * 1e3,
+            "abs3": (abs(mean) + 3 * sigma) * 1e3, "min": min(values) * 1e3, "max": max(values) * 1e3,
+            "skew": skew, "ex_kurt": kurt}
+
+
+_OG_COLS = ("mean", "sigma", "three_sigma", "abs3", "min", "max", "skew", "ex_kurt")
+
+
+def _offset_worst(stats: dict, order: list) -> dict:
+    """Worst point by sigma and by |mean| + 3 sigma (ties: first in grid order, as the driver)."""
+    return {"sigma": max(order, key=lambda k: stats[k]["sigma"]),
+            "abs3": max(order, key=lambda k: stats[k]["abs3"])}
+
+
+def extract_offset_grid(text: str, label: str) -> dict:
+    """Full PVT grid offset record (issue #106): every (process, T, VDD) point's statistics,
+    the worst sigma / worst |mean| + 3 sigma points and the T x VDD worst-corner table,
+    each re-derived from the record's own per-point table. The point set and N are those of
+    the record's retained measurement-fingerprint inputs (hash-verified), so a missing,
+    duplicate or unexpected point, or a point with too few samples, is rejected.
+
+    The retained per-sample evidence (offset_samples.csv) is cross-checked separately
+    (`offset_grid_crosscheck`), since it lives beside the record rather than in it.
+    """
+    prov = parse_provenance(text, label)
+    fp = parse_fingerprint(text, label)
+    if fp is None:
+        raise ReportError(f"{label}: offset grid record carries no measurement fingerprint, so its PVT point set "
+                          "and sample count cannot be established")
+    inp = fp["inputs"]
+    try:
+        if inp.get("grid") != "full":
+            raise KeyError("grid")
+        ax = inp["corners"]
+        procs, temps, sups, vcms = ax["process"], ax["temperature_c"], ax["supply_v"], ax["vcm_v"]
+        n_want = int(inp["monte_carlo"]["n"])
+    except (KeyError, TypeError, ValueError):
+        raise ReportError(f"{label}: retained measurement-fingerprint inputs do not describe a full offset grid "
+                          "(need \"grid\": \"full\", corners.process/temperature_c/supply_v/vcm_v and monte_carlo.n)") from None
+    if len(vcms) != len(sups):
+        raise ReportError(f"{label}: retained inputs pair {len(vcms)} VCM values with {len(sups)} supplies")
+    order = [_okey(p, t, v) for p in procs for t in temps for v in sups]  # driver's grid order
+    if len(set(order)) != len(order):
+        raise ReportError(f"{label}: retained inputs repeat a grid axis value")
+    if n_want < OFFSET_MIN_N:
+        raise ReportError(f"{label}: insufficient samples: the record's Monte Carlo request is N={n_want} per point; "
+                          f"the offset row's ratified statistical basis needs N >= {OFFSET_MIN_N}")
+    req = re.search(r"^- \*\*Request\*\*:.*?= (\d+) points, `monte_carlo = \{n: (\d+),", header_of(text), re.M)
+    if not req or (int(req.group(1)), int(req.group(2))) != (len(order), n_want):
+        raise ReportError(f"{label}: request line missing or disagrees with the retained inputs "
+                          f"({len(order)} points, N={n_want} per point)")
+
+    # ---- per-point statistics table ----
+    sec = section(text, "Offset statistics per grid point")
+    lines = [ln for ln in sec.splitlines() if ln.startswith("|")]
+    if len(lines) < 3:
+        raise ReportError(f"{label}: no per-point table under '## Offset statistics per grid point'")
+    stats: dict = {}
+    for ln in lines[2:]:
+        c = split_cells(ln.replace("\\|", "/"))
+        if len(c) != 12:
+            raise ReportError(f"{label}: malformed per-point offset row: {ln.strip()}")
+        try:
+            k = _okey(c[0], c[1], c[2])
+            n = int(c[3])
+        except ValueError:
+            raise ReportError(f"{label}: malformed per-point offset row: {ln.strip()}") from None
+        if k in stats:
+            raise ReportError(f"{label}: duplicate grid point {fmt_point(*k)} in the per-point table")
+        if k not in order:
+            raise ReportError(f"{label}: unexpected grid point {fmt_point(*k)} (not in the retained grid axes)")
+        if n != n_want:
+            raise ReportError(f"{label}: insufficient samples at {fmt_point(*k)}: N={n}, the request is N={n_want} "
+                              "per point")
+        try:
+            stats[k] = {"n": n, **{col: float(v.replace("+", "")) for col, v in zip(_OG_COLS, c[4:])}}
+        except ValueError:
+            raise ReportError(f"{label}: malformed per-point offset row: {ln.strip()}") from None
+    missing = [k for k in order if k not in stats]
+    if missing:
+        raise ReportError(f"{label}: per-point table is missing {len(missing)} of {len(order)} grid points "
+                          f"(first: {fmt_point(*missing[0])})")
+    for k, s in stats.items():
+        if (abs(s["three_sigma"] - 3 * s["sigma"]) > 3 * _MV_TOL + _MV_TOL
+                or abs(s["abs3"] - (abs(s["mean"]) + s["three_sigma"])) > 2 * _MV_TOL + _MV_TOL
+                or not s["min"] <= s["mean"] <= s["max"] or s["sigma"] <= 0):
+            raise ReportError(f"{label}: inconsistent summary at {fmt_point(*k)}: its 3 sigma, |mean| + 3 sigma, "
+                              "min/max or sigma columns disagree with each other")
+
+    # ---- headline worst points ----
+    hl = section(text, "Worst point")
+    we = re.search(r"^- \*\*Worst linear 3-sigma offset over the (\d+)-point grid\*\*: \*\*([\d.]+) mV\*\* at "
+                   r"`" + _PT + r"` \(mean ([+-][\d.]+), sigma ([\d.]+), 3 sigma ([\d.]+)\)$", hl, re.M)
+    ws = re.search(r"^- \*\*Worst sigma over the grid\*\*: ([\d.]+) mV \(3 sigma ([\d.]+)\) at `" + _PT + r"`$", hl, re.M)
+    if not (we and ws):
+        raise ReportError(f"{label}: no worst-point headline lines (worst linear 3-sigma offset / worst sigma)")
+    w = _offset_worst(stats, order)
+    ka, ks = _okey(*we.groups()[2:5]), _okey(*ws.groups()[2:5])
+    sa, ss_ = stats[w["abs3"]], stats[w["sigma"]]
+    if (int(we.group(1)) != len(order) or ka != w["abs3"]
+            or any(abs(float(x) - sa[col]) > _MV_TOL for x, col in
+                   ((we.group(2), "abs3"), (we.group(6), "mean"), (we.group(7), "sigma"), (we.group(8), "three_sigma")))):
+        raise ReportError(f"{label}: headline worst |mean| + 3 sigma ({we.group(2)} mV at {fmt_point(*ka)}) disagrees "
+                          f"with its own per-point table ({sa['abs3']:.3f} mV at {fmt_point(*w['abs3'])})")
+    if (ks != w["sigma"] or abs(float(ws.group(1)) - ss_["sigma"]) > _MV_TOL
+            or abs(float(ws.group(2)) - ss_["three_sigma"]) > _MV_TOL):
+        raise ReportError(f"{label}: headline worst sigma ({ws.group(1)} mV at {fmt_point(*ks)}) disagrees with its "
+                          f"own per-point table ({ss_['sigma']:.3f} mV at {fmt_point(*w['sigma'])})")
+
+    # ---- T x VDD worst-corner table ----
+    tv = section(text, "Linear 3-sigma offset by temperature and supply")
+    tv_rows = [split_cells(ln) for ln in tv.splitlines() if ln.startswith("|")][2:]
+    by_tv = {}
+    for c in tv_rows:
+        m = re.fullmatch(r"(-?\d+) C", c[0]) if c else None
+        if not m or len(c) != len(sups) + 1:
+            raise ReportError(f"{label}: malformed temperature x supply row: {' | '.join(c)}")
+        for v, cell in zip(sups, c[1:]):
+            mc_ = re.fullmatch(r"([\d.]+) \((\w+)\)", cell)
+            if not mc_:
+                raise ReportError(f"{label}: malformed temperature x supply cell '{cell}'")
+            by_tv[(f"{float(m.group(1)):g}", f"{float(v):.2f}")] = (float(mc_.group(1)), mc_.group(2))
+    worst_tv = []
+    for t in temps:
+        for v in sups:
+            tk = (f"{float(t):g}", f"{float(v):.2f}")
+            pts = [k for k in order if k[1:] == tk]
+            kk = max(pts, key=lambda k: stats[k]["abs3"])
+            got = by_tv.get(tk)
+            if got is None or got[1] != kk[0] or abs(got[0] - stats[kk]["abs3"]) > _MV_TOL:
+                raise ReportError(f"{label}: temperature x supply table at {tk[0]} C / {tk[1]} V "
+                                  f"({'missing' if got is None else f'{got[0]:.3f} ({got[1]})'}) disagrees with its own "
+                                  f"per-point table ({stats[kk]['abs3']:.3f} ({kk[0]}))")
+            worst_tv.append(kk)
+    if len(by_tv) != len(temps) * len(sups):
+        raise ReportError(f"{label}: temperature x supply table has {len(by_tv)} cells, the grid "
+                          f"{len(temps) * len(sups)}")
+
+    n_total = len(order) * n_want
+    valid = re.search(r"^Result: all (\d+) samples valid;", section(text, "Extraction validation"), re.M)
+    if not valid or int(valid.group(1)) != n_total:
+        raise ReportError(f"{label}: extraction validation does not state all {n_total} samples valid "
+                          "(the record lists problems, or its count disagrees with the grid)")
+    pts = set(order)
+    cov = coverage_of(pts)
+    cov["mc_samples_per_point"] = n_want
+    se = re.search(r"sigma relative standard error ~ ([\d.]+) %", hl)
+    lim = common_limitations(text, prov, cov)
+    lim.append("mismatch Monte Carlo of the offset only; no numeric bound proposed or judged "
+               "(DR-3 residual e2; the bound is spec issue #62's decision)")
+    if se:
+        lim.append(f"sigma relative standard error ~ {se.group(1)} % at the stated N per point; the worst of "
+                   f"{len(order)} points is a maximum over noisy estimates, so it is biased high by a few standard errors")
+    return {"prov": prov, "coverage": cov, "grid": True, "order": order, "stats": stats, "n_per_point": n_want,
+            "vcm_of": {f"{float(v):.2f}": float(vc) for v, vc in zip(sups, vcms)},
+            "worst": w, "worst_tv": worst_tv, "n_total": n_total, "limitations": lim}
+
+
+def offset_grid_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
+    """Re-derive every point's displayed statistics, and the worst points, from the record's
+    retained per-sample evidence (corners/<rid>/offset_samples.csv), within the record's display
+    precision. Offline; no simulator."""
+    import csv
+    import math
+    rel = f"sim/offset-mc/corners/{rid}/offset_samples.csv"
+    p = root / rel
+    if not p.is_file():
+        raise ReportError(f"{label}: retained per-sample evidence is missing: {rel} (the record's statistics cannot "
+                          "be cross-checked)")
+    need = ("corner", "temperature_c", "vdd_v", "vcm_v", "sample_index", "offset_v")
+    by: dict = {}
+    seen = set()
+    with p.open(newline="") as fh:
+        rd = csv.DictReader(fh)
+        if not rd.fieldnames or any(f not in rd.fieldnames for f in need):
+            raise ReportError(f"{label}: {rel} lacks the columns {list(need)}")
+        for r in rd:
+            try:
+                k = _okey(r["corner"], r["temperature_c"], r["vdd_v"])
+                idx, vcm, off = int(r["sample_index"]), float(r["vcm_v"]), float(r["offset_v"])
+            except (ValueError, KeyError, TypeError):
+                raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
+            if k not in ex["stats"]:
+                raise ReportError(f"{label}: {rel}: sample at unexpected grid point {fmt_point(*k)}")
+            if (k, idx) in seen:
+                raise ReportError(f"{label}: {rel}: duplicate sample index {idx} at {fmt_point(*k)}")
+            if not math.isfinite(off) or abs(vcm - ex["vcm_of"][k[2]]) > 1e-6:
+                raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)} (non-finite offset or VCM "
+                                  f"{vcm:g} V, not the commanded {ex['vcm_of'][k[2]]:g} V)")
+            seen.add((k, idx))
+            by.setdefault(k, []).append(off)
+    stats = {}
+    for k in ex["order"]:
+        vals = by.get(k, [])
+        if len(vals) != ex["n_per_point"]:
+            raise ReportError(f"{label}: insufficient samples in {rel} at {fmt_point(*k)}: {len(vals)}, the record "
+                              f"states N={ex['n_per_point']}")
+        s = stats[k] = offset_stats(vals)
+        rec = ex["stats"][k]
+        bad = [col for col in _OG_COLS
+               if abs(rec[col] - s[col]) > (_MOM_TOL if col in ("skew", "ex_kurt") else _MV_TOL)]
+        if bad:
+            raise ReportError(f"{label}: inconsistent summary at {fmt_point(*k)}: the record's {', '.join(bad)} "
+                              f"disagree(s) with the retained evidence {rel} (e.g. {bad[0]} "
+                              f"{rec[bad[0]]:.3f} vs {s[bad[0]]:.3f})")
+    w = _offset_worst(stats, ex["order"])
+    if w != ex["worst"]:
+        raise ReportError(f"{label}: the record's worst points ({fmt_point(*ex['worst']['abs3'])} by |mean| + 3 sigma, "
+                          f"{fmt_point(*ex['worst']['sigma'])} by sigma) disagree with the retained evidence {rel}")
+    return {"path": rel, "sha256": sha256_file(p), "samples": len(seen), "points": len(stats)}
+
+
+def extract_offset_nominal(text: str, label: str) -> dict:
     prov = parse_provenance(text, label)
     sec = section(text, "Offset statistics per corner")
     rows = []
@@ -1224,6 +1480,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                     ex["limitations"].append(
                         f"the record has an addendum ({ex['addendum']['path']}, sha256 {ex['addendum']['sha256'][:16]}) "
                         "with disclosures and presentation corrections; read it with the record")
+            if exp == "offset-mc" and ex.get("grid"):
+                ex["retained"] = offset_grid_crosscheck(root, p.stem, ex, f"{exp}:{p.stem}")
             if w:
                 ex["limitations"].append(w)
                 for r_ in ex.get("rows", {}).values():
@@ -1318,8 +1576,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
         glob_lim.append("ngspice versions differ: " + "; ".join(f"ngspice {k} <- {', '.join(v)}" for k, v in sorted(engs.items())))
     covs = {(e["coverage"]["points"], tuple(e["coverage"]["temps_c"]), tuple(e["coverage"]["vdd_v"])) for e in extracted.values()}
     if len(covs) > 1:
-        glob_lim.append("coverage differs between sources (see each row's coverage; e.g. the offset Monte Carlo is "
-                        "5 corner points at nominal T/VDD while the AC rows are full 45-point grids)")
+        glob_lim.append("coverage differs between sources (see each row's coverage; e.g. a nominal-T/VDD offset "
+                        "Monte Carlo record is 5 corner points while the AC rows are full 45-point grids)")
     for exp in EXPERIMENTS:
         if not selected_records(exp, exps.get(exp)):
             glob_lim.append(f"no record selected for {exp}: " + (
@@ -1407,6 +1665,29 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                                        "value": f"{ex['floor'][0]} .. {ex['floor'][1]} nV/rtHz", "corner": None})
                 row["figures"].append({"label": "1/f corner range over the grid",
                                        "value": f"{ex['floor'][2]} .. {ex['floor'][3]} kHz", "corner": None})
+        elif k == "offset" and "offset-mc" in extracted and extracted["offset-mc"].get("grid"):
+            ex = extracted["offset-mc"]
+            st, wa, wsg = ex["stats"], ex["worst"]["abs3"], ex["worst"]["sigma"]
+            a3 = st[wa]
+            row.update(status="measured-no-bound",
+                       worst=f"|mean| + 3 sigma {a3['abs3']:.3f} mV (mean {a3['mean']:+.3f} mV, sigma {a3['sigma']:.3f} mV)",
+                       worst_corner=fmt_point(*wa), coverage=ex["coverage"], limitations=list(ex["limitations"]),
+                       source=src("offset-mc"), points_total=ex["coverage"]["points"])
+            row["figures"].append({"label": "worst sigma over the grid",
+                                   "value": f"{st[wsg]['sigma']:.3f} mV (3 sigma {st[wsg]['three_sigma']:.3f} mV)",
+                                   "corner": fmt_point(*wsg)})
+            sig = [st[q]["sigma"] for q in ex["order"]]
+            row["figures"].append({"label": f"sigma range over the {len(sig)} points, N={ex['n_per_point']} each",
+                                   "value": f"{min(sig):.3f} .. {max(sig):.3f} mV", "corner": None})
+            row["figures"].append({"label": "largest |mean| (systematic plus sampling) over the grid",
+                                   "value": f"{max(abs(st[q]['mean']) for q in ex['order']):.3f} mV", "corner": None})
+            for q in ex["worst_tv"]:
+                row["figures"].append({"label": f"worst |mean| + 3 sigma at {q[1]} C / {q[2]} V (over the MOS corners)",
+                                       "value": f"{st[q]['abs3']:.3f} mV", "corner": fmt_point(*q)})
+            rv = ex["retained"]
+            row["figures"].append({"label": "per-point statistics re-derived from the retained samples",
+                                   "value": f"{rv['samples']} samples at {rv['points']} points agree with the record "
+                                            f"({rv['path']}, sha256 {rv['sha256'][:16]})", "corner": None})
         elif k == "offset" and "offset-mc" in extracted:
             ex = extracted["offset-mc"]
             c, sg, tsg = ex["worst_sigma"]
@@ -1566,8 +1847,9 @@ def render_md(rep: dict) -> str:
             sc = "not graded (see spec status)"
             if r.get("icmr"):  # source-pinned measurement, still not graded
                 sc = f"not graded; measured in {sc_link(r['source'])}"
-        a(f"| {r['row']} | {bound} | {r['status']} | {verdict} | {pts} | {r['worst'] or '-'} | "
-          f"{r['worst_corner'] or '-'} | {sc} |")
+        cell = lambda s: (s or "-").replace("|", "\\|")  # e.g. the offset row's "|mean| + 3 sigma"
+        a(f"| {r['row']} | {bound} | {r['status']} | {verdict} | {pts} | {cell(r['worst'])} | "
+          f"{cell(r['worst_corner'])} | {sc} |")
     a("")
     a("## Row details")
     for r in rep["rows"]:

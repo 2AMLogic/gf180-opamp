@@ -81,8 +81,10 @@ class Committed(Base):
         for k in sc.ROW_EXPERIMENT:
             self.assertIn(k, rows)
             self.assertTrue(rows[k], f"row {k} cites no record")
-        # the offset cell contains an escaped `\|mean\|`; its citation sits after it
-        self.assertEqual([c["rid"] for c in rows["offset"]], ["20261009-072205-96bf3cc"])
+        # the offset cell contains an escaped `\|mean\|`; its citations sit after it: the selected
+        # full-grid record (issue #120), then the nominal record labelled historical
+        self.assertEqual([(c["rid"], c["labelled"]) for c in rows["offset"]],
+                         [("20261010-083043-ddf96db", False), ("20261009-072205-96bf3cc", True)])
         self.assertEqual(rows["area"], [])
 
     def test_labelled_passive_and_superseded_citations_are_exempt(self):

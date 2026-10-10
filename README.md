@@ -31,8 +31,9 @@ below:
 - **Measured, bound still open (no verdict):** input-referred noise
   ([`20261009-082007-68b4567`](sim/noise/records/20261009-082007-68b4567.md),
   45 points), input offset mismatch Monte Carlo
-  ([`20261009-072205-96bf3cc`](sim/offset-mc/records/20261009-072205-96bf3cc.md),
-  five process corners x 300 samples at 27 C / 3.30 V only), CMRR
+  ([`20261010-083043-ddf96db`](sim/offset-mc/records/20261010-083043-ddf96db.md),
+  45-point PVT grid x 300 samples per point; worst |mean| + 3 sigma 15.458 mV
+  at typical / 27 C / 3.30 V), CMRR
   ([`20261009-105631-30ec86d`](sim/cmrr/records/20261009-105631-30ec86d.md))
   and PSRR
   ([`20261009-105929-30ec86d`](sim/psrr/records/20261009-105929-30ec86d.md)),
