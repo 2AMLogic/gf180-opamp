@@ -37,6 +37,11 @@ export, a missing symbol or an empty subcircuit fail it. Reproduce locally
 with `python3 sim/ci_netlist_check.py` (tests: `python3 sim/test_netlist_check.py`);
 a mismatch means regenerate the netlist per `design/README.md`.
 
+It also runs `python3 ../design/check_dc_op.py` (issue #96), the schematic
+bias/convergence smoke check (one nominal local ngspice point; the selftest
+fails if it exits non-zero). It writes nothing unless `--deck` is passed, which
+the selftest does not do, so the checkout stays clean.
+
 **xschem pin: 3.4.7**, built from upstream commit
 `92dd8fe5f4d5c1057489710d8a22f18fdc9d7ed0` (what tag `3.4.7` points at),
 not from apt (ubuntu-24.04 ships 3.4.4, which formats the export differently).

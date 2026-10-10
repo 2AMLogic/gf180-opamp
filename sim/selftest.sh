@@ -15,6 +15,9 @@ echo "== design: committed netlist vs fresh xschem export (scratch dir; issue #7
 python3 test_netlist_check.py
 python3 ci_netlist_check.py
 
+echo "== design: schematic bias/convergence smoke check (one nominal local ngspice point; writes nothing; issue #96) =="
+python3 ../design/check_dc_op.py
+
 echo "== sim/report: characterization report generator tests + staleness check (no simulator) =="
 python3 report/test_report.py
 python3 report/characterization_report.py --check
