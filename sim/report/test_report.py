@@ -35,6 +35,9 @@ def make_root(tmp: Path) -> Path:
         dst = tmp / p.relative_to(REPO)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(p, dst)
+    net = tmp / "design" / "netlist"
+    net.mkdir(parents=True, exist_ok=True)
+    shutil.copy(REPO / "design" / "netlist" / "opamp_two_stage.spice", net / "opamp_two_stage.spice")
     (tmp / "spec").mkdir(parents=True, exist_ok=True)
     shutil.copy(REPO / "spec" / "target-spec.md", tmp / "spec" / "target-spec.md")
     return tmp
@@ -218,6 +221,54 @@ class Mutations(unittest.TestCase):
 
     def test_unmodified_copy_matches_committed(self):
         self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
+
+    NET = "design/netlist/opamp_two_stage.spice"
+
+    def test_stale_dut_width_change_rejected(self):
+        # all records retained; only the current netlist changes (issue #75)
+        p = self.root / self.NET
+        t = p.read_text()
+        self.assertIn("W=72u", t)
+        p.write_text(t.replace("W=72u", "W=73u", 1))
+        with self.assertRaisesRegex(cr.ReportError, r"stale DUT.*Experiments needing a rerun: cmrr, gain-gbw-pm"):
+            self.build()
+
+    def test_stale_dut_check_cli_fails_and_writes_nothing(self):
+        p = self.root / self.NET
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        out = self.root / "o"
+        self.assertEqual(cr.main(["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(out), "--check"]), 2)
+        self.assertFalse(out.exists())
+
+    def test_wrapper_and_whitespace_normalisation_passes(self):
+        p = self.root / self.NET
+        t = p.read_text()
+        self.assertRegex(t, r"(?m)^\*\*\.subckt")
+        t2 = re.sub(r"(?m)^\*\*\.(subckt|ends)", r".\1", t)  # already-uncommented wrapper
+        t2 = "\n".join(l + "  " if l.startswith("M") else l for l in t2.splitlines()) + "\n"
+        self.assertNotEqual(t, t2)
+        p.write_text(t2)
+        self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
+
+    def test_archival_marks_report_and_skips_gate(self):
+        p = self.root / self.NET
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        rep = cr.build(self.root, manifest(), archival=True)
+        self.assertTrue(rep["archival"])
+        self.assertIn("ARCHIVAL", cr.render_md(rep))
+
+    def test_archival_cannot_supply_signoff_outputs(self):
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        base = ["--root", str(self.root), "--manifest", str(mp), "--archival"]
+        self.assertEqual(cr.main(base), 2)  # needs explicit destination
+        self.assertEqual(cr.main(base + ["--out-dir", str(self.root / "o"), "--check"]), 2)
+        self.assertEqual(cr.main(base + ["--out-dir", str(self.root / cr.OUT_DIR_REL)]), 2)
+        out = self.root / "o"
+        self.assertEqual(cr.main(base + ["--out-dir", str(out)]), 0)
+        self.assertFalse((out / f"{cr.OUT_NAME}.evidence.json").exists())
 
     def test_missing_record(self):
         (self.root / "sim/noise/records/20261009-082007-68b4567.md").unlink()

@@ -41,6 +41,7 @@ DEFAULT_ROOT = HERE.parent.parent
 DEFAULT_MANIFEST = HERE / "selection.json"
 OUT_DIR_REL = "sim/reports"
 OUT_NAME = "characterization-report"
+DUT_REL = "design/netlist/opamp_two_stage.spice"
 
 EXPERIMENTS = ["gain-gbw-pm", "offset-mc", "noise", "cmrr", "psrr", "slew-swing-power"]
 #: Experiments whose rows may come from different records: a record may judge
@@ -535,7 +536,28 @@ def bound_in_spec(record_bound: str, spec_target: str) -> bool:
 # --------------------------------------------------------------------------
 # build
 # --------------------------------------------------------------------------
-def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md") -> dict:
+def current_dut_sha256(root: Path) -> str:
+    """sha256 of the current netlist under the simulation drivers' normaliser.
+
+    Same bytes the drivers hash (`sim/harness.py` normalize_dut_text), so it is
+    comparable with the `normalised sha256` every record carries. No simulator.
+    """
+    path = root / DUT_REL
+    if not path.is_file():
+        raise ReportError(f"current DUT netlist is missing: {DUT_REL}")
+    sys.path.insert(0, str(HERE.parent))
+    try:
+        import harness
+    finally:
+        sys.path.pop(0)
+    try:
+        text = harness.normalize_dut_text(path.read_text())
+    except SystemExit as e:  # check_dc_op exits when the subckt is absent
+        raise ReportError(f"{DUT_REL}: cannot normalise current netlist: {e}") from e
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", archival: bool = False) -> dict:
     exps = manifest["experiments"]
     allow = set(manifest.get("allow_superseded", []))
     sources, extracted, warnings = {}, {}, []
@@ -582,6 +604,19 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md") -> 
                           "); regenerate the stale experiment(s) against the same netlist")
     dut_prefix = next(iter(duts), None)
     dut_full = next((s["dut_sha256"] for s in sources.values() if len(s["dut_sha256"]) == 64), None)
+    # Current-design gate (issue #75): the selected records must measure the
+    # netlist as it is now. Archival mode skips this and is marked as such.
+    if not archival:
+        cur = current_dut_sha256(root)
+        stale = sorted(e for e, s in sources.items() if not cur.startswith(s["dut_prefix"]))
+        if stale:
+            raise ReportError(
+                f"stale DUT: selected records do not match the current {DUT_REL} "
+                f"(normalised sha256 {cur[:16]}); records measured {dut_prefix}. "
+                "Experiments needing a rerun: " + ", ".join(stale) +
+                ". Rerun them (sim/characterize.sh, or each sim/<experiment>/run_*.py) to append new "
+                "records, then regenerate the report; existing records are append-only and are not edited. "
+                "For a historical (non-signoff) report use --archival with an explicit --out-dir.")
 
     # report-level provenance limitations
     glob_lim = []
@@ -728,9 +763,11 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md") -> 
     })
 
     verdicts = [r["verdict"] for r in out_rows if r["verdict"]]
-    return {
+    extra = {"archival": True} if archival else {}  # key absent in current-design reports (bytes unchanged)
+    return {**extra,
         "schema": SCHEMA,
-        "title": "gf180-opamp characterization report (generated; not evidence)",
+        "title": ("gf180-opamp characterization report (ARCHIVAL: not current-design signoff evidence)"
+                  if archival else "gf180-opamp characterization report (generated; not evidence)"),
         "dut": {"netlist": "design/netlist/opamp_two_stage.spice", "normalised_sha256_prefix": dut_prefix,
                 "normalised_sha256": dut_full},
         "spec": {"path": spec_rel, "sha256": sha256_file(root / spec_rel)},
@@ -868,8 +905,8 @@ def render_evidence(report_json: str) -> str:
 # --------------------------------------------------------------------------
 # CLI
 # --------------------------------------------------------------------------
-def generate(root: Path, manifest_path: Path, spec_rel: str = "spec/target-spec.md") -> tuple:
-    rep = build(root, load_manifest(manifest_path), spec_rel)
+def generate(root: Path, manifest_path: Path, spec_rel: str = "spec/target-spec.md", archival: bool = False) -> tuple:
+    rep = build(root, load_manifest(manifest_path), spec_rel, archival)
     return render_md(rep), render_json(rep)
 
 
@@ -882,8 +919,20 @@ def main(argv=None) -> int:
     ap.add_argument("--latest", action="store_true", help="select the newest record of every experiment (used by characterize.sh)")
     ap.add_argument("--update-manifest", action="store_true", help="with --latest: write the selection to --manifest first")
     ap.add_argument("--stdout", action="store_true", help="print the Markdown report instead of writing files")
+    ap.add_argument("--archival", action="store_true",
+                    help="historical report: skip the current-DUT gate. Needs --stdout or an explicit --out-dir, "
+                         "writes no evidence sidecar, and cannot be combined with --check or --latest")
     a = ap.parse_args(argv)
     root = a.root.resolve()
+    if a.archival:
+        if a.check or a.latest or not (a.stdout or a.out_dir):
+            print("characterization_report: error: --archival needs --stdout or --out-dir and cannot be "
+                  "combined with --check/--latest (it cannot supply current-design signoff evidence)",
+                  file=sys.stderr)
+            return 2
+        if a.out_dir and a.out_dir.resolve() == (root / OUT_DIR_REL).resolve():
+            print(f"characterization_report: error: --archival must not write to {OUT_DIR_REL}", file=sys.stderr)
+            return 2
     out_dir = (a.out_dir or root / OUT_DIR_REL)
     try:
         if a.latest:
@@ -893,15 +942,16 @@ def main(argv=None) -> int:
             rep = build(root, m)
             md, js = render_md(rep), render_json(rep)
         else:
-            md, js = generate(root, a.manifest)
+            md, js = generate(root, a.manifest, archival=a.archival)
     except ReportError as e:
         print(f"characterization_report: error: {e}", file=sys.stderr)
         return 2
     if a.stdout:
         sys.stdout.write(md)
         return 0
-    targets = {out_dir / f"{OUT_NAME}.md": md, out_dir / f"{OUT_NAME}.json": js,
-               out_dir / f"{OUT_NAME}.evidence.json": render_evidence(js)}
+    targets = {out_dir / f"{OUT_NAME}.md": md, out_dir / f"{OUT_NAME}.json": js}
+    if not a.archival:
+        targets[out_dir / f"{OUT_NAME}.evidence.json"] = render_evidence(js)
     if a.check:
         bad = [str(p) for p, c in targets.items() if not p.is_file() or p.read_bytes() != c.encode("utf-8")]
         if bad:

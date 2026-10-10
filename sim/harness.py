@@ -225,20 +225,25 @@ def run_corner(deck: str, corner: str, temp_c: float, workdir: Path) -> "tuple[s
 # --------------------------------------------------------------------------
 
 
-def load_dut_text() -> str:
-    """The committed export as an includable subcircuit.
+def normalize_dut_text(export_text: str) -> str:
+    """Normalise an xschem export text into the includable subcircuit.
 
     Reuses `subckt_from_export()` from `design/check_dc_op.py` unchanged, so
-    the DC operating-point check and every testbench consume the export
-    through one conversion: uncomment xschem's `**.subckt`/`**.ends`, drop
-    `.end`.
+    the DC operating-point check, every testbench and the report's stale-DUT
+    gate (issue #75) consume the export through one conversion: uncomment
+    xschem's `**.subckt`/`**.ends`, drop `.end`.
     """
     design = str(REPO_ROOT / "design")
     if design not in sys.path:
         sys.path.insert(0, design)
     from check_dc_op import subckt_from_export
 
-    return subckt_from_export(DUT_EXPORT.read_text())
+    return subckt_from_export(export_text)
+
+
+def load_dut_text() -> str:
+    """The committed export as an includable subcircuit (see normalize_dut_text)."""
+    return normalize_dut_text(DUT_EXPORT.read_text())
 
 
 # --------------------------------------------------------------------------

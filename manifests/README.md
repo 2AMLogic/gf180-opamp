@@ -95,6 +95,22 @@ placeholder numbers. `rung` is `"below-T1"` while
 updates `spec/target-spec.md`'s "Consumers (non-normative)" section — not
 this file.
 
+## Stale-DUT gate and the rerun path
+
+The report generator (and `--check`, which CI runs without a simulator)
+compares every selected record's DUT hash with the current
+`design/netlist/opamp_two_stage.spice`, normalised by
+`sim/harness.py:normalize_dut_text` (the same normaliser the drivers hash).
+After any netlist change it fails with `stale DUT: ...` and names the
+experiments needing a rerun. Rerun path: run `sim/characterize.sh` (or the
+named `sim/<experiment>/run_*.py` drivers) to append new records, then
+`python3 sim/report/characterization_report.py --latest --update-manifest`,
+and regenerate the signoff record as below. Existing records are never
+edited. For a historical, non-signoff report use
+`characterization_report.py --archival --out-dir <dir>` (or `--stdout`): it is
+labelled ARCHIVAL, writes no evidence sidecar, and refuses `--check`,
+`--latest` and the default `sim/reports` directory.
+
 ## Regenerating the record
 
 If the characterization report inputs changed, first regenerate the report
