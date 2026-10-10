@@ -64,7 +64,6 @@ import hashlib
 import json
 import math
 import re
-import shutil
 import statistics
 import sys
 import tempfile
@@ -79,6 +78,7 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 
 from harness import (  # noqa: E402
     DUT_EXPORT,
+    DUT_INCLUDE_NAME,
     KltError,
     Pdk,
     allocate_record_id,
@@ -93,6 +93,7 @@ from harness import (  # noqa: E402
     run_klt_retrying,
     sanitise_report,
     load_sibling,
+    stage_workdir,
 )
 
 # One source for everything the fingerprint covers (issue #89).
@@ -167,7 +168,6 @@ def imbalance_dut(dut_text: str) -> str:
 # Source guards: the bench must stay tied to the committed design
 # --------------------------------------------------------------------------
 
-DUT_INCLUDE_NAME = "opamp_two_stage.dut.spice"
 _DEVICE_MODEL_RE = re.compile(
     r"\b(nfet|pfet|nmos|pmos|cap_mim|ppolyf|npolyf|nplus|pplus|diode|bjt)\w*", re.I
 )
@@ -285,19 +285,10 @@ def materialise(
     targets (absolute paths in `work`) and, for the switch-off control, the
     single `sw_stat_mismatch` value.
     """
-    tb = TESTBENCH.read_text()
-    errs = guard_testbench(tb)
-    if errs:
-        raise RuntimeError("testbench guard failed:\n  " + "\n  ".join(errs))
-    work.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(pdk.design_include, work / "design.ngspice")
-    dut = load_dut_text() if dut_text is None else dut_text
-    derrs = guard_dut(dut, allow_changed=allow_changed)
-    if derrs:
-        raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(derrs))
-    (work / DUT_INCLUDE_NAME).write_text(dut)
-    tb = tb.replace("'design.ngspice'", f"'{work / 'design.ngspice'}'")
-    tb = tb.replace("'opamp_two_stage.dut.spice'", f"'{work / DUT_INCLUDE_NAME}'")
+    tb = stage_workdir(
+        work, pdk, TESTBENCH.read_text(), guard_tb=guard_testbench,
+        guard_dut=lambda d: guard_dut(d, allow_changed=allow_changed), dut_text=dut_text,
+    )
     tb, n = _SWITCH_RE.subn(f".param sw_stat_mismatch={int(mismatch)}", tb)
     if n != 1:
         raise RuntimeError("testbench `.param sw_stat_mismatch=<0|1>` line not found exactly once")

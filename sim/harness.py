@@ -42,6 +42,12 @@ were previously copied into, or loaded by file path from, the individual
 experiment drivers; one copy here means the batch-submit retry policy
 (retry the same off-host submit on a capacity refusal, never fall back to
 another backend) is fixed in one place.
+
+Work-dir staging (issue #94): `stage_workdir` / `DUT_INCLUDE_NAME` -- the
+guard / copy `design.ngspice` / write DUT / rewrite-includes skeleton that
+every runner's `materialise()` previously repeated (and on which the copies
+had begun to drift). The guards themselves and the bench-specific `.param`
+/ `Ibias` substitution stay per-experiment.
 """
 
 from __future__ import annotations
@@ -50,6 +56,7 @@ import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -371,6 +378,51 @@ def normalize_dut_text(export_text: str) -> str:
 def load_dut_text() -> str:
     """The committed export as an includable subcircuit (see normalize_dut_text)."""
     return normalize_dut_text(DUT_EXPORT.read_text())
+
+
+# --------------------------------------------------------------------------
+# Per-run work-directory staging
+# --------------------------------------------------------------------------
+
+#: Name every committed testbench `.include`s the DUT under; `stage_workdir`
+#: writes the DUT to this file and rewrites the include to its absolute path.
+DUT_INCLUDE_NAME = "opamp_two_stage.dut.spice"
+
+
+def stage_workdir(
+    work: Path,
+    pdk: Pdk,
+    tb_text: str,
+    *,
+    guard_tb,
+    guard_dut,
+    dut_text: str | None = None,
+    tb_label: str = "testbench",
+) -> str:
+    """Stage one per-run work directory; return the include-rewritten bench text.
+
+    The skeleton every runner's `materialise()` shares (issue #94): guard the
+    committed bench text with `guard_tb`, create `work`, copy the PDK's
+    `design.ngspice` into it, guard the DUT (the committed export via
+    `load_dut_text`, or `dut_text` for a control) with `guard_dut`, write it
+    as `DUT_INCLUDE_NAME`, and rewrite the bench's two `.include` targets to
+    the absolute paths in `work`. Guards are per-bench callables returning a
+    list of error strings; either guard failing raises RuntimeError before
+    anything further is written. The bench-specific `.param` / `Ibias`
+    substitution and the `tb.spice` write stay with the caller.
+    """
+    errs = guard_tb(tb_text)
+    if errs:
+        raise RuntimeError(f"{tb_label} guard failed:\n  " + "\n  ".join(errs))
+    work.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(pdk.design_include, work / "design.ngspice")
+    dut = load_dut_text() if dut_text is None else dut_text
+    derrs = guard_dut(dut)
+    if derrs:
+        raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(derrs))
+    (work / DUT_INCLUDE_NAME).write_text(dut)
+    tb = tb_text.replace("'design.ngspice'", f"'{work / 'design.ngspice'}'")
+    return tb.replace(f"'{DUT_INCLUDE_NAME}'", f"'{work / DUT_INCLUDE_NAME}'")
 
 
 # --------------------------------------------------------------------------

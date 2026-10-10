@@ -22,6 +22,9 @@ python3 report/characterization_report.py --check
 echo "== sim: per-experiment measurement-configuration fingerprint modules (no simulator) =="
 python3 test_measurement_config.py
 
+echo "== sim: shared harness work-dir staging (no simulator, no PDK) =="
+python3 test_harness.py
+
 echo "== sim/gain-gbw-pm: extraction + source-guard tests (no simulator) =="
 python3 gain-gbw-pm/test_gain_gbw_pm.py
 

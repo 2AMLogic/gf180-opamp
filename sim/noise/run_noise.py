@@ -112,6 +112,7 @@ from harness import (  # noqa: E402
     run_klt_retrying,
     load_sibling,
     sanitise_report,
+    stage_workdir,
 )
 
 # The gain driver owns the committed-DUT guards, the request shape and the grid
@@ -182,19 +183,8 @@ def guard_testbench(text: str) -> list[str]:
 
 
 def materialise(work: Path, pdk: Pdk, *, lfb: float | None = None, dut_text: str | None = None) -> Path:
-    errs = guard_testbench(TESTBENCH.read_text())
-    if errs:
-        raise RuntimeError("testbench guard failed:\n  " + "\n  ".join(errs))
-    work.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(pdk.design_include, work / "design.ngspice")
-    dut = load_dut_text() if dut_text is None else dut_text
-    derrs = G.guard_dut(dut)
-    if derrs:
-        raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(derrs))
-    (work / G.DUT_INCLUDE_NAME).write_text(dut)
-    tb = TESTBENCH.read_text()
-    tb = tb.replace("'design.ngspice'", f"'{work / 'design.ngspice'}'")
-    tb = tb.replace("'opamp_two_stage.dut.spice'", f"'{work / 'opamp_two_stage.dut.spice'}'")
+    tb = stage_workdir(work, pdk, TESTBENCH.read_text(), guard_tb=guard_testbench,
+                       guard_dut=G.guard_dut, dut_text=dut_text)
     if lfb is not None:
         tb, n = _PARAM_RE.subn(f".param lfb={lfb:g} cfb={lfb:g}", tb)
         if n != 1:
