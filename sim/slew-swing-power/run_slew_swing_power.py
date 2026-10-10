@@ -69,7 +69,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import math
 import re
@@ -98,29 +97,16 @@ from harness import (  # noqa: E402
     ngspice_version,
     run_klt,
     run_klt_retrying,
+    load_sibling,
     sanitise_report,
 )
 
 
-def _load_sibling():
-    """Import the gain/GBW/PM driver by path (its directory name has a hyphen).
-
-    Reused unchanged so the two experiments share ONE copy of the DUT
-    source guards and grid bookkeeping, instead of a second copy that could
-    drift. (The klt invocation/retry, report sanitising and DUT loading are
-    in `harness`.)
-    """
-    if "run_gain_gbw_pm" in sys.modules:
-        return sys.modules["run_gain_gbw_pm"]
-    path = REPO_ROOT / "sim" / "gain-gbw-pm" / "run_gain_gbw_pm.py"
-    spec = importlib.util.spec_from_file_location("run_gain_gbw_pm", path)
-    mod = importlib.util.module_from_spec(spec)
-    sys.modules["run_gain_gbw_pm"] = mod
-    spec.loader.exec_module(mod)
-    return mod
-
-
-g = _load_sibling()
+# The gain driver is reused unchanged so the two experiments share ONE copy of
+# the DUT source guards and grid bookkeeping, instead of a second copy that
+# could drift. (The klt invocation/retry, report sanitising and DUT loading are
+# in `harness`.)
+g = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
 
 TB_DIR = HERE / "testbench"
 TESTBENCH = {f: TB_DIR / f"tb_{f}.spice" for f in ("power", "slew", "swing")}

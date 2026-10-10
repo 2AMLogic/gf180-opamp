@@ -163,7 +163,7 @@ class SweepAndExtractTests(unittest.TestCase):
 
     def test_gain_crosscheck_catches_wrong_input_reference(self):
         s = synth()
-        gdir = r.latest_gain_dir()
+        gdir = r.G.latest_gain_dir()
         if gdir is None:
             skip_or_fail(self, "no committed gain-bench dataset")
         dev, bad = r.gain_crosscheck(r.NOMINAL, s, gdir)  # synthetic gain differs from the real one

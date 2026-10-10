@@ -51,7 +51,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import math
 import re
@@ -75,19 +74,14 @@ from harness import (  # noqa: E402
     klt_version,
     load_dut_text,
     ngspice_version,
+    load_sibling,
     sanitise_report,
 )
 
 # The CMRR driver owns the servo bench guards, excitation checks, rejection
 # summaries, grid-request runner and evidence writers; reuse them unchanged
 # (the klt wrapper itself is in `harness`).
-if "cmrr_driver" in sys.modules:
-    C = sys.modules["cmrr_driver"]
-else:
-    _spec = importlib.util.spec_from_file_location("cmrr_driver", REPO_ROOT / "sim" / "cmrr" / "run_cmrr.py")
-    C = importlib.util.module_from_spec(_spec)
-    sys.modules["cmrr_driver"] = C
-    _spec.loader.exec_module(C)
+C = load_sibling("cmrr_driver", "sim/cmrr/run_cmrr.py")
 G = C.G
 
 TESTBENCH = HERE / "testbench" / "tb_psrr.spice"
@@ -517,7 +511,7 @@ def main(argv: list[str] | None = None) -> int:
     record, stamp = allocate_record_id(REPO_ROOT)
     paths = claim_record_paths(HERE, record)
     ngspice, kver = ngspice_version(), klt_version()
-    gdir = C.latest_gain_dir()
+    gdir = G.latest_gain_dir()
     print(f"record {record}: 3 excitations x {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
     with C.work_dir(args, "psrr-") as scratch:

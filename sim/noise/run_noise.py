@@ -81,7 +81,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import math
 import re
@@ -111,20 +110,15 @@ from harness import (  # noqa: E402
     remote_of,
     run_klt,
     run_klt_retrying,
+    load_sibling,
     sanitise_report,
 )
 
 # The gain driver owns the committed-DUT guards, the request shape and the grid
 # bookkeeping (the klt wrapper itself is in `harness`); reuse them unchanged so both benches stay structurally identical.
-_spec = importlib.util.spec_from_file_location(
-    "gain_gbw_pm_driver", REPO_ROOT / "sim" / "gain-gbw-pm" / "run_gain_gbw_pm.py"
-)
-G = importlib.util.module_from_spec(_spec)
-sys.modules["gain_gbw_pm_driver"] = G
-_spec.loader.exec_module(G)
+G = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
 
 TESTBENCH = HERE / "testbench" / "tb_noise.spice"
-GAIN_DIR = REPO_ROOT / "sim" / "gain-gbw-pm"
 
 CORNERS = G.CORNERS
 TEMPS_C = G.TEMPS_C
@@ -425,22 +419,10 @@ def sweep_problems(spec: Spectrum, ppd: int, label: str) -> list[str]:
 # --------------------------------------------------------------------------
 
 
-def latest_gain_dir() -> Path | None:
-    """Newest gain-bench corner directory holding a full 45-point dataset."""
-    base = GAIN_DIR / "corners"
-    if not base.is_dir():
-        return None
-    for d in sorted((p for p in base.iterdir() if p.is_dir()), reverse=True):
-        if len(list(d.glob("*.dat"))) >= 45:
-            return d
-    return None
-
-
 def gain_db_from_gain_bench(gdir: Path, k: Key, freq: np.ndarray) -> np.ndarray | None:
-    p = gdir / f"{point_stem(k)}.dat"
-    if not p.is_file():
+    d = G.load_gain_bench(gdir, k)
+    if d is None:
         return None
-    d = np.loadtxt(p)
     if d.shape[0] < len(freq) or np.any(np.abs(d[: len(freq), 0] / freq - 1) > 1e-6):
         return None
     return 20 * np.log10(np.abs(d[: len(freq), 1] + 1j * d[: len(freq), 2]))
@@ -967,7 +949,7 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ERROR: {sub} already exists; evidence is append-only", file=sys.stderr)
             return 2
     ngspice, kver = ngspice_version(), klt_version()
-    gdir = latest_gain_dir()
+    gdir = G.latest_gain_dir()
     print(f"record {record}: {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
     with tempfile.TemporaryDirectory(prefix="noise-") as scratch:
