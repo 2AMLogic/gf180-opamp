@@ -160,6 +160,22 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 - Existing records have no structured sidecars, so the verdict/worst-case
   lines are extracted from the Markdown (cross-checked against each record's
   own per-point table); historical records are never modified.
+- Input common-mode range (issue #90): the selected `input-common-mode`
+  record is attached to DR-5's `proposed-not-graded` row as information only
+  (no verdict, no worst value beside the proposed bound, still outside the
+  ratified counts). The report re-derives the conservative common interval
+  (every disjoint component kept apart, never bridged), its edge-binding
+  corners and brackets, the transition resolution, the explicit 1.20 V sample
+  at every point and the smallest saturation margins from the record's
+  per-point tables, then cross-checks them against the retained
+  `input-common-mode/corners/<rid>/samples.csv` (its sha256 is reported). A
+  disagreement, a malformed or overlapping interval, or a missing
+  `samples.csv` is an error. Without a selected ICMR record the row stays
+  explicitly missing; nothing is read from the spec status text. ICMR records
+  carry no measurement fingerprint, so their configuration freshness is
+  reported as unknown. If DR-5 is ratified (the in-row tag removed) while an
+  ICMR record is selected, generation fails until the report learns to grade
+  the row.
 - Measurement-configuration freshness (issue #85), additive to the DUT gate:
   a record may carry a versioned `**Measurement fingerprint**` header line
   plus the canonical inputs it hashes (`## Measurement fingerprint inputs`).
