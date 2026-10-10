@@ -102,6 +102,15 @@ this block's nearest same-PDK siblings (`gf180-bandgap`, `gf180-ldo`) and
 block's current distance from the klayout-tools T1 ("sim-validated")
 design-evidence tier.
 
+## Orchestration notes
+
+Sweep coordinators that need a main-clean baseline should follow
+[`docs/sweep-baseline.md`](docs/sweep-baseline.md): it covers the unique
+scratch path outside the repository, the snapshot and baseline commands,
+retention, cleanup and what happens if the baseline goes missing. The recipe
+is checked by
+[`scripts/test-sweep-baseline.sh`](scripts/test-sweep-baseline.sh).
+
 ## License
 
 Apache-2.0.
