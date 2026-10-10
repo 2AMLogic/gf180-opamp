@@ -20,7 +20,7 @@ sys.path.insert(0, str(HERE))
 
 import harness  # noqa: E402
 
-EXPERIMENTS = ("noise", "offset-mc", "cmrr", "psrr", "slew-swing-power")
+EXPERIMENTS = ("noise", "offset-mc", "cmrr", "psrr", "psrr-mc", "slew-swing-power")
 
 #: Public constants that deliberately do NOT enter the fingerprint (identity
 #: or cosmetic). Anything else a config module defines must move its inputs.
@@ -134,6 +134,18 @@ class Completeness(unittest.TestCase):
                     self.assertNotEqual(psrr.fingerprint(t), base)
                 finally:
                     setattr(cmrr, n, old)
+        psrr_mc = load("psrr-mc")
+        cmrr2 = psrr_mc._CMRR
+        tm = texts("psrr-mc", psrr_mc)
+        base = psrr_mc.fingerprint(tm)
+        for n in ("SERVO_NOMINAL", "AC_PPD", "AC_FSTART", "AC_FSTOP"):
+            with self.subTest(f"psrr-mc<-cmrr.{n}"):
+                old = getattr(cmrr2, n)
+                setattr(cmrr2, n, perturb(old))
+                try:
+                    self.assertNotEqual(psrr_mc.fingerprint(tm), base)
+                finally:
+                    setattr(cmrr2, n, old)
         gain = harness.load_config_module(HERE / "gain-gbw-pm" / "measurement_config.py")
         for exp in ("noise", "cmrr", "slew-swing-power"):
             m = load(exp)
@@ -156,6 +168,7 @@ class BenchNormalisation(unittest.TestCase):
             "offset-mc": ("Vcm vinp 0 dc 1.65", "Vcm vinp 0 dc 1.60"),
             "cmrr": ("Rsv vsb vsv {rsv}", "Rsv vsb vsv {rsv}\nRx vsv 0 1e12"),
             "psrr": ("Vss vss 0 dc 0 ac {acss}", "Vss vss 0 dc 0.1 ac {acss}"),
+            "psrr-mc": ("Vss vss 0 dc 0 ac {acss}", "Vss vss 0 dc 0.1 ac {acss}"),
         }
         for exp, (old, new) in edits.items():
             with self.subTest(exp):
@@ -174,6 +187,7 @@ class BenchNormalisation(unittest.TestCase):
             "offset-mc": ("MC_SEED", lambda m: m.MC_SEED + 1),
             "cmrr": ("MODES", lambda m: {**m.MODES, "cm": {"acp": 1.0, "acn": 0.5}}),
             "psrr": ("MODES", lambda m: {**m.MODES, "vss": {**m.MODES["vss"], "acss": 2.0}}),
+            "psrr-mc": ("MC_SEED", lambda m: m.MC_SEED + 1),
         }
         for exp, (name, f) in cases.items():
             with self.subTest(exp):
