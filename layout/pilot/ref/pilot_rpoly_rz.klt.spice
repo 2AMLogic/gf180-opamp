@@ -1,0 +1,4 @@
+* schematic-derived reference for pilot_rpoly_rz (dimensions from XRZ; ad/as/pd/ps omitted)
+.subckt pilot_rpoly_rz A B VSUB
+XRZ A B VSUB ppolyf_u_1k r_width=2u r_length=4u m=1
+.ends

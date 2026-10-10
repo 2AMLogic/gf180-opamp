@@ -1,0 +1,4 @@
+* schematic-derived reference for pilot_mim_cc (dimensions from XCC; ad/as/pd/ps omitted)
+.subckt pilot_mim_cc BOT TOP
+XCC BOT TOP cap_mim_2f0_m4m5_noshield c_width=17.4u c_length=17.4u m=1
+.ends

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "generator": "cap_array",
+  "cell_name": "pilot_mim_cc",
+  "gds_path": "gds/pilot_mim_cc.gds",
+  "pdk": {
+    "name": "gf180mcuD",
+    "variant": "gf180mcuD",
+    "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  },
+  "dbu_um": 0.0005,
+  "bbox_um": {
+    "x0": 0.0,
+    "y0": 0.0,
+    "x1": 19.52,
+    "y1": 20.48
+  },
+  "device_count": 1,
+  "ports": [
+    {
+      "name": "C0_BOT",
+      "net": null,
+      "layer": {
+        "layer": 46,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 0.0,
+      "y_um": 9.76,
+      "width_um": 19.52,
+      "direction_deg": 180
+    },
+    {
+      "name": "C0_TOP",
+      "net": null,
+      "layer": {
+        "layer": 81,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 9.76,
+      "y_um": 20.25,
+      "width_um": 0.46,
+      "direction_deg": 90
+    }
+  ],
+  "navigable_regions": [],
+  "drc_hints": {
+    "min_spacing_um": 1.2,
+    "foreign_clearance_um": 1.2,
+    "matched_group_id": "cap_array:1",
+    "snapped_to_grid": false,
+    "notes": [
+      "spacing_um was widened from 0.5um to 1.2um -- this PDK family's own minimum MiM capacitor spacing rule (gf180mcu's mim.space.1, between the oversized virtual bottom plates of adjacent units) binds above the requested value"
+    ]
+  },
+  "warnings": [],
+  "provenance": {
+    "klt_version": "0.7.0+g5e5b55992a7f",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "gf180mcuD",
+      "source": "search root: ~/.volare",
+      "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+    },
+    "deck": null,
+    "input": null
+  }
+}

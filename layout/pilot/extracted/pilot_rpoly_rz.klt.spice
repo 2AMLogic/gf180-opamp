@@ -1,0 +1,10 @@
+* extracted by klt extract --deck gf180mcu
+
+* cell pilot_rpoly_rz
+* pin A
+* pin B
+* pin vsubs
+.SUBCKT pilot_rpoly_rz A B vsubs
+* device instance $1 r0 *1 2.42,1 ppolyf_u_1k
+X$1 A B vsubs ppolyf_u_1k r_length=4U r_width=2U
+.ENDS pilot_rpoly_rz

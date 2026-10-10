@@ -1,0 +1,217 @@
+{
+  "schema_version": 3,
+  "file": "gds/pilot_nfet_mb1_m5.gds",
+  "deck": "gf180mcu",
+  "top": "pilot_nfet_mb1_m5",
+  "dbu_um": 0.0005,
+  "netlist_path": "extracted/pilot_nfet_mb1_m5.klt.spice",
+  "netlist_sha256": "26b67d38bb852804094e31c65486a37dd9677a204d72d5a517091aef843a726e",
+  "status": "extracted",
+  "device_count": 2,
+  "net_count": 4,
+  "pin_count": 4,
+  "device_counts": {
+    "nfet": 2
+  },
+  "dummy_devices_dropped": 0,
+  "ignored_layers": [],
+  "device_recognition_only_layers": [],
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "bjt",
+    "cap_mim_2f0_m4m5_noshield",
+    "resistor",
+    "diode_nd2ps_06v0",
+    "diode_pd2nw_06v0"
+  ],
+  "devices": [
+    {
+      "name": "$1",
+      "class": "nfet",
+      "nets": {
+        "s": "S",
+        "g": "G",
+        "d": "D",
+        "b": "B"
+      },
+      "params": {
+        "l_um": 2.0,
+        "w_um": 3.0,
+        "as_um2": 1.5,
+        "ad_um2": 0.87,
+        "ps_um": 7.0,
+        "pd_um": 3.58
+      },
+      "instance_path": [
+        {
+          "cell": "mos_array",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$2",
+      "class": "nfet",
+      "nets": {
+        "s": "D",
+        "g": "G",
+        "d": "S",
+        "b": "B"
+      },
+      "params": {
+        "l_um": 2.0,
+        "w_um": 3.0,
+        "as_um2": 0.87,
+        "ad_um2": 1.5,
+        "ps_um": 3.58,
+        "pd_um": 7.0
+      },
+      "instance_path": [
+        {
+          "cell": "mos_array",
+          "array_index": null
+        }
+      ]
+    }
+  ],
+  "nets": [
+    {
+      "name": "B",
+      "pin": true,
+      "device_count": 2,
+      "net_id": 5,
+      "pin_index": 0,
+      "label_positions_um": [
+        {
+          "text": "B",
+          "x_um": -0.86,
+          "y_um": 2.73
+        },
+        {
+          "text": "B",
+          "x_um": 2.79,
+          "y_um": -0.86
+        },
+        {
+          "text": "B",
+          "x_um": 2.79,
+          "y_um": 6.32
+        },
+        {
+          "text": "B",
+          "x_um": 6.44,
+          "y_um": 2.73
+        }
+      ]
+    },
+    {
+      "name": "D",
+      "pin": true,
+      "device_count": 2,
+      "net_id": 1,
+      "pin_index": 1,
+      "label_positions_um": [
+        {
+          "text": "D",
+          "x_um": 5.37,
+          "y_um": 4.43
+        }
+      ]
+    },
+    {
+      "name": "G",
+      "pin": true,
+      "device_count": 2,
+      "net_id": 2,
+      "pin_index": 2,
+      "label_positions_um": [
+        {
+          "text": "G",
+          "x_um": 2.79,
+          "y_um": 5.25
+        }
+      ]
+    },
+    {
+      "name": "S",
+      "pin": true,
+      "device_count": 2,
+      "net_id": 4,
+      "pin_index": 3,
+      "label_positions_um": [
+        {
+          "text": "S",
+          "x_um": 0.21,
+          "y_um": 0.21
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "deck 'gf180mcu' declares MOS flavour '06v0' scoped by marker layer 55/0, but that layer has no shapes in the layout; every MOS device binds to the deck's default flavour"
+  ],
+  "black_box_regions": [],
+  "abstracted_cells": [],
+  "unmodelled_poly": [],
+  "merged_net_labels": [],
+  "voltage_domain_warnings": [],
+  "missing_flavour_markers": [
+    {
+      "deck": "gf180mcu",
+      "flavour": "06v0",
+      "marker": "55/0"
+    }
+  ],
+  "unbiased_pmos_body_nets": [],
+  "single_terminal_nets": [],
+  "dead_metal": [],
+  "matched_device_groups": [],
+  "def_pin_promotion": null,
+  "label_layers": null,
+  "pdk": {
+    "variant": "gf180mcuD",
+    "root": {
+      "path": null,
+      "scope": "external"
+    },
+    "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  },
+  "provenance": {
+    "klt_version": "0.7.0+g5e5b55992a7f",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "gf180mcuD",
+      "source": "search root: ~/.volare",
+      "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+    },
+    "deck": {
+      "name": "gf180mcu",
+      "content_hash": "sha256:9babf6fd5d623fea50d380168ebf8f7c0f0f6e70eb7d89b221476dc47c7f6a85",
+      "released": true,
+      "options": {
+        "metal_top": "9K",
+        "mim_cap": "cap_mim_2f0_m4m5_noshield",
+        "poly_res": "1k"
+      },
+      "options_explicit": {
+        "metal_top": false,
+        "mim_cap": false,
+        "poly_res": true
+      },
+      "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
+    },
+    "input": {
+      "content_hash": "sha256:6826ae3d64b60db5f578a26d1847f5d9261fb1e92bba5d5f5734f501f662cb89",
+      "role": "layout"
+    }
+  },
+  "parasitics": null,
+  "spef_path": null,
+  "subcircuit": null,
+  "metrics": {
+    "extract__device__count": 2,
+    "extract__net__count": 4,
+    "extract__pin__count": 4
+  }
+}
