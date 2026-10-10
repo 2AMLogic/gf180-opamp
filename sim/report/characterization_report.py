@@ -183,15 +183,17 @@ def coverage_text(c: dict) -> str:
 #: Cited (never selected) passive-corner side study for gain/GBW/PM (issue #70).
 PASSIVE_STUDY_ID = "20261009-234014-55b400c"
 PASSIVE_STUDY_REL = f"sim/gain-gbw-pm/records/{PASSIVE_STUDY_ID}.md"
+#: The JSON keeps the repo-root path as plain text; render_md() turns it into a
+#: link relative to the report directory (like every other source link).
 PASSIVE_STUDY_NOTE = {
     "gain": "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) "
-            f"[{PASSIVE_STUDY_ID}]({PASSIVE_STUDY_REL}) does not issue a gain verdict",
+            f"`{PASSIVE_STUDY_REL}` does not issue a gain verdict",
     "gbw": "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) "
-           f"[{PASSIVE_STUDY_ID}]({PASSIVE_STUDY_REL}) finds GBW PASS at 24/27 cells and FAIL at 3/27 cells, all at "
+           f"`{PASSIVE_STUDY_REL}` finds GBW PASS at 24/27 cells and FAIL at 3/27 cells, all at "
            "ss / 125 C / 2.97 V with CC worst (one MOS/T/VDD point, RZ typical/best/worst = 9.663/9.656/9.673 MHz); "
            "worst 9.656 MHz is below the 10 MHz bound",
     "pm": "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) "
-          f"[{PASSIVE_STUDY_ID}]({PASSIVE_STUDY_REL}) finds PM >= 60 deg at only 7/27 cells (53.63 .. 63.17 deg)",
+          f"`{PASSIVE_STUDY_REL}` finds PM >= 60 deg at only 7/27 cells (53.63 .. 63.17 deg)",
 }
 
 
@@ -1046,6 +1048,8 @@ def render_md(rep: dict) -> str:
         for f in r["figures"]:
             a(f"- {f['label']}: {f['value']}" + (f" ({f['corner']})" if f["corner"] else ""))
         for l in r["limitations"]:
+            l = l.replace(f"`{PASSIVE_STUDY_REL}`",
+                          f"[`{PASSIVE_STUDY_REL}`]({link_from_reports(PASSIVE_STUDY_REL)})")
             a(f"- Limitation: {l}")
     a("")
     a("## Sources")

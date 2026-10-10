@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 import shutil
 import sys
@@ -96,6 +97,21 @@ class CommittedReport(unittest.TestCase):
                 self.assertNotIn(cr.PASSIVE_STUDY_ID, lim)
         self.assertEqual(rows["gbw"]["verdict"], "PASS")
         self.assertEqual(rows["pm"]["verdict"], "FAIL")
+
+    def test_md_links_resolve_from_report_dir(self):
+        """Issue #95 review: md links (incl. the passive study) resolve relative to sim/reports/."""
+        md_path = REPO / cr.OUT_DIR_REL / f"{cr.OUT_NAME}.md"
+        md = md_path.read_text()
+        study_link = os.path.relpath(cr.PASSIVE_STUDY_REL, cr.OUT_DIR_REL).replace(os.sep, "/")
+        self.assertIn(f"]({study_link})", md)
+        self.assertTrue((md_path.parent / study_link).resolve().is_file())
+        targets = re.findall(r"\]\(([^)\s]+)\)", md)
+        self.assertTrue(targets)
+        for t in targets:
+            if "://" in t or t.startswith("#"):
+                continue
+            self.assertTrue((md_path.parent / t.split("#")[0]).resolve().exists(),
+                            f"broken md link from {cr.OUT_DIR_REL}: {t}")
 
     def test_evidence_sidecar_binds_report_bytes(self):
         out = REPO / cr.OUT_DIR_REL

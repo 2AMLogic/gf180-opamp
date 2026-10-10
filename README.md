@@ -47,8 +47,9 @@ separate 27-cell gain/GBW/PM passive-corner study
 shows PM >= 60 degrees at only 7/27 cells and GBW PASS at 24/27 cells with
 FAIL at 3/27: all three failing cells sit at one MOS/T/VDD point (SS / 125 C /
 2.97 V) with CC worst, one per RZ level (typical/best/worst = 9.663/9.656/9.673
-MHz; worst 9.656 MHz, below the 10 MHz bound). No committed passive
-sweep covers the other figures. The `klt signoff` verdict of
+MHz; worst 9.656 MHz, below the 10 MHz bound). That gain/GBW/PM study is
+the only committed passive sweep; slew, swing, power and the other figures
+remain at typical passives only. The `klt signoff` verdict of
 record ([`manifests/`](manifests/README.md)) is still below T1; no T1 claim
 is made. The 5 V device flavors remain surveyed but not characterized, and
 the 5 V stretch row stays unopened.
