@@ -214,6 +214,22 @@ Records are evidence: the claim line states which rows were measured and
 their pass/fail against the ratified bounds with the worst-case corner per
 figure.
 
+## Passive-corner side study (`--passive-corners`, issue #97)
+
+The 45-point grid pairs every MOS corner with `res_typical` / `mimcap_typical`.
+`--passive-corners` is an opt-in side study that measures slew, swing and
+quiescent power across independent RZ (`res_typical/ff/ss`) x CC
+(`mimcap_typical/ff/ss`) sections at the three binding points the gain study
+used (fs / 125 C / 2.97 V, ss / 125 C / 2.97 V, typical / 27 C / 3.30 V): 27
+cells per figure, one `klt sim` corner-matrix request per figure (batch fleet on
+dispatch workers; a refused submit is reported and no record is written, never
+a local grid). The slew number is a transient measurement, not the analytic
+1/CC scaling in the gain study. Each cell's generated deck is checked to load
+the PDK sections its name encodes. The record is titled `# slew/swing/power
+passive-corner study` and is never selected by `sim/report` (`STUDY_TITLES`);
+it is judged against, and changes, no ratified bound. The section-pairing
+helpers live in `sim/passive_corners.py`, shared with the gain driver.
+
 ## Records
 
 | Record | Rows judged | Result | Notes |

@@ -103,6 +103,9 @@ from harness import (  # noqa: E402
 )
 
 
+# Shared RZ x CC passive-corner helpers (issue #97): ONE copy, also used by the gain driver.
+import passive_corners as pc  # noqa: E402
+
 # The gain driver is reused unchanged so the two experiments share ONE copy of
 # the DUT source guards and grid bookkeeping, instead of a second copy that
 # could drift. (The klt invocation/retry, report sanitising and DUT loading are
@@ -1063,6 +1066,276 @@ def build_record(
 
 
 # --------------------------------------------------------------------------
+# Opt-in passive-corner side study (issue #97; DR-3 section (d) obligation)
+# --------------------------------------------------------------------------
+
+#: Title prefix of the side-study record. `sim/report` skips records starting
+#: with this (STUDY_TITLES), so the aggregate report never selects it.
+PASSIVE_TITLE = "# slew/swing/power passive-corner study"
+
+
+def passive_request(fig: str, netlist: Path, pdk: Pdk, points=pc.PASSIVE_POINTS) -> dict:
+    """ONE corner-matrix request for one figure: MOS x RZ x CC x T x VDD, with
+    the cross-product cells that are not study points excluded (27 cells)."""
+    temps = sorted({p[1] for p in points})
+    vdds = sorted({p[2] for p in points})
+    return pc.apply_passive_matrix(make_request(fig, netlist, pdk, [], temps, vdds), points)
+
+
+def analyse_passive_report(fig: str, report: dict, want: list[Key]):
+    """`analyse_report` plus a check that every cell's generated deck loads the
+    PDK sections its name encodes. Returns (results, arts, problems)."""
+    results, arts, problems = analyse_report(fig, report, want)
+    for k, a in arts.items():
+        deck = a.get("deck")
+        if not deck or not Path(deck).is_file():
+            problems.append(f"{fig}: no generated deck retained for {g.fmt_key(k)}; cannot verify its sections")
+            continue
+        problems += [f"{fig}: {p}" for p in pc.deck_section_problems(k, Path(deck).read_text())]
+    return results, arts, problems
+
+
+def passive_summary(results: dict[Key, Metrics], fig: str, points=pc.PASSIVE_POINTS) -> dict:
+    """Per study point: {(res, mim): (metrics, relative change vs both-typical in %, passes)}."""
+    _, attr, _, _, _ = ROWS[fig]
+    out: dict = {}
+    for (m, t, v) in points:
+        base = results.get((pc.passive_name(m, "typical", "typical"), t, v))
+        rows = {}
+        for r_, c_ in pc.passive_combos():
+            mt = results.get((pc.passive_name(m, r_, c_), t, v))
+            if mt is None:
+                continue
+            ok = base is not None and base.valid and mt.valid
+            d = 100 * (getattr(mt, attr) / getattr(base, attr) - 1) if ok else float("nan")
+            rows[(r_, c_)] = (mt, d, point_passes(mt, fig))
+        out[(m, t, v)] = rows
+    return out
+
+
+def _cell_label(k: Key) -> str:
+    mos, r_, c_ = pc.split_passive_key(k)
+    return f"{mos} / {k[1]:g} C / {k[2]:.2f} V, RZ {r_}, CC {c_}"
+
+
+def _val(m: Metrics, fig: str) -> str:
+    if not m.valid:
+        return "INVALID"
+    return {"power": f"{m.power_uw:.1f}", "slew": f"{m.slew_vus:.2f}", "swing": f"{m.swing_v:.3f}"}[fig]
+
+
+def build_passive_record(
+    *, record, stamp, pdk, ngspice, klt_version, backend_descs, all_results, verdicts, ctrls, ctrl_bad,
+    dut_sha, not_run, figs=FIGURES, base_records: str = "",
+) -> str:
+    L: list[str] = []
+    add = L.append
+    ran = [f for f in FIGURES if all_results.get(f) is not None]
+    ncell = len(pc.passive_expected_keys())
+    add(f"{PASSIVE_TITLE} (RZ x CC) -- record {record}")
+    add("")
+    add(f"- **Date (UTC)**: {stamp:%Y-%m-%d %H:%M:%S}")
+    add("- **Issue**: #97 (DR-3 section (d) obligation; replaces the analytic slew scaling of the gain/GBW/PM passive study with a measurement)")
+    add("- **Record kind**: SIDE STUDY. It does not judge, replace or supersede any aggregate-report row; "
+        f"the default 45-point grid records (typical passives) stay authoritative{(': ' + base_records) if base_records else ''}. "
+        "No spec row or bound is edited here.")
+    add("- **Verdict against the ratified bounds (`spec/target-spec.md` Sec.2), measured (not analytic) per RZ x CC cell**:")
+    for f in FIGURES:
+        v = verdicts[f]
+        if f not in figs:
+            add(f"  - **{v.label}: not measured in this record** (outside this run's `--figures {','.join(figs)}`).")
+        elif v.verdict == "NOT RUN":
+            add(f"  - **{v.label}: NOT RUN** -- {not_run.get(f, 'no result')}.")
+        else:
+            cmp_ = ">=" if v.direction == "min" else "<="
+            worst = f"{v.worst_value:.4g} {v.unit}" if math.isfinite(v.worst_value) else "n/a (an invalid cell)"
+            at = _cell_label(v.binding) if v.binding else "n/a"
+            add(f"  - **{v.label}: {v.verdict}** vs ratified {cmp_} {v.bound:g} {v.unit} -- passes at {v.n_pass}/{v.n_total} "
+                f"cells (fails at {v.n_total - v.n_pass}); worst {worst} at {at}.")
+    if ctrl_bad:
+        add("  - **CONTROL PROBLEMS**: see Controls; the evidence is not complete.")
+    add("")
+    add("## Conditions")
+    add("")
+    add(f"- **PDK**: {pdk.path} (open_pdks {pdk.version}); ngspice {ngspice}; klt {klt_version}")
+    add("- **Execution** (per figure, each ONE `klt sim` corner-matrix request of "
+        f"{ncell} cells):")
+    for f in ran:
+        add(f"  - {f}: {backend_descs.get(f, '')}")
+    add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (normalised sha256 `{dut_sha}`); snapshot `netlist-snapshots/{record}.spice`")
+    add("- **Points**: " + "; ".join(f"{m} / {t:g} C / {v:.2f} V" for m, t, v in pc.PASSIVE_POINTS)
+        + f", each x 3 RZ levels x 3 CC levels = {ncell} cells; ibias = 10 uA, same benches and extraction as the 45-point grid.")
+    add("- **Passive-section policy (swept)**: RZ (`ppolyf_u_1k`) uses `res_typical` / `res_ff` (best, 0.8x) / `res_ss` (worst, 1.2x); "
+        "CC (`cap_mim_2f0_m4m5_noshield`) uses `mimcap_typical` / `mimcap_ff` (best, 0.9x) / `mimcap_ss` (worst, 1.1x). "
+        "All nine combinations run independently at each point. Each cell's generated deck was checked to load exactly the "
+        "sections its name encodes. \"best\"/\"worst\" are the PDK ff/ss labels, not a claim about which is worse for a row; the tables decide.")
+    add("")
+    add("## Results")
+    for f in ran:
+        label, _, bound, unit, direction = ROWS[f]
+        cmp_ = ">=" if direction == "min" else "<="
+        summ = passive_summary(all_results[f], f)
+        for (m, t, v), rows in summ.items():
+            add("")
+            add(f"### {label} -- {m} / {t:g} C / {v:.2f} V (bound {cmp_} {bound:g} {unit})")
+            add("")
+            add(f"| RZ | CC | {unit} | change vs typ./typ. (%) | vs bound |")
+            add("|---|---|---|---|---|")
+            for (r_, c_), (mt, d, ok) in rows.items():
+                dd = f"{d:+.1f}" if math.isfinite(d) else "n/a"
+                add(f"| {r_} | {c_} | {_val(mt, f)} | {dd} | {'PASS' if ok else 'FAIL'} |")
+    add("")
+    add("## Controls (single local units at the nominal point, typical passives)")
+    add("")
+    add("| Control | Condition | Power (uW) | Slew (V/us) | Swing (Vpp) | note |")
+    add("|---|---|---|---|---|---|")
+    for c in ctrls:
+        cells, notes = [], []
+        for f in FIGURES:
+            m = c.metrics.get(f)
+            if m is None and f not in figs:
+                cells.append("not requested")
+            elif m is None:
+                cells.append("not simulated")
+                notes.append(f"{f}: {c.errors.get(f, '')[:80]}")
+            elif m.valid:
+                cells.append(_val(m, f))
+            else:
+                cells.append("INVALID")
+                notes.append(f"{f}: {m.reason[:100]}")
+        add(f"| `{c.name}` | {c.description} | " + " | ".join(cells) + f" | {'; '.join(notes)} |")
+    add("")
+    add("Required behaviour (for the figures run): ibias-half lowers both power (< 0.75x) and slew (< 0.8x); ibias-zero never passes slew or swing and draws < 0.1x the nominal power.")
+    if ctrl_bad:
+        add("")
+        add("**CONTROL PROBLEMS**:")
+        for s in ctrl_bad:
+            add(f"- {s}")
+    add("")
+    add("## Artifacts")
+    add("")
+    add("- Runner: `sim/slew-swing-power/run_slew_swing_power.py --passive-corners`; shared helpers: `sim/passive_corners.py`; tests: `sim/slew-swing-power/test_slew_swing_power.py`")
+    add(f"- Per-cell logs, decks, data, sanitised klt reports and controls: `sim/slew-swing-power/corners/{record}/`")
+    add("")
+    return "\n".join(L)
+
+
+def run_passive(pdk: Pdk, args, figs) -> int:
+    want = pc.passive_expected_keys()
+    record, stamp = allocate_record_id(REPO_ROOT)
+    paths = claim_record_paths(HERE, record, plots=False)
+    ngspice = ngspice_version()
+    kver = klt_version()
+    print(f"record {record}: passive-corner study, {len(want)} cells x {len(figs)} figures ({', '.join(figs)}), PDK={pdk.path}, klt {kver}")
+    all_results: dict[str, dict[Key, Metrics] | None] = {}
+    all_arts: dict[str, dict] = {}
+    reports: dict[str, dict] = {}
+    reqs: dict[str, dict] = {}
+    not_run: dict[str, str] = {}
+    backend_descs: dict[str, str] = {}
+    with tempfile.TemporaryDirectory(prefix="ssp-pas-") as scratch:
+        work = Path(scratch)
+        for fig in figs:
+            tb = materialise(fig, work / fig, pdk)
+            req = passive_request(fig, tb, pdk)
+            req["batch"] = batch_block(args)
+            reqs[fig] = req
+            try:
+                report = run_klt_retrying(
+                    req, work / fig / "out", args.backend, work / fig,
+                    retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s,
+                )
+            except KltError as exc:
+                # never fall back to a local grid
+                not_run[fig] = f"the klt request could not be run: {str(exc)[-400:]}"
+                print(f"ERROR: {fig}: {not_run[fig]}", file=sys.stderr)
+                all_results[fig] = None
+                continue
+            results, arts, problems = analyse_passive_report(fig, report, want)
+            if problems:
+                not_run[fig] = "the passive-corner study did not complete cleanly: " + "; ".join(problems[:6])
+                print(f"ERROR: {fig}: {not_run[fig]}", file=sys.stderr)
+                all_results[fig] = None
+                continue
+            all_results[fig], all_arts[fig], reports[fig] = results, arts, report
+            remote = (report.get("environment") or {}).get("remote") or {}
+            backend_descs[fig] = (
+                f"`klt sim` backend `{remote.get('provider', 'local')}`"
+                + (f", job id `{remote.get('job_id')}`, {('Spot ' if remote.get('spot') else 'on-demand ')}{remote.get('instance_type')}, "
+                   f"runner klt `{remote.get('runner_klt_version')}` vs client `{remote.get('client_klt_version')}` "
+                   f"(compatibility `{remote.get('runner_compatibility')}`)" if remote else "")
+            )
+            print(f"  {fig}: {len(results)} cells ok ({backend_descs[fig]})")
+        if not_run:
+            # An incomplete side study is not evidence: write nothing.
+            print("ERROR: passive-corner study incomplete; NO RECORD WRITTEN.", file=sys.stderr)
+            return 2
+        ctrls = run_controls(pdk, work, figs)
+        ctrl_bad = control_failures(ctrls)
+        verdicts = {f: judge_figure(f, all_results.get(f), requested=f in figs) for f in FIGURES}
+
+        cdir = paths["corners"]
+        cdir.mkdir(parents=True, exist_ok=False)
+        for fig, arts in all_arts.items():
+            fdir = cdir / fig
+            fdir.mkdir()
+            for k, a in arts.items():
+                stem = g.point_stem(k)
+                if a["log"]:
+                    shutil.copyfile(a["log"], fdir / f"{stem}.log")
+                if a["deck"]:
+                    shutil.copyfile(a["deck"], fdir / f"{stem}.cir")
+                save_point_data(fig, all_results[fig][k], fdir / f"{stem}.dat", vcm=k[2] / 2)
+            (fdir / "klt-report.json").write_text(json.dumps(sanitise_report(reports[fig]), indent=1))
+        ccdir = cdir / "controls"
+        ccdir.mkdir()
+        for c in ctrls:
+            for fig, fl in c.files.items():
+                for kind, src in fl.items():
+                    if src and Path(src).is_file():
+                        shutil.copyfile(src, ccdir / f"{c.name}-{fig}.{'log' if kind == 'log' else 'cir'}")
+
+        dut_text = load_dut_text()
+        dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()
+        lines = [f"* netlist snapshot for record {record} (issue #97, passive-corner study)"]
+        for fig in figs:
+            lines += [f"* ---- conditions: klt sim request ({fig}) ----"]
+            lines += ["* " + ln for ln in json.dumps({k: v for k, v in reqs[fig].items() if k != "netlist"}, indent=1).splitlines()]
+        lines += ["", "* ---- DUT (wrapper-normalised) ----", dut_text]
+        for fig in figs:
+            lines += [f"* ---- testbench: sim/slew-swing-power/testbench/tb_{fig}.spice (verbatim) ----", TESTBENCH[fig].read_text(), ""]
+        paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
+        paths["snapshot"].write_text("\n".join(lines))
+
+        base_records = ""
+        try:
+            sel = json.loads((REPO_ROOT / "sim" / "report" / "selection.json").read_text())["experiments"]["slew-swing-power"]
+            base_records = ", ".join(sorted({f"`{Path(p).stem}`" for p in (sel.values() if isinstance(sel, dict) else [sel])}))
+        except (OSError, KeyError, ValueError, AttributeError):
+            pass
+        md = build_passive_record(
+            record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, klt_version=kver,
+            backend_descs=backend_descs, all_results=all_results, verdicts=verdicts, ctrls=ctrls,
+            ctrl_bad=ctrl_bad, dut_sha=dut_sha, not_run=not_run, figs=figs, base_records=base_records,
+        )
+        paths["record"].parent.mkdir(parents=True, exist_ok=True)
+        paths["record"].write_text(md)
+    print(f"wrote {paths['record']}")
+    for f in figs:
+        v = verdicts[f]
+        print(f"  {v.label}: {v.verdict} ({v.n_pass}/{v.n_total}), worst {v.worst_value:.4g} {v.unit} at {_cell_label(v.binding) if v.binding else 'n/a'}")
+    rc = 0
+    if ctrl_bad:
+        print("CONTROL PROBLEMS:")
+        for s in ctrl_bad:
+            print(f"  - {s}")
+        rc = 1
+    if args.strict and any(v.verdict == "FAIL" for v in verdicts.values()):
+        rc = 1
+    return rc
+
+
+# --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
 
@@ -1092,6 +1365,10 @@ def smoke(pdk: Pdk) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--smoke", action="store_true", help="one nominal point per figure, local, no record")
+    ap.add_argument("--passive-corners", action="store_true",
+                    help="opt-in side study (issue #97): RZ x CC passive corners (3x3 independent res/mimcap sections) "
+                         "at fs/125C/2.97V, ss/125C/2.97V and nominal, one klt corner-matrix request per figure; mints a "
+                         "side-study record the aggregate report never selects")
     ap.add_argument("--backend", help="klt execution backend for the 45-point grids (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--strict", action="store_true", help="exit 1 when a ratified row misses")
     ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
@@ -1111,6 +1388,9 @@ def main(argv: list[str] | None = None) -> int:
     pdk = find_pdk()
     if args.smoke:
         return smoke(pdk)
+
+    if args.passive_corners:
+        return run_passive(pdk, args, figs)
 
     want = g.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)

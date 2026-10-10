@@ -496,5 +496,168 @@ class MeasurementFingerprint(unittest.TestCase):
         self.assertNotIn('"slew":', blob)
 
 
+RAW_POWER = """Title: t
+Plotname: DC transfer characteristic
+Flags: real
+No. Variables: 4
+No. Points: 1
+Variables:
+\t0\ti(i-sweep)\tcurrent
+\t1\tv(vdd)\tvoltage
+\t2\tv(vout)\tvoltage
+\t3\ti(vdd)\tcurrent
+Values:
+ 0\t1e-05
+\t{vdd}
+\t1.0
+\t{negidd}
+"""
+
+class PassiveCornerTests(unittest.TestCase):
+    """Opt-in RZ x CC passive-corner side study (issue #97): offline request
+    construction, deck validation, extraction/verdict and record rendering."""
+
+    PDK = r.Pdk(Path("/x/gf180mcuD"), "gf180mcuD", "test")
+
+    def _req(self, fig="slew"):
+        return r.passive_request(fig, Path("/x/tb.spice"), self.PDK)
+
+    def test_one_matrix_with_exactly_the_27_study_cells_per_figure(self):
+        for fig in r.FIGURES:
+            req = self._req(fig)
+            axis = req["corners"]["process"]
+            self.assertEqual(len(axis), 27)
+            by = {a["name"]: a["sections"] for a in axis}
+            self.assertEqual(by[r.pc.passive_name("ss", "worst", "best")], ["ss", "res_ss", "mimcap_ff"])
+            self.assertEqual(by[r.pc.passive_name("fs", "best", "worst")], ["fs", "res_ff", "mimcap_ss"])
+            sup = req["corners"]["supply_v"]
+            cells = set()
+            for a in axis:
+                for vdd in sup["vdd"]:
+                    for t in req["corners"]["temperature_c"]:
+                        e = {"process": a["name"], "temperature_c": t, "supply_v": {"vdd": vdd}}
+                        if e not in req["exclude"]:
+                            cells.add((a["name"], float(t), float(vdd)))
+            self.assertEqual(cells, set(r.pc.passive_expected_keys()))
+            self.assertEqual(len(cells), 27)
+            # the figure's own analysis/measurements are kept (not the ac request's)
+            self.assertEqual(req["analysis"], r.mc.analysis_for(fig, r.IBIAS_A))
+
+    def test_request_expansion_matches_klt(self):
+        try:
+            from klayout_tools import sim as ksim
+            expand = ksim._expand_corners
+        except Exception:
+            self.skipTest("klt expander not importable")
+        req = self._req()
+        pts = expand(req["corners"], req["exclude"])
+        got = {(p.process if isinstance(p.process, str) else p.process["name"], p.temperature_c, p.supply_v["vdd"])
+               for p in pts}
+        self.assertEqual(got, set(r.pc.passive_expected_keys()))
+
+    def test_default_grid_request_is_unchanged(self):
+        req = r.make_request("slew", Path("/x/tb.spice"), self.PDK, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
+        self.assertNotIn("exclude", req)
+        self.assertEqual(len(req["corners"]["process"]), 5)
+
+    def test_helpers_are_shared_not_copied(self):
+        import inspect
+        import passive_corners as shared
+        gain = r.g
+        for name in ("passive_sections", "passive_name", "passive_combos", "passive_process_axis",
+                     "passive_expected_keys", "split_passive_key", "apply_passive_matrix"):
+            self.assertIs(getattr(gain, name), getattr(shared, name), name)
+            self.assertIs(getattr(r.pc, name), getattr(shared, name), name)
+        src = inspect.getsource(r)
+        for name in ("passive_sections", "passive_name", "passive_combos", "split_passive_key"):
+            self.assertNotIn(f"def {name}(", src)
+
+    def test_deck_section_validation(self):
+        k = (r.pc.passive_name("ss", "worst", "best"), 125.0, 2.97)
+        lib = "/opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice"
+        good = f".lib {lib} ss\n.lib {lib} res_ss\n.lib {lib} mimcap_ff\n.lib /x/design.ngspice typical\n"
+        self.assertEqual(r.pc.deck_section_problems(k, good), [])
+        bad = good.replace("res_ss", "res_typical")
+        self.assertTrue(r.pc.deck_section_problems(k, bad))
+        self.assertTrue(r.pc.deck_section_problems(k, ""))
+
+    def _fake_report(self, tmp, drop=None, extra=False, vals=None):
+        """A klt-style report whose rawfiles are synthetic power waveforms."""
+        corners = []
+        for k in r.pc.passive_expected_keys():
+            if k == drop:
+                continue
+            d = Path(tmp) / r.g.point_stem(k)
+            d.mkdir(exist_ok=True)
+            mos, rl, cl = r.pc.split_passive_key(k)
+            lib = "/p/sm141064.ngspice"
+            (d / "corner.cir").write_text("\n".join(f".lib {lib} {s}" for s in [mos, *r.pc.passive_sections(rl, cl)]))
+            (d / "raw").write_text(RAW_POWER.format(negidd=-(vals or {}).get(k, 100e-6), vdd=k[2]))
+            corners.append({
+                "process": k[0], "temperature_c": k[1], "supply_v": {"vdd": k[2], "vcm": k[2] / 2},
+                "measurements": [], "diagnostics": [],
+                "artifacts": {"raw": str(d / "raw"), "log": None, "deck": str(d / "corner.cir")},
+            })
+        if extra:
+            corners.append({**corners[0], "process": "typical__r-typical__c-typical", "temperature_c": -40.0})
+        return {"corners": corners}
+
+    def test_extraction_over_a_synthetic_report(self):
+        with tempfile.TemporaryDirectory() as t:
+            rep = self._fake_report(t)
+            res, arts, problems = r.analyse_passive_report("power", rep, r.pc.passive_expected_keys())
+            self.assertEqual(problems, [])
+            self.assertEqual(len(res), 27)
+            self.assertTrue(all(m.valid for m in res.values()))
+
+    def test_missing_extra_and_wrong_section_cells_are_rejected(self):
+        keys = r.pc.passive_expected_keys()
+        with tempfile.TemporaryDirectory() as t:
+            _, _, p = r.analyse_passive_report("power", self._fake_report(t, drop=keys[0]), keys)
+            self.assertTrue(any("missing result" in x for x in p))
+        with tempfile.TemporaryDirectory() as t:
+            _, _, p = r.analyse_passive_report("power", self._fake_report(t, extra=True), keys)
+            self.assertTrue(p)
+        with tempfile.TemporaryDirectory() as t:
+            rep = self._fake_report(t)
+            deck = Path(rep["corners"][3]["artifacts"]["deck"])
+            deck.write_text(deck.read_text().replace("res_", "resX_"))
+            _, _, p = r.analyse_passive_report("power", rep, keys)
+            self.assertTrue(any("deck loads sections" in x for x in p))
+
+    def test_summary_verdict_and_record_report_measured_values(self):
+        keys = r.pc.passive_expected_keys()
+        res = {}
+        for k in keys:
+            mos, rl, cl = r.pc.split_passive_key(k)
+            res[k] = r.Metrics(fig="slew", valid=True, slew_vus=14.0 / r.pc.MIM_FACTOR[cl])
+        # one cell below the ratified bound -> FAIL, with that cell binding
+        worst = (r.pc.passive_name("ss", "worst", "worst"), 125.0, 2.97)
+        res[worst] = r.Metrics(fig="slew", valid=True, slew_vus=9.5)
+        summ = r.passive_summary(res, "slew")
+        base = summ[("ss", 125.0, 2.97)][("typical", "typical")]
+        self.assertAlmostEqual(base[1], 0.0)
+        self.assertTrue(base[2])
+        self.assertFalse(summ[("ss", 125.0, 2.97)][("worst", "worst")][2])
+        v = r.judge_figure("slew", res)
+        self.assertEqual((v.verdict, v.n_pass, v.n_total, v.binding), ("FAIL", 26, 27, worst))
+        verdicts = {f: r.judge_figure(f, res if f == "slew" else None, requested=f == "slew") for f in r.FIGURES}
+        md = r.build_passive_record(
+            record="20261010-000000-abcdef0", stamp=__import__("datetime").datetime(2026, 10, 10),
+            pdk=self.PDK, ngspice="n", klt_version="k", backend_descs={"slew": "b"}, all_results={"slew": res},
+            verdicts=verdicts, ctrls=[], ctrl_bad=[], dut_sha="0" * 64, not_run={}, figs=("slew",),
+        )
+        self.assertTrue(md.startswith(r.PASSIVE_TITLE))
+        self.assertIn("passes at 26/27 cells", md)
+        self.assertIn("SIDE STUDY", md)
+        self.assertIn("No spec row or bound is edited", md)
+        self.assertIn("9.50", md)
+
+    def test_aggregate_report_ignores_the_side_study(self):
+        sys.path.insert(0, str(HERE.parents[1] / "sim" / "report"))
+        import characterization_report as cr
+        self.assertTrue(r.PASSIVE_TITLE.startswith(cr.STUDY_TITLES["slew-swing-power"][0]))
+
+
 if __name__ == "__main__":
     unittest.main()
