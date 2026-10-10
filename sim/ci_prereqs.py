@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail loudly when a sim/selftest.sh prerequisite is missing (issue #52).
 
-Checks klt, ngspice and the gf180mcu PDK, naming each missing item and the
+Checks klt, ngspice, xschem and the gf180mcu PDK, naming each missing item and the
 place that was searched. The PDK that find_pdk() selects must also carry the
 pinned open_pdks revision: its SOURCES file is read and the open_pdks hash
 compared (full hash, exact match) against the expected revision. A mismatch,
@@ -90,7 +90,7 @@ def main(argv: list[str] | None = None) -> int:
     problems: list[str] = []
     if not args.pdk_only:
         path_env = os.environ.get("PATH", "")
-        for tool in ("klt", "ngspice"):
+        for tool in ("klt", "ngspice", "xschem"):
             found = shutil.which(tool)
             if found:
                 print(f"ok: {tool} -> {found}")

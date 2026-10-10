@@ -62,6 +62,11 @@ if you wrap this in a script. `design/xschemrc` finds the gf180mcu install by th
 xschemrc so the gf180mcu device symbols resolve, and adds `design/` plus
 every `sim/<experiment-slug>/testbench/`.
 
+CI (and you, locally) can check the committed netlist is current without
+writing into the repo: `python3 sim/ci_netlist_check.py` exports into a temp
+dir and compares, normalizing only the `** sch_path:` comment line. It treats
+exit 10 as success but still requires a complete, non-empty export.
+
 To open the schematic interactively:
 
 ```bash

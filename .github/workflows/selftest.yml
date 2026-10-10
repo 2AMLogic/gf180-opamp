@@ -31,18 +31,19 @@ env:
 
 jobs:
   selftest:
-    # Pinned image (not ubuntu-latest) so the apt ngspice (42) is stable.
+    # Pinned image (not ubuntu-latest) so the apt ngspice (42) and xschem are stable.
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
 
-      - name: Install ngspice and Python deps
+      - name: Install ngspice, xschem and Python deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends ngspice python3-numpy python3-matplotlib
+          sudo apt-get install -y --no-install-recommends ngspice xschem python3-numpy python3-matplotlib
           ngspice -v | head -3
+          xschem --version | head -1
 
       - name: Install the selftest klt
         run: pipx install "klayout-tools==${SELFTEST_KLT_VERSION}"

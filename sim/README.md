@@ -28,6 +28,14 @@ gain-bench source guard and extraction on purpose and requires the unit suite
 to fail. The job fails if it leaves any file modified or created (no
 `records/`). It never runs a PVT/Monte Carlo grid and needs no credentials.
 
+The selftest also runs `ci_netlist_check.py` (issue #76): it exports
+`design/opamp_two_stage.sch` with xschem into a scratch temp dir and compares
+it with the committed `design/netlist/opamp_two_stage.spice`, ignoring only the
+checkout-specific `** sch_path:` comment. Missing xschem, a failed or empty
+export, a missing symbol or an empty subcircuit fail it. Reproduce locally
+with `python3 sim/ci_netlist_check.py` (tests: `python3 sim/test_netlist_check.py`);
+a mismatch means regenerate the netlist per `design/README.md`.
+
 **Two distinct klt pins** (do not conflate):
 
 | Where | Pin | Role |
