@@ -91,6 +91,24 @@ from harness import (  # noqa: E402
     sanitise_report,
 )
 
+from harness import load_sibling  # noqa: E402
+
+# Loaded by path under an experiment-unique name, NOT `import measurement_config`:
+# sibling drivers load this driver through `harness.load_sibling`, which does not
+# put this directory on sys.path, and every experiment will grow its own
+# `measurement_config.py` (see that module's extension contract), so a bare
+# top-level name would either fail to resolve or collide in sys.modules.
+mc = load_sibling("gain_gbw_pm_measurement_config", "sim/gain-gbw-pm/measurement_config.py")
+# Single source for the fingerprinted constants.
+AC_FSTART = mc.AC_FSTART
+AC_FSTOP = mc.AC_FSTOP
+AC_PPD = mc.AC_PPD
+CORNERS = mc.CORNERS
+MODEL_LIB = mc.MODEL_LIB
+PASSIVE_SECTIONS = mc.PASSIVE_SECTIONS
+SUPPLIES_V = mc.SUPPLIES_V
+TEMPS_C = mc.TEMPS_C
+
 TESTBENCH = HERE / "testbench" / "tb_gain_gbw_pm.spice"
 
 # --------------------------------------------------------------------------
@@ -101,8 +119,6 @@ TESTBENCH = HERE / "testbench" / "tb_gain_gbw_pm.spice"
 #: capacitor sections. The grid varies MOS corner, temperature and supply;
 #: it does NOT claim independent passive (RZ / CC) corner coverage -- that was
 #: not run. See the record's "Passive-section policy".
-CORNERS = ["typical", "ff", "ss", "fs", "sf"]
-PASSIVE_SECTIONS = ("res_typical", "mimcap_typical")
 
 #: Opt-in passive-corner axis (`--passive-corners`, issue #70). Names map to the
 #: PDK's own sections in `sm141064.ngspice` (verified against the installed
@@ -132,15 +148,11 @@ def passive_name(mos: str, res: str, mim: str) -> str:
 #: GBW-binding point (record 20261009-055759-2524b3e) and nominal.
 PASSIVE_POINTS = [("fs", 125.0, 2.97), ("ss", 125.0, 2.97), ("typical", 27.0, 3.30)]
 
-TEMPS_C = [-40.0, 27.0, 125.0]
-SUPPLIES_V = [2.97, 3.30, 3.63]
-MODEL_LIB = "libs.tech/ngspice/sm141064.ngspice"
 
 NOMINAL = ("typical", 27.0, 3.30)
 
 #: `.ac dec` sweep. Starts at 0.1 Hz so the lowest decade is a plateau for
 #: every corner (dominant pole is hundreds of Hz), ends well above any GBW.
-AC_FSTART, AC_FSTOP, AC_PPD = 0.1, 1e9, 20
 
 # Ratified bounds (spec/target-spec.md Sec.2). Never edited here.
 GAIN_MIN_DB = 60.0
@@ -1035,6 +1047,8 @@ def build_record(
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (wrapper-normalised, device body "
         f"verbatim; normalised sha256 `{dut_sha}`), snapshotted in full in "
         f"`netlist-snapshots/{record}.spice`")
+    for ln in mc.fingerprint_lines(TESTBENCH.read_text()):
+        add(ln)
     add("- **Corner matrix run**:")
     add(f"  - Process (MOS): {', '.join(CORNERS)}")
     add("  - Temperature: " + ", ".join(f"{t:g} C" for t in TEMPS_C))
@@ -1197,6 +1211,8 @@ def build_record(
         for s in study_bad:
             add(f"- {s}")
         add("")
+
+    L.extend(mc.inputs_section(TESTBENCH.read_text()))
 
     add("## Plots")
     add("")

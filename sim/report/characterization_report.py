@@ -534,6 +534,94 @@ def bound_in_spec(record_bound: str, spec_target: str) -> bool:
 
 
 # --------------------------------------------------------------------------
+# measurement-configuration freshness (issue #85)
+# --------------------------------------------------------------------------
+#: Experiments whose records carry a measurement fingerprint, with the
+#: stdlib module (repo-relative) that computes the CURRENT effective inputs.
+#: Every other experiment is reported as freshness-unknown until migrated.
+MEASUREMENT_CONFIG = {"gain-gbw-pm": "sim/gain-gbw-pm/measurement_config.py"}
+_FP_LINE = re.compile(r"^- \*\*Measurement fingerprint\*\*: version (\d+), sha256 `([0-9a-f]{64})`", re.M)
+_FP_BLOCK = re.compile(r"^## Measurement fingerprint inputs\n.*?^```json\n(.*?)\n```", re.M | re.S)
+
+
+def parse_fingerprint(text: str, label: str) -> dict | None:
+    """The record's own fingerprint claim, verified against its retained inputs.
+
+    None = the record predates fingerprinting (freshness unknown). A record
+    that states a fingerprint must retain inputs that hash to it.
+    """
+    m = _FP_LINE.search(header_of(text))
+    if not m:
+        return None
+    b = _FP_BLOCK.search(text)
+    if not b:
+        raise ReportError(f"{label}: states a measurement fingerprint but retains no inputs block")
+    try:
+        inputs = json.loads(b.group(1))
+    except ValueError as e:
+        raise ReportError(f"{label}: measurement fingerprint inputs are not valid JSON: {e}") from e
+    h = _harness().measurement_fingerprint(inputs)
+    if h != m.group(2):
+        raise ReportError(f"{label}: retained measurement-fingerprint inputs hash to {h[:16]}, "
+                          f"not the stated {m.group(2)[:16]} (record altered or corrupt)")
+    return {"version": int(m.group(1)), "sha256": m.group(2), "inputs": inputs}
+
+
+def _harness():
+    sys.path.insert(0, str(HERE.parent))
+    try:
+        import harness
+    finally:
+        sys.path.pop(0)
+    return harness
+
+
+def current_measurement_inputs(root: Path, exp: str) -> dict:
+    """Effective measurement inputs of `exp` as the checkout at `root` would run them."""
+    import types
+    mod_path = root / MEASUREMENT_CONFIG[exp]
+    if not mod_path.is_file():
+        raise ReportError(f"{exp}: measurement configuration module is missing: {MEASUREMENT_CONFIG[exp]}")
+    _harness()  # load the report's own harness first: measurement_config reuses it from sys.modules
+    # Compile from source (no bytecode cache) so an edited module is never shadowed by a stale .pyc.
+    mod = types.ModuleType(f"_mcfg_{exp.replace('-', '_')}")
+    mod.__file__ = str(mod_path)
+    exec(compile(mod_path.read_text(), str(mod_path), "exec"), mod.__dict__)
+    tb = root / mod.TESTBENCH_REL
+    if not tb.is_file():
+        raise ReportError(f"{exp}: current testbench is missing: {mod.TESTBENCH_REL}")
+    return mod.inputs(tb.read_text())
+
+
+def _diff_inputs(old, new, path="") -> list:
+    if isinstance(old, dict) and isinstance(new, dict):
+        out = []
+        for k in sorted(set(old) | set(new)):
+            out += _diff_inputs(old.get(k), new.get(k), f"{path}{k}.")
+        return out
+    return [] if old == new else [path.rstrip(".")]
+
+
+def measurement_freshness(root: Path, exp: str, fp: dict | None, archival: bool) -> dict:
+    """Status of one source's measurement-configuration freshness."""
+    if fp is None:
+        why = ("not instrumented: this experiment's records carry no measurement fingerprint"
+               if exp not in MEASUREMENT_CONFIG else
+               "this record predates measurement fingerprinting")
+        return {"status": "unknown", "detail": why}
+    if exp not in MEASUREMENT_CONFIG:
+        return {"status": "unknown", "detail": "record carries a fingerprint but the report has no current-configuration source for it",
+                "fingerprint": fp["sha256"]}
+    cur = current_measurement_inputs(root, exp)
+    cur_h = _harness().measurement_fingerprint(cur)
+    if cur_h == fp["sha256"]:
+        return {"status": "current", "fingerprint": fp["sha256"], "version": fp["version"]}
+    differs = _diff_inputs(fp["inputs"], cur)
+    return {"status": "stale", "fingerprint": fp["sha256"], "version": fp["version"],
+            "current_fingerprint": cur_h, "differs": differs}
+
+
+# --------------------------------------------------------------------------
 # build
 # --------------------------------------------------------------------------
 def current_dut_sha256(root: Path) -> str:
@@ -581,6 +669,16 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                     if isinstance(r_, dict) and "limitations" in r_:
                         r_["limitations"].append(w)
             ex["text_len"] = len(text)
+            fp = parse_fingerprint(text, f"{exp}:{p.stem}")
+            fresh = measurement_freshness(root, exp, fp, archival)
+            ex["measurement_config"] = fresh
+            if fresh["status"] == "unknown":
+                note = ("measurement-configuration freshness unknown: " + fresh["detail"] +
+                        "; the bench/analysis settings it measured cannot be compared with today's")
+                ex["limitations"].append(note)
+                for r_ in ex.get("rows", {}).values():
+                    if isinstance(r_, dict) and "limitations" in r_:
+                        r_["limitations"].append(note)
             skey = exp if len(rels) == 1 else f"{exp} ({p.stem})"
             if exp in MULTI_RECORD:
                 if want_rows is not None:
@@ -593,7 +691,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                     row_source[rk] = skey
             extracted[skey] = ex
             pv = ex["prov"]
-            sources[skey] = {"record_id": p.stem, "path": posix_rel(p, root), "sha256": sha256_file(p), **pv}
+            sources[skey] = {"record_id": p.stem, "path": posix_rel(p, root), "sha256": sha256_file(p), **pv,
+                             "measurement_config": fresh}
     # DUT compatibility: compare on the 16-hex prefix (not all records keep the full hash).
     duts = {}
     for exp, s in sources.items():
@@ -618,8 +717,29 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                 "records, then regenerate the report; existing records are append-only and are not edited. "
                 "For a historical (non-signoff) report use --archival with an explicit --out-dir.")
 
+    # Measurement-configuration gate (issue #85), additive to the DUT gate above:
+    # fingerprinted evidence must match today's effective bench; unknown is disclosed.
+    stale_cfg = sorted(e for e, s in sources.items() if s["measurement_config"]["status"] == "stale")
+    if stale_cfg and not archival:
+        detail = "; ".join(f"{e}: changed {', '.join(sources[e]['measurement_config']['differs'])}" for e in stale_cfg)
+        raise ReportError(
+            "stale measurement configuration: selected records were measured with a different bench/analysis "
+            f"configuration than the current one ({detail}). Experiments needing a rerun: "
+            + ", ".join(e.split(" (")[0] for e in stale_cfg) +
+            ". Rerun them (sim/<experiment>/run_*.py) to append new records, then regenerate the report; "
+            "existing records are append-only and are not edited. "
+            "For a historical (non-signoff) report use --archival with an explicit --out-dir.")
+
     # report-level provenance limitations
     glob_lim = []
+    for e, s in sorted(sources.items()):
+        mcs = s["measurement_config"]
+        if mcs["status"] == "stale":
+            glob_lim.append(f"{e}: measurement configuration differs from the current bench "
+                            f"(changed: {', '.join(mcs['differs'])}); archival report only")
+        elif mcs["status"] == "unknown":
+            glob_lim.append(f"{e}: measurement-configuration freshness unknown ({mcs['detail']}); "
+                            "DUT freshness is checked, bench/analysis freshness is not")
     pdks = {}
     for exp, s in sorted(sources.items()):
         for kind in ("pdk_open_pdks", "pdk_client_resolved"):
@@ -791,6 +911,12 @@ def link_from_reports(path: str) -> str:
     return os.path.relpath(path, OUT_DIR_REL).replace(os.sep, "/")
 
 
+def mc_cell(m: dict) -> str:
+    if m["status"] == "unknown":
+        return "unknown"
+    return f"{m['status']} (`{m['fingerprint'][:16]}`)"
+
+
 def render_md(rep: dict) -> str:
     L = []
     a = L.append
@@ -848,15 +974,15 @@ def render_md(rep: dict) -> str:
     a("")
     a("## Sources")
     a("")
-    a("| Experiment | Record | sha256 | DUT prefix | PDK (open_pdks) | ngspice local / klt engine | klt client | Backend |")
-    a("|---|---|---|---|---|---|---|---|")
+    a("| Experiment | Record | sha256 | DUT prefix | PDK (open_pdks) | ngspice local / klt engine | klt client | Backend | Measurement config |")
+    a("|---|---|---|---|---|---|---|---|---|")
     for e, sr in rep["sources"].items():
         pdk = (sr["pdk_open_pdks"] or "n/a")[:12]
         if sr["pdk_client_resolved"] and sr["pdk_client_resolved"] != sr["pdk_open_pdks"]:
             pdk += f" (client-resolved {sr['pdk_client_resolved'][:12]})"
         a(f"| {e} | [`{sr['record_id']}`]({link_from_reports(sr['path'])}) | `{sr['sha256']}` | "
           f"`{sr['dut_sha256'][:16]}` | `{pdk}` | {sr['ngspice_local'] or 'n/a'} / {sr['ngspice_engine'] or 'n/a'} | "
-          f"{sr['klt_client'] or 'n/a'} | {sr['backend'] or 'n/a'} |")
+          f"{sr['klt_client'] or 'n/a'} | {sr['backend'] or 'n/a'} | {mc_cell(sr['measurement_config'])} |")
     a("")
     a("## Report-level limitations")
     a("")

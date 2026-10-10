@@ -526,5 +526,39 @@ class PassiveCornerTests(unittest.TestCase):
         self.assertIn(f"netlist-snapshots/{src}.spice", md)
 
 
+class MeasurementFingerprint(unittest.TestCase):
+    """Issue #85: the fingerprint is stable under non-semantic change and
+    moves with load, bias, stimulus and analysis settings."""
+
+    TB = r.TESTBENCH.read_text()
+
+    def fp(self, text=None):
+        return r.mc.fingerprint(self.TB if text is None else text)
+
+    def test_driver_uses_the_fingerprinted_constants(self):
+        self.assertIs(r.CORNERS, r.mc.CORNERS)
+        self.assertEqual(r.ac_request.__globals__["AC_PPD"], r.mc.AC_PPD)
+
+    def test_non_semantic_changes_keep_fingerprint(self):
+        t = "* new comment\n\n" + self.TB.replace("'design.ngspice'", "'/tmp/x/work/design.ngspice'")
+        t = t.replace("CL vout 0 2p", "CL  vout   0 2p ; load")
+        self.assertEqual(self.fp(t), self.fp())
+
+    def test_semantic_changes_move_fingerprint(self):
+        for old, new in (("CL vout 0 2p", "CL vout 0 3p"), ("dc 10u", "dc 11u"),
+                         ("dc 3.3", "dc 3.0"), ("ac 1", "ac 2"), ("lfb=1e9", "lfb=1e8")):
+            with self.subTest(old):
+                self.assertIn(old, self.TB)
+                self.assertNotEqual(self.fp(self.TB.replace(old, new, 1)), self.fp())
+
+    def test_inputs_are_json_and_record_embeds_them(self):
+        import json
+        lines = r.mc.fingerprint_lines(self.TB) + r.mc.inputs_section(self.TB)
+        blob = "\n".join(lines)
+        self.assertIn(self.fp(), blob)
+        body = blob.split("```json\n", 1)[1].split("\n```", 1)[0]
+        self.assertEqual(harness.measurement_fingerprint(json.loads(body)), self.fp())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
