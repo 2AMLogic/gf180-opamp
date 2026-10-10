@@ -54,8 +54,12 @@ MULTI_RECORD = {"slew-swing-power": ("power", "slew", "swing")}
 #: Side-study records that live beside an experiment's grid records but never
 #: judge its spec rows (matched on the record's title line), so `--latest`
 #: must not select them: the gain-gbw-pm RZ x CC passive-corner study
-#: (`run_gain_gbw_pm.py --passive-corners`, issue #70).
-STUDY_TITLES = {"gain-gbw-pm": ("# gain/GBW/PM passive-corner study",)}
+#: (`run_gain_gbw_pm.py --passive-corners`, issue #70) and the slew/swing/power
+#: one (`run_slew_swing_power.py --passive-corners`, issue #97).
+STUDY_TITLES = {
+    "gain-gbw-pm": ("# gain/GBW/PM passive-corner study",),
+    "slew-swing-power": ("# slew/swing/power passive-corner study",),  # issue #97
+}
 CORNER_ORDER = ["typical", "ff", "ss", "fs", "sf"]
 FULL_GRID = 45
 

@@ -130,25 +130,20 @@ TESTBENCH = HERE / "testbench" / "tb_gain_gbw_pm.spice"
 #: res_ss: ppolyf_u_1k = 1000+200 ohm; res_ff = 1000-200. mimcap_ss:
 #: mim_corner_2p0fF = 1.1; mimcap_ff = 0.9 (cap_mim_2f0_m4m5_noshield scales
 #: with mim_corner_2p0fF).
-PASSIVE_LEVELS = ("typical", "best", "worst")
-_LEVEL_SUFFIX = {"typical": "typical", "best": "ff", "worst": "ss"}
-RES_FACTOR = {"typical": 1.0, "best": 0.8, "worst": 1.2}
-MIM_FACTOR = {"typical": 1.0, "best": 0.9, "worst": 1.1}
-
-
-def passive_sections(res: str, mim: str) -> tuple[str, str]:
-    """PDK section names for a (resistor level, MIM level) pair."""
-    return (f"res_{_LEVEL_SUFFIX[res]}", f"mimcap_{_LEVEL_SUFFIX[mim]}")
-
-
-def passive_name(mos: str, res: str, mim: str) -> str:
-    """klt process-axis name encoding the MOS corner and both passive levels."""
-    return f"{mos}__r-{res}__c-{mim}"
-
-
-#: Passive-corner study points (MOS corner, T, VDD): the PM-binding point, the
-#: GBW-binding point (record 20261009-055759-2524b3e) and nominal.
-PASSIVE_POINTS = [("fs", 125.0, 2.97), ("ss", 125.0, 2.97), ("typical", 27.0, 3.30)]
+# Shared with every other passive-corner side study (issue #97): one copy.
+from passive_corners import (  # noqa: E402,F401
+    MIM_FACTOR,
+    PASSIVE_LEVELS,
+    PASSIVE_POINTS,
+    RES_FACTOR,
+    apply_passive_matrix,
+    passive_combos,
+    passive_expected_keys,
+    passive_name,
+    passive_process_axis,
+    passive_sections,
+    split_passive_key,
+)
 
 
 NOMINAL = ("typical", 27.0, 3.30)
@@ -1245,55 +1240,12 @@ def build_record(
 # --------------------------------------------------------------------------
 
 
-def passive_combos() -> list[tuple[str, str]]:
-    return [(r, c) for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS]
-
-
-def passive_process_axis(points=PASSIVE_POINTS) -> list[dict]:
-    mos = list(dict.fromkeys(p[0] for p in points))
-    return [
-        {"name": passive_name(m, r, c), "sections": [m, *passive_sections(r, c)]}
-        for m in mos
-        for r, c in passive_combos()
-    ]
-
-
-def passive_expected_keys(points=PASSIVE_POINTS) -> list[Key]:
-    return [
-        (passive_name(m, r, c), float(t), float(v))
-        for (m, t, v) in points
-        for r, c in passive_combos()
-    ]
-
-
 def passive_ac_request(netlist: Path, pdk: Pdk, points=PASSIVE_POINTS) -> dict:
     """ONE corner-matrix request: MOS x passive-combo x T x VDD, with the
     cross-product cells that are not study points removed via klt's `exclude`."""
     temps = sorted({p[1] for p in points})
     vdds = sorted({p[2] for p in points})
-    req = ac_request(netlist, pdk, [], temps, vdds)
-    req["corners"]["process"] = passive_process_axis(points)
-    req["corners"]["supply_v"] = {"vdd": list(vdds), "vcm": [round(v / 2, 6) for v in vdds]}
-    want = set(points)
-    exclude = []
-    for m in dict.fromkeys(p[0] for p in points):
-        for t in temps:
-            for v in vdds:
-                if (m, t, v) in want:
-                    continue
-                for r, c in passive_combos():
-                    exclude.append({
-                        "process": passive_name(m, r, c),
-                        "temperature_c": t,
-                        "supply_v": {"vdd": v},
-                    })
-    req["exclude"] = exclude
-    return req
-
-
-def split_passive_key(k: Key) -> tuple[str, str, str]:
-    mos, rpart, cpart = k[0].split("__")
-    return mos, rpart.removeprefix("r-"), cpart.removeprefix("c-")
+    return apply_passive_matrix(ac_request(netlist, pdk, [], temps, vdds), points)
 
 
 def passive_summary(results: dict[Key, Metrics], points=PASSIVE_POINTS) -> dict:
