@@ -159,6 +159,22 @@ GRIDS = ("nominal", "full")
 #: The committed 27 C / 3.30 V record the full-grid record is set next to.
 NOMINAL_RECORD = "20261009-072205-96bf3cc"
 NOMINAL_CSV = HERE / "corners" / NOMINAL_RECORD / "offset_samples.csv"
+#: Batch shards (`request.remote.hosts`, one fleet job each) for the full
+#: grid. The fleet caps ONE job at 3600 s and a timed-out job returns no
+#: per-unit results (2AMLogic/klayout-tools#2833): the unsharded 13500-unit
+#: request ran 3688 s and was lost. The nominal 1500 units took 446 s on one
+#: job (~0.30 s/unit), so 3 shards of 4500 units (~1350 s each) stay well
+#: inside the cap while asking the shared fleet (capped at a few concurrent
+#: instances) for few instances. klt derives every seed in the client from
+#: (seed, corner index, sample index) over the WHOLE request, so sharding
+#: changes no sample's value.
+GRID_HOSTS = 3
+#: A shard whose launch the fleet refused (shared concurrency cap or Spot
+#: capacity) comes back as `lost_shard` units, not a submit error, and
+#: `batch.capacity_wait_s` does not wait out the concurrency cap
+#: (2AMLogic/klayout-tools#2917). Such a run is re-submitted whole (still
+#: through `klt sim`, never locally), up to `--batch-submit-retries` times.
+_LOST_SHARD_TRANSIENT = ("already running", "BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity")
 
 
 # --------------------------------------------------------------------------
@@ -345,14 +361,41 @@ def mc_request(netlist: Path, pdk: Pdk, corners: list[str], n: int, seed: int, v
     return req
 
 
-def grid_request(netlist: Path, pdk: Pdk, corners: list[str], grid: str, n: int, seed: int, vary: str) -> dict:
+def grid_request(netlist: Path, pdk: Pdk, corners: list[str], grid: str, n: int, seed: int, vary: str,
+                 *, hosts: int | None = None) -> dict:
     """`mc_request` over a grid's T and VDD axes; vdd and vcm sweep together
-    by index (VCM = VDD/2), as in the gain bench's request."""
+    by index (VCM = VDD/2), as in the gain bench's request. `hosts` > 1
+    shards the expanded unit list into that many fleet jobs (klt merges the
+    shard reports back into one, in unsharded unit order)."""
     temps, supplies, vcms = mc.grid_axes(grid)
     req = mc_request(netlist, pdk, corners, n, seed, vary)
     req["corners"]["supply_v"] = {"vdd": supplies, "vcm": vcms}
     req["corners"]["temperature_c"] = temps
+    if hosts and hosts > 1:
+        req["remote"] = {"hosts": int(hosts)}
     return req
+
+
+def lost_shard_refusals(report: dict) -> int:
+    """Units lost because a shard's fleet launch was refused for capacity or
+    the shared concurrency cap (nothing ran for them; re-submittable)."""
+    n = 0
+    for c in report.get("corners", []):
+        for d in c.get("diagnostics", []) or []:
+            msg = str(d.get("message", ""))
+            if (d.get("code") == "lost_shard" or "shard lost" in msg) and any(t in msg for t in _LOST_SHARD_TRANSIENT):
+                n += 1
+                break
+    return n
+
+
+def remote_jobs(report: dict) -> list[dict]:
+    """The fleet job block(s) of a report: one `environment.remote` block, or
+    its `fleet[]` entries for a sharded run (`None` for a lost shard)."""
+    r = remote_of(report)
+    if "fleet" in r:
+        return [e or {} for e in r.get("fleet") or []]
+    return [r] if r else []
 
 
 # --------------------------------------------------------------------------
@@ -826,7 +869,7 @@ def build_grid_record(*, record, stamp, pdk, ngspice, kver, report, stats: dict,
     add = L.append
     retained = {"grid": "full"}
     temps, supplies, vcms = mc.grid_axes("full")
-    remote = remote_of(report)
+    jobs = remote_jobs(report)
     keys = grid_keys("full")
     add(f"# Offset Monte Carlo PVT grid record `{record}`")
     add("")
@@ -836,10 +879,13 @@ def build_grid_record(*, record, stamp, pdk, ngspice, kver, report, stats: dict,
     for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}, retained):
         add(ln)
     add(f"- **PDK**: {pdk.variant} (open_pdks `{pdk.version}`); tools: ngspice local `{ngspice}`, klt `{kver}`")
-    if remote:
-        add(f"- **Execution**: `klt sim` backend `{remote.get('provider')}`, job `{remote.get('job_id', remote.get('job'))}`, "
-            f"{'Spot ' if remote.get('spot') else ''}{remote.get('instance_type', '')}; "
-            f"runner klt `{remote.get('runner_klt_version')}` vs client `{remote.get('client_klt_version')}` "
+    if jobs:
+        j0 = jobs[0]
+        add(f"- **Execution**: `klt sim` backend `{j0.get('provider')}`, {len(jobs)} fleet job(s) "
+            f"(`remote.hosts = {len(jobs)}`, contiguous shards of the unit list merged by klt): "
+            + ", ".join(f"`{j.get('job_id', j.get('job'))}`" for j in jobs)
+            + f"; {'Spot ' if j0.get('spot') else ''}{j0.get('instance_type', '')}; "
+            f"runner klt `{j0.get('runner_klt_version')}` vs client `{j0.get('client_klt_version')}` "
             "(`environment.remote` of the grid report)")
     else:
         add("- **Execution**: `klt sim` local backend (no `environment.remote` in the report)")
@@ -946,7 +992,8 @@ def build_grid_record(*, record, stamp, pdk, ngspice, kver, report, stats: dict,
     add("## Reproduce")
     add("")
     add("```")
-    add("python3 sim/offset-mc/run_offset_mc.py --grid full --batch-runner-version-check warn --batch-submit-retries 10")
+    add("python3 sim/offset-mc/run_offset_mc.py --grid full --batch-runner-version-check warn --batch-submit-retries 10 "
+        "--batch-capacity-wait-s 1800")
     add("```")
     add("")
     add("## Files")
@@ -1049,20 +1096,29 @@ def run_grid(pdk: Pdk, args) -> int:
     with tempfile.TemporaryDirectory(prefix="offmc-grid-") as scratch:
         work = Path(scratch)
         tb = materialise(work / "grid", pdk)
-        req = grid_request(tb, pdk, CORNERS, "full", MC_N, MC_SEED, MC_VARY)
+        req = grid_request(tb, pdk, CORNERS, "full", MC_N, MC_SEED, MC_VARY,
+                           hosts=GRID_HOSTS if args.hosts is None else args.hosts)
         req["batch"] = batch_block(args)
         t0 = time.monotonic()
-        try:
-            report = run_klt_retrying(req, work / "grid" / "out", args.backend, work / "grid",
-                                      retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
-        except KltError as exc:
-            print(f"ERROR: the grid Monte Carlo request could not be run; NO RECORD WRITTEN (result NOT RUN).\n{exc}",
-                  file=sys.stderr)
-            return 2
+        for attempt in range(args.batch_submit_retries + 1):
+            try:
+                report = run_klt_retrying(req, work / "grid" / f"out{attempt}", args.backend, work / "grid",
+                                          retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
+            except KltError as exc:
+                print(f"ERROR: the grid Monte Carlo request could not be run; NO RECORD WRITTEN (result NOT RUN).\n{exc}",
+                      file=sys.stderr)
+                return 2
+            lost = lost_shard_refusals(report)
+            if not lost or attempt == args.batch_submit_retries:
+                break
+            print(f"  {lost} units lost to a refused shard launch (attempt {attempt + 1}/{args.batch_submit_retries + 1}); "
+                  f"re-submitting the request in {args.batch_retry_wait_s:g}s", flush=True)
+            time.sleep(args.batch_retry_wait_s)
         wall_s = time.monotonic() - t0
         keep = Path(tempfile.gettempdir()) / f"offset-mc-{record}-pvt-grid-report.json"
         keep.write_text(json.dumps(sanitise_report(report), separators=(",", ":")))
-        print(f"  grid report kept at {keep} (job {remote_of(report).get('job_id', 'local')}, {wall_s:.0f} s)", flush=True)
+        jobs = ", ".join(str(j.get("job_id", "?")) for j in remote_jobs(report)) or "local"
+        print(f"  grid report kept at {keep} (job(s) {jobs}, {wall_s:.0f} s)", flush=True)
         samples, problems = extract_grid(report, "full", MC_N)
         if problems:
             print("ERROR: the grid Monte Carlo did not complete cleanly; NO RECORD WRITTEN:", file=sys.stderr)
@@ -1138,6 +1194,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
     ap.add_argument("--batch-submit-retries", type=int, default=0)
     ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    ap.add_argument("--hosts", type=int, default=None,
+                    help=f"--grid full only: fleet jobs to shard the units over (default {GRID_HOSTS})")
     args = ap.parse_args(argv)
 
     pdk = find_pdk()

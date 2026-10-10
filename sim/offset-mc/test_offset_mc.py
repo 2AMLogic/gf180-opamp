@@ -414,6 +414,33 @@ class GridTests(unittest.TestCase):
         self.assertEqual(req["corners"]["temperature_c"], [float(t) for t in gain.TEMPS_C])
         self.assertEqual(req["corners"]["supply_v"]["vdd"], [float(v) for v in gain.SUPPLIES_V])
 
+    def test_full_grid_is_sharded_over_fleet_jobs_and_nominal_is_not(self):
+        req = r.grid_request(Path("/x/tb.spice"), self.pdk, r.CORNERS, "full", r.MC_N, r.MC_SEED, r.MC_VARY,
+                             hosts=r.GRID_HOSTS)
+        self.assertEqual(req["remote"], {"hosts": r.GRID_HOSTS})
+        self.assertGreater(r.GRID_HOSTS, 1)
+        # each shard stays within half the fleet's 3600 s job cap at the measured 446 s / 1500 units
+        self.assertLessEqual(45 * r.MC_N / r.GRID_HOSTS * 446 / 1500, 3600 / 2)
+        self.assertNotIn("remote", r.grid_request(Path("/x/tb.spice"), self.pdk, r.CORNERS, "full", 4, 1, "mismatch"))
+        self.assertNotIn("remote", r.mc_request(Path("/x/tb.spice"), self.pdk, r.CORNERS, r.MC_N, r.MC_SEED, r.MC_VARY))
+
+    def test_lost_shard_refusals_are_counted_and_other_errors_are_not(self):
+        refused = grid_corner("ss", -40.0, 3.63, 0, 0.0)
+        refused["status"] = "error"
+        refused["diagnostics"] = [{"severity": "error", "code": "lost_shard", "message":
+                                   "shard lost: launch failed (exit 1): error: 8 instance(s) already running + 1 requested"}]
+        timed_out = grid_corner("ss", -40.0, 3.63, 1, 0.0)
+        timed_out["status"] = "error"
+        timed_out["diagnostics"] = [{"severity": "error", "code": "batch_job_timeout", "message": "job exceeded 3600s"}]
+        self.assertEqual(r.lost_shard_refusals({"corners": [refused, timed_out, grid_corner("ff", 27.0, 3.3, 0, 0.0)]}), 1)
+
+    def test_remote_jobs_reads_single_and_sharded_reports(self):
+        one = {"environment": {"remote": {"job_id": "a"}}}
+        fleet = {"environment": {"remote": {"fleet": [{"job_id": "a"}, None, {"job_id": "c"}]}}}
+        self.assertEqual([j.get("job_id") for j in r.remote_jobs(one)], ["a"])
+        self.assertEqual([j.get("job_id") for j in r.remote_jobs(fleet)], ["a", None, "c"])
+        self.assertEqual(r.remote_jobs({}), [])
+
     def test_nominal_grid_request_is_the_issue_45_request(self):
         a = r.grid_request(Path("/x/tb.spice"), self.pdk, r.CORNERS, "nominal", r.MC_N, r.MC_SEED, r.MC_VARY)
         b = r.mc_request(Path("/x/tb.spice"), self.pdk, r.CORNERS, r.MC_N, r.MC_SEED, r.MC_VARY)
@@ -507,7 +534,7 @@ class GridTests(unittest.TestCase):
         st = r.grid_stats(r.extract_grid(grid_report(4), "full", 4)[0])
         md = self._record(st)
         self.assertTrue(md.startswith("# Offset Monte Carlo PVT grid record"))
-        self.assertIn("job `klt-sim-test123`", md)
+        self.assertIn("`klt-sim-test123`", md)
         self.assertIn("Worst linear 3-sigma offset over the 45-point grid", md)
         self.assertIn("27 C / 3.30 V figure", md)
         self.assertIn(r.NOMINAL_RECORD, md)
