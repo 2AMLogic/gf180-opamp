@@ -25,6 +25,12 @@ Status vocabulary (per spec row):
                       this way; without a selected record it stays explicitly
                       missing and nothing is read from the spec status text)
 
+Supplementary side studies (issue #121): passive-corner RZ x CC studies the
+manifest selects explicitly under "supplementary" are hashed, parsed and
+checked like selected records, and their observations are derived from their
+own tables; they are reported in a separate section and as row-detail notes,
+never as a verdict, point count or summary count.
+
 Existing records are Markdown only (no structured sidecars), so this module
 carries a narrow, tested extraction of the verdict / worst-case lines and
 records the sha256 of every source file it read.
@@ -187,23 +193,6 @@ def coverage_text(c: dict) -> str:
 # --------------------------------------------------------------------------
 # per-experiment extraction
 # --------------------------------------------------------------------------
-#: Cited (never selected) passive-corner side study for gain/GBW/PM (issue #70).
-PASSIVE_STUDY_ID = "20261009-234014-55b400c"
-PASSIVE_STUDY_REL = f"sim/gain-gbw-pm/records/{PASSIVE_STUDY_ID}.md"
-#: The JSON keeps the repo-root path as plain text; render_md() turns it into a
-#: link relative to the report directory (like every other source link).
-PASSIVE_STUDY_NOTE = {
-    "gain": "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) "
-            f"`{PASSIVE_STUDY_REL}` does not issue a gain verdict",
-    "gbw": "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) "
-           f"`{PASSIVE_STUDY_REL}` finds GBW PASS at 24/27 cells and FAIL at 3/27 cells, all at "
-           "ss / 125 C / 2.97 V with CC worst (one MOS/T/VDD point, RZ typical/best/worst = 9.663/9.656/9.673 MHz); "
-           "worst 9.656 MHz is below the 10 MHz bound",
-    "pm": "the separate 27-cell RZ x CC passive-corner study (cited side study, not a selected verdict record) "
-          f"`{PASSIVE_STUDY_REL}` finds PM >= 60 deg at only 7/27 cells (53.63 .. 63.17 deg)",
-}
-
-
 def common_limitations(text: str, prov: dict, cov: dict) -> list:
     lim = []
     if "res_typical" in text:
@@ -1414,6 +1403,298 @@ def icmr_evidence(ex: dict, source: dict) -> dict:
     }
 
 
+# --------------------------------------------------------------------------
+# supplementary passive-corner side studies (issue #121): measured, never graded
+# --------------------------------------------------------------------------
+#: Side studies the manifest may select under "supplementary" (never under
+#: "experiments"): key -> experiment directory, record title and the spec rows
+#: whose details cite the study. Their cells are never counted in a row's
+#: points or verdict: the studies cover a few MOS/T/VDD points x RZ x CC, not
+#: the 45-point grid.
+SUPPLEMENTARY = {
+    "gain-gbw-pm-passive-corners": {"experiment": "gain-gbw-pm", "title": STUDY_TITLES["gain-gbw-pm"][0],
+                                    "rows": ("gain", "gbw", "pm")},
+    "slew-swing-power-passive-corners": {"experiment": "slew-swing-power",
+                                         "title": STUDY_TITLES["slew-swing-power"][0],
+                                         "rows": ("power", "slew", "swing")},
+}
+PASSIVE_LEVELS = ("typical", "best", "worst")
+
+
+def _disp_tol(s: str) -> float:
+    """Half a unit in the last displayed digit of the number `s` (plus a hair)."""
+    d = len(s.split(".")[1]) if "." in s else 0
+    return 0.5 * 10 ** -d + 1e-9
+
+
+def study_provenance(text: str, label: str) -> dict:
+    """Provenance of a side-study record: its header plus its '## Conditions' section."""
+    head = header_of(text) + section(text, "Conditions")
+    prov = parse_provenance(head, label)
+    if prov["pdk_open_pdks"] is None:
+        m = re.search(r"\(open_pdks ([0-9a-f]{40})\)", head)
+        prov["pdk_open_pdks"] = m.group(1) if m else None
+    if prov["klt_client"] is None:
+        m = re.search(r"; klt klt (\S+)", head)
+        prov["klt_client"] = m.group(1) if m else None
+    prov["fleet_runner_mismatch"] = prov["fleet_runner_mismatch"] or '"runner_compatibility": "mismatch"' in head
+    return prov
+
+
+def _study_points(text: str, label: str) -> list:
+    """The MOS/T/VDD points the study states, in its order; each x 3 RZ x 3 CC cells."""
+    m = re.search(r"^- \*\*Points\*\*: (.+?), each x 3 RZ levels x 3 CC levels = (\d+) cells", section(text, "Conditions"),
+                  re.M)
+    if not m:
+        raise ReportError(f"{label}: no '- **Points**' line (MOS/T/VDD points x 3 RZ x 3 CC = N cells) in Conditions")
+    pts = []
+    for part in m.group(1).split(";"):
+        pm = re.fullmatch(_PT, part.strip())
+        if not pm:
+            raise ReportError(f"{label}: malformed study point '{part.strip()}' in the Points line")
+        if pm.groups() in pts:
+            raise ReportError(f"{label}: duplicate study point {fmt_point(*pm.groups())} in the Points line")
+        pts.append(pm.groups())
+    n = len(pts) * len(PASSIVE_LEVELS) ** 2
+    if int(m.group(2)) != n:
+        raise ReportError(f"{label}: Points line states {m.group(2)} cells, but {len(pts)} points x 3 RZ x 3 CC = {n}")
+    return pts
+
+
+def _study_cells(body: str, label: str, where: str, ncols: int) -> dict:
+    """One RZ x CC table: {(rz, cc): cells}; every combination exactly once."""
+    lines = [ln for ln in body.splitlines() if ln.startswith("|")]
+    if len(lines) < 3:
+        raise ReportError(f"{label}: no RZ x CC table under '### {where}'")
+    out = {}
+    for ln in lines[2:]:
+        c = split_cells(ln)
+        if len(c) != ncols or c[0] not in PASSIVE_LEVELS or c[1] not in PASSIVE_LEVELS:
+            raise ReportError(f"{label}: malformed RZ x CC row under '### {where}': {ln.strip()}")
+        if (c[0], c[1]) in out:
+            raise ReportError(f"{label}: duplicate cell RZ {c[0]}, CC {c[1]} under '### {where}'")
+        out[(c[0], c[1])] = c
+    missing = [(r, c) for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS if (r, c) not in out]
+    if missing:
+        raise ReportError(f"{label}: '### {where}' is missing {len(missing)} of 9 RZ x CC cells "
+                          f"(first: RZ {missing[0][0]}, CC {missing[0][1]})")
+    return out
+
+
+def _study_value(cell: str, label: str, where: str) -> tuple:
+    if not re.fullmatch(r"\d+(?:\.\d+)?", cell):
+        raise ReportError(f"{label}: malformed value '{cell}' under '### {where}'")
+    return float(cell), cell
+
+
+def _study_figure(label: str, fig: dict, vals: dict, flags: dict, claim: dict) -> dict:
+    """Re-derive one figure over every cell and compare with the record's summary line.
+
+    `vals` {(pt, rz, cc): (value, display)}, `flags` {(pt, rz, cc): PASS|FAIL} (the record's
+    per-cell column), `claim` the summary line's verdict, counts and worst cell. A per-cell
+    flag must agree with its value against the bound unless the value is within display
+    precision of the bound (a 60.00 deg cell can be a FAIL of 59.996 deg).
+    """
+    ge = fig["sense"] == ">="
+    for k, (v, s) in vals.items():
+        want = "PASS" if (v >= fig["bound_value"] if ge else v <= fig["bound_value"]) else "FAIL"
+        if flags[k] not in ("PASS", "FAIL") or (flags[k] != want and abs(v - fig["bound_value"]) > _disp_tol(s)):
+            raise ReportError(f"{label}: {fig['label']} cell {fmt_point(*k[0])}, RZ {k[1]}, CC {k[2]} reads {s} "
+                              f"{fig['unit']} but is marked '{flags[k]}' against {fig['bound_text']}")
+    n_pass = sum(1 for f in flags.values() if f == "PASS")
+    total = len(vals)
+    worst_v = (min if ge else max)(v for v, _ in vals.values())
+    at = claim["worst_at"]
+    got = {"verdict": "PASS" if n_pass == total else "FAIL", "pass": n_pass, "total": total, "fail": total - n_pass}
+    if ({k: claim[k] for k in got} != got or abs(claim["worst"] - worst_v) > _disp_tol(claim["worst_s"])
+            or at not in vals or vals[at][0] != worst_v):
+        raise ReportError(
+            f"{label}: {fig['label']} summary ({claim['verdict']}, {claim['pass']}/{claim['total']} pass, "
+            f"{claim['fail']} fail, worst {claim['worst_s']} {fig['unit']} at {fmt_point(*at[0])}, RZ {at[1]}, CC {at[2]}) "
+            f"disagrees with its own tables ({got['verdict']}, {n_pass}/{total} pass, worst {worst_v:g} {fig['unit']})")
+    if claim.get("best_at") is not None:
+        best_v = (max if ge else min)(v for v, _ in vals.values())
+        b = claim["best_at"]
+        if abs(claim["best"] - best_v) > _disp_tol(claim["best_s"]) or b not in vals or vals[b][0] != best_v:
+            raise ReportError(f"{label}: {fig['label']} best cell ({claim['best_s']} {fig['unit']}) disagrees with its "
+                              f"own tables (best {best_v:g} {fig['unit']})")
+    order = list(vals)
+    lo_k = min(order, key=lambda k: vals[k][0])
+    hi_k = max(order, key=lambda k: vals[k][0])
+    w_k = at
+    return {"label": fig["label"], "bound_text": fig["bound_text"], "bound_value": fig["bound_value"],
+            "sense": fig["sense"], "unit": fig["unit"], "verdict_in_record": got["verdict"],
+            "pass": n_pass, "total": total, "fail": total - n_pass,
+            "range": [vals[lo_k][1], vals[hi_k][1]],
+            "worst": {"value": vals[w_k][1], "point": fmt_point(*w_k[0]), "rz": w_k[1], "cc": w_k[2]},
+            "failing_cells": [{"point": fmt_point(*k[0]), "rz": k[1], "cc": k[2], "value": vals[k][1]}
+                              for k in order if flags[k] == "FAIL"]}
+
+
+def _claim(m, groups: dict) -> dict:
+    """Summary-line regex groups -> claim dict (see _study_figure)."""
+    g = m.group
+    d = {"verdict": g(groups["verdict"]), "pass": int(g(groups["pass"])), "total": int(g(groups["total"])),
+         "fail": int(g(groups["fail"])), "worst": float(g(groups["worst"])), "worst_s": g(groups["worst"]),
+         "worst_at": ((g(groups["wp"]), g(groups["wp"] + 1), g(groups["wp"] + 2)), g(groups["wp"] + 3),
+                      g(groups["wp"] + 4))}
+    if "best" in groups and g(groups["best"]):
+        d.update(best=float(g(groups["best"])), best_s=g(groups["best"]),
+                 best_at=((g(groups["bp"]), g(groups["bp"] + 1), g(groups["bp"] + 2)), g(groups["bp"] + 3),
+                          g(groups["bp"] + 4)))
+    return d
+
+
+def _study_sections(text: str, label: str) -> list:
+    sec = section(text, "Results")
+    parts = re.split(r"^### (.+)$", sec, flags=re.M)
+    if len(parts) < 3:
+        raise ReportError(f"{label}: no '### ' tables under '## Results'")
+    return [(parts[i].strip(), parts[i + 1]) for i in range(1, len(parts) - 1, 2)]
+
+
+_GS_FIGS = {  # gain study: key -> (summary-line name, unit, value column, flag column)
+    "pm": ("Phase margin", "deg", 2, 7),
+    "gbw": ("GBW", "MHz", 4, 8),
+}
+
+
+def extract_gain_passive_study(text: str, label: str) -> dict:
+    """The gain/GBW/PM RZ x CC passive-corner side study (issue #70): PM and GBW per cell,
+    re-derived and compared with the record's verdict header. DC gain is not measured."""
+    prov = study_provenance(text, label)
+    pts = _study_points(text, label)
+    head = header_of(text)
+    figs, claims = {}, {}
+    for key, (name, unit, _, _) in _GS_FIGS.items():
+        rx = (r"^  - " + re.escape(name) + r" (>= ([\d.]+) " + unit + r"): \*\*(PASS|FAIL)\*\* -- passes at (\d+)/(\d+) "
+              r"study cells \(fails at (\d+)/\d+\); worst ([\d.]+) " + unit + r" at " + _PT + r", RZ (\w+), CC (\w+)"
+              r"(?:; best ([\d.]+) " + unit + r" at " + _PT + r", RZ (\w+), CC (\w+))?\.$")
+        m = re.search(rx, head, re.M)
+        if not m:
+            raise ReportError(f"{label}: no '{name}' verdict line in the record header")
+        figs[key] = {"label": name, "bound_text": m.group(1), "bound_value": float(m.group(2)), "sense": ">=",
+                     "unit": unit}
+        claims[key] = _claim(m, {"verdict": 3, "pass": 4, "total": 5, "fail": 6, "worst": 7, "wp": 8,
+                                 "best": 13, "bp": 14})
+    vals = {k: {} for k in _GS_FIGS}
+    flags = {k: {} for k in _GS_FIGS}
+    seen = []
+    for heading, body in _study_sections(text, label):
+        pm = re.fullmatch(_PT, heading)
+        if not pm or pm.groups() not in pts:
+            raise ReportError(f"{label}: unexpected results table '### {heading}' (not a point of the Points line)")
+        if pm.groups() in seen:
+            raise ReportError(f"{label}: duplicate results table '### {heading}'")
+        seen.append(pm.groups())
+        for (rz, cc), c in _study_cells(body, label, heading, 9).items():
+            for key, (_, _, vi, fi) in _GS_FIGS.items():
+                vals[key][(pm.groups(), rz, cc)] = _study_value(c[vi], label, heading)
+                flags[key][(pm.groups(), rz, cc)] = c[fi]
+    missing = [p for p in pts if p not in seen]
+    if missing:
+        raise ReportError(f"{label}: no results table for study point {fmt_point(*missing[0])}")
+    figures = {k: _study_figure(label, figs[k], _cell_order(vals[k], pts), flags[k], claims[k]) for k in _GS_FIGS}
+    return {"prov": prov, "points": pts, "figures": figures,
+            "not_measured": {"gain": "the study measures PM and GBW only (no DC-gain column): no gain observation"}}
+
+
+_SS_FIGS = {"Quiescent power": "power", "Output swing": "swing"}  # "Slew rate (...)" -> slew
+
+
+def _ssp_key(name: str) -> str | None:
+    return "slew" if name.startswith("Slew rate") else _SS_FIGS.get(name)
+
+
+def extract_ssp_passive_study(text: str, label: str) -> dict:
+    """The slew/swing/power RZ x CC passive-corner side study (issue #97): each measured figure
+    per cell, re-derived and compared with the record's verdict header."""
+    prov = study_provenance(text, label)
+    pts = _study_points(text, label)
+    rx = re.compile(r"^  - \*\*(Quiescent power|Slew rate[^:]*|Output swing): (PASS|FAIL)\*\* vs ratified (<=|>=) ([\d.]+) "
+                    r"(uW|V/us|Vpp) -- passes at (\d+)/(\d+) cells \(fails at (\d+)\); worst ([\d.]+) \5 at " + _PT +
+                    r", RZ (\w+), CC (\w+)\.$", re.M)
+    figs, claims = {}, {}
+    for m in rx.finditer(header_of(text)):
+        key = _ssp_key(m.group(1))
+        if key in figs:
+            raise ReportError(f"{label}: duplicate '{m.group(1)}' verdict line in the record header")
+        figs[key] = {"label": m.group(1), "bound_text": f"{m.group(3)} {m.group(4)} {m.group(5)}",
+                     "bound_value": float(m.group(4)), "sense": m.group(3), "unit": m.group(5)}
+        claims[key] = _claim(m, {"verdict": 2, "pass": 6, "total": 7, "fail": 8, "worst": 9, "wp": 10})
+    if not figs:
+        raise ReportError(f"{label}: no measured slew / swing / power verdict line in the record header")
+    hrx = re.compile(r"(Quiescent power|Slew rate.*?|Output swing) -- " + _PT + r" \(bound (<=|>=) ([\d.]+) (uW|V/us|Vpp)\)")
+    vals = {k: {} for k in figs}
+    flags = {k: {} for k in figs}
+    seen = set()
+    for heading, body in _study_sections(text, label):
+        hm = hrx.fullmatch(heading)
+        key = _ssp_key(hm.group(1)) if hm else None
+        if key is None or key not in figs:
+            raise ReportError(f"{label}: unexpected results table '### {heading}' (no matching verdict line)")
+        pt = hm.groups()[1:4]
+        if pt not in pts:
+            raise ReportError(f"{label}: results table '### {heading}' is at a point not in the Points line")
+        if (key, pt) in seen:
+            raise ReportError(f"{label}: duplicate results table '### {heading}'")
+        seen.add((key, pt))
+        if (hm.group(5), float(hm.group(6)), hm.group(7)) != (figs[key]["sense"], figs[key]["bound_value"],
+                                                               figs[key]["unit"]):
+            raise ReportError(f"{label}: '### {heading}' states a bound other than its verdict line's "
+                              f"{figs[key]['bound_text']}")
+        for (rz, cc), c in _study_cells(body, label, heading, 5).items():
+            vals[key][(pt, rz, cc)] = _study_value(c[2], label, heading)
+            flags[key][(pt, rz, cc)] = c[4]
+    for key in figs:
+        missing = [p for p in pts if (key, p) not in seen]
+        if missing:
+            raise ReportError(f"{label}: no {figs[key]['label']} results table for study point {fmt_point(*missing[0])}")
+    figures = {k: _study_figure(label, figs[k], _cell_order(vals[k], pts), flags[k], claims[k]) for k in figs}
+    return {"prov": prov, "points": pts, "figures": figures,
+            "not_measured": {k: "the study did not measure this figure" for k in ("power", "slew", "swing")
+                             if k not in figs}}
+
+
+def _cell_order(vals: dict, pts: list) -> dict:
+    """Cells in study order: point (Points line), then RZ, then CC (typical, best, worst)."""
+    return {(p, r, c): vals[(p, r, c)] for p in pts for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS}
+
+
+SUPPLEMENTARY["gain-gbw-pm-passive-corners"]["extract"] = extract_gain_passive_study
+SUPPLEMENTARY["slew-swing-power-passive-corners"]["extract"] = extract_ssp_passive_study
+
+
+def study_scope(pts: list) -> dict:
+    n = len(pts) * len(PASSIVE_LEVELS) ** 2
+    return {"points": [fmt_point(*p) for p in pts], "rz_levels": list(PASSIVE_LEVELS), "cc_levels": list(PASSIVE_LEVELS),
+            "cells": n, "full_pvt_cross_product": False,
+            "text": (f"{len(pts)} selected MOS/T/VDD points ({'; '.join(fmt_point(*p) for p in pts)}) x "
+                     f"{len(PASSIVE_LEVELS)} RZ levels x {len(PASSIVE_LEVELS)} CC levels "
+                     f"({', '.join(PASSIVE_LEVELS)}) = {n} cells; not a full passive-by-PVT cross product")}
+
+
+def study_observation(f: dict) -> str:
+    """One measured figure of a side study, derived from its tables (information only)."""
+    w = f["worst"]
+    s = (f"{f['label']} {f['bound_text']}: {f['pass']}/{f['total']} cells pass, {f['fail']} fail; range "
+         f"{f['range'][0]} .. {f['range'][1]} {f['unit']}; worst {w['value']} {f['unit']} at {w['point']}, "
+         f"RZ {w['rz']}, CC {w['cc']}")
+    if f["failing_cells"]:
+        by: dict = {}
+        for c in f["failing_cells"]:
+            by.setdefault(c["point"], []).append(c)
+        parts = []
+        for pt, cs in by.items():
+            rz = [lv for lv in PASSIVE_LEVELS if any(c["rz"] == lv for c in cs)]
+            cc = [lv for lv in PASSIVE_LEVELS if any(c["cc"] == lv for c in cs)]
+            parts.append(f"{pt} {len(cs)}/{len(PASSIVE_LEVELS) ** 2} (RZ {'/'.join(rz)}; CC {'/'.join(cc)}"
+                         + (f"; {'/'.join(c['value'] for c in cs)} {f['unit']}" if len(f["failing_cells"]) <= 3 else "")
+                         + ")")
+        s += "; failing cells: " + ", ".join(parts)
+    return s
+
+
 EXTRACTORS = {"gain-gbw-pm": extract_gain, "offset-mc": extract_offset, "noise": extract_noise,
               "cmrr": extract_cmrr, "cmrr-mc": extract_cmrr_mc, "psrr": extract_psrr, "slew-swing-power": extract_ssp,
               ICMR_EXP: extract_icmr}
@@ -1443,6 +1724,15 @@ def load_manifest(path: Path) -> dict:
                 raise ReportError(f"selection manifest: {e}: unknown row(s) {bad}; known: {list(MULTI_RECORD[e])}")
         elif v is not None and not isinstance(v, str):
             raise ReportError(f"selection manifest: {e}: expected a record path")
+    sup = m.get("supplementary", {})
+    if not isinstance(sup, dict):
+        raise ReportError(f"selection manifest {path}: 'supplementary' must be an object {{study: record path}}")
+    unknown = sorted(set(sup) - set(SUPPLEMENTARY))
+    if unknown:
+        raise ReportError(f"selection manifest: unknown supplementary study(ies) {unknown}; known: {sorted(SUPPLEMENTARY)}")
+    for k, v in sup.items():
+        if v is not None and not isinstance(v, str):
+            raise ReportError(f"selection manifest: supplementary {k}: expected a record path")
     return m
 
 
@@ -1706,6 +1996,99 @@ def current_dut_sha256(root: Path) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefix: str | None, allow: set,
+                        archival: bool, spec_rel: str) -> dict:
+    """Load, check and summarise the explicitly selected side studies (issue #121).
+
+    Each study is hashed and parsed like a selected record (missing file, wrong directory or
+    title, superseded record, malformed/duplicate/missing cells, summary-vs-table disagreement
+    and a bound other than the ratified one are errors), checked against the selected records'
+    DUT and the current netlist, and given the same measurement-configuration freshness policy
+    (stale: error unless --archival; unknown: disclosed). The result is information only: it
+    never feeds a row's verdict, points or the summary counts.
+    """
+    out = {}
+    cur = None if archival else current_dut_sha256(root)
+    for key, rel in sorted((manifest.get("supplementary") or {}).items()):
+        if not rel:
+            continue
+        spec = SUPPLEMENTARY[key]
+        exp = spec["experiment"]
+        label = f"supplementary {key}"
+        p = root / rel
+        if not p.is_file():
+            raise ReportError(f"{label}: selected record is missing: {rel}")
+        if p.parent.resolve() != (root / "sim" / exp / "records").resolve() or p.suffix != ".md":
+            raise ReportError(f"{label}: {rel} is not a record under sim/{exp}/records/*.md")
+        text = p.read_text()
+        if not text.lstrip().startswith(spec["title"]):
+            raise ReportError(f"{label}: {rel} is not a '{spec['title'].lstrip('# ')}' record "
+                              "(a grid record is selected under 'experiments', never as a side study)")
+        w = check_superseded(root, rel, allow)
+        label = f"{label}:{p.stem}"
+        ex = spec["extract"](text, label)
+        prov = ex["prov"]
+        if dut_prefix is not None and prov["dut_prefix"] != dut_prefix:
+            raise ReportError(f"{label}: the side study measures DUT {prov['dut_prefix']}, the selected records "
+                              f"{dut_prefix}; select a study of the same netlist (or rerun it)")
+        if cur is not None and not cur.startswith(prov["dut_prefix"]):
+            raise ReportError(
+                f"stale DUT: {label} does not match the current {DUT_REL} (normalised sha256 {cur[:16]}); it measured "
+                f"{prov['dut_prefix']}. Rerun the side study (its runner's --passive-corners mode) to append a new record "
+                "and select it; existing records are append-only and are not edited. "
+                "For a historical (non-signoff) report use --archival with an explicit --out-dir.")
+        for fk, f in ex["figures"].items():
+            sr = spec_by_key.get(fk)
+            if sr is None or sr["bound_open"] or not bound_in_spec(f["bound_text"], sr["target_raw"]):
+                raise ReportError(f"{label}: study bound '{f['bound_text']}' for {f['label']} is not the current "
+                                  f"ratified bound in {spec_rel}" + (f" ('{sr['target']}')" if sr else ""))
+        fp = parse_fingerprint(text, label)
+        fresh = measurement_freshness(root, exp, fp, archival)
+        if fresh["status"] == "stale" and not archival:
+            raise ReportError(
+                f"stale measurement configuration: {label} was measured with a different bench/analysis configuration "
+                f"than the current one (changed {', '.join(fresh['differs'])}). Rerun the side study to append a new "
+                "record and select it; existing records are append-only and are not edited. "
+                "For a historical (non-signoff) report use --archival with an explicit --out-dir.")
+        lim = ["side study: not a selected verdict record; its cells are not counted in any row's points or verdict "
+               "nor in the ratified-row summary"]
+        if prov["fleet_runner_mismatch"]:
+            lim.append("fleet runner klt version differs from the client's (compatibility mismatch)")
+        if fresh["status"] == "unknown":
+            lim.append("measurement-configuration freshness unknown: " + fresh["detail"] +
+                       "; the bench/analysis settings it measured cannot be compared with today's")
+        elif fresh["status"] == "stale":
+            lim.append(f"measurement configuration differs from the current bench (changed: {', '.join(fresh['differs'])}); "
+                       "archival report only")
+        if w:
+            lim.append(w)
+        out[key] = {
+            "graded": False, "experiment": exp, "record_id": p.stem, "path": posix_rel(p, root), "sha256": sha256_file(p),
+            "dut_sha256": prov["dut_sha256"],
+            "dut_check": {"matches_selected_records": True if dut_prefix is not None else None,
+                          "matches_current_netlist": True if cur is not None else None},
+            **{k_: prov[k_] for k_ in ("pdk_open_pdks", "ngspice_local", "ngspice_engine", "klt_client", "backend",
+                                       "fleet_runner_mismatch")},
+            "measurement_config": fresh,
+            "scope": study_scope(ex["points"]),
+            "rows": list(spec["rows"]),
+            "figures": ex["figures"],
+            "not_measured": ex["not_measured"],
+            "limitations": lim,
+        }
+    return out
+
+
+def study_row_note(st: dict, row_key: str) -> str:
+    """Row-detail citation of a side study, derived from its tables (never a verdict)."""
+    head = (f"supplementary side study `{st['path']}` (not a selected verdict record; outside this row's verdict and "
+            f"point count; {st['scope']['cells']} cells = {len(st['scope']['points'])} MOS/T/VDD points x RZ x CC, not "
+            "a full passive-by-PVT cross product)")
+    if row_key in st["figures"]:
+        return f"{head} measures {study_observation(st['figures'][row_key])}"
+    return f"{head}: {st['not_measured'].get(row_key, 'no observation for this row')}"
+
+
 def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", archival: bool = False) -> dict:
     exps = manifest["experiments"]
     allow = set(manifest.get("allow_superseded", []))
@@ -1842,6 +2225,19 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
 
     spec_rows = parse_spec(root / spec_rel)
     spec_by_key = {r["key"]: r for r in spec_rows}
+    supplementary = build_supplementary(root, manifest, spec_by_key, dut_prefix, allow, archival, spec_rel)
+    for k, st in supplementary.items():
+        mcs = st["measurement_config"]
+        if mcs["status"] == "stale":
+            glob_lim.append(f"supplementary {k}: measurement configuration differs from the current bench "
+                            f"(changed: {', '.join(mcs['differs'])}); archival report only")
+        elif mcs["status"] == "unknown":
+            glob_lim.append(f"supplementary {k}: measurement-configuration freshness unknown ({mcs['detail']}); "
+                            "DUT freshness is checked, bench/analysis freshness is not")
+    for k in sorted(SUPPLEMENTARY):
+        if k not in supplementary:
+            glob_lim.append(f"no supplementary study selected for {k}: its rows ("
+                            f"{', '.join(SUPPLEMENTARY[k]['rows'])}) carry no passive-corner observation")
     out_rows = []
 
     def base(sr, **kw):
@@ -1943,7 +2339,6 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                        points_total=r["total"], worst=r["worst"], worst_corner=r["worst_corner"],
                        coverage=ex["coverage"], limitations=list(ex["limitations"]), source=src("gain-gbw-pm"))
             row["spec_bound"] = r["bound_text"].replace(">=", "≥")
-            row["limitations"].append(PASSIVE_STUDY_NOTE[k])
             if k == "gain" and ex["stretch_gain_70db"]:
                 row["figures"].append({"label": "stretch >= 70 dB (not a mandatory row), points holding",
                                        "value": ex["stretch_gain_70db"], "corner": None})
@@ -2086,6 +2481,9 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
         else:
             row["limitations"] = ["no committed record in sim/ for this row"]
             row["spec_status"] = sr["status"]
+        for skey, st in supplementary.items():
+            if k in SUPPLEMENTARY[skey]["rows"]:
+                row["limitations"].append(study_row_note(st, k))
         out_rows.append(row)
 
     out_rows.append({
@@ -2113,6 +2511,7 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                     "proposed_not_graded": sum(1 for r in out_rows if r["status"] == "proposed-not-graded")},
         "rows": out_rows,
         "sources": {e: {k: v for k, v in s.items() if k != "dut_prefix"} for e, s in sorted(sources.items())},
+        "supplementary": supplementary,
         "limitations": glob_lim,
         "warnings": warnings,
     }
@@ -2203,9 +2602,38 @@ def render_md(rep: dict) -> str:
         for f in r["figures"]:
             a(f"- {f['label']}: {f['value']}" + (f" ({f['corner']})" if f["corner"] else ""))
         for l in r["limitations"]:
-            l = l.replace(f"`{PASSIVE_STUDY_REL}`",
-                          f"[`{PASSIVE_STUDY_REL}`]({link_from_reports(PASSIVE_STUDY_REL)})")
+            for st in rep.get("supplementary", {}).values():
+                l = l.replace(f"`{st['path']}`", f"[`{st['path']}`]({link_from_reports(st['path'])})")
             a(f"- Limitation: {l}")
+    if rep.get("supplementary"):
+        a("")
+        a("## Supplementary passive-corner studies (measured side evidence; not graded)")
+        a("")
+        a("Selected explicitly under `supplementary` in `sim/report/selection.json`, separately from the records "
+          "that grade the spec rows. Every figure below is re-derived from the study's own RZ x CC tables and "
+          "checked against its verdict header; none is counted in a row's points or verdict or in the ratified-row "
+          "summary above.")
+        for k, st in rep["supplementary"].items():
+            a("")
+            a(f"### {k}")
+            a("")
+            a(f"- **Source**: [`{st['path']}`]({link_from_reports(st['path'])}), sha256 `{st['sha256']}`")
+            a(f"- **Scope**: {st['scope']['text']}")
+            dc = st["dut_check"]
+            a(f"- **Provenance**: DUT normalised sha256 `{st['dut_sha256'][:16]}` ("
+              + ("matches the selected records" if dc["matches_selected_records"] else "no selected record to compare")
+              + "; " + ("matches the current netlist" if dc["matches_current_netlist"]
+                        else "current netlist not checked (archival)")
+              + f"); PDK open_pdks `{(st['pdk_open_pdks'] or 'n/a')[:12]}`; ngspice local {st['ngspice_local'] or 'n/a'} / "
+              f"klt engine {st['ngspice_engine'] or 'n/a'}; klt client {st['klt_client'] or 'n/a'}; backend "
+              f"{st['backend'] or 'n/a'}; measurement-configuration freshness {mc_cell(st['measurement_config'])}")
+            a(f"- **Rows it informs (not graded)**: {', '.join(st['rows'])}")
+            for fk, f in st["figures"].items():
+                a(f"- {study_observation(f)} (record verdict {f['verdict_in_record']}; information only, not graded)")
+            for fk, why in sorted(st["not_measured"].items()):
+                a(f"- {fk}: {why}")
+            for l in st["limitations"]:
+                a(f"- Limitation: {l}")
     a("")
     a("## Sources")
     a("")
@@ -2298,6 +2726,11 @@ def main(argv=None) -> int:
     try:
         if a.latest:
             m = {"experiments": latest_selection(root)}
+            # side studies are never picked by recency (issue #121): keep the explicit choice
+            if a.manifest.is_file():
+                sup = load_manifest(a.manifest).get("supplementary")
+                if sup:
+                    m["supplementary"] = sup
             if a.update_manifest:
                 a.manifest.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n")
             rep = build(root, m)

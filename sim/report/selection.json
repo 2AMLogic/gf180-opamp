@@ -12,5 +12,9 @@
       "slew": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
       "swing": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md"
     }
+  },
+  "supplementary": {
+    "gain-gbw-pm-passive-corners": "sim/gain-gbw-pm/records/20261009-234014-55b400c.md",
+    "slew-swing-power-passive-corners": "sim/slew-swing-power/records/20261010-094234-fe6599f.md"
   }
 }

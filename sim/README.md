@@ -217,12 +217,32 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   `fingerprint_inputs_section`), and register it in `MEASUREMENT_CONFIG`.
   Historical
   records are never edited and no historical fingerprint is fabricated.
+- Supplementary passive-corner studies (issue #121): the RZ x CC side
+  studies (`run_gain_gbw_pm.py --passive-corners`,
+  `run_slew_swing_power.py --passive-corners`) are selected explicitly under
+  `supplementary` in `selection.json`
+  (`gain-gbw-pm-passive-corners`, `slew-swing-power-passive-corners`), never
+  under `experiments`. The report hashes each selected study, checks it is a
+  study record of its experiment (title), not superseded, of the same DUT as
+  the selected records and the current netlist, and judged against the
+  current ratified bounds; it parses every RZ x CC table (a missing,
+  duplicate or malformed cell, or a per-cell PASS/FAIL that contradicts its
+  value beyond display precision, is an error) and re-derives each figure's
+  pass count, worst cell and range, which must agree with the study's verdict
+  header. The derived observations appear in a separate "Supplementary
+  passive-corner studies" section and as row-detail notes of the rows they
+  inform; they never change a row's verdict, points or the ratified-row
+  summary, and the stated scope (3 MOS/T/VDD points x 3 RZ x 3 CC = 27
+  cells) is not a full passive-by-PVT cross product. Measurement-configuration
+  freshness follows the same policy as selected records (stale: error unless
+  `--archival`; unknown: disclosed).
 - Regenerate: `python3 sim/report/characterization_report.py` (after editing
   `selection.json`); verify the committed copy: `... --check` (exit 1 if
   stale). `characterize.sh` ends with `--latest --update-manifest`, selecting
   the newest record of each experiment (for `slew-swing-power`, the newest
   record that judged each row; side-study records such as the gain-gbw-pm and slew-swing-power
-  `--passive-corners` study are never selected); `selftest.sh` runs
+  `--passive-corners` study are never selected by recency, and the manifest's
+  explicit `supplementary` selection is carried over unchanged); `selftest.sh` runs
   `report/test_report.py` and `--check`.
 
 ## Experiments
