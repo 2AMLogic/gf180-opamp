@@ -25,8 +25,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#42**: Design: phase margin misses the ratified 60 deg target at 30/45 PVT points (worst 57.34 deg at FS / 125 C / 2.97 V)
-- **#114**: sim: ibias and CL sensitivity of GBW, PM, slew and power (evidence for the PM shortfall)
+- **#99**: sim: PSRR+ / PSRR- mismatch Monte Carlo
 
 ## PRs Awaiting Review
 
@@ -45,14 +44,16 @@ PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 Issues carrying `loom:curated`.
 
 - **#7**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
-- **#42**: Design: phase margin misses the ratified 60 deg target at 30/45 PVT points (worst 57.34 deg at FS / 125 C / 2.97 V) *(curated)*
 - **#77**: Prepare a reproducible GF180 layout device pilot before full op-amp placement *(curated)*
-- **#114**: sim: ibias and CL sensitivity of GBW, PM, slew and power (evidence for the PM shortfall) *(curated)*
+- **#98**: sim: CMRR mismatch Monte Carlo over the T/VDD grid (45 points x N=300) *(curated)*
+- **#99**: sim: PSRR+ / PSRR- mismatch Monte Carlo *(curated)*
+- **#140**: cmrr-mc: full grid as a single batch request exceeds the 3600 s fleet job limit *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#62**: spec: ratify noise band/bound and offset 3-sigma bound via a decision record (DR-3 residuals e1, e2) *(architect)*
 - **#105**: Consolidate duplicated guard_dut and guard_testbench core into sim/harness.py *(hermit)*
+- **#142**: sim: run the gain/GBW/PM mismatch Monte Carlo campaign on the retuned DUT now that the #42 gate is open *(architect)*
 
 ## Epics
 
@@ -65,10 +66,10 @@ _None._
 | Operator merge-risk holds | 1 |
 | Operator priority | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 2 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 4 |
-| Architect / Hermit proposals | 2 |
+| Curated | 5 |
+| Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
