@@ -314,6 +314,18 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   driven, the same summaries and worst-case corners, output feedthrough
   reported separately, rail-to-output feedthrough negative controls. Measured,
   no verdict (issue #39; DR-3 residual (e4)).
+- [`psrr-mc/`](psrr-mc/README.md) — **mismatch-aware PSRR+ and PSRR−** of the
+  committed sized schematic: `typical/ff/ss/fs/sf` × N = 300 (the `offset-mc/`
+  and `cmrr-mc/` population and seed) at 27 °C / 3.30 V, one `klt sim`
+  `monte_carlo` request with an AC analysis carrying the differential, `vdd`
+  and `vss` excitations of each sample in ONE deck (per-sample dm/vdd/vss
+  parity checked), per-corner mean / sigma / linear 3σ / min of PSRR+ and
+  PSRR− at DC, 1 kHz–1 MHz and f_u beside the DR-6 proposed bounds, with
+  switch-off, process-only and mirror-imbalance controls. Reported, not graded
+  (issue #99; follow-up of #61 / DR-6). It carries its own
+  `measurement_config.py` fingerprint (#89 convention); it is not selected by
+  the characterization report. No full record is committed yet (only the N=3
+  fleet probe `20261010-234232-efa5c81`), so PSRR remains systematic-only.
 - [`slew-swing-power/`](slew-swing-power/README.md) — slew rate (unity-gain
   follower, CL = 2 pF, slower of rise/fall, 20–80 % slope), output swing
   (inverting unity gain; first of −3 dB gain collapse or M6/M7 leaving

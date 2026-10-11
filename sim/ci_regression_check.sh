@@ -4,7 +4,8 @@
 # Copies the repo's sim/ and design/ trees to a scratch dir, deliberately
 # breaks one testbench source guard and one extraction in EACH simulator-free
 # experiment (gain-gbw-pm, noise, offset-mc, cmrr, cmrr-mc, gain-gbw-pm-mc, psrr,
-# slew-swing-power, input-common-mode, step-response, ibias-cl-sensitivity),
+# psrr-mc, slew-swing-power, input-common-mode, step-response,
+# ibias-cl-sensitivity),
 # and requires that experiment's unit suite to FAIL for each (after a control
 # run of the unmutated suite). Issue #131 adds the shared modules whose suites
 # are wired into selftest.sh: sim/harness.py (test_harness.py) and
@@ -125,6 +126,22 @@ expect_fail psrr test_psrr.py psrr/run_psrr.py \
 expect_fail psrr test_psrr.py psrr/run_psrr.py \
   "extraction: supply-run rail excitation check disabled" \
   'if err > C.EXC_TOL:' 'if False:'
+
+# psrr-mc (issue #99): the circuit-identity guard, the per-sample dm/vss parity
+# check, the fewer-than-N sample accounting and the imbalance control.
+control psrr-mc test_psrr_mc.py
+expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
+  "guard: circuit-identical-to-systematic-PSRR-bench check removed" \
+  'if _circuit_lines(text) != _circuit_lines(SYSTEMATIC_TB.read_text()):' 'if False:'
+expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
+  "extraction: dm/supply parity check disabled" \
+  'if abs(vals[f"pmc_par_{r}"]) > PARITY_TOL_V:' 'if False:'
+expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
+  "accounting: fewer than N distinct samples accepted" \
+  'if got != list(range(n_expected)):' 'if False:'
+expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
+  "control: imbalance shift criterion disabled" \
+  'if not shift > CONTROL_SE_MULT * se:' 'if False:'
 
 control slew-swing-power test_slew_swing_power.py
 # slew-swing-power reuses the gain driver's testbench guard (`g.guard_testbench`),
