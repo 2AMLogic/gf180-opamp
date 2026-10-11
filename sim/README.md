@@ -8,7 +8,9 @@ ngspice testbenches and append-only results.
   evidence (mints new append-only records). Multi-corner grids go through
   `klt sim`, so they run on whichever backend `klt` selects (the Spot batch
   fleet on a dispatch worker via `KLT_SIM_BACKEND=batch`); never hand-loop
-  `ngspice -b` over a grid.
+  `ngspice -b` over a grid. The offset-mismatch step is pinned to the full
+  grid (`--grid full`, issue #167): 45 points × N = 300 = 13 500 units —
+  9× the standalone nominal run's 1500 — sharded over 3 fleet jobs.
 - `./selftest.sh` — fast check (no records written): the extraction and
   source-guard unit tests plus a single local nominal point.
 
@@ -285,7 +287,9 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 - [`offset-mc/`](offset-mc/README.md) — mismatch Monte Carlo of the
   **input offset** of the committed sized schematic (unity follower, DC):
   `typical/ff/ss/fs/sf` × N = 300 at 27 °C / 3.30 V, one `klt sim`
-  `monte_carlo` request (1500 units on the batch fleet), per-corner mean,
+  `monte_carlo` request (1500 units on the batch fleet; the standalone
+  default — `characterize.sh` pins `--grid full` for the 45-point × 300 =
+  13 500-unit grid, issue #106/#167), per-corner mean,
   sigma, 3 sigma and worst corner, with a switch-off control, an imbalance
   control and the PDK mismatch-model audit. Statistical basis for the offset
   row; proposes no bound (issue #45; DR-3 residual (e2)).
