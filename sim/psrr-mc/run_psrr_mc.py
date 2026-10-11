@@ -152,6 +152,12 @@ PARITY_TOL_V = 1e-6
 PLATEAU_TOL_DB = C.PLATEAU_TOL_DB
 #: Mismatch must visibly act: per-corner offset sigma above this.
 MIN_OFFSET_SIGMA_V = 1e-3
+#: Slack of the knee monotonicity test, per band step, relative. ngspice's
+#: printed precision rounds a flat band to relative steps of order 1e-6; the
+#: smallest true in-band knee that can reach the classifier (band spread
+#: above PLATEAU_TOL_DB, i.e. corner below ~7 Hz) rises by at least ~1.4e-4
+#: per step.
+KNEE_STEP_SLACK = 1e-5
 #: Switch-off control vs the committed systematic record (same point).
 TOL_SYS_DB = 0.01
 TOL_SYS_FU_REL = 5e-3
@@ -285,6 +291,20 @@ class Sample:
     def ad(self, f: str) -> float:
         return self.vals[f"pmc_ad_{f}"]
 
+    def knee_rails(self) -> set:
+        return knee_rails(self.vals)
+
+    def dc_figure(self, rail: str) -> tuple[float, float]:
+        """(PSRR, |Asupply|) at DC. A plateau sample reports the band means
+        (the systematic record's definition); a knee sample the 0.1 Hz edge --
+        the f->0 asymptote to within (1 + (0.1 Hz / f_c)^2)^(1/2) (<= 0.15 dB
+        for any knee that reaches the classifier). The band mean would
+        misstate a deep knee by up to ~10 dB."""
+        if rail in self.knee_rails():
+            a0 = self.vals[f"pmc_{rail}_aband{BAND[0]}"]
+            return self.vals["pmc_ad_b0"] - 20 * math.log10(a0), a0
+        return self.psrr(rail, "dc"), self.asup(rail, "dc")
+
 
 def validate_sample(vals: dict[str, float], vcm: float) -> tuple[list[str], set]:
     """Blocking problems of one sample (empty = valid) and the rails whose
@@ -315,9 +335,10 @@ def validate_sample(vals: dict[str, float], vcm: float) -> tuple[list[str], set]
         if abs(vals[f"pmc_par_{r}"]) > PARITY_TOL_V:
             p.append(f"dm/{r} DC operating points differ by {vals[f'pmc_par_{r}'] * 1e6:.3f} uV "
                      "(the sweeps did not see the same devices)")
-        if vals[f"pmc_{r}_spread"] > PLATEAU_TOL_DB or vals[f"pmc_{r}_aspread"] > PLATEAU_TOL_DB:
-            p.append(f"no {LABEL[r]}/|{ALABEL[r]}| plateau ({vals[f'pmc_{r}_spread']:.3f} / "
-                     f"{vals[f'pmc_{r}_aspread']:.3f} dB over 0.1-1 Hz)")
+        if classify_rail_dc(vals, r) == "invalid":
+            p.append(f"no {LABEL[r]}/|{ALABEL[r]}| plateau and not a near-cancellation knee "
+                     f"({vals[f'pmc_{r}_spread']:.3f} / {vals[f'pmc_{r}_aspread']:.3f} dB over 0.1-1 Hz; "
+                     "the |Asupply| band profile is not monotonically non-decreasing)")
     if abs(vals["pmc_op1_vinp"] - vcm) > 1e-6:
         p.append(f"vinp = {vals['pmc_op1_vinp']:.6g} V, expected VCM {vcm:g} V")
     if abs(vals["pmc_op1_vout"] - vcm) > OP_VOUT_TOL_V:
@@ -341,6 +362,44 @@ def clamp_floor(s: Sample) -> None:
                 s.vals[f"pmc_asup_{r}_{f}"] = FLOOR
                 s.vals[f"pmc_psrr_{r}_{f}"] = s.vals[f"pmc_ad_{f}"] - 20 * math.log10(FLOOR)
                 s.lower_bound.add(r)
+
+
+def band_profile(vals: dict[str, float], rail: str) -> list[float]:
+    """The clamped linear |Asupply| band profile, 0.1 Hz .. 1 Hz (21 points)."""
+    return [vals[f"pmc_{rail}_aband{i}"] for i in range(BAND[0], BAND[1] + 1)]
+
+
+def classify_rail_dc(vals: dict[str, float], rail: str) -> str:
+    """The DC band (0.1-1 Hz) of one rail: 'plateau' (flat within
+    PLATEAU_TOL_DB), 'knee' (non-flat but monotonically non-decreasing --
+    the near-cancellation signature), or 'invalid'.
+
+    A mismatch draw whose supply term cancels the systematic one leaves the
+    residual to the reactive path through the DUT's dominant pole,
+    |Asupply| ~ sqrt(Re^2 + (k f)^2): flat below the corner f_c = |Re|/k,
+    rising toward +20 dB/dec above it. A draw with f_c inside or near the
+    band therefore has NO flat 0.1-1 Hz plateau, by physics, while every
+    bench-quality check passes; its profile identifies it: rising,
+    single-knee, minimum at the 0.1 Hz edge (diagnosed on job
+    klt-sim-ba5466061590: 7.7 dB monotone rise, |Asupply| 1.3e7 x the floor).
+    Anything else non-flat -- falling or humped, no mechanism in this bench --
+    is a defect, not a knee.
+    """
+    if (vals[f"pmc_{rail}_spread"] <= PLATEAU_TOL_DB
+            and vals[f"pmc_{rail}_aspread"] <= PLATEAU_TOL_DB):
+        return "plateau"
+    prof = band_profile(vals, rail)
+    steps = [b / a for a, b in zip(prof, prof[1:])]
+    if steps and min(steps) >= 1.0 - KNEE_STEP_SLACK:
+        return "knee"
+    return "invalid"
+
+
+def knee_rails(vals: dict[str, float]) -> set:
+    """Rails whose DC band is a near-cancellation knee (valid, but non-flat)."""
+    if not vals:
+        return set()
+    return {r for r in RAILS if classify_rail_dc(vals, r) == "knee"}
 
 
 def extract(report: dict, want: list[tuple], n_expected: int, *, read_log=None) -> tuple[dict[tuple, list[Sample]], list[str]]:
@@ -371,14 +430,22 @@ class FigStats:
     lin_3s: float  # mean Ad (dB) - 20 log10(mean |Asupply| + 3 sigma |Asupply|)
     skew_db: float
     lower_bounds: int
+    knees: int  # DC only: samples whose DC figure is the knee asymptote
 
 
 def fig_stats(samples: list[Sample], rail: str, f: str) -> FigStats:
     good = [s for s in samples if s.valid]
     if len(good) < 2:
         raise ValueError("need at least two valid samples")
-    c = [s.psrr(rail, f) for s in good]
-    a = [s.asup(rail, f) for s in good]
+    if f == "dc":
+        pairs = [s.dc_figure(rail) for s in good]
+        c = [x for x, _ in pairs]
+        a = [x for _, x in pairs]
+        knees = sum(rail in s.knee_rails() for s in good)
+    else:
+        c = [s.psrr(rail, f) for s in good]
+        a = [s.asup(rail, f) for s in good]
+        knees = 0
     d = [s.ad(f) for s in good]
     mean, sig = statistics.fmean(c), statistics.stdev(c)
     am, asg = statistics.fmean(a), statistics.stdev(a)
@@ -388,6 +455,7 @@ def fig_stats(samples: list[Sample], rail: str, f: str) -> FigStats:
         db_3s=mean - 3 * sig, a_mean=am, a_sigma=asg, ad_mean_db=adm,
         lin_3s=adm - 20 * math.log10(am + 3 * asg), skew_db=skew(c),
         lower_bounds=sum(rail in s.lower_bound for s in good),
+        knees=knees,
     )
 
 
@@ -609,15 +677,16 @@ def exec_line(tag: str, rep: dict, wall: float) -> str:
 
 def write_csv(path: Path, samples: dict[tuple, list[Sample]]) -> None:
     cols = ["process", "temperature_c", "vdd_v", "sample_index", "rndseed", "mismatch_seed", "process_seed",
-            "valid", "lower_bound_rails"] + [s for s in SCALARS if not re.match(r"pmc_f\d+$", s)]
+            "valid", "lower_bound_rails", "knee_rails"] + [s for s in SCALARS if not re.match(r"pmc_f\d+$", s)]
     with path.open("w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(cols)
         for k, ss in samples.items():
             for s in sorted(ss, key=lambda s: (s.index is None, s.index)):
                 row = [k[0], f"{k[1]:g}", f"{k[2]:.2f}", s.index, s.seeds.get("seed"), s.seeds.get("mismatch_seed"),
-                       s.seeds.get("process_seed"), int(s.valid), "+".join(sorted(s.lower_bound))]
-                row += [repr(s.vals.get(c)) if c in s.vals else "" for c in cols[9:]]
+                       s.seeds.get("process_seed"), int(s.valid), "+".join(sorted(s.lower_bound)),
+                       "+".join(sorted(s.knee_rails()))]
+                row += [repr(s.vals.get(c)) if c in s.vals else "" for c in cols[10:]]
                 w.writerow(row)
 
 
@@ -722,14 +791,22 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, samples, 
         for f in FIGS:
             add(f"### {LABEL[r]} {FIG_LABEL[f]}")
             add("")
-            add(f"| point | N | mean (dB) | sigma (dB) | skew | min | p1 | p5 | **lin 3s** | dB 3s | mean \\|{ALABEL[r]}\\| (V/V) | sigma \\|{ALABEL[r]}\\| | mean Ad (dB) |")
-            add("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
+            kn_head = " | knee DCs" if f == "dc" else ""
+            add(f"| point | N | mean (dB) | sigma (dB) | skew | min | p1 | p5 | **lin 3s** | dB 3s | "
+                f"mean \\|{ALABEL[r]}\\| (V/V) | sigma \\|{ALABEL[r]}\\| | mean Ad (dB) |{kn_head} |")
+            add("|---|---|---|---|---|---|---|---|---|---|---|---|---|" + ("---|" if f == "dc" else ""))
             for k, st in stats.items():
                 s = st[r][f]
                 lb = " (>=)" if s.lower_bounds else ""
+                kn = f" | {s.knees}" if f == "dc" else ""
                 add(f"| {G.fmt_key(k)} | {s.n} | {fmt(s.mean_db)} | {fmt(s.sigma_db)} | {s.skew_db:+.2f} | "
                     f"{fmt(s.min_db)} | {fmt(s.p1_db)} | {fmt(s.p5_db)} | **{fmt(s.lin_3s)}**{lb} | {fmt(s.db_3s)} | "
-                    f"{s.a_mean:.4g} | {s.a_sigma:.4g} | {fmt(s.ad_mean_db)} |")
+                    f"{s.a_mean:.4g} | {s.a_sigma:.4g} | {fmt(s.ad_mean_db)} |{kn} |")
+            if f == "dc" and any(st[r][f].knees for st in stats.values()):
+                add("")
+                add(f"knee DCs: samples of this point whose {LABEL[r]} DC band is a near-cancellation knee "
+                    "(non-flat but monotonically rising; their DC figure is the 0.1 Hz asymptote, listed in "
+                    "\"Numerical floor and near-cancellation\").")
             add("")
     add("## Worst point per figure")
     add("")
@@ -755,6 +832,33 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, samples, 
         add(f"- {LABEL[r]}: samples with |{ALABEL[r]}| below the numerical floor ({FLOOR:.3g} V/V, clamped, figure a "
             f"lower bound): **{nlb}**; smallest |{ALABEL[r]}| anywhere in any sweep {amin:.3g} V/V.")
     add("")
+    knees = [(k, s, r) for k, ss in samples.items() for s in ss if s.valid for r in sorted(s.knee_rails())]
+    if knees:
+        add(f"### Near-cancellation knees ({len(knees)} sample rails)")
+        add("")
+        add("A draw whose supply term cancels the systematic one leaves the residual to the reactive path "
+            "through the DUT's dominant pole: |Asupply| ~ sqrt(Re^2 + (k f)^2), flat below f_c = |Re|/k, rising "
+            "toward +20 dB/dec above it. With f_c inside or near 0.1-1 Hz the band has NO plateau (no fixed dB "
+            "tolerance covers it: f_c = 2.4 Hz alone gives ~1 dB) while every bench-quality check passes and the "
+            "figure sits orders of magnitude above the numerical floor. The DC band is then accepted as a "
+            "**near-cancellation knee**: the band profile must be monotonically non-decreasing (rising, "
+            "single-knee, minimum at the 0.1 Hz edge); anything falling or humped is a defect, not a knee. The "
+            "knee sample's DC figure is the 0.1 Hz asymptote, not the band mean. Diagnosed after the first "
+            "full-grid attempt (PR #151) was blocked by its 0.1 dB plateau gate on 4 such draws and wrote no "
+            "record; the 900-draw diagnostic (job `klt-sim-ba5466061590`) showed the profile: 7.7 dB monotone "
+            "rise at |Avdd| = 1.9e-3 V/V, 1.3e7 x the floor.")
+        add("")
+        add("| point | sample | rail | band spread (dB) | \\|Asupply\\| at 0.1 Hz (V/V) | PSRR at 0.1 Hz (dB) |")
+        add("|---|---|---|---|---|---|")
+        for k, s, r in knees:
+            a0 = s.vals[f"pmc_{r}_aband{BAND[0]}"]
+            add(f"| {G.fmt_key(k)} | {s.index} | {LABEL[r]} | {s.vals[f'pmc_{r}_aspread']:.3f} | {a0:.4g} | "
+                f"{s.vals['pmc_ad_b0'] - 20 * math.log10(a0):.2f} |")
+        add("")
+    else:
+        add("- Near-cancellation knees: none (every sample's DC band is flat within "
+            f"{PLATEAU_TOL_DB} dB).")
+        add("")
     sysign = {row["key"]: row["re0"] for row in off_rows}
     add("| point | Avdd > 0 at 0.1 Hz | matched-device sign | Avss > 0 at 0.1 Hz | matched-device sign | samples with Avss sign opposite to matched |")
     add("|---|---|---|---|---|---|")
@@ -796,17 +900,21 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, samples, 
         "from the actual phasors, per frequency (the systematic driver's definitions, in the ngspice control "
         f"language). |Asupply| below {FLOOR:.3g} V/V is clamped elementwise in the deck. The scalars are printed "
         "into each sample's log and read from it.")
-    add("- **DC** = mean PSRR (dB) over 0.1-1 Hz (21 points); |Asupply| and Ad at DC are band means. Spot values are "
-        "exact grid samples (1 kHz, 10 kHz, 100 kHz, 1 MHz; checked per sample). **f_u** = first falling 0 dB "
-        "crossing of |Ad| by ngspice `meas` (linear interpolation in f; the systematic driver interpolates in log f "
-        "-- the switch-off control bounds the difference).")
+    add(f"- **DC** = the low-frequency plateau value per sample: the band mean over 0.1-1 Hz (21 points) for a "
+        f"flat band (the systematic record's definition); for a near-cancellation knee (non-flat band, "
+        f"monotonically rising profile -- see \"Numerical floor and near-cancellation\") the 0.1 Hz value, the "
+        "f->0 asymptote. |Asupply| and Ad at DC follow the same rule. Spot values are exact grid samples "
+        "(1 kHz, 10 kHz, 100 kHz, 1 MHz; checked per sample). **f_u** = first falling 0 dB crossing of |Ad| by "
+        "ngspice `meas` (linear interpolation in f; the systematic driver interpolates in log f -- the "
+        "switch-off control bounds the difference).")
     add(f"- **Per-sample validity (blocking)**: every scalar present and finite; sweep grid as expected; dm "
         f"excitation vd = 1, vc = 0 and rails quiet to {EXC_TOL:g} V; each supply sweep: driven rail = 1 V and the "
         f"other rail quiet to {EXC_TOL:g} V, both inputs quiet to {INPUT_QUIET_V:g} V, input-leak term |Ad vd| below "
         f"{INPUT_LEAK_FRAC:g} of the output; **dm/vdd/vss parity**: the DC output after each supply sweep agrees "
         f"with the one after the dm sweep to {PARITY_TOL_V * 1e6:g} uV (the output carries the sampled offset, so a "
-        f"re-drawn device set would differ by mV); vinp = VCM; |vout - VCM| <= {OP_VOUT_TOL_V} V; Ad, PSRR+/- and "
-        f"|Avdd|/|Avss| flat over 0.1-1 Hz to {PLATEAU_TOL_DB} dB; f_u inside the sweep.")
+        f"re-drawn device set would differ by mV); vinp = VCM; |vout - VCM| <= {OP_VOUT_TOL_V} V; each rail's DC "
+        f"band flat over 0.1-1 Hz to {PLATEAU_TOL_DB} dB or a near-cancellation knee (monotonically non-decreasing "
+        "band profile; blocking in the invalid direction); f_u inside the sweep.")
     add(f"- **Population validity (blocking)**: every grid point contributes exactly N = {MC_N} distinct sample "
         f"indices, all valid; offset sigma > {MIN_OFFSET_SIGMA_V * 1e3:g} mV at every point (mismatch visibly acts; "
         "klt's `family_mismatch` reports `active: null` for an `.include`d DUT, 2AMLogic/klayout-tools#2928).")

@@ -61,6 +61,11 @@ mean, σ, skew, empirical min / p1 / p5 of the per-sample PSRR (dB), and
   cancel through zero);
 - **dB 3σ**: `mean − 3σ` of the per-sample PSRR in dB, for comparison.
 
+**DC definition.** Per sample, DC is the low-frequency plateau value: the
+0.1–1 Hz band mean for a flat band (the systematic record's definition), or —
+for a near-cancellation knee (below) — the 0.1 Hz value, the f→0 asymptote.
+The band mean would misstate a deep knee by up to ~10 dB.
+
 **Numerical floor and near-cancellation.** |Asupply| below 1.45e-10 V/V (10×
 the superposition residual demonstrated by the systematic record) is clamped
 elementwise in the deck, so PSRR is never a division by zero; a clamped figure
@@ -68,6 +73,26 @@ is a lower bound (`(>=)` in the tables) and the record counts the samples that
 hit the floor. The record also counts, per corner, the samples whose Avdd/Avss
 plateau sign is opposite to the matched device's (switch-off control): there
 the mismatch term exceeds and cancels the systematic one.
+
+**Near-cancellation knees.** A draw whose supply term cancels the systematic
+one leaves the residual to the reactive path through the DUT's dominant pole:
+|Asupply| ≈ sqrt(Re² + (k·f)²) — flat below the corner f_c = |Re|/k, rising
+toward +20 dB/dec above it. With f_c inside or near the 0.1–1 Hz band the
+band has no plateau, by physics: no fixed dB tolerance covers it (f_c = 2.4 Hz
+alone gives ~1 dB of in-band swing), while every bench-quality check passes
+and the figure sits orders of magnitude above the numerical floor. The deck
+therefore prints the clamped 0.1–1 Hz |Asupply| band profile per rail, and the
+DC-band validity rule is: **flat to 0.1 dB, or a near-cancellation knee** — a
+band profile that is monotonically non-decreasing (rising, single-knee,
+minimum at the 0.1 Hz edge). Anything falling or humped has no mechanism in
+this bench and blocks the run. Knee samples are flagged (`knee_rails` in
+`samples.csv`, counted per corner in the record) and report the 0.1 Hz
+asymptote as their DC figure. Diagnosed after the first full-grid attempt
+(PR #151) was blocked by its 0.1 dB plateau gate on 4 such draws and, by
+design, wrote no record: the 900-draw diagnostic (batch job
+`klt-sim-ba5466061590`) showed the signature — a 7.7 dB monotone rise at
+|Avdd| = 1.9e-3 V/V, 1.3e7× the floor, with parity, Ad plateau and the other
+rail perfectly flat.
 
 Temperature and supply are NOT sampled under mismatch (the stated population);
 the systematic 45-point grid covers them for matched devices, and the four
@@ -111,8 +136,10 @@ counterpart).
 - **per sample**: dm excitation (vd = 1, vc = 0, rails quiet to 1e-6 V); each
   supply sweep (driven rail = 1 V, other rail quiet to 1e-6 V, inputs quiet to
   1e-9 V, input-leak term |Ad·vd| < 1e-6 of the output); dm/vdd/vss parity
-  (1 µV); flat DC plateau of Ad, PSRR± and |Asupply| (0.1 dB); `op` near VCM
-  (vinp = VCM, |vout − VCM| ≤ 0.1 V); f_u inside the sweep.
+  (1 µV); DC band of Ad, PSRR± and |Asupply| flat to 0.1 dB or a
+  near-cancellation knee (monotonically non-decreasing band profile, above;
+  anything else blocks); `op` near VCM (vinp = VCM, |vout − VCM| ≤ 0.1 V);
+  f_u inside the sweep.
 - **per point**: exactly N distinct sample indices, all valid; offset σ > 1 mV
   (mismatch visibly acts; klt's `family_mismatch` reports `active: null` for an
   `.include`d DUT, 2AMLogic/klayout-tools#2928).

@@ -145,6 +145,12 @@ expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
 expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
   "gate: per-point offset sigma > 1 mV check disabled" \
   'if not sg > MIN_OFFSET_SIGMA_V:' 'if False:'
+expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
+  "gate: near-cancellation knee accepted without monotonicity" \
+  'if steps and min(steps) >= 1.0 - KNEE_STEP_SLACK:' 'if True:'
+expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
+  "stats: knee DC read from the band mean instead of the 0.1 Hz asymptote" \
+  '            a0 = self.vals[f"pmc_{rail}_aband{BAND[0]}"]' '            a0 = self.vals[f"pmc_asup_{rail}_dc"]'
 
 control slew-swing-power test_slew_swing_power.py
 # slew-swing-power reuses the gain driver's testbench guard (`g.guard_testbench`),

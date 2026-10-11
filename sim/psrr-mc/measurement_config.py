@@ -81,10 +81,11 @@ def scalars() -> list[str]:
     out = ["pmc_op1_vout", "pmc_op1_vinp", "pmc_offset", "pmc_par_vdd", "pmc_par_vss", "pmc_npts", "pmc_f0",
            f"pmc_f{BAND[1]}"]
     out += [f"pmc_f{i}" for _, i in SPOTS.values()]
-    out += ["pmc_dm_vderr", "pmc_dm_vcerr", "pmc_dm_railq", "pmc_ad_spread"]
+    out += ["pmc_dm_vderr", "pmc_dm_vcerr", "pmc_dm_railq", "pmc_ad_spread", "pmc_ad_b0"]
     for r in RAILS:
         out += [f"pmc_{r}_err", f"pmc_{r}_oth", f"pmc_{r}_inq", f"pmc_{r}_leak", f"pmc_{r}_amin",
                 f"pmc_{r}_spread", f"pmc_{r}_aspread", f"pmc_{r}_re0", f"pmc_{r}_im0"]
+        out += [f"pmc_{r}_aband{i}" for i in range(BAND[0], BAND[1] + 1)]
     out += [f"pmc_ad_{f}" for f in FIGS]
     out += [f"pmc_{k}_{r}_{f}" for r in RAILS for k in ("psrr", "asup") for f in FIGS]
     out += ["pmc_fu_hz"]
@@ -98,7 +99,9 @@ def analysis_tail(args: str | None = None) -> str:
     sweep; ac3 the vss sweep; op1..op3 the DC points after each. Every figure
     is computed in plot ac3, which stays current. Asupply = vout / v(rail)
     from the actual rail phasor; |Asupply| below FLOOR is clamped elementwise
-    (`pos()`), so PSRR is never a division by zero.
+    (`pos()`), so PSRR is never a division by zero. The clamped 0.1-1 Hz
+    |Asupply| band profile is printed per rail (`pmc_<rail>_aband<i>`): the
+    near-cancellation-knee evidence the driver classifies the DC band from.
     """
     args = args or ac_args()
     lo, hi = BAND
@@ -137,6 +140,7 @@ def analysis_tail(args: str | None = None) -> str:
         "let pmc_adv = ac1.v(vout) / pmc_vd1",
         "let pmc_addb = db(pmc_adv)",
         f"let pmc_ad_spread = vecmax(pmc_addb[{lo},{hi}]) - vecmin(pmc_addb[{lo},{hi}])",
+        "let pmc_ad_b0 = pmc_addb[0]",
     ]
     for r, plot, other in (("vdd", "ac2", "vss"), ("vss", "ac3", "vdd")):
         L += [
@@ -158,6 +162,10 @@ def analysis_tail(args: str | None = None) -> str:
             f"let pmc_{r}_im0 = imag(pmc_{r}_av[0])",
             f"let pmc_psrr_{r}_dc = mean(pmc_{r}_cps[{lo},{hi}])",
             f"let pmc_asup_{r}_dc = mean(pmc_{r}_ae[{lo},{hi}])",
+            # The clamped |Asupply| band profile (linear), 0.1 Hz .. 1 Hz: the
+            # near-cancellation-knee evidence (driver classifies the DC band
+            # from it; see run_psrr_mc.classify_rail_dc and the README).
+            *[f"let pmc_{r}_aband{i} = pmc_{r}_ae[{i}]" for i in range(lo, hi + 1)],
         ]
         for name, (_, i) in SPOTS.items():
             L += [f"let pmc_psrr_{r}_{name} = pmc_{r}_cps[{i}]", f"let pmc_asup_{r}_{name} = pmc_{r}_ae[{i}]"]
