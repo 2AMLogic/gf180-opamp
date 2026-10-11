@@ -175,6 +175,32 @@ class Existence(Base):
         self.manifest.write_text(json.dumps(m))
         self.assertIn("selects no record for cmrr-mc", " ".join(self.problems()))
 
+    def test_psrr_mc_citation_is_governed_by_selection(self):
+        # issue #182: the PSRR row cites the selected mismatch record, compared with the selection
+        psrr = {r["key"]: r for r in sc.spec_rows(self.spec.read_text())}["psrr"]
+        exps = {c["exp"] for c in sc.citations(psrr["status_raw"])}
+        self.assertEqual(exps, {"psrr", "psrr-mc"})
+        self.assertEqual(self.problems(), [])
+        self.assertEqual(sc.selected_for(json.loads(self.manifest.read_text()), "psrr-mc", None), "20261011-145434-286b06c")
+
+    def test_psrr_mc_selection_drift_fails(self):
+        m = json.loads(self.manifest.read_text())
+        m["experiments"]["psrr-mc"] = "sim/psrr-mc/records/20260101-000000-0000000.md"
+        self.manifest.write_text(json.dumps(m))
+        probs = self.problems()
+        self.assertEqual(len(probs), 1)
+        self.assertIn("cites psrr-mc record 20261011-145434-286b06c but sim/report/selection.json selects", probs[0])
+
+    def test_psrr_mc_selected_but_not_cited_fails(self):
+        self.edit_row("PSRR", link("psrr-mc", "20261011-145434-286b06c"), "a record")
+        self.assertIn("cites no unlabelled psrr-mc record", " ".join(self.problems()))
+
+    def test_psrr_mc_deselected_but_cited_fails(self):
+        m = json.loads(self.manifest.read_text())
+        m["experiments"].pop("psrr-mc")
+        self.manifest.write_text(json.dumps(m))
+        self.assertIn("selects no record for psrr-mc", " ".join(self.problems()))
+
     def test_unmapped_row_citing_a_record_fails(self):
         self.edit_row("Area |", "Open [DR-3] — no layout", f"Open [DR-3] — {link('noise', '20261010-163507-0127eb7')}")
         self.assertIn("no experiment mapping", " ".join(self.problems()))

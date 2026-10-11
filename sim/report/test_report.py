@@ -45,6 +45,10 @@ CMC = "sim/cmrr-mc"
 CMC_REC = "20261010-202454-e4be1ac"  # issue #61 record, selected by issue #124
 CMC_MD = f"{CMC}/records/{CMC_REC}.md"
 CMC_CSV = f"{CMC}/corners/{CMC_REC}/samples.csv"
+PMC = "sim/psrr-mc"
+PMC_REC = "20261011-145434-286b06c"  # issue #99 record, selected by issue #182
+PMC_MD = f"{PMC}/records/{PMC_REC}.md"
+PMC_CSV = f"{PMC}/corners/{PMC_REC}/samples.csv"
 OFF_GRID_REC = "20261010-185141-e4be1ac"  # issue #106: 45-point PVT grid, N=300 per point (selected, issue #120)
 OFF_NOM_REC = "20261009-072205-96bf3cc"  # issue #45: 5 corners at 27 C / 3.30 V
 OFF_GRID_MD = f"{OFF}/records/{OFF_GRID_REC}.md"
@@ -69,7 +73,7 @@ def make_root(tmp: Path) -> Path:
     shutil.copy(REPO / "design" / "netlist" / "opamp_two_stage.spice", net / "opamp_two_stage.spice")
     # psrr/measurement_config.py loads the shared passive helpers (issue #155)
     shutil.copy(REPO / "sim" / "passive_corners.py", tmp / "sim" / "passive_corners.py")
-    for exp in ("gain-gbw-pm", "noise", "offset-mc", "cmrr", "psrr", "slew-swing-power"):
+    for exp in ("gain-gbw-pm", "noise", "offset-mc", "cmrr", "psrr", "psrr-mc", "slew-swing-power"):
         mc = tmp / "sim" / exp
         (mc / "testbench").mkdir(parents=True, exist_ok=True)
         shutil.copy(REPO / "sim" / exp / "measurement_config.py", mc / "measurement_config.py")
@@ -82,7 +86,7 @@ def make_root(tmp: Path) -> Path:
     for p in (list((REPO / ICMR).glob("corners/*/samples.csv")) + list((REPO / ICMR).glob("records/*-addendum/ADDENDUM.md"))
               + list((REPO / OFF).glob("corners/*/offset_samples.csv"))
               + list((REPO / CMC).glob("corners/*/samples.csv"))  # CMRR mismatch MC (issue #124)
-              + list((REPO / CMC).glob("corners/*/samples.csv"))  # CMRR mismatch MC (issue #124)
+              + list((REPO / PMC).glob("corners/*/samples.csv"))  # PSRR mismatch MC (issue #182)
               # full PSRR passive study (issue #173): its retained per-cell curves and partition membership
               + [q for d in (REPO / PSRR).glob("corners/*/partitions.json")
                  for q in [d, *d.parent.glob("*.psrr.dat")]]
@@ -337,7 +341,7 @@ class CommittedReport(unittest.TestCase):
         self.assertEqual(r["cmrr"]["coverage"]["points"], 45)
         self.assertEqual(r["gain"]["coverage"]["points"], 45)
         self.assertTrue(any("coverage differs" in l for l in rep["limitations"]))
-        without = cr.build(REPO, manifest(cmrr_mc=None, gain_gbw_pm_mc=None))
+        without = cr.build(REPO, manifest(cmrr_mc=None, gain_gbw_pm_mc=None, psrr_mc=None))
         self.assertFalse(any("coverage differs" in l for l in without["limitations"]))
         # ... and a nominal offset selection is still disclosed as a coverage difference
         # (the committed nominal offset record measures the pre-retune DUT, whose offset is unchanged by
@@ -716,8 +720,13 @@ class Mutations(unittest.TestCase):
         # issue #173: with the bound-free PSRR study selected, a ratified PSRR bound is never silently
         # left ungraded by it (the study has no grader); the primary-record behaviour is unchanged
         with self.assertRaisesRegex(cr.ReportError, "no grader for the study's figures"):
-            self.build()
+            self.build(manifest(psrr_mc=None))
+        # issue #182: likewise the PSRR mismatch record has no grader for a ratified PSRR bound
         m = manifest()
+        m["supplementary"].pop("psrr-passive-corners-full")
+        with self.assertRaisesRegex(cr.ReportError, "no grader for the mismatch-inclusive PSRR"):
+            self.build(m)
+        m = manifest(psrr_mc=None)
         m["supplementary"].pop("psrr-passive-corners-full")
         r = rows_by_key(self.build(m))
         self.assertEqual(r["psrr"]["status"], "measured-no-bound")
@@ -1573,6 +1582,165 @@ class CmrrMismatchRecord(unittest.TestCase):
         before = self.build()["sources"]["cmrr-mc"]["sha256"]
         self.edit(CMC_MD, "N = 300 cannot resolve", "N = 301 cannot resolve")  # prose only: one byte
         self.assertNotEqual(self.build()["sources"]["cmrr-mc"]["sha256"], before)
+        self.assertEqual(cr.main(base), 1)
+
+
+class PsrrMismatchRecord(unittest.TestCase):
+    """Issue #182: the committed PSRR mismatch Monte Carlo record (issue #99) is selected, re-derived
+    from its own tables and its retained samples, and shown beside (never merged with) the systematic
+    PVT figures of the proposed PSRR row. No verdict, no worst value."""
+
+    P_DC_TYP = "| typical / 27 C / 3.30 V | 300 | 101.09 | 3.35 | +1.80 | 94.79 | 95.43 | 97.11 | **94.78** | 91.04 |"
+    P_DC_FF = "| ff / 27 C / 3.30 V | 300 | 101.47 |"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def edit(self, rel, old, new, count=1):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertIn(old, t)
+        p.write_text(t.replace(old, new, count))
+
+    def build(self, m=None):
+        return cr.build(self.root, m or manifest())
+
+    def rejects(self, rx, m=None):
+        with self.assertRaisesRegex(cr.ReportError, rx):
+            self.build(m)
+
+    def test_committed_selection_and_row(self):
+        sel = json.loads(MANIFEST.read_text())["experiments"]
+        self.assertEqual(sel["psrr-mc"], PMC_MD)
+        rep = cr.build(REPO, cr.load_manifest(MANIFEST))
+        r = rows_by_key(rep)["psrr"]
+        self.assertEqual((r["status"], r["verdict"], r["worst"], r["worst_corner"], r["points_pass"]),
+                         ("proposed-not-graded", None, None, None, None))
+        self.assertEqual(r["coverage"]["points"], 45)  # the systematic grid still covers T and VDD
+        self.assertEqual(r["source"]["experiment"], "psrr")
+        mc = r["psrr_mc"]
+        self.assertEqual(mc["population"], {"processes": ["typical", "ff", "ss", "fs", "sf"], "temperature_c": "27",
+                                            "vdd_v": "3.30", "n_per_point": 300, "samples": 1500, "seed": 45,
+                                            "vary": "mismatch", "temperature_and_supply_sampled": False})
+        w = mc["worst_per_figure"]
+        self.assertEqual(w["PSRR+ 10k"]["lin3"], {"value": 63.59, "at": "ss / 27 C / 3.30 V"})
+        self.assertEqual(w["PSRR- dc"]["lin3"], {"value": 82.59, "at": "sf / 27 C / 3.30 V"})
+        self.assertEqual(w["PSRR- dc"]["db3"]["value"], 67.72)
+        self.assertEqual(w["PSRR- dc"]["min"]["value"], 79.46)
+        self.assertEqual(len(w), 12)
+        self.assertEqual(mc["knee_rails"], 4)
+        self.assertEqual(mc["controls"]["imbalance"]["PSRR-"]["shift_asup_vv"], 0.7145)
+        self.assertEqual((mc["retained_evidence"]["samples"], mc["retained_evidence"]["points"]), (1500, 5))
+        self.assertEqual(rep["sources"]["psrr-mc"]["retained_evidence"], mc["retained_evidence"])
+        self.assertEqual(rep["sources"]["psrr-mc"]["measurement_config"]["status"], "current")
+        lin = [f for f in r["figures"] if "linear 3-sigma" in f["label"]]
+        db = [f for f in r["figures"] if "dB 3-sigma" in f["label"]]
+        self.assertEqual((len(lin), len(db)), (12, 12))
+        for f in lin + db:
+            self.assertIn("27 C / 3.30 V only", f["label"])
+            self.assertIn("information only, not graded", f["label"])
+        lim = " ".join(r["limitations"])
+        self.assertIn("temperature and supply are NOT sampled under mismatch", lim)
+        self.assertIn("4 near-cancellation knee rail(s)", lim)
+        self.assertIn("supply rejection of the bias generator is excluded", lim)
+        self.assertIn("no numeric bound proposed or judged", lim)
+
+    def test_markdown_shows_both_blocks(self):
+        md = cr.render_md(cr.build(REPO, cr.load_manifest(MANIFEST)))
+        self.assertIn("mismatch PSRR+ DC plateau (0.1-1 Hz), linear 3-sigma lowest", md)
+        self.assertIn("mismatch PSRR- 10 kHz, dB 3-sigma lowest", md)
+        self.assertIn("| psrr-mc |", md)
+        line = next(l for l in md.splitlines() if l.startswith("| PSRR |"))
+        self.assertIn("proposed-not-graded", line)
+        self.assertNotIn("63.59", line)
+
+    def test_systematic_only_selection_still_builds(self):
+        rep = self.build(manifest(psrr_mc=None))
+        r = rows_by_key(rep)["psrr"]
+        self.assertEqual(r["status"], "proposed-not-graded")
+        self.assertNotIn("psrr_mc", r)
+        self.assertNotIn("psrr-mc", rep["sources"])
+
+    def test_unmodified_copy_matches_committed(self):
+        self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
+
+    def test_altered_lin3s_cell_rejected(self):
+        self.edit(PMC_MD, self.P_DC_TYP, self.P_DC_TYP.replace("**94.78**", "**95.78**"))
+        self.rejects(r"inconsistent summary at typical / 27 C / 3\.30 V under '### PSRR\+ DC plateau")
+
+    def test_altered_worst_table_rejected(self):
+        self.edit(PMC_MD, "| PSRR+ 10 kHz | **63.59** |", "| PSRR+ 10 kHz | **62.59** |")
+        self.rejects(r"worst-point table \(PSRR\+ 10 kHz, lin3: 62\.59\) disagrees")
+
+    def test_summary_consistent_with_itself_but_not_with_samples_rejected(self):
+        self.edit(PMC_MD, "| typical / 27 C / 3.30 V | 300 | 101.09 | 3.35 | +1.80 | 94.79 | 95.43 | 97.11 | **94.78** | 91.04 |",
+                  "| typical / 27 C / 3.30 V | 300 | 101.59 | 3.35 | +1.80 | 94.79 | 95.43 | 97.11 | **94.78** | 91.54 |")
+        self.rejects(r"disagree\(s\) with the retained evidence .*samples\.csv")
+
+    def test_malformed_sample_count_rejected(self):
+        self.edit(PMC_MD, "| typical / 27 C / 3.30 V | 300 | 101.09 |", "| typical / 27 C / 3.30 V | 299 | 101.09 |")
+        self.rejects(r"insufficient samples at typical / 27 C / 3\.30 V under '### PSRR\+ DC plateau.*N=299")
+
+    def test_missing_point_rejected(self):
+        p = self.root / PMC_MD
+        p.write_text("\n".join(l for l in p.read_text().split("\n") if not l.startswith(self.P_DC_FF)))
+        self.rejects(r"missing 1 of 5 grid points \(first: ff / 27 C / 3\.30 V\)")
+
+    def test_n_below_basis_and_non_mismatch_rejected(self):
+        self.edit(PMC_MD, "n: 300, seed: 45", "n: 200, seed: 45")
+        self.rejects(r"insufficient samples: the record's Monte Carlo request is N=200")
+
+    def test_failed_control_rejected(self):
+        self.edit(PMC_MD, "Result: **PASS**", "Result: **FAIL**", count=2)
+        self.rejects(r"controls section lacks a passing")
+
+    def test_knee_accounting_must_agree(self):
+        self.edit(PMC_MD, "### Near-cancellation knees (4 sample rails)", "### Near-cancellation knees (5 sample rails)")
+        self.rejects(r"do not sum to the 5 knee rails")
+
+    def test_missing_samples_csv_rejected(self):
+        (self.root / PMC_CSV).unlink()
+        self.rejects(r"retained per-sample evidence is missing: .*samples\.csv")
+
+    def test_tampered_samples_csv_rejected(self):
+        t = (self.root / PMC_CSV).read_text().split("\n")
+        i = t[0].split(",").index("pmc_psrr_vss_1k")
+        r = t[1].split(",")
+        r[i] = str(float(r[i]) + 100.0)
+        t[1] = ",".join(r)
+        (self.root / PMC_CSV).write_text("\n".join(t))
+        self.rejects(r"disagree\(s\) with the retained evidence")
+
+    def test_knee_flags_in_samples_csv_must_agree(self):
+        t = (self.root / PMC_CSV).read_text().split("\n")
+        i = t[0].split(",").index("knee_rails")
+        r = t[1].split(",")
+        r[i] = "vdd"
+        t[1] = ",".join(r)
+        (self.root / PMC_CSV).write_text("\n".join(t))
+        self.rejects(r"knee rail|disagree\(s\) with the retained evidence")
+
+    def test_stale_dut_names_psrr_mc(self):
+        p = self.root / "design/netlist/opamp_two_stage.spice"
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        self.rejects(r"stale DUT.*Experiments needing a rerun: [^.]*psrr-mc")
+
+    def test_record_edit_changes_sha_and_check_fails(self):
+        out = self.root / cr.OUT_DIR_REL
+        out.mkdir(parents=True, exist_ok=True)
+        for n in ("md", "json", "evidence.json"):
+            shutil.copy(REPO / cr.OUT_DIR_REL / f"{cr.OUT_NAME}.{n}", out / f"{cr.OUT_NAME}.{n}")
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        base = ["--root", str(self.root), "--manifest", str(mp), "--check"]
+        self.assertEqual(cr.main(base), 0)
+        before = self.build()["sources"]["psrr-mc"]["sha256"]
+        self.edit(PMC_MD, "N = 300 cannot resolve", "N = 301 cannot resolve")
+        self.assertNotEqual(self.build()["sources"]["psrr-mc"]["sha256"], before)
         self.assertEqual(cr.main(base), 1)
 
 

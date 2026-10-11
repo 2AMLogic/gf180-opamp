@@ -60,7 +60,7 @@ OUT_DIR_REL = "sim/reports"
 OUT_NAME = "characterization-report"
 DUT_REL = "design/netlist/opamp_two_stage.spice"
 
-EXPERIMENTS = ["gain-gbw-pm", "gain-gbw-pm-mc", "offset-mc", "noise", "cmrr", "cmrr-mc", "psrr", "slew-swing-power", "input-common-mode"]
+EXPERIMENTS = ["gain-gbw-pm", "gain-gbw-pm-mc", "offset-mc", "noise", "cmrr", "cmrr-mc", "psrr", "psrr-mc", "slew-swing-power", "input-common-mode"]
 #: Experiments whose rows may come from different records: a record may judge
 #: only a subset of the rows (e.g. a single-figure re-run), so the manifest
 #: entry may be an object {row: record path}, naming the record each row is
@@ -844,6 +844,274 @@ def cmrr_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
             if abs(ex["worst"][key][col]["value"] - got[w[col]][col]) > _CM_TOL:
                 raise ReportError(f"{label}: the record's worst {col} for {head} disagrees with the retained "
                                   f"evidence {rel}")
+    return {"path": rel, "sha256": sha256_file(p), "samples": len(seen), "points": len(by)}
+
+
+# --------------------------------------------------------------------------
+# PSRR mismatch Monte Carlo (issue #182): measured, never graded while proposed
+# --------------------------------------------------------------------------
+PSRR_MC_EXP = "psrr-mc"
+PSRR_MC_MIN_N = 300
+#: (record side label, samples.csv rail suffix, supply-gain symbol), in the record's order
+PSRR_MC_SIDES = (("PSRR+", "vdd", "Avdd"), ("PSRR-", "vss", "Avss"))
+PSRR_MC_FIGS = CMRR_MC_FIGS  # the same six frequency figures, same headings
+PSRR_MC_COLS = _CM_COLS      # mean sigma skew min p1 p5 lin3 db3 |Asupply| mean / sigma, mean Ad (dB)
+
+
+def _pm_key(side: str, key: str) -> str:
+    return f"{side} {key}"
+
+
+def extract_psrr_mc(text: str, label: str) -> dict:
+    """PSRR mismatch Monte Carlo record (issue #99): per side (PSRR+ / PSRR-) and figure, the
+    per-point statistics, the worst point per figure, the near-cancellation knee accounting and
+    the control results, with each linear 3-sigma and dB 3-sigma re-derived from the record's own
+    columns. The retained per-sample evidence (samples.csv) is cross-checked separately
+    (`psrr_mc_crosscheck`)."""
+    prov = parse_provenance(text, label)
+    hd = header_of(text)
+    pop = re.search(r"^- \*\*Population\*\*: process ([\w, ]+); T (-?\d+) C; VDD ([\d.]+) V .*?"
+                    r"`monte_carlo = \{n: (\d+), seed: (\d+), vary: \"(\w+)\"\}` per grid point -> (\d+) x (\d+) = (\d+) samples",
+                    hd, re.M)
+    if not pop:
+        raise ReportError(f"{label}: no Population line (processes, T, VDD, monte_carlo n / seed / vary)")
+    procs = [p.strip() for p in pop.group(1).split(",")]
+    t_c, vdd = pop.group(2), pop.group(3)
+    n_want, seed, vary = int(pop.group(4)), int(pop.group(5)), pop.group(6)
+    n_pts, n_each, n_total = int(pop.group(7)), int(pop.group(8)), int(pop.group(9))
+    if vary != "mismatch":
+        raise ReportError(f"{label}: Monte Carlo varies '{vary}', not the mismatch population this report ingests")
+    if n_want < PSRR_MC_MIN_N:
+        raise ReportError(f"{label}: insufficient samples: the record's Monte Carlo request is N={n_want} per point; "
+                          f"the PSRR mismatch statistic needs N >= {PSRR_MC_MIN_N}")
+    if (n_pts, n_each, n_total) != (len(procs), n_want, len(procs) * n_want) or len(set(procs)) != len(procs):
+        raise ReportError(f"{label}: Population line is inconsistent ({n_pts} x {n_each} = {n_total} samples for "
+                          f"{len(procs)} processes at N={n_want})")
+    order = [_okey(p, t_c, vdd) for p in procs]
+    sec = section(text, "Statistics per grid point")
+    parts = re.split(r"^### (.+)$", sec, flags=re.M)
+    tables = {parts[i].strip(): parts[i + 1] for i in range(1, len(parts) - 1, 2)}
+    want = [f"{s} {h}" for s, _, _ in PSRR_MC_SIDES for h, _, _ in PSRR_MC_FIGS]
+    if sorted(tables) != sorted(want):
+        raise ReportError(f"{label}: per-figure tables {sorted(tables)} are not the expected {want}")
+    stats: dict = {}
+    knee_dcs: dict = {}
+    for sname, _, _ in PSRR_MC_SIDES:
+        for head, key, _ in PSRR_MC_FIGS:
+            fig_head = f"{sname} {head}"
+            lines = [ln for ln in tables[fig_head].splitlines() if ln.startswith("|")]
+            if len(lines) < 3:
+                raise ReportError(f"{label}: no per-point table under '### {fig_head}'")
+            is_dc = key == "dc"
+            st: dict = {}
+            for ln in lines[2:]:
+                c = split_cells(ln)
+                m = re.fullmatch(_PT, c[0]) if c else None
+                if not m or len(c) != (15 if is_dc else 14):
+                    raise ReportError(f"{label}: malformed PSRR row under '### {fig_head}': {ln.strip()}")
+                k = _okey(*m.groups())
+                try:
+                    n = int(c[1])
+                    vals = [float(x.strip("*").replace("+", "")) for x in c[2:13]]
+                    knee = int(c[14]) if is_dc else 0
+                except ValueError:
+                    raise ReportError(f"{label}: malformed PSRR row under '### {fig_head}': {ln.strip()}") from None
+                if k in st:
+                    raise ReportError(f"{label}: duplicate grid point {fmt_point(*k)} under '### {fig_head}'")
+                if k not in order:
+                    raise ReportError(f"{label}: unexpected grid point {fmt_point(*k)} under '### {fig_head}' "
+                                      "(not in the Population line)")
+                if n != n_want:
+                    raise ReportError(f"{label}: insufficient samples at {fmt_point(*k)} under '### {fig_head}': "
+                                      f"N={n}, the request is N={n_want} per point")
+                st[k] = {"n": n, **dict(zip(PSRR_MC_COLS, vals))}
+                if is_dc:
+                    knee_dcs[(sname, k)] = knee
+            missing = [k for k in order if k not in st]
+            if missing:
+                raise ReportError(f"{label}: '### {fig_head}' is missing {len(missing)} of {len(order)} grid "
+                                  f"points (first: {fmt_point(*missing[0])})")
+            for k, s in st.items():
+                if (abs(s["lin3"] - _cm_lin3(s["ad_mean"], s["acm_mean"], s["acm_sigma"])) > _CM_DERIVE_TOL
+                        or abs(s["db3"] - (s["mean"] - 3 * s["sigma"])) > _CM_DERIVE_TOL
+                        or s["sigma"] <= 0 or s["min"] > s["p1"] + _CM_TOL or s["p1"] > s["p5"] + _CM_TOL):
+                    raise ReportError(f"{label}: inconsistent summary at {fmt_point(*k)} under '### {fig_head}': its "
+                                      "linear 3-sigma, dB 3-sigma or percentile columns disagree with its own columns")
+            stats[_pm_key(sname, key)] = st
+    # ---- worst point per figure ----
+    wsec = section(text, "Worst point per figure")
+    wl = [split_cells(ln) for ln in wsec.splitlines() if ln.startswith("|")][2:]
+    heads = {f"{s} {h}": _pm_key(s, k) for s, _, _ in PSRR_MC_SIDES for h, k, _ in PSRR_MC_FIGS}
+    worst: dict = {}
+    for c in wl:
+        if len(c) != 8:
+            raise ReportError(f"{label}: malformed worst-point row: {' | '.join(c)}")
+        wk = heads.get(c[0])
+        if wk is None or wk in worst:
+            raise ReportError(f"{label}: worst-point table row '{c[0]}' is unexpected or duplicated")
+        try:
+            vals = {"lin3": float(c[1].strip("*")), "db3": float(c[3]), "min": float(c[5]), "p5": float(c[7])}
+        except ValueError:
+            raise ReportError(f"{label}: malformed worst-point row: {' | '.join(c)}") from None
+        ats = {"lin3": c[2], "db3": c[4], "min": c[6]}
+        st = stats[wk]
+        w = _cm_worst(st, order)
+        for col, v in vals.items():
+            if abs(v - st[w[col]][col]) > _CM_TOL:
+                raise ReportError(f"{label}: worst-point table ({c[0]}, {col}: {v}) disagrees with its own per-point "
+                                  f"table ({st[w[col]][col]:.2f} at {fmt_point(*w[col])})")
+        for col, at in ats.items():
+            mm = re.fullmatch(_PT, at)
+            if not mm or _okey(*mm.groups()) not in order or abs(st[_okey(*mm.groups())][col] - vals[col]) > _CM_TOL:
+                raise ReportError(f"{label}: worst-point table ({c[0]}, {col}) names '{at}', which is not a point "
+                                  "holding that worst value in the per-point table")
+        worst[wk] = {col: {"value": vals[col], "at": w[col]} for col in ("lin3", "db3", "min", "p5")}
+    if sorted(worst) != sorted(heads.values()):
+        raise ReportError(f"{label}: worst-point table does not cover every side and figure")
+    # ---- numerical floor and near-cancellation knees ----
+    nf = section(text, "Numerical floor and near-cancellation")
+    floors = {}
+    for sname, _, sym in PSRR_MC_SIDES:
+        fm = re.search(rf"^- {re.escape(sname)}: samples with \|{sym}\| below the numerical floor .*?: \*\*(\d+)\*\*;", nf, re.M)
+        if not fm:
+            raise ReportError(f"{label}: no numerical-floor line for {sname}")
+        floors[sname] = int(fm.group(1))
+    km = re.search(r"^### Near-cancellation knees \((\d+) sample rails\)", nf, re.M)
+    if not km:
+        raise ReportError(f"{label}: no near-cancellation knee accounting")
+    knees = int(km.group(1))
+    if sum(v for (s, _), v in knee_dcs.items() if s == "PSRR+") + sum(v for (s, _), v in knee_dcs.items() if s == "PSRR-") != knees:
+        raise ReportError(f"{label}: the knee DC counts of the per-point tables do not sum to the {knees} knee rails")
+    # ---- controls ----
+    ctl = section(text, "Controls")
+    so = re.search(r"\*\*Switch-off\*\*.*?(?=\*\*Process-only\*\*)", ctl, re.S)
+    po = re.search(r"\*\*Process-only\*\*.*?PSRR\+ DC sigma ([\d.]+) dB, PSRR- DC sigma ([\d.]+) dB, offset sigma ([\d.]+) mV",
+                   ctl, re.S)
+    ib = re.search(r"\*\*Negative control: mirror imbalance\*\*.*", ctl, re.S)
+    if not (so and "Result: **PASS**" in so.group(0) and po and ib and "Result: **PASS**" in ib.group(0)):
+        raise ReportError(f"{label}: the controls section lacks a passing switch-off control, the process-only result "
+                          "or a passing mirror-imbalance negative control")
+    devs = [split_cells(ln) for ln in so.group(0).splitlines() if ln.startswith("| ") and "/ 27 C" in ln]
+    try:
+        dev_dc = max(float(c[-3]) for c in devs)
+        dev_fu = max(float(c[-2]) for c in devs)
+    except (ValueError, IndexError):
+        raise ReportError(f"{label}: malformed switch-off control table") from None
+    if not devs:
+        raise ReportError(f"{label}: malformed switch-off control table")
+    imb: dict = {}
+    for sname, _, _ in PSRR_MC_SIDES:
+        rm = re.search(rf"^\| {re.escape(sname)} DC \| XM3 W [\d.]+u \|.*\| ([+-][\d.]+) / ([\d.]*\d) \|\s*$", ib.group(0), re.M)
+        if not rm:
+            raise ReportError(f"{label}: no mirror-imbalance row for {sname}")
+        shift, se = float(rm.group(1)), float(rm.group(2))
+        if se <= 0 or shift / se <= 3:
+            raise ReportError(f"{label}: the mirror-imbalance control does not exceed 3 standard errors for {sname} "
+                              f"({shift} V/V, SE {se})")
+        imb[sname] = {"shift_asup_vv": shift, "shift_se": se}
+    if not re.search(r"^- All blocking checks passed: yes\.", section(text, "Validation summary"), re.M):
+        raise ReportError(f"{label}: validation summary does not state 'All blocking checks passed: yes'")
+    cov = coverage_of(set(order))
+    cov["mc_samples_per_corner"] = n_want
+    lim = common_limitations(text, prov, cov)
+    lim += [f"temperature and supply are NOT sampled under mismatch: {t_c} C / {vdd} V only (the systematic "
+            "psrr record covers T and VDD for matched devices only; its four Avss sign-flip points, all at 125 C, "
+            "remain systematic-only)",
+            "MOS mismatch only; passives (RZ, CC) at typical with no passive mismatch, resistor and capacitor "
+            "mismatch not modelled",
+            f"N={n_want} cannot resolve a 0.135 % tail: neither the linear nor the dB 3-sigma figure is a sample "
+            "statistic; the empirical minimum and percentiles are the normality cross-check",
+            f"{knees} near-cancellation knee rail(s) (PSRR+ DC band non-flat but monotonically rising) are accepted "
+            "with the 0.1 Hz asymptote as their DC figure",
+            "supply rejection of the bias generator is excluded (the ideal 10 uA bias source carries no small-signal "
+            "current)",
+            "mismatch Monte Carlo of the PSRR; no numeric bound proposed or judged here (DR-6 is proposed, not ratified)"]
+    if any(floors.values()):
+        lim.append("samples below the numerical floor are clamped, so their PSRR figure is a lower bound: "
+                   + ", ".join(f"{s} {n}" for s, n in floors.items()))
+    return {"prov": prov, "coverage": cov, "order": order, "stats": stats, "worst": worst, "n_per_point": n_want,
+            "n_total": n_total, "seed": seed, "vary": vary, "t_c": t_c, "vdd": vdd, "knee_rails": knees,
+            "knee_dcs": {f"{s}|{fmt_point(*k)}": v for (s, k), v in knee_dcs.items()}, "floor_samples": floors,
+            "controls": {"switch_off_max_dev_db_dc_to_1m": dev_dc, "switch_off_max_dev_db_at_fu": dev_fu,
+                         "process_only_psrr_plus_dc_sigma_db": float(po.group(1)),
+                         "process_only_psrr_minus_dc_sigma_db": float(po.group(2)),
+                         "process_only_offset_sigma_mv": float(po.group(3)),
+                         "imbalance": imb},
+            "limitations": lim}
+
+
+def psrr_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
+    """Re-derive every side's and figure's per-point statistics, the worst points and the knee
+    accounting from the record's retained per-sample evidence (corners/<rid>/samples.csv),
+    within display precision. Offline."""
+    import csv
+    import math
+    rel = f"sim/psrr-mc/corners/{rid}/samples.csv"
+    p = root / rel
+    if not p.is_file():
+        raise ReportError(f"{label}: retained per-sample evidence is missing: {rel} (the record's statistics cannot "
+                          "be cross-checked)")
+    qs = [(r, q, s) for _, r, _ in PSRR_MC_SIDES for _, _, s in PSRR_MC_FIGS for q in ("psrr", "asup")]
+    need = ["process", "temperature_c", "vdd_v", "sample_index", "valid", "knee_rails"] + \
+           [f"pmc_{q}_{r}_{s}" for r, q, s in qs] + [f"pmc_ad_{s}" for _, _, s in PSRR_MC_FIGS] + \
+           ["pmc_ad_b0"] + [f"pmc_{r}_aband0" for _, r, _ in PSRR_MC_SIDES]
+    by: dict = {}
+    seen = set()
+    knee_csv = 0
+    with p.open(newline="") as fh:
+        rd = csv.DictReader(fh)
+        if not rd.fieldnames or any(f not in rd.fieldnames for f in need):
+            raise ReportError(f"{label}: {rel} lacks the columns it needs")
+        for r in rd:
+            try:
+                k = _okey(r["process"], r["temperature_c"], r["vdd_v"])
+                idx, valid = int(r["sample_index"]), int(r["valid"])
+                vals = {(q, rr, s): float(r[f"pmc_{q}_{rr}_{s}"]) for rr, q, s in qs}
+                vals.update({("ad", None, s): float(r[f"pmc_ad_{s}"]) for _, _, s in PSRR_MC_FIGS})
+            except (ValueError, KeyError, TypeError):
+                raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
+            if k not in ex["order"]:
+                raise ReportError(f"{label}: {rel}: sample at unexpected grid point {fmt_point(*k)}")
+            if (k, idx) in seen:
+                raise ReportError(f"{label}: {rel}: duplicate sample index {idx} at {fmt_point(*k)}")
+            if valid != 1 or not all(math.isfinite(v) for v in vals.values()):
+                raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)}")
+            seen.add((k, idx))
+            knees = [x for x in r["knee_rails"].replace(",", " ").split() if x]
+            knee_csv += len(knees)
+            try:
+                for kr in knees:
+                    # a knee sample's DC figure is its 0.1 Hz asymptote, not the band mean (the record's definition)
+                    a0 = float(r[f"pmc_{kr}_aband0"])
+                    vals[("psrr", kr, "dc")] = float(r["pmc_ad_b0"]) - 20 * math.log10(a0)
+                    vals[("asup", kr, "dc")] = a0
+            except (ValueError, KeyError, TypeError):
+                raise ReportError(f"{label}: {rel}: malformed knee sample {idx} at {fmt_point(*k)}") from None
+            by.setdefault(k, []).append(vals)
+    for k in ex["order"]:
+        if len(by.get(k, [])) != ex["n_per_point"]:
+            raise ReportError(f"{label}: insufficient samples in {rel} at {fmt_point(*k)}: {len(by.get(k, []))}, the "
+                              f"record states N={ex['n_per_point']}")
+    if knee_csv != ex["knee_rails"]:
+        raise ReportError(f"{label}: the record states {ex['knee_rails']} near-cancellation knee rail(s) but {rel} "
+                          f"flags {knee_csv}")
+    for sname, rail, _ in PSRR_MC_SIDES:
+        for head, key, s in PSRR_MC_FIGS:
+            got = {k: cmrr_mc_stats([v[("psrr", rail, s)] for v in by[k]], [v[("asup", rail, s)] for v in by[k]],
+                                    [v[("ad", None, s)] for v in by[k]]) for k in ex["order"]}
+            sk = _pm_key(sname, key)
+            for k in ex["order"]:
+                rec = ex["stats"][sk][k]
+                bad = [c for c in PSRR_MC_COLS if not _cm_close(c, rec[c], got[k][c])]
+                if bad:
+                    raise ReportError(f"{label}: inconsistent summary at {fmt_point(*k)} ({sname} {head}): the "
+                                      f"record's {', '.join(bad)} disagree(s) with the retained evidence {rel} (e.g. "
+                                      f"{bad[0]} {rec[bad[0]]:g} vs {got[k][bad[0]]:g})")
+            w = _cm_worst(got, ex["order"])
+            for col in ("lin3", "db3", "min", "p5"):
+                if abs(ex["worst"][sk][col]["value"] - got[w[col]][col]) > _CM_TOL:
+                    raise ReportError(f"{label}: the record's worst {col} for {sname} {head} disagrees with the "
+                                      f"retained evidence {rel}")
     return {"path": rel, "sha256": sha256_file(p), "samples": len(seen), "points": len(by)}
 
 
@@ -2364,6 +2632,7 @@ def study_observation(f: dict) -> str:
 
 EXTRACTORS = {"gain-gbw-pm": extract_gain, GAIN_MC_EXP: extract_gain_gbw_pm_mc, "offset-mc": extract_offset,
               "noise": extract_noise, "cmrr": extract_cmrr, "cmrr-mc": extract_cmrr_mc, "psrr": extract_psrr,
+              PSRR_MC_EXP: extract_psrr_mc,
               "slew-swing-power": extract_ssp, ICMR_EXP: extract_icmr}
 
 
@@ -2537,6 +2806,7 @@ MEASUREMENT_CONFIG = {
     "offset-mc": "sim/offset-mc/measurement_config.py",
     "cmrr": "sim/cmrr/measurement_config.py",
     "psrr": "sim/psrr/measurement_config.py",
+    "psrr-mc": "sim/psrr-mc/measurement_config.py",
     "slew-swing-power": "sim/slew-swing-power/measurement_config.py",
 }
 _FP_LINE = re.compile(r"^- \*\*Measurement fingerprint\*\*: version (\d+), sha256 `([0-9a-f]{64})`", re.M)
@@ -2828,6 +3098,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                 ex["retained"] = offset_grid_crosscheck(root, p.stem, ex, f"{exp}:{p.stem}")
             if exp == CMRR_MC_EXP:
                 ex["retained"] = cmrr_mc_crosscheck(root, p.stem, ex, f"{exp}:{p.stem}")
+            if exp == PSRR_MC_EXP:
+                ex["retained"] = psrr_mc_crosscheck(root, p.stem, ex, f"{exp}:{p.stem}")
             if exp == GAIN_MC_EXP:
                 ex["retained"] = gain_gbw_pm_mc_crosscheck(root, p.stem, ex, f"{exp}:{p.stem}")
             if w:
@@ -2860,7 +3132,7 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
             pv = ex["prov"]
             sources[skey] = {"record_id": p.stem, "path": posix_rel(p, root), "sha256": sha256_file(p), **pv,
                              "measurement_config": fresh}
-            if exp == CMRR_MC_EXP:
+            if exp in (CMRR_MC_EXP, PSRR_MC_EXP):
                 sources[skey]["retained_evidence"] = ex["retained"]
             if exp == GAIN_MC_EXP:
                 sources[skey]["retained_evidence"] = ex["retained"]
@@ -3037,6 +3309,73 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                                        ex["worst"][key].items()} for _, key, _ in CMRR_MC_FIGS},
             "per_point": {key: {fmt_point(*k): {c: ex["stats"][key][k][c] for c in ("n", "mean", "sigma", "lin3", "db3")}
                                 for k in ex["order"]} for _, key, _ in CMRR_MC_FIGS},
+            "retained_evidence": rv,
+            "source": source,
+            "measurement_config": srec["measurement_config"],
+        }
+
+    def psrr_mc_row(row, ex, source, srec):
+        """Mismatch-inclusive PSRR+ / PSRR- figures of the PSRR row: separate, labelled, information only.
+
+        Never in `worst`, never a verdict; linear 3-sigma and dB 3-sigma stay distinct figures; the
+        population is 27 C / 3.30 V only (T and VDD are not sampled under mismatch).
+        """
+        rv, ctl = ex["retained"], ex["controls"]
+        pop = (f"mismatch-inclusive, {len(ex['order'])} MOS corners at {ex['t_c']} C / {ex['vdd']} V only, "
+               f"N={ex['n_per_point']} per corner")
+        row["limitations"].append(
+            "the mismatch-inclusive figures below come from the selected PSRR mismatch Monte Carlo record "
+            f"({source['record_id']}): {len(ex['order'])} MOS corners x N={ex['n_per_point']} = {ex['n_total']} samples, "
+            f"seed {ex['seed']}, vary \"{ex['vary']}\", {ex['t_c']} C / {ex['vdd']} V only. They are measured "
+            "information, not graded, and are not combined with the systematic PVT figures: the systematic record "
+            "covers T and VDD (matched devices), the Monte Carlo record covers mismatch (one T / VDD point)")
+        row["limitations"] += [l for l in ex["limitations"] if l not in row["limitations"]]
+        row["figures"].append({"label": "mismatch Monte Carlo population (information only, not graded; seed "
+                                        f"{ex['seed']}, vary \"{ex['vary']}\", {ex['n_total']} samples)",
+                               "value": coverage_text(ex["coverage"]), "corner": None})
+        for sname, _, sym in PSRR_MC_SIDES:
+            for head, key, _ in PSRR_MC_FIGS:
+                w = ex["worst"][_pm_key(sname, key)]
+                tag = f"{pop}; information only, not graded"
+                row["figures"].append({"label": f"mismatch {sname} {head}, linear 3-sigma lowest "
+                                                f"(mean Ad - 20 log10(mean|{sym}| + 3 sigma|{sym}|)) [{tag}]",
+                                       "value": f"{w['lin3']['value']:.2f} dB", "corner": fmt_point(*w["lin3"]["at"])})
+                row["figures"].append({"label": f"mismatch {sname} {head}, dB 3-sigma lowest (mean - 3 sigma of the "
+                                                f"dB values) [{tag}]",
+                                       "value": f"{w['db3']['value']:.2f} dB", "corner": fmt_point(*w["db3"]["at"])})
+            wm = ex["worst"][_pm_key(sname, "dc")]["min"]
+            row["figures"].append({"label": f"mismatch {sname} sample minimum over all samples, DC plateau "
+                                            f"(empirical, N={ex['n_per_point']} per corner; information only)",
+                                   "value": f"{wm['value']:.2f} dB", "corner": fmt_point(*wm["at"])})
+        row["figures"].append({"label": "mismatch controls: switch-off max deviation from the systematic record "
+                                        "(DC..1 MHz / at f_u; information only)",
+                               "value": f"{ctl['switch_off_max_dev_db_dc_to_1m']:.4f} dB / "
+                                        f"{ctl['switch_off_max_dev_db_at_fu']:.3f} dB", "corner": None})
+        for sname, _, sym in PSRR_MC_SIDES:
+            im = ctl["imbalance"][sname]
+            row["figures"].append({"label": f"mismatch controls: mirror-imbalance negative control, shift of mean "
+                                            f"|{sym}| at DC ({sname}; information only)",
+                                   "value": f"{im['shift_asup_vv']:+.4f} V/V "
+                                            f"({im['shift_asup_vv'] / im['shift_se']:.1f} standard errors)",
+                                   "corner": None})
+        row["figures"].append({"label": "mismatch near-cancellation knee rails (DC figure = 0.1 Hz asymptote; "
+                                        "information only)",
+                               "value": f"{ex['knee_rails']} of {2 * ex['n_total']} sample rails", "corner": None})
+        row["figures"].append({"label": "mismatch per-point statistics re-derived from the retained samples (information only)",
+                               "value": f"{rv['samples']} samples at {rv['points']} points agree with the record "
+                                        f"({rv['path']}, sha256 {rv['sha256'][:16]})", "corner": None})
+        row["psrr_mc"] = {
+            "basis": "mismatch-inclusive, information only, not graded; linear 3-sigma and dB 3-sigma are separate figures",
+            "population": {"processes": [k[0] for k in ex["order"]], "temperature_c": ex["t_c"], "vdd_v": ex["vdd"],
+                           "n_per_point": ex["n_per_point"], "samples": ex["n_total"], "seed": ex["seed"],
+                           "vary": ex["vary"], "temperature_and_supply_sampled": False},
+            "controls": ctl,
+            "knee_rails": ex["knee_rails"],
+            "floor_samples": ex["floor_samples"],
+            "worst_per_figure": {sk: {c: {"value": v["value"], "at": fmt_point(*v["at"])} for c, v in w.items()}
+                                 for sk, w in ex["worst"].items()},
+            "per_point": {sk: {fmt_point(*k): {c: st[k][c] for c in ("n", "mean", "sigma", "lin3", "db3")}
+                               for k in ex["order"]} for sk, st in ex["stats"].items()},
             "retained_evidence": rv,
             "source": source,
             "measurement_config": srec["measurement_config"],
@@ -3224,9 +3563,18 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
             ex = extracted["psrr"]
             dc = ex["figures"]["PSRR+"][0]
             info = " (information only, not graded)" if sr["proposed"] else ""
+            pmc = extracted.get(PSRR_MC_EXP)
             if sr["proposed"]:
-                proposed_row(row, sr, coverage=ex["coverage"], source=src("psrr"), extra=list(ex["limitations"]))
+                proposed_row(row, sr, coverage=ex["coverage"], source=src("psrr"), extra=(
+                    ["the figures listed first come from the selected systematic (mismatch-free) PVT record and are "
+                     "information only; the selected mismatch Monte Carlo record is listed separately below "
+                     "(27 C / 3.30 V only), and the systematic figures are optimistic against it"] if pmc else [])
+                    + list(ex["limitations"]))
             else:
+                if pmc:
+                    raise ReportError("PSRR: the spec row is no longer tagged 'proposed, not ratified', but this report "
+                                      "has no grader for the mismatch-inclusive PSRR; extend the report to grade "
+                                      "the ratified bound before regenerating it")
                 row.update(status="measured-no-bound", worst=f"PSRR+ {dc['worst_db']} dB ({dc['figure']}, lowest)",
                            worst_corner=dc["worst_corner"], coverage=ex["coverage"],
                            limitations=list(ex["limitations"]), source=src("psrr"),
@@ -3235,6 +3583,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                 for t in ex["figures"][side]:
                     row["figures"].append({"label": f"{side} {t['figure']}, lowest{info}", "value": f"{t['worst_db']} dB",
                                            "corner": t["worst_corner"]})
+            if pmc and sr["proposed"]:
+                psrr_mc_row(row, pmc, src(PSRR_MC_EXP), sources[PSRR_MC_EXP])
         elif k == ICMR_ROW_KEY and ICMR_EXP in extracted:
             if not sr["proposed"]:
                 raise ReportError(f"{sr['name']}: the spec row is no longer tagged 'proposed, not ratified', but this "
