@@ -29,7 +29,9 @@ Supplementary side studies (issue #121): passive-corner RZ x CC studies the
 manifest selects explicitly under "supplementary" are hashed, parsed and
 checked like selected records, and their observations are derived from their
 own tables; they are reported in a separate section and as row-detail notes,
-never as a verdict, point count or summary count.
+never as a verdict, point count or summary count. A bound-free study (issue
+#173: the full PSRR RZ x CC study) reads no bound at all while its row is
+proposed, not ratified, and is re-derived from its retained per-cell curves.
 
 Existing records are Markdown only (no structured sidecars), so this module
 carries a narrow, tested extraction of the verdict / worst-case lines and
@@ -40,8 +42,10 @@ Exit codes: 0 ok, 1 --check found a difference, 2 selection / record error.
 from __future__ import annotations
 
 import argparse
+import bisect
 import hashlib
 import json
+import math
 import os
 import re
 import sys
@@ -70,12 +74,13 @@ MULTI_RECORD = {"slew-swing-power": ("power", "slew", "swing")}
 #: Monte Carlo PVT-grid record (`run_offset_mc.py --grid full`, issue #106) is
 #: NOT a side study: the offset extractor reads its per-point layout (issue #120).
 #: The PSRR RZ x CC study (`run_psrr.py --passive-corners`, issue #155) is a
-#: standalone side study: listed here ONLY so `--latest` keeps selecting the
-#: PSRR grid record; it has no SUPPLEMENTARY key and is not parsed or shown.
+#: side study too: `--latest` keeps selecting the PSRR grid record, and the
+#: study is reported only when selected explicitly under its bound-free
+#: SUPPLEMENTARY key (issue #173).
 STUDY_TITLES = {
     "gain-gbw-pm": ("# gain/GBW/PM passive-corner study",),
     "slew-swing-power": ("# slew/swing/power passive-corner study",),  # issue #97
-    "psrr": ("# PSRR passive-corner study",),  # issue #155 (exclusion only)
+    "psrr": ("# PSRR passive-corner study",),  # issue #155; bound-free supplementary adapter, issue #173
 }
 CORNER_ORDER = ["typical", "ff", "ss", "fs", "sf"]
 FULL_GRID = 45
@@ -1447,6 +1452,12 @@ SUPPLEMENTARY = {
     "slew-swing-power-passive-corners-full": {"experiment": "slew-swing-power",
                                               "title": STUDY_TITLES["slew-swing-power"][0],
                                               "rows": ("power", "slew", "swing"), "scope": "full"},
+    # issue #173: the full 405-cell PSRR study (issue #155). BOUND-FREE: its figures are measured
+    # information attached to the PSRR row and are never compared with a bound -- the PSRR row's
+    # DR-6 bound is proposed, not ratified, and the adapter refuses to run if that ever changes
+    # (it has no grader). Its figures are re-derived from the retained `<cell>.psrr.dat` curves.
+    "psrr-passive-corners-full": {"experiment": "psrr", "title": STUDY_TITLES["psrr"][0],
+                                  "rows": ("psrr",), "scope": "full", "bound_free": True},
 }
 PASSIVE_LEVELS = ("typical", "best", "worst")
 
@@ -1691,10 +1702,373 @@ def _cell_order(vals: dict, pts: list) -> dict:
     return {(p, r, c): vals[(p, r, c)] for p in pts for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS}
 
 
+# --------------------------------------------------------------------------
+# PSRR full passive-corner study (issue #173): bound-free, re-derived from retained curves
+# --------------------------------------------------------------------------
+#: (figure label, rail, `.psrr.dat` column, frequency, cell-table column, rail label, frequency label)
+PSRR_STUDY_FIGS = (("PSRR+ 1 kHz", "vdd", 4, 1e3, 1, "PSRR+", "1 kHz"),
+                   ("PSRR+ 10 kHz", "vdd", 4, 1e4, 2, "PSRR+", "10 kHz"),
+                   ("PSRR- 1 kHz", "vss", 5, 1e3, 3, "PSRR-", "1 kHz"),
+                   ("PSRR- 10 kHz", "vss", 5, 1e4, 4, "PSRR-", "10 kHz"))
+#: the record's per-cell table carries the 10 kHz delta vs typical passives (columns 5 / 6)
+PSRR_STUDY_DELTA_COL = {"vdd": 5, "vss": 6}
+PSRR_STUDY_EXCITATIONS = ("dm", "vdd", "vss")
+#: Two cells whose retained values differ by less than this are tied at the retained precision
+#: (`np.savetxt` "%.8e": ~1e-6 dB at 100 dB). A claimed binding cell within it of the derived
+#: extreme is accepted; anything further is a contradictory extremum.
+PSRR_TIE_DB = 1e-5
+#: retained-curve values vs the record's rounded display: half a display unit plus this slack
+PSRR_DAT_SLACK_DB = 2e-6
+#: the study's own statements of the limitations the report must carry (matched devices,
+#: bias-generator exclusion, no passive mismatch / layout parasitics, client-vs-fleet provenance)
+PSRR_STUDY_LIMITS = (
+    ("Matched devices: systematic figures, not mismatch-limited",
+     "matched devices: systematic figures of a perfectly matched schematic, not mismatch-limited "
+     "(mismatch-inclusive PSRR is not covered)"),
+    ("**bias-generator supply sensitivity is excluded**",
+     "the ideal 10 uA bias source carries no small-signal current, so bias-generator supply sensitivity is "
+     "excluded"),
+    ("no RZ/CC mismatch, no layout parasitics",
+     "passive corners are the PDK's global `res_*` / `mimcap_*` sections (RZ and CC varied independently): no RZ/CC "
+     "mismatch and no layout parasitics"),
+)
+_PSRR_CELL = re.compile(r"(\w+) / (-?\d+) C / ([\d.]+) V / RZ (\w+) / CC (\w+)")
+_PSRR_NUM = re.compile(r"-?\d+(?:\.\d+)?")
+_PSRR_DELTA = re.compile(r"[+-]\d+\.\d+")
+
+
+def _psrr_cell(s: str, label: str, where: str) -> tuple:
+    m = _PSRR_CELL.fullmatch(s.strip())
+    if not m or m.group(1) not in CORNER_ORDER or m.group(4) not in PASSIVE_LEVELS or m.group(5) not in PASSIVE_LEVELS:
+        raise ReportError(f"{label}: malformed cell identity '{s.strip()}' under '{where}'")
+    return (m.group(1), m.group(2), m.group(3)), m.group(4), m.group(5)
+
+
+def _psrr_cell_text(k: tuple) -> str:
+    return f"{fmt_point(*k[0])} / RZ {k[1]} / CC {k[2]}"
+
+
+def _psrr_cell_dict(k: tuple, value: str) -> dict:
+    return {"value": value, "point": fmt_point(*k[0]), "rz": k[1], "cc": k[2]}
+
+
+def _psrr_num(s: str, label: str, where: str, rx=_PSRR_NUM) -> float:
+    """A displayed number: finite, plain (no '>=' lower bound, no nan/inf, no 'n/a')."""
+    s = s.strip()
+    if not rx.fullmatch(s):
+        raise ReportError(f"{label}: malformed or nonfinite value '{s}' under '{where}'")
+    return float(s)
+
+
+def _psrr_s(s: str, label: str, where: str, rx=_PSRR_NUM) -> str:
+    """`s` itself, once checked to be a finite displayed number."""
+    _psrr_num(s, label, where, rx)
+    return s.strip()
+
+
+def _psrr_stem(k: tuple) -> str:
+    (mos, t, v), rz, cc = k
+    return f"{mos}__r-{rz}__c-{cc}_{float(t):g}c_{float(v):.2f}v"
+
+
+def _psrr_table(body: str, label: str, where: str, ncols: int) -> list:
+    """Data rows of the first Markdown table in `body` (stops at a '### ' subsection)."""
+    body = re.split(r"^### ", body, maxsplit=1, flags=re.M)[0]
+    lines = [ln for ln in body.splitlines() if ln.startswith("|")]
+    if len(lines) < 3:
+        raise ReportError(f"{label}: no table under '{where}'")
+    rows = []
+    for ln in lines[2:]:
+        c = split_cells(ln)
+        if len(c) != ncols:
+            raise ReportError(f"{label}: malformed row under '{where}': {ln.strip()}")
+        rows.append(c)
+    return rows
+
+
+def _psrr_population(text: str, label: str) -> tuple:
+    """(MOS/T/VDD points, fingerprint) from the record's retained, hash-verified fingerprint inputs."""
+    fp = parse_fingerprint(text, label)
+    study = (fp or {}).get("inputs", {}).get("passive_study")
+    if not study:
+        raise ReportError(f"{label}: retains no fingerprinted 'passive_study' inputs (cannot establish the study "
+                          "population or check its measurement configuration)")
+    if study.get("scope") != "full" or list(study.get("levels", [])) != list(PASSIVE_LEVELS):
+        raise ReportError(f"{label}: retained passive_study is scope {study.get('scope')!r} with levels "
+                          f"{study.get('levels')}, not the full {list(PASSIVE_LEVELS)} study")
+    pts = []
+    for p in study.get("points", []):
+        try:
+            pt = (str(p[0]), f"{float(p[1]):g}", f"{float(p[2]):.2f}")
+        except (TypeError, ValueError, IndexError):
+            raise ReportError(f"{label}: malformed retained passive_study point {p!r}")
+        if pt in pts:
+            raise ReportError(f"{label}: duplicate retained passive_study point {fmt_point(*pt)}")
+        pts.append(pt)
+    n = len(pts) * len(PASSIVE_LEVELS) ** 2
+    if study.get("cells") != n:
+        raise ReportError(f"{label}: retained passive_study states {study.get('cells')} cells, but {len(pts)} points "
+                          f"x 3 RZ x 3 CC = {n}")
+    return pts, fp
+
+
+def _psrr_interp(freq: list, ydb: list, f: float, label: str, where: str) -> float:
+    """Linear interpolation in (log10 f, dB), the PSRR runner's spot-frequency rule."""
+    if f < freq[0] * (1 - 1e-9) or f > freq[-1] * (1 + 1e-9):
+        raise ReportError(f"{label}: {where} does not span {f:g} Hz")
+    lx, xs = math.log10(f), [math.log10(x) for x in freq]
+    i = bisect.bisect_left(xs, lx)
+    if i < len(xs) and abs(xs[i] - lx) < 1e-12:
+        return ydb[i]
+    i = max(1, min(i, len(xs) - 1))
+    return ydb[i - 1] + (ydb[i] - ydb[i - 1]) * (lx - xs[i - 1]) / (xs[i] - xs[i - 1])
+
+
+def _psrr_read_dat(path: Path, label: str, rel: str) -> tuple:
+    """(frequency axis, rows) of one retained `<cell>.psrr.dat`; finite, strictly increasing axis."""
+    if not path.is_file():
+        raise ReportError(f"{label}: retained per-cell curve is missing: {rel}")
+    rows = []
+    for ln in path.read_text().splitlines():
+        if not ln.strip() or ln.lstrip().startswith("#"):
+            continue
+        try:
+            r = [float(x) for x in ln.split()]
+        except ValueError:
+            raise ReportError(f"{label}: {rel}: malformed line '{ln.strip()}'")
+        if len(r) != 6:
+            raise ReportError(f"{label}: {rel}: expected 6 columns (freq, Ad, Avdd, Avss, PSRR+, PSRR-), got {len(r)}")
+        if not all(math.isfinite(x) for x in r):
+            raise ReportError(f"{label}: {rel}: nonfinite value at {r[0]:g} Hz")
+        rows.append(r)
+    freq = [r[0] for r in rows]
+    if len(freq) < 2 or freq[0] <= 0 or any(b <= a for a, b in zip(freq, freq[1:])):
+        raise ReportError(f"{label}: {rel}: frequency axis is not positive and strictly increasing")
+    return freq, rows
+
+
+def _psrr_partitions(root: Path, rid: str, want: list, label: str) -> dict:
+    """Fleet partition membership: per excitation, the union is exactly the study population."""
+    rel = f"sim/psrr/corners/{rid}/partitions.json"
+    p = root / rel
+    if not p.is_file():
+        raise ReportError(f"{label}: retained partition membership is missing: {rel}")
+    try:
+        d = json.loads(p.read_text())
+    except ValueError as e:
+        raise ReportError(f"{label}: {rel} is not valid JSON: {e}") from e
+    stems = {_psrr_stem(k) for k in want}
+    cover = {}
+    for mode in PSRR_STUDY_EXCITATIONS:
+        parts = (d.get("plan") or {}).get(mode)
+        if not parts:
+            raise ReportError(f"{label}: {rel} has no '{mode}' partition plan")
+        cells = [c for part in parts for c in part.get("cells", [])]
+        dup = sorted({c for c in cells if cells.count(c) > 1})
+        extra, missing = sorted(set(cells) - stems), sorted(stems - set(cells))
+        if dup or extra or missing:
+            raise ReportError(f"{label}: {rel}: '{mode}' partitions are not exactly the {len(stems)}-cell population "
+                              f"({len(dup)} overlapping, {len(extra)} unexpected, {len(missing)} missing"
+                              + (f"; first: {(dup or extra or missing)[0]}" if dup or extra or missing else "") + ")")
+        claim = (d.get("coverage") or {}).get(mode)
+        if claim != {"cells": len(stems), "overlap": 0, "missing": 0}:
+            raise ReportError(f"{label}: {rel}: '{mode}' coverage claim {claim} disagrees with its plan")
+        cover[mode] = len(cells)
+    return {"path": rel, "sha256": sha256_file(p), "excitations": cover}
+
+
+def _psrr_check_claim(label: str, what: str, claim_s: str, derived: float, slack: float = PSRR_DAT_SLACK_DB) -> None:
+    if abs(float(claim_s) - derived) > _disp_tol(claim_s) + slack:
+        raise ReportError(f"{label}: {what} states {claim_s} dB but the retained curves give {derived:.4f} dB")
+
+
+def _psrr_extreme(label: str, what: str, vals: dict, pick, claim_k: tuple, claim_s: str, order: list,
+                  slack: float = PSRR_DAT_SLACK_DB) -> tuple:
+    """Check a claimed extreme (value + cell) against the derived one; returns (cell, value).
+
+    The derived extreme is the first cell in study order with the extreme value; a claimed cell is
+    accepted when its own retained value is within PSRR_TIE_DB of it (a tie at retained precision)."""
+    best_k = pick(order, key=lambda k: vals[k])
+    if claim_k not in vals or abs(vals[claim_k] - vals[best_k]) > PSRR_TIE_DB:
+        raise ReportError(f"{label}: {what} names {(_psrr_cell_text(claim_k) if claim_k in vals else claim_k)} but "
+                          f"the retained curves put it at {_psrr_cell_text(best_k)} ({vals[best_k]:.4f} dB): "
+                          "contradictory extremum")
+    _psrr_check_claim(label, what, claim_s, vals[best_k], slack)
+    return claim_k, vals[best_k]
+
+
+def extract_psrr_passive_study(text: str, label: str, root: Path, rid: str, primary: dict | None = None) -> dict:
+    """The full PSRR RZ x CC passive-corner study (issue #155), bound-free (issue #173).
+
+    Population: the record's retained, hash-verified fingerprint inputs (`passive_study`: the
+    full 5 x 3 x 3 grid x 3 RZ x 3 CC = 405 cells); the record's per-cell table must hold exactly
+    those cells (missing, duplicate and unexpected cells, malformed or nonfinite values are
+    errors). Figures: PSRR+ / PSRR- at 1 kHz and 10 kHz are re-derived at full precision from the
+    retained `<cell>.psrr.dat` curves (whose aggregate sha256 is reported), checked against the
+    record's rounded per-cell table and its binding-cell / delta tables, and summarised as worst
+    and best cell, worst over the typical-passive cells, the passive shift of the worst case and
+    the delta versus typical passives at matching PVT. No bound is read and no verdict is formed.
+    `primary` (the selected 45-point PSRR record, if any) must agree with the typical-passive
+    worst values.
+    """
+    prov = study_provenance(text, label)
+    head = header_of(text)
+    if not re.search(r"^- \*\*Status\*\*: measured, \*\*no pass or fail verdict\*\*", head, re.M):
+        raise ReportError(f"{label}: the record header does not state 'measured, **no pass or fail verdict**' "
+                          "(the bound-free adapter reads no verdict and must not attach one)")
+    sm = re.search(r"^- \*\*Scope\*\*: `(\w+)` -- .*?= (\d+) cells per figure", head, re.M)
+    if not sm or sm.group(1) != "full":
+        raise ReportError(f"{label}: no full-scope '- **Scope**: `full` -- ... = N cells per figure' header line")
+    pts, _ = _psrr_population(text, label)
+    study_scope(pts, "full")  # the retained population must be the full passive-by-PVT cross product
+    want = [(p, r, c) for p in pts for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS]
+    if int(sm.group(2)) != len(want):
+        raise ReportError(f"{label}: Scope line states {sm.group(2)} cells per figure, the retained population "
+                          f"{len(want)}")
+    order = sorted(want, key=lambda k: (corner_sort_key(k[0][0]), float(k[0][1]), float(k[0][2]),
+                                        PASSIVE_LEVELS.index(k[1]), PASSIVE_LEVELS.index(k[2])))
+    # ---- the record's per-cell table: exactly the population ----
+    where = f"## All {len(want)} cells"
+    body = section(text, f"All {len(want)} cells")
+    if not body:
+        raise ReportError(f"{label}: no '{where}' table")
+    table = {}
+    for c in _psrr_table(body, label, where, 11):
+        k = _psrr_cell(c[0], label, where)
+        if k not in want:
+            raise ReportError(f"{label}: unexpected cell {_psrr_cell_text(k)} under '{where}' (not in the retained "
+                              "study population)")
+        if k in table:
+            raise ReportError(f"{label}: duplicate cell {_psrr_cell_text(k)} under '{where}'")
+        typ = k[1] == "typical" and k[2] == "typical"
+        for i in (1, 2, 3, 4, 7, 8, 9):
+            _psrr_num(c[i], label, f"{where}, {_psrr_cell_text(k)}")
+        for i in PSRR_STUDY_DELTA_COL.values():
+            if typ:
+                if c[i] != "typ.":
+                    raise ReportError(f"{label}: typical-passive cell {_psrr_cell_text(k)} carries delta '{c[i]}' "
+                                      f"under '{where}' (expected 'typ.')")
+            else:
+                _psrr_num(c[i], label, f"{where}, {_psrr_cell_text(k)}", _PSRR_DELTA)
+        table[k] = c
+    missing = [k for k in order if k not in table]
+    if missing:
+        raise ReportError(f"{label}: '{where}' is missing {len(missing)} of {len(want)} cells "
+                          f"(first: {_psrr_cell_text(missing[0])})")
+    # ---- retained curves: full-precision values, cross-checked against the rounded table ----
+    cdir_rel = f"sim/psrr/corners/{rid}"
+    vals = {fig[0]: {} for fig in PSRR_STUDY_FIGS}
+    digests, axis = [], None
+    for k in order:
+        name = f"{_psrr_stem(k)}.psrr.dat"
+        path = root / cdir_rel / name
+        freq, rows = _psrr_read_dat(path, label, f"{cdir_rel}/{name}")
+        if axis is None:
+            axis = freq
+        elif len(freq) != len(axis) or any(abs(a / b - 1) > 1e-6 for a, b in zip(freq, axis)):
+            raise ReportError(f"{label}: {cdir_rel}/{name} is on another frequency axis than the other cells")
+        digests.append(f"{sha256_file(path)}  {name}\n")
+        for flabel, _, col, f, tcol, _, _ in PSRR_STUDY_FIGS:
+            v = _psrr_interp(freq, [r[col] for r in rows], f, label, f"{cdir_rel}/{name}")
+            vals[flabel][k] = v
+            _psrr_check_claim(label, f"'{where}' {flabel} of {_psrr_cell_text(k)}", table[k][tcol], v)
+    deltas = {}
+    for flabel, rail, *_ in PSRR_STUDY_FIGS:
+        deltas[flabel] = {k: vals[flabel][k] - vals[flabel][(k[0], "typical", "typical")]
+                          for k in order if (k[1], k[2]) != ("typical", "typical")}
+    for flabel, rail, _, f, *_ in PSRR_STUDY_FIGS:
+        if f == 1e4:
+            for k, d in deltas[flabel].items():
+                _psrr_check_claim(label, f"'{where}' {flabel} delta vs typical of {_psrr_cell_text(k)}",
+                                  table[k][PSRR_STUDY_DELTA_COL[rail]], d)
+    partitions = _psrr_partitions(root, rid, want, label)
+    # ---- the record's rounded claims: binding cells and deltas ----
+    bwhere = "## Binding cells at 1 kHz and 10 kHz"
+    bind = {}
+    for c in _psrr_table(section(text, "Binding cells at 1 kHz and 10 kHz"), label, bwhere, 7):
+        if c[0] not in vals or c[0] in bind:
+            raise ReportError(f"{label}: {'duplicate' if c[0] in bind else 'unexpected'} figure '{c[0]}' under "
+                              f"'{bwhere}'")
+        bind[c[0]] = c
+    dwhere = "## Difference vs typical passives at matching PVT"
+    dclaim = {}
+    for c in _psrr_table(section(text, "Difference vs typical passives at matching PVT"), label, dwhere, 6):
+        if c[0] not in vals or c[0] in dclaim:
+            raise ReportError(f"{label}: {'duplicate' if c[0] in dclaim else 'unexpected'} figure '{c[0]}' under "
+                              f"'{dwhere}'")
+        dclaim[c[0]] = c
+    typ_cells = [k for k in order if (k[1], k[2]) == ("typical", "typical")]
+    nontyp = [k for k in order if (k[1], k[2]) != ("typical", "typical")]
+    figures = {}
+    for flabel, rail, _, f, _, rlabel, flab in PSRR_STUDY_FIGS:
+        if flabel not in bind or flabel not in dclaim:
+            raise ReportError(f"{label}: no '{flabel}' row under '{bwhere if flabel not in bind else dwhere}'")
+        v, b, dc = vals[flabel], bind[flabel], dclaim[flabel]
+        ws = b[1].replace("*", "")
+        _psrr_num(ws, label, bwhere)
+        wk, wv = _psrr_extreme(label, f"'{bwhere}' {flabel} worst", v, min, _psrr_cell(b[2], label, bwhere), ws, order)
+        bk, bv = _psrr_extreme(label, f"'{bwhere}' {flabel} best", v, max, _psrr_cell(b[4], label, bwhere),
+                               _psrr_s(b[3], label, bwhere), order)
+        tv = min(v[k] for k in typ_cells)
+        _psrr_check_claim(label, f"'{bwhere}' {flabel} worst over the typical-passive cells",
+                          _psrr_s(b[5], label, bwhere), tv)
+        _psrr_check_claim(label, f"'{bwhere}' {flabel} passive shift of the worst case",
+                          _psrr_s(b[6], label, bwhere, _PSRR_DELTA), wv - tv)
+        d = deltas[flabel]
+        lo_k, lo = _psrr_extreme(label, f"'{dwhere}' {flabel} most negative delta", d, min,
+                                 _psrr_cell(dc[2], label, dwhere), _psrr_s(dc[1], label, dwhere, _PSRR_DELTA),
+                                 nontyp)
+        hi_k, hi = _psrr_extreme(label, f"'{dwhere}' {flabel} most positive delta", d, max,
+                                 _psrr_cell(dc[4], label, dwhere), _psrr_s(dc[3], label, dwhere, _PSRR_DELTA),
+                                 nontyp)
+        mx = max(abs(x) for x in d.values())
+        _psrr_check_claim(label, f"'{dwhere}' {flabel} max abs delta", _psrr_s(dc[5], label, dwhere), mx)
+        fig = {"label": flabel, "rail": rlabel, "frequency": flab, "unit": "dB", "cells": len(want),
+               "worst": _psrr_cell_dict(wk, f"{wv:.2f}"), "best": _psrr_cell_dict(bk, f"{bv:.2f}"),
+               "range": [f"{wv:.2f}", f"{bv:.2f}"],
+               "typical_passive_worst": {"value": f"{tv:.2f}", "cells": len(typ_cells)},
+               "passive_shift_of_worst": f"{wv - tv:+.2f}",
+               "delta_vs_typical": {"cells": len(nontyp), "most_negative": _psrr_cell_dict(lo_k, f"{lo:+.3f}"),
+                                    "most_positive": _psrr_cell_dict(hi_k, f"{hi:+.3f}"), "max_abs": f"{mx:.3f}"}}
+        if primary is not None:
+            pw = next((t for t in primary["figures"][rlabel] if t["figure"] == flab), None)
+            if pw is None or abs(float(pw["worst_db"]) - tv) > _disp_tol(pw["worst_db"]) + PSRR_DAT_SLACK_DB:
+                raise ReportError(f"{label}: {flabel} worst over the typical-passive cells ({tv:.4f} dB) disagrees with "
+                                  f"the selected PSRR grid record ({pw['worst_db'] if pw else 'no such figure'} dB)")
+            fig["typical_passive_worst"]["primary_record_worst"] = pw["worst_db"]
+        figures[flabel] = fig
+    # ---- limitations the study states (retained, never invented) ----
+    lim = []
+    for needle, text_ in PSRR_STUDY_LIMITS:
+        if needle not in text:
+            raise ReportError(f"{label}: the record does not state its limitation '{needle}'")
+        lim.append(text_)
+    fm = re.search(r"^- \*\*Fleet provenance limitations\*\*: runner klt (.+?) vs client `klt ([^`]+)`; (.+)$", text, re.M)
+    if not fm:
+        raise ReportError(f"{label}: no '- **Fleet provenance limitations**' line (client-versus-fleet provenance)")
+    runners = [r.strip() for r in fm.group(1).split(",")]
+    prov["fleet_runner_mismatch"] = prov["fleet_runner_mismatch"] or any(r != fm.group(2) for r in runners)
+    lim.append(f"client-versus-fleet provenance: fleet runner klt {', '.join(runners)} vs client klt {fm.group(2)}; the "
+               "fleet runner does not report its PDK revision and klt's provenance.pdk is resolved on the submitting "
+               "client (the fleet library is tied to the pinned revision only indirectly, via the record's cross-checks)")
+    lim.append("bound-free: the PSRR bound is proposed by DR-6, not ratified, so these figures carry no PASS/FAIL "
+               "verdict and are not compared with the proposed bound")
+    retained = {"path": cdir_rel, "psrr_dat_files": len(digests),
+                "sha256": hashlib.sha256("".join(digests).encode()).hexdigest(),
+                "sha256_method": "sha256 of the sha256sum-format listing (hex digest, two spaces, file name; one "
+                                 "line per cell, in study order) of every per-cell .psrr.dat curve",
+                "partitions": partitions}
+    return {"prov": prov, "points": pts, "figures": figures, "not_measured": {}, "limitations": lim,
+            "retained": retained,
+            "population": {"cells": len(want), "typical_passive_cells": len(typ_cells), "non_typical_cells": len(nontyp),
+                           "excitations": list(PSRR_STUDY_EXCITATIONS)}}
+
+
 SUPPLEMENTARY["gain-gbw-pm-passive-corners"]["extract"] = extract_gain_passive_study
 SUPPLEMENTARY["slew-swing-power-passive-corners"]["extract"] = extract_ssp_passive_study
 SUPPLEMENTARY["gain-gbw-pm-passive-corners-full"]["extract"] = extract_gain_passive_study
 SUPPLEMENTARY["slew-swing-power-passive-corners-full"]["extract"] = extract_ssp_passive_study
+SUPPLEMENTARY["psrr-passive-corners-full"]["extract"] = extract_psrr_passive_study  # issue #173: bound-free
 
 
 FULL_STUDY_POINTS = 45  # 5 MOS corners x 3 temperatures x 3 supplies
@@ -2049,7 +2423,7 @@ def current_dut_sha256(root: Path) -> str:
 
 
 def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefix: str | None, allow: set,
-                        archival: bool, spec_rel: str) -> dict:
+                        archival: bool, spec_rel: str, extracted: dict | None = None) -> dict:
     """Load, check and summarise the explicitly selected side studies (issue #121).
 
     Each study is hashed and parsed like a selected record (missing file, wrong directory or
@@ -2058,6 +2432,12 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
     DUT and the current netlist, and given the same measurement-configuration freshness policy
     (stale: error unless --archival; unknown: disclosed). The result is information only: it
     never feeds a row's verdict, points or the summary counts.
+
+    A `bound_free` study (issue #173: PSRR) reads no bound at all: instead of validating figures
+    against a ratified bound it requires every row it informs to be tagged "proposed, not
+    ratified" (no grader exists, so a ratified row is an error, never a silent pass), and its
+    adapter also re-derives its figures from retained per-cell curves (hashed) and checks them
+    against the selected primary record of the same experiment (`extracted`), if any.
     """
     out = {}
     cur = None if archival else current_dut_sha256(root)
@@ -2078,7 +2458,11 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
                               "(a grid record is selected under 'experiments', never as a side study)")
         w = check_superseded(root, rel, allow)
         label = f"{label}:{p.stem}"
-        ex = spec["extract"](text, label)
+        bound_free = bool(spec.get("bound_free"))
+        if bound_free:
+            ex = spec["extract"](text, label, root, p.stem, (extracted or {}).get(exp))
+        else:
+            ex = spec["extract"](text, label)
         prov = ex["prov"]
         if dut_prefix is not None and prov["dut_prefix"] != dut_prefix:
             raise ReportError(f"{label}: the side study measures DUT {prov['dut_prefix']}, the selected records "
@@ -2089,7 +2473,16 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
                 f"{prov['dut_prefix']}. Rerun the side study (its runner's --passive-corners mode) to append a new record "
                 "and select it; existing records are append-only and are not edited. "
                 "For a historical (non-signoff) report use --archival with an explicit --out-dir.")
-        for fk, f in ex["figures"].items():
+        if bound_free:
+            for rk in spec["rows"]:
+                sr = spec_by_key.get(rk)
+                if sr is None or not sr["proposed"]:
+                    raise ReportError(
+                        f"{label}: the bound-free side study informs the {rk} row, but {spec_rel} "
+                        + ("has no such row" if sr is None else "no longer tags it 'proposed, not ratified'")
+                        + "; this report has no grader for the study's figures. Extend the report to grade the "
+                        "ratified bound before regenerating it (a verdict is never inferred)")
+        for fk, f in ([] if bound_free else ex["figures"].items()):
             sr = spec_by_key.get(fk)
             if sr is None or sr["bound_open"] or not bound_in_spec(f["bound_text"], sr["target_raw"]):
                 raise ReportError(f"{label}: study bound '{f['bound_text']}' for {f['label']} is not the current "
@@ -2114,6 +2507,10 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
                        "archival report only")
         if w:
             lim.append(w)
+        lim += [l for l in ex.get("limitations", []) if l not in lim]
+        if bound_free and fresh["status"] == "unknown":
+            # the population and the passive section map are taken from the fingerprint inputs
+            raise ReportError(f"{label}: a bound-free side study needs a measurement fingerprint (freshness unknown)")
         out[key] = {
             "graded": False, "experiment": exp, "record_id": p.stem, "path": posix_rel(p, root), "sha256": sha256_file(p),
             "dut_sha256": prov["dut_sha256"],
@@ -2128,6 +2525,12 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
             "not_measured": ex["not_measured"],
             "limitations": lim,
         }
+        if bound_free:
+            out[key].update(bound_free=True, verdict=None, population=ex["population"],
+                            retained_evidence=ex["retained"],
+                            grading=("none: measured information attached to the "
+                                     f"{', '.join(spec['rows'])} row; its bound is proposed, not ratified, so no "
+                                     "PASS/FAIL verdict is formed and no figure is compared with a bound"))
     return out
 
 
@@ -2137,9 +2540,22 @@ def study_row_note(st: dict, row_key: str) -> str:
             f"point count; {st['scope']['cells']} cells = {len(st['scope']['points'])} MOS/T/VDD points x RZ x CC, "
             + ("the full passive-by-PVT cross product)" if st["scope"]["full_pvt_cross_product"]
                else "not a full passive-by-PVT cross product)"))
+    if st.get("bound_free"):
+        return (f"{head} measures, as information only with no verdict (bound-free: the row's bound is proposed, "
+                f"not ratified): " + "; ".join(psrr_study_observation(f) for f in st["figures"].values()))
     if row_key in st["figures"]:
         return f"{head} measures {study_observation(st['figures'][row_key])}"
     return f"{head}: {st['not_measured'].get(row_key, 'no observation for this row')}"
+
+
+def psrr_study_observation(f: dict) -> str:
+    """One bound-free PSRR study figure (issue #173), derived from the retained curves; never a verdict."""
+    w, d = f["worst"], f["delta_vs_typical"]
+    return (f"{f['label']} worst {w['value']} dB at {w['point']}, RZ {w['rz']}, CC {w['cc']} (best {f['best']['value']} "
+            f"dB; worst over the {f['typical_passive_worst']['cells']} typical-passive cells "
+            f"{f['typical_passive_worst']['value']} dB, so the passive spread moves the worst case by "
+            f"{f['passive_shift_of_worst']} dB; delta vs typical passives at matching PVT "
+            f"{d['most_negative']['value']} .. {d['most_positive']['value']} dB over {d['cells']} cells)")
 
 
 def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", archival: bool = False) -> dict:
@@ -2278,7 +2694,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
 
     spec_rows = parse_spec(root / spec_rel)
     spec_by_key = {r["key"]: r for r in spec_rows}
-    supplementary = build_supplementary(root, manifest, spec_by_key, dut_prefix, allow, archival, spec_rel)
+    supplementary = build_supplementary(root, manifest, spec_by_key, dut_prefix, allow, archival, spec_rel,
+                                        extracted)
     for k, st in supplementary.items():
         mcs = st["measurement_config"]
         if mcs["status"] == "stale":
@@ -2587,6 +3004,38 @@ def sc_link(src: dict) -> str:
     return f"[`{src['record_id']}`]({link_from_reports(src['path'])})"
 
 
+def render_psrr_study(a, st: dict) -> None:
+    """Markdown body of the bound-free PSRR study (issue #173): measured, ungraded."""
+    rv, pop = st["retained_evidence"], st["population"]
+    pa = rv["partitions"]
+    a(f"- **Grading**: {st['grading']}")
+    a(f"- **Retained evidence (figures re-derived from it)**: [`{rv['path']}`]({link_from_reports(rv['path'])}): "
+      f"{rv['psrr_dat_files']} `<cell>.psrr.dat` curves, aggregate sha256 `{rv['sha256']}` ({rv['sha256_method']}); "
+      f"[`{pa['path']}`]({link_from_reports(pa['path'])}) sha256 `{pa['sha256']}`: "
+      + ", ".join(f"`{m}` {n} cells" for m, n in pa["excitations"].items())
+      + f" (each the exact {pop['cells']}-cell union, no overlap)")
+    a(f"- **Population**: {pop['cells']} cells ({pop['typical_passive_cells']} typical-passive, "
+      f"{pop['non_typical_cells']} non-typical), each paired from the {', '.join(pop['excitations'])} excitations")
+    a("")
+    a(f"| figure (information only, no verdict) | worst (dB) | binding cell (MOS / T / VDD / RZ / CC) | best (dB) | "
+      f"best cell | worst over the {pop['typical_passive_cells']} typical-passive cells (dB) | passive shift of the "
+      f"worst case (dB) | most negative delta vs typical (dB) | at cell | most positive delta vs typical (dB) | "
+      f"at cell | max abs delta (dB) |")
+    a("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    cell = lambda c: f"{c['point']} / RZ {c['rz']} / CC {c['cc']}"
+    for f in st["figures"].values():
+        d, t = f["delta_vs_typical"], f["typical_passive_worst"]
+        a(f"| {f['label']} | {f['worst']['value']} | {cell(f['worst'])} | {f['best']['value']} | {cell(f['best'])} | "
+          f"{t['value']} | {f['passive_shift_of_worst']} | {d['most_negative']['value']} | {cell(d['most_negative'])} | "
+          f"{d['most_positive']['value']} | {cell(d['most_positive'])} | {d['max_abs']} |")
+    a("")
+    prim = [f for f in st["figures"].values() if "primary_record_worst" in f["typical_passive_worst"]]
+    if prim:
+        a("- Typical-passive worst values agree with the selected 45-point PSRR record: "
+          + "; ".join(f"{f['label']} {f['typical_passive_worst']['value']} dB vs "
+                      f"{f['typical_passive_worst']['primary_record_worst']} dB" for f in prim))
+
+
 def render_md(rep: dict) -> str:
     L = []
     a = L.append
@@ -2664,8 +3113,9 @@ def render_md(rep: dict) -> str:
         a("")
         a("Selected explicitly under `supplementary` in `sim/report/selection.json`, separately from the records "
           "that grade the spec rows. Every figure below is re-derived from the study's own RZ x CC tables and "
-          "checked against its verdict header; none is counted in a row's points or verdict or in the ratified-row "
-          "summary above.")
+          "checked against its verdict header (a bound-free study: re-derived from its retained per-cell curves and "
+          "checked against its rounded tables, with no verdict at all); none is counted in a row's points or verdict "
+          "or in the ratified-row summary above.")
         for k, st in rep["supplementary"].items():
             a("")
             a(f"### {k}")
@@ -2681,7 +3131,9 @@ def render_md(rep: dict) -> str:
               f"klt engine {st['ngspice_engine'] or 'n/a'}; klt client {st['klt_client'] or 'n/a'}; backend "
               f"{st['backend'] or 'n/a'}; measurement-configuration freshness {mc_cell(st['measurement_config'])}")
             a(f"- **Rows it informs (not graded)**: {', '.join(st['rows'])}")
-            for fk, f in st["figures"].items():
+            if st.get("bound_free"):
+                render_psrr_study(a, st)
+            for fk, f in ([] if st.get("bound_free") else st["figures"].items()):
                 a(f"- {study_observation(f)} (record verdict {f['verdict_in_record']}; information only, not graded)")
             for fk, why in sorted(st["not_measured"].items()):
                 a(f"- {fk}: {why}")
@@ -2738,6 +3190,15 @@ def render_evidence(report_json: str) -> str:
                  "records and verified; this is not a claim that every spec row passes.",
         "report": {"path": f"{OUT_DIR_REL}/{OUT_NAME}.json", "markdown": f"{OUT_DIR_REL}/{OUT_NAME}.md"},
         "report_summary": rep["summary"],
+        # issue #173: the hashed side evidence the report attaches to its rows; never graded, never
+        # part of report_summary (a bound-free study carries no verdict at all)
+        "report_supplementary": {
+            k: {"graded": False, "bound_free": bool(st.get("bound_free")), "rows": st["rows"], "path": st["path"],
+                "sha256": st["sha256"], "cells": st["scope"]["cells"],
+                **({"verdict": None, "retained_evidence_sha256": st["retained_evidence"]["sha256"],
+                    "worst_db": {f["label"]: f["worst"]["value"] for f in st["figures"].values()}}
+                   if st.get("bound_free") else {})}
+            for k, st in rep.get("supplementary", {}).items()},
         "provenance": {"input": {"path": f"{OUT_DIR_REL}/{OUT_NAME}.json",
                                  "content_hash": report_hash(report_json)}},
     }

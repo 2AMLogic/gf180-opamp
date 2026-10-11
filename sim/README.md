@@ -244,12 +244,35 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   selected under a key of the other scope is an error. Measurement-configuration
   freshness follows the same policy as selected records (stale: error unless
   `--archival`; unknown: disclosed).
+- Bound-free PSRR passive study (issue #173): the full 405-cell PSRR RZ x CC
+  study (`run_psrr.py --passive-corners --passive-scope full`, issue #155) is
+  selected explicitly under `psrr-passive-corners-full` and attached to the
+  PSRR row as measured information with NO verdict: the row's DR-6 bound is
+  proposed, not ratified, so the adapter reads no bound (if the row is ever
+  ratified while the study is selected, generation fails until the report
+  learns to grade it). The population comes from the record's hash-verified
+  fingerprint inputs (`passive_study`, so the passive section map and factors
+  follow the freshness policy); the per-cell table must hold exactly those
+  405 cells (missing, duplicate, unexpected, malformed or nonfinite cells are
+  errors) and `corners/<rid>/partitions.json` must cover them exactly per
+  excitation. PSRR+ / PSRR- at 1 kHz and 10 kHz are re-derived from the
+  retained `<cell>.psrr.dat` curves (aggregate sha256 reported), checked
+  against the rounded table, the binding-cell and delta tables (a misnamed or
+  wrong extremum is an error; ties at retained precision are accepted) and
+  the selected 45-point PSRR record's typical-passive worst values. The
+  report shows worst / best cells, the worst over the typical-passive cells,
+  the passive shift of the worst case and the deltas versus typical passives,
+  plus the study's own limitations (matched devices, bias-generator supply
+  sensitivity excluded, no passive mismatch or layout parasitics,
+  client-versus-fleet provenance); the evidence sidecar lists it under
+  `report_supplementary` as ungraded. The primary PSRR selection and the
+  graded counts are unchanged.
 - Regenerate: `python3 sim/report/characterization_report.py` (after editing
   `selection.json`); verify the committed copy: `... --check` (exit 1 if
   stale). `characterize.sh` ends with `--latest --update-manifest`, selecting
   the newest record of each experiment (for `slew-swing-power`, the newest
-  record that judged each row; side-study records such as the gain-gbw-pm and slew-swing-power
-  `--passive-corners` study are never selected by recency, and the manifest's
+  record that judged each row; side-study records such as the gain-gbw-pm, slew-swing-power and PSRR
+  `--passive-corners` studies are never selected by recency, and the manifest's
   explicit `supplementary` selection is carried over unchanged); `selftest.sh` runs
   `report/test_report.py` and `--check`.
 

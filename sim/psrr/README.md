@@ -98,8 +98,11 @@ record's typical-passive cells prevent any record from being written.
 The study record (`# PSRR passive-corner study`, same append-only layout) reports
 both rails at 1 kHz and 10 kHz with the worst and best cell identities and the
 difference versus typical passives at matching PVT, plus job ids, timings and
-partition membership. **Standalone**: it is not selected by `--latest`, has no
-`selection.json` key and is not parsed by the report. The PSRR bound is still
+partition membership. It is never selected by `--latest`; since issue #173 the
+report attaches it to the PSRR row only when selected explicitly under the
+bound-free `psrr-passive-corners-full` key of `sim/report/selection.json`,
+re-deriving its 1 kHz / 10 kHz figures from the retained `<cell>.psrr.dat`
+curves (see `sim/README.md`, "Characterization report"). The PSRR bound is still
 proposed (DR-6), so the result is evidence only, not a verdict. Limitations are
 unchanged: systematic (matched-device) figures, and the ideal 10 uA bias source
 excludes bias-generator supply sensitivity.

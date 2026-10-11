@@ -48,6 +48,10 @@ OFF_NOM_MD = f"{OFF}/records/{OFF_NOM_REC}.md"
 OFF_GRID_CSV = f"{OFF}/corners/{OFF_GRID_REC}/offset_samples.csv"
 GAIN_STUDY_MD = "sim/gain-gbw-pm/records/20261010-161720-0127eb7.md"  # issue #70 side study (supplementary, #121)
 SSP_STUDY_MD = "sim/slew-swing-power/records/20261010-162823-0127eb7.md"  # issue #97 side study (supplementary, #121)
+PSRR = "sim/psrr"
+PSRR_STUDY_REC = "20261011-102729-6612014"  # issue #155 full RZ x CC x PVT study (bound-free supplementary, #173)
+PSRR_STUDY_MD = f"{PSRR}/records/{PSRR_STUDY_REC}.md"
+PSRR_STUDY_DIR = f"{PSRR}/corners/{PSRR_STUDY_REC}"
 
 
 def make_root(tmp: Path) -> Path:
@@ -73,7 +77,10 @@ def make_root(tmp: Path) -> Path:
     # offset grid (issue #120): its retained per-sample evidence is a report input too
     for p in (list((REPO / ICMR).glob("corners/*/samples.csv")) + list((REPO / ICMR).glob("records/*-addendum/ADDENDUM.md"))
               + list((REPO / OFF).glob("corners/*/offset_samples.csv"))
-              + list((REPO / CMC).glob("corners/*/samples.csv"))):  # CMRR mismatch MC (issue #124)
+              + list((REPO / CMC).glob("corners/*/samples.csv"))  # CMRR mismatch MC (issue #124)
+              # full PSRR passive study (issue #173): its retained per-cell curves and partition membership
+              + [q for d in (REPO / PSRR).glob("corners/*/partitions.json")
+                 for q in [d, *d.parent.glob("*.psrr.dat")]]):
         dst = tmp / p.relative_to(REPO)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(p, dst)
@@ -692,7 +699,13 @@ class Mutations(unittest.TestCase):
         # record's worst value (the pre-DR-6 behaviour); with it, the row is not graded
         self.edit("spec/target-spec.md", "≥ 50 dB each at 10 kHz [DR-6] — proposed, not ratified**",
                   "≥ 50 dB each at 10 kHz [DR-6]**")
-        r = rows_by_key(self.build())
+        # issue #173: with the bound-free PSRR study selected, a ratified PSRR bound is never silently
+        # left ungraded by it (the study has no grader); the primary-record behaviour is unchanged
+        with self.assertRaisesRegex(cr.ReportError, "no grader for the study's figures"):
+            self.build()
+        m = manifest()
+        m["supplementary"].pop("psrr-passive-corners-full")
+        r = rows_by_key(self.build(m))
         self.assertEqual(r["psrr"]["status"], "measured-no-bound")
         self.assertTrue(r["psrr"]["worst"].startswith("PSRR+ "))
         self.assertEqual(r["cmrr"]["status"], "proposed-not-graded")
@@ -723,13 +736,15 @@ class Mutations(unittest.TestCase):
                          "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md")
 
     def test_latest_selection_ignores_the_psrr_passive_study(self):
-        # issue #155: the standalone PSRR RZ x CC study lives beside the PSRR grid records but is
-        # never selected as one, and it is NOT a supplementary study (no report integration)
+        # issue #155: the PSRR RZ x CC study lives beside the PSRR grid records but is never selected
+        # as one by recency; issue #173: it is reported only under its explicit bound-free key
         want = json.loads(MANIFEST.read_text())["experiments"]["psrr"]
         rec = self.root / "sim/psrr/records/29991231-235959-0000000.md"
         rec.write_text("# PSRR passive-corner study (RZ x CC) -- record 29991231-235959-0000000\n")
         self.assertEqual(cr.latest_selection(self.root)["psrr"], want)
-        self.assertFalse(any(v["experiment"] == "psrr" for v in cr.SUPPLEMENTARY.values()))
+        self.assertEqual([k for k, v in cr.SUPPLEMENTARY.items() if v["experiment"] == "psrr"],
+                         ["psrr-passive-corners-full"])
+        self.assertTrue(cr.SUPPLEMENTARY["psrr-passive-corners-full"]["bound_free"])
 
     def test_latest_selection_picks_the_offset_pvt_grid_record(self):
         # issue #120: the full-grid offset record is read by the offset extractor, not a side study
@@ -1799,6 +1814,7 @@ class SupplementaryPassiveStudies(unittest.TestCase):
 
     GKEY, SKEY = "gain-gbw-pm-passive-corners", "slew-swing-power-passive-corners"
     GFULL, SFULL = "gain-gbw-pm-passive-corners-full", "slew-swing-power-passive-corners-full"  # issue #150
+    PFULL = "psrr-passive-corners-full"  # issue #173 (bound-free)
 
     def setUp(self):
         self._t = tempfile.TemporaryDirectory()
@@ -1834,7 +1850,7 @@ class SupplementaryPassiveStudies(unittest.TestCase):
         sel = json.loads(MANIFEST.read_text())
         sup = sel["supplementary"]
         self.assertEqual({k: sup[k] for k in (self.GKEY, self.SKEY)}, {self.GKEY: GAIN_STUDY_MD, self.SKEY: SSP_STUDY_MD})
-        self.assertEqual(set(sup), {self.GKEY, self.SKEY, self.GFULL, self.SFULL})
+        self.assertEqual(set(sup), {self.GKEY, self.SKEY, self.GFULL, self.SFULL, self.PFULL})
         for rel in sup.values():  # never also a verdict source
             self.assertNotIn(rel, json.dumps(sel["experiments"]))
 
@@ -1909,7 +1925,8 @@ class SupplementaryPassiveStudies(unittest.TestCase):
 
     def test_studies_never_change_verdicts_points_or_counts(self):
         with_s = self.build()
-        without = self.build(self.sup(**{self.GKEY: None, self.SKEY: None, self.GFULL: None, self.SFULL: None}))
+        without = self.build(self.sup(**{self.GKEY: None, self.SKEY: None, self.GFULL: None, self.SFULL: None,
+                                         self.PFULL: None}))
         self.assertEqual(with_s["summary"], without["summary"])
         self.assertEqual(without["supplementary"], {})
         for a, b in zip(with_s["rows"], without["rows"]):
@@ -2073,6 +2090,274 @@ class SupplementaryPassiveStudies(unittest.TestCase):
             self.assertEqual(cr.main(["--root", str(self.root), "--manifest", str(mp), "--latest",
                                       "--update-manifest", "--stdout"]), 0)
         self.assertEqual(json.loads(mp.read_text()), json.loads(MANIFEST.read_text()))
+
+
+class PsrrFullPassiveStudy(unittest.TestCase):
+    """Issue #173: the full 405-cell PSRR RZ x CC study (issue #155) is explicitly selected, hashed
+    and re-derived from its retained curves as BOUND-FREE information attached to the PSRR row:
+    no verdict while DR-6 is proposed, primary selection / graded counts / bounds unchanged."""
+
+    KEY = "psrr-passive-corners-full"
+    WORST_10K = "| PSRR+ 10 kHz | **61.09** | ss / 125 C / 2.97 V / RZ worst / CC worst |"
+    CELL = "| typical / -40 C / 2.97 V / RZ typical / CC best | 86.11 | 66.32 | 104.83 | 104.64 | +0.897 | +0.032 |"
+    BINDING_DAT = f"{PSRR_STUDY_DIR}/ss__r-worst__c-worst_125c_2.97v.psrr.dat"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def build(self, m=None, **kw):
+        return cr.build(self.root, m or manifest(), **kw)
+
+    def edit(self, rel, old, new, count=1):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertIn(old, t)
+        p.write_text(t.replace(old, new, count))
+
+    def rejects(self, rx, m=None, **kw):
+        with self.assertRaisesRegex(cr.ReportError, rx):
+            self.build(m, **kw)
+
+    def without(self):
+        m = manifest()
+        m["supplementary"].pop(self.KEY)
+        return m
+
+    # ---- positive: selected, hashed, displayed ----
+    def test_explicitly_selected_beside_the_unchanged_primary_record(self):
+        sel = json.loads(MANIFEST.read_text())
+        self.assertEqual(sel["supplementary"][self.KEY], PSRR_STUDY_MD)
+        self.assertEqual(sel["experiments"]["psrr"], "sim/psrr/records/20261010-163854-0127eb7.md")  # 45-point primary
+        self.assertNotIn(PSRR_STUDY_MD, json.dumps(sel["experiments"]))
+
+    def test_hashed_population_and_retained_evidence(self):
+        st = self.build()["supplementary"][self.KEY]
+        self.assertFalse(st["graded"])
+        self.assertTrue(st["bound_free"])
+        self.assertIsNone(st["verdict"])
+        self.assertEqual(st["rows"], ["psrr"])
+        self.assertEqual(st["sha256"], hashlib.sha256((REPO / PSRR_STUDY_MD).read_bytes()).hexdigest())
+        self.assertEqual(st["dut_check"], {"matches_selected_records": True, "matches_current_netlist": True})
+        self.assertEqual(st["measurement_config"]["status"], "current")
+        self.assertEqual((st["scope"]["cells"], len(st["scope"]["points"]), st["scope"]["full_pvt_cross_product"]),
+                         (405, 45, True))
+        self.assertEqual(st["population"], {"cells": 405, "typical_passive_cells": 45, "non_typical_cells": 360,
+                                            "excitations": ["dm", "vdd", "vss"]})
+        rv = st["retained_evidence"]
+        self.assertEqual((rv["path"], rv["psrr_dat_files"]), (PSRR_STUDY_DIR, 405))
+        # independent recomputation of the aggregate hash over every retained curve
+        names = sorted(p.name for p in (REPO / PSRR_STUDY_DIR).glob("*.psrr.dat"))
+        self.assertEqual(len(names), 405)
+        listing = {n: f"{hashlib.sha256((REPO / PSRR_STUDY_DIR / n).read_bytes()).hexdigest()}  {n}\n" for n in names}
+        order = [f"{m}__r-{r}__c-{c}_{t}c_{v}v.psrr.dat" for m in ("typical", "ff", "ss", "fs", "sf")
+                 for t in ("-40", "27", "125") for v in ("2.97", "3.30", "3.63")
+                 for r in ("typical", "best", "worst") for c in ("typical", "best", "worst")]
+        self.assertEqual(rv["sha256"], hashlib.sha256("".join(listing[n] for n in order).encode()).hexdigest())
+        pj = f"{PSRR_STUDY_DIR}/partitions.json"
+        self.assertEqual(rv["partitions"], {"path": pj, "sha256": hashlib.sha256((REPO / pj).read_bytes()).hexdigest(),
+                                            "excitations": {"dm": 405, "vdd": 405, "vss": 405}})
+
+    def test_both_rails_both_frequencies_binding_cells_and_deltas(self):
+        f = self.build()["supplementary"][self.KEY]["figures"]
+        self.assertEqual(list(f), ["PSRR+ 1 kHz", "PSRR+ 10 kHz", "PSRR- 1 kHz", "PSRR- 10 kHz"])
+        cell = lambda c: (c["value"], c["point"], c["rz"], c["cc"])
+        self.assertEqual(cell(f["PSRR+ 10 kHz"]["worst"]), ("61.09", "ss / 125 C / 2.97 V", "worst", "worst"))
+        self.assertEqual(cell(f["PSRR+ 1 kHz"]["worst"]), ("81.02", "ss / 125 C / 2.97 V", "worst", "worst"))
+        self.assertEqual(cell(f["PSRR- 1 kHz"]["worst"]), ("101.01", "ss / -40 C / 2.97 V", "best", "worst"))
+        self.assertEqual(cell(f["PSRR- 10 kHz"]["worst"]), ("100.88", "ss / -40 C / 2.97 V", "best", "worst"))
+        self.assertEqual(cell(f["PSRR- 10 kHz"]["best"]), ("116.24", "ff / 125 C / 3.30 V", "best", "best"))
+        p10 = f["PSRR+ 10 kHz"]
+        self.assertEqual(p10["typical_passive_worst"], {"value": "61.90", "cells": 45, "primary_record_worst": "61.90"})
+        self.assertEqual(p10["passive_shift_of_worst"], "-0.81")
+        d = p10["delta_vs_typical"]
+        self.assertEqual((d["cells"], d["max_abs"]), (360, "0.899"))
+        self.assertEqual(cell(d["most_negative"]), ("-0.815", "ff / 125 C / 3.63 V", "worst", "worst"))
+        self.assertEqual(cell(d["most_positive"]), ("+0.899", "ff / 125 C / 3.63 V", "best", "best"))
+        self.assertEqual(f["PSRR- 1 kHz"]["delta_vs_typical"]["most_negative"]["value"], "-0.625")
+        for fig in f.values():  # no bound, no verdict, no pass counts
+            for k in ("bound_text", "bound_value", "verdict", "verdict_in_record", "pass", "fail", "failing_cells"):
+                self.assertNotIn(k, fig)
+
+    def test_no_verdict_and_graded_counts_and_bounds_unchanged(self):
+        with_s, without = self.build(), self.build(self.without())
+        self.assertEqual(with_s["summary"], without["summary"])
+        for a, b in zip(with_s["rows"], without["rows"]):
+            for k in ("status", "verdict", "points_pass", "points_total", "worst", "worst_corner", "coverage",
+                      "spec_bound", "source", "figures"):
+                self.assertEqual(a[k], b[k], (a["key"], k))
+        r = rows_by_key(with_s)["psrr"]
+        self.assertEqual((r["status"], r["verdict"], r["points_total"]), ("proposed-not-graded", None, None))
+        self.assertEqual(r["coverage"]["points"], 45)
+        self.assertEqual(r["source"]["record_id"], "20261010-163854-0127eb7")
+        note = next(l for l in r["limitations"] if PSRR_STUDY_REC in l)
+        self.assertIn("no verdict", note)
+        self.assertIn("PSRR+ 10 kHz worst 61.09 dB at ss / 125 C / 2.97 V, RZ worst, CC worst", note)
+        self.assertNotIn(PSRR_STUDY_REC, " ".join(rows_by_key(with_s)["cmrr"]["limitations"]))
+        md = cr.render_md(with_s)
+        sec = md.split(f"### {self.KEY}", 1)[1].split("\n### ", 1)[0]
+        self.assertIsNone(re.search(r"\b(PASS|FAIL)\b", sec.replace("PASS/FAIL verdict", "")), sec)
+        self.assertIn("| PSRR+ 10 kHz | 61.09 | ss / 125 C / 2.97 V / RZ worst / CC worst |", sec)
+        for frag in ("bias-generator supply sensitivity is excluded", "no RZ/CC mismatch and no layout parasitics",
+                     "matched devices", "fleet runner klt 0.5.0 vs client klt"):
+            self.assertIn(frag, sec)
+        self.assertNotIn(PSRR_STUDY_REC, cr.render_md(without))
+
+    def test_evidence_sidecar_lists_the_study_ungraded(self):
+        ev = json.loads(cr.render_evidence(cr.render_json(self.build())))
+        s = ev["report_supplementary"][self.KEY]
+        self.assertEqual((s["graded"], s["bound_free"], s["verdict"], s["cells"], s["path"]),
+                         (False, True, None, 405, PSRR_STUDY_MD))
+        self.assertEqual(s["worst_db"], {"PSRR+ 1 kHz": "81.02", "PSRR+ 10 kHz": "61.09", "PSRR- 1 kHz": "101.01",
+                                         "PSRR- 10 kHz": "100.88"})
+        ev0 = json.loads(cr.render_evidence(cr.render_json(self.build(self.without()))))
+        self.assertEqual(ev["report_summary"], ev0["report_summary"])
+        self.assertNotIn(self.KEY, ev0["report_supplementary"])
+
+    def test_ratified_psrr_row_has_no_grader(self):
+        self.edit("spec/target-spec.md", "≥ 50 dB each at 10 kHz [DR-6] — proposed, not ratified**",
+                  "≥ 50 dB each at 10 kHz [DR-6]**")
+        self.rejects(r"no longer tags it 'proposed, not ratified'; this report has no grader")
+
+    # ---- population: missing / duplicate / unexpected cells ----
+    def test_missing_cell_rejected(self):
+        self.edit(PSRR_STUDY_MD, self.CELL, "")
+        self.rejects(r"'## All 405 cells' is missing 1 of 405 cells \(first: typical / -40 C / 2.97 V / RZ typical / CC best\)")
+
+    def test_duplicate_cell_rejected(self):
+        self.edit(PSRR_STUDY_MD, self.CELL, self.CELL.replace("CC best", "CC typical"))
+        self.rejects(r"duplicate cell typical / -40 C / 2.97 V / RZ typical / CC typical")
+
+    def test_unexpected_cell_rejected(self):
+        self.edit(PSRR_STUDY_MD, self.CELL, self.CELL.replace("2.97 V", "2.50 V"))
+        self.rejects(r"unexpected cell typical / -40 C / 2.50 V / RZ typical / CC best")
+
+    def test_unknown_level_or_corner_rejected(self):
+        self.edit(PSRR_STUDY_MD, self.CELL, self.CELL.replace("CC best", "CC slow"))
+        self.rejects(r"malformed cell identity")
+
+    def test_missing_retained_curve_rejected(self):
+        (self.root / self.BINDING_DAT).unlink()
+        self.rejects(r"retained per-cell curve is missing: .*ss__r-worst__c-worst_125c_2.97v.psrr.dat")
+
+    def test_partition_union_must_be_exact(self):
+        p = self.root / PSRR_STUDY_DIR / "partitions.json"
+        d = json.loads(p.read_text())
+        d["plan"]["vss"][2]["cells"].pop(0)
+        p.write_text(json.dumps(d))
+        self.rejects(r"'vss' partitions are not exactly the 405-cell population \(0 overlapping, 0 unexpected, 1 missing")
+        d["plan"]["vss"][2]["cells"].append(d["plan"]["vss"][0]["cells"][0])
+        p.write_text(json.dumps(d))
+        self.rejects(r"'vss' partitions are not exactly the 405-cell population \(1 overlapping")
+
+    # ---- nonfinite / disagreeing values ----
+    def test_nonfinite_table_value_rejected(self):
+        self.edit(PSRR_STUDY_MD, self.CELL, self.CELL.replace("| 66.32 |", "| nan |"))
+        self.rejects(r"malformed or nonfinite value 'nan'")
+
+    def test_lower_bound_table_value_rejected(self):
+        self.edit(PSRR_STUDY_MD, self.CELL, self.CELL.replace("| 66.32 |", "| >= 66.32 |"))
+        self.rejects(r"malformed or nonfinite value '>= 66.32'")
+
+    def test_nonfinite_retained_value_rejected(self):
+        p = self.root / self.BINDING_DAT
+        lines = p.read_text().splitlines()
+        i = next(i for i, l in enumerate(lines) if l.startswith("1.00000000e+03"))
+        lines[i] = " ".join(lines[i].split()[:4] + ["nan"] + lines[i].split()[5:])
+        p.write_text("\n".join(lines) + "\n")
+        self.rejects(r"ss__r-worst__c-worst_125c_2.97v.psrr.dat: nonfinite value at 1000 Hz")
+
+    def test_tampered_retained_curve_rejected(self):
+        p = self.root / self.BINDING_DAT
+        lines = p.read_text().splitlines()
+        i = next(i for i, l in enumerate(lines) if l.startswith("1.00000000e+04"))
+        c = lines[i].split()
+        c[4] = f"{float(c[4]) + 0.5:.8e}"
+        lines[i] = " ".join(c)
+        p.write_text("\n".join(lines) + "\n")
+        self.rejects(r"PSRR\+ 10 kHz of ss / 125 C / 2.97 V / RZ worst / CC worst states 61.09 dB but the retained "
+                     r"curves give 61.5876")
+
+    # ---- contradictory extrema vs the rounded header claims ----
+    def test_misnamed_binding_cell_rejected(self):
+        self.edit(PSRR_STUDY_MD, self.WORST_10K, self.WORST_10K.replace("RZ worst / CC worst", "RZ typical / CC typical"))
+        self.rejects(r"PSRR\+ 10 kHz worst names ss / 125 C / 2.97 V / RZ typical / CC typical but the retained curves "
+                     r"put it at ss / 125 C / 2.97 V / RZ worst / CC worst .*contradictory extremum")
+
+    def test_wrong_worst_value_rejected(self):
+        self.edit(PSRR_STUDY_MD, self.WORST_10K, self.WORST_10K.replace("**61.09**", "**61.19**"))
+        self.rejects(r"PSRR\+ 10 kHz worst states 61.19 dB but the retained curves give 61.0876")
+
+    def test_contradictory_delta_extreme_rejected(self):
+        row = "| PSRR- 1 kHz | -0.625 | typical / 125 C / 3.63 V / RZ worst / CC worst |"
+        self.edit(PSRR_STUDY_MD, row, row.replace("RZ worst / CC worst", "RZ best / CC worst"))
+        self.rejects(r"PSRR- 1 kHz most negative delta names .*RZ best / CC worst.*contradictory extremum")
+
+    def test_wrong_typical_passive_worst_rejected(self):
+        self.edit(PSRR_STUDY_MD, "| 66.77 | ff / -40 C / 3.63 V / RZ best / CC best | 61.90 | -0.81 |",
+                  "| 66.77 | ff / -40 C / 3.63 V / RZ best / CC best | 62.90 | -0.81 |")
+        self.rejects(r"PSRR\+ 10 kHz worst over the typical-passive cells states 62.90 dB")
+
+    def test_disagreement_with_the_primary_record_rejected(self):
+        self.edit("sim/psrr/records/20261010-163854-0127eb7.md", "| 10 kHz | **61.90** |", "| 10 kHz | **61.95** |")
+        self.rejects(r"PSRR\+ 10 kHz worst over the typical-passive cells \(61.8991 dB\) disagrees with the selected "
+                     r"PSRR grid record \(61.95 dB\)")
+
+    def test_missing_or_duplicate_figure_row_rejected(self):
+        self.edit(PSRR_STUDY_MD, self.WORST_10K, self.WORST_10K.replace("PSRR+ 10 kHz", "PSRR+ 1 kHz"))
+        self.rejects(r"duplicate figure 'PSRR\+ 1 kHz'")
+
+    def test_record_claiming_a_verdict_rejected(self):
+        self.edit(PSRR_STUDY_MD, "- **Status**: measured, **no pass or fail verdict**.", "- **Status**: **PASS**.")
+        self.rejects(r"does not state 'measured, \*\*no pass or fail verdict\*\*'")
+
+    def test_missing_limitation_statement_rejected(self):
+        self.edit(PSRR_STUDY_MD, "**bias-generator supply sensitivity is excluded**", "bias handled")
+        self.rejects(r"does not state its limitation '\*\*bias-generator supply sensitivity is excluded\*\*'")
+
+    # ---- DUT and measurement-configuration freshness ----
+    def test_wrong_dut_rejected(self):
+        self.edit(PSRR_STUDY_MD, "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b", "0" * 64)
+        self.rejects(r"supplementary psrr-passive-corners-full:20261011-102729-6612014: the side study measures DUT "
+                     r"0000000000000000, the selected records 33b58dac62c747de")
+
+    def test_stale_dut_without_primary_selection_rejected(self):
+        self.edit(PSRR_STUDY_MD, "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b", "0" * 64)
+        m = {"experiments": {}, "supplementary": {self.KEY: PSRR_STUDY_MD}}
+        self.rejects(r"stale DUT: supplementary psrr-passive-corners-full", m)
+
+    def test_stale_passive_section_map_rejected_and_archival_discloses(self):
+        # the passive factors / sections are fingerprinted (issue #155): a changed map stales ONLY this study
+        self.edit("sim/passive_corners.py", 'RES_FACTOR = {"typical": 1.0, "best": 0.8, "worst": 1.2}',
+                  'RES_FACTOR = {"typical": 1.0, "best": 0.85, "worst": 1.2}')
+        self.rejects(r"stale measurement configuration: supplementary psrr-passive-corners-full:20261011-102729-6612014 "
+                     r"was measured .*passive_study\.rz\.best\.factor")
+        rep = self.build(archival=True)
+        self.assertEqual(rep["supplementary"][self.KEY]["measurement_config"]["status"], "stale")
+        self.assertTrue(any(l.startswith(f"supplementary {self.KEY}: measurement configuration differs")
+                            for l in rep["limitations"]))
+        self.assertEqual(rep["sources"]["psrr"]["measurement_config"]["status"], "current")  # primary unaffected
+
+    def test_stale_bench_rejected(self):
+        self.edit("sim/psrr/testbench/tb_psrr.spice", "CL vout 0 2p", "CL vout 0 3p")
+        self.rejects(r"stale measurement configuration")
+        self.rejects(r"stale measurement configuration: supplementary psrr-passive-corners-full:.*bench",
+                     {"experiments": {}, "supplementary": {self.KEY: PSRR_STUDY_MD}})
+        mc = self.build(archival=True)["supplementary"][self.KEY]["measurement_config"]
+        self.assertEqual(mc["status"], "stale")
+        self.assertIn("bench", mc["differs"])
+
+    def test_tampered_fingerprint_inputs_rejected(self):
+        self.edit(PSRR_STUDY_MD, '"cells":405,"levels"', '"cells":404,"levels"')
+        self.rejects(r"retained measurement-fingerprint inputs hash to .* \(record altered or corrupt\)")
+
+    def test_historical_artifacts_untouched_by_generation(self):
+        before = {p: p.read_bytes() for p in [self.root / PSRR_STUDY_MD, *(self.root / PSRR_STUDY_DIR).iterdir()]}
+        cr.render_md(self.build())
+        self.assertEqual(before, {p: p.read_bytes() for p in before})
 
 
 class AtomicPublication(unittest.TestCase):

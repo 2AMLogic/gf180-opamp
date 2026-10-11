@@ -13,6 +13,7 @@
     "gain-gbw-pm-passive-corners": "sim/gain-gbw-pm/records/20261010-161720-0127eb7.md",
     "slew-swing-power-passive-corners": "sim/slew-swing-power/records/20261010-162823-0127eb7.md",
     "gain-gbw-pm-passive-corners-full": "sim/gain-gbw-pm/records/20261011-042113-c635487.md",
-    "slew-swing-power-passive-corners-full": "sim/slew-swing-power/records/20261011-052206-c635487.md"
+    "slew-swing-power-passive-corners-full": "sim/slew-swing-power/records/20261011-052206-c635487.md",
+    "psrr-passive-corners-full": "sim/psrr/records/20261011-102729-6612014.md"
   }
 }
