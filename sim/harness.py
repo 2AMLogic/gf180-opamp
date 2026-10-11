@@ -54,9 +54,11 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import math
 import os
 import re
 import shutil
+import statistics
 import subprocess
 import sys
 import time
@@ -541,3 +543,100 @@ def claim_record_paths(base: Path, record: str, *, plots: bool = True) -> dict[s
         if p.exists():
             raise FileExistsError(f"{p} already exists; evidence is append-only")
     return paths
+
+
+# --------------------------------------------------------------------------
+# Monte Carlo statistics / extraction shared by the *-mc drivers (issue #153)
+# --------------------------------------------------------------------------
+
+
+def percentile(values: list[float], q: float) -> float:
+    """Linear-interpolated percentile (numpy's default 'linear' method)."""
+    xs = sorted(values)
+    if not xs:
+        raise ValueError("no values")
+    pos = (len(xs) - 1) * q / 100.0
+    lo = math.floor(pos)
+    hi = min(lo + 1, len(xs) - 1)
+    return xs[lo] + (xs[hi] - xs[lo]) * (pos - lo)
+
+
+def skew(xs: list[float]) -> float:
+    """Population skewness (0.0 for a degenerate, zero-variance sample)."""
+    n = len(xs)
+    m = statistics.fmean(xs)
+    m2 = sum((x - m) ** 2 for x in xs) / n
+    return 0.0 if m2 <= 0 else sum((x - m) ** 3 for x in xs) / n / m2**1.5
+
+
+def extract_mc_samples(
+    report: dict,
+    want: list[tuple],
+    n_expected: int,
+    *,
+    point_key,
+    fmt_key,
+    sample_cls,
+    parse_scalars,
+    validate_sample,
+    clamp_floor,
+    read_log=None,
+) -> tuple[dict[tuple, list], list[str]]:
+    """Samples per grid point from a klt Monte Carlo report.
+
+    Blocking: every expected point contributes exactly `n_expected` samples
+    with distinct sample indices 0..n-1, each with a retained log, every
+    scalar present and every per-sample check passing. Nothing is dropped
+    silently: an invalid sample is a problem string.
+
+    The per-driver pieces are parameters: `point_key(corner) -> tuple`,
+    `fmt_key(key) -> str`, `sample_cls(key, idx, seeds, vals, problems[, lb])`
+    (with a `.valid` property), `parse_scalars(log) -> dict`,
+    `validate_sample(vals, vcm) -> (problems, lower_bound)` and
+    `clamp_floor(sample)`.
+    """
+    read_log = read_log or (lambda p: Path(p).read_text())
+    problems: list[str] = []
+    out: dict[tuple, list] = {k: [] for k in want}
+    seen: dict[tuple, set] = {k: set() for k in want}
+    for c in report.get("corners", []):
+        try:
+            k = point_key(c)
+        except (KeyError, TypeError, ValueError):
+            problems.append(f"{c.get('corner_id', '?')}: unparseable corner")
+            continue
+        cid = str(c.get("corner_id", fmt_key(k)))
+        if k not in out:
+            problems.append(f"{cid}: unexpected grid point")
+            continue
+        mcd = c.get("monte_carlo") or {}
+        idx = mcd.get("sample_index")
+        if idx is None or idx in seen[k]:
+            problems.append(f"{cid}: missing or duplicate sample index {idx!r}")
+            continue
+        seen[k].add(idx)
+        logp = (c.get("artifacts") or {}).get("log")
+        try:
+            log = read_log(logp) if logp else None
+        except OSError:
+            log = None
+        seeds = {s: mcd.get(s) for s in ("seed", "mismatch_seed", "process_seed")}
+        if not log:
+            diag = "; ".join(d.get("message", "")[:160] for d in c.get("diagnostics", []) if d.get("severity") == "error")
+            s = sample_cls(k, idx, seeds, {}, [f"no ngspice log retained ({diag or c.get('status')})"])
+        else:
+            vals = parse_scalars(log)
+            vcm = float((c.get("supply_v") or {}).get("vcm", k[2] / 2))
+            probs, lb = validate_sample(vals, vcm)
+            s = sample_cls(k, idx, seeds, vals, probs, lb)
+            if s.valid:
+                clamp_floor(s)
+        if not s.valid:
+            problems.append(f"{cid}: " + "; ".join(s.problems))
+        out[k].append(s)
+    for k in want:
+        got = sorted(seen[k])
+        if got != list(range(n_expected)):
+            problems.append(f"{fmt_key(k)}: sample indices {got[:5]}{'...' if len(got) > 5 else ''} "
+                            f"({len(got)}), expected 0..{n_expected - 1}")
+    return out, problems

@@ -81,15 +81,18 @@ from harness import (  # noqa: E402
     allocate_record_id,
     batch_block,
     claim_record_paths,
+    extract_mc_samples,
     find_pdk,
     klt_version,
     load_dut_text,
     load_sibling,
     ngspice_version,
+    percentile,
     remote_of,
     run_klt,
     run_klt_retrying,
     sanitise_report,
+    skew,
 )
 
 # The systematic PSRR driver owns the bench guard (driven vss, ground-
@@ -341,74 +344,16 @@ def clamp_floor(s: Sample) -> None:
 
 
 def extract(report: dict, want: list[tuple], n_expected: int, *, read_log=None) -> tuple[dict[tuple, list[Sample]], list[str]]:
-    """Samples per grid point from a klt Monte Carlo report.
-
-    Blocking: every expected point contributes exactly `n_expected` samples
-    with distinct sample indices 0..n-1, each with a retained log, every
-    scalar present and every per-sample check passing. Nothing is dropped
-    silently: an invalid sample is a problem string.
-    """
-    read_log = read_log or (lambda p: Path(p).read_text())
-    problems: list[str] = []
-    out: dict[tuple, list[Sample]] = {k: [] for k in want}
-    seen: dict[tuple, set] = {k: set() for k in want}
-    for c in report.get("corners", []):
-        try:
-            k = G.point_key(c)
-        except (KeyError, TypeError, ValueError):
-            problems.append(f"{c.get('corner_id', '?')}: unparseable corner")
-            continue
-        cid = str(c.get("corner_id", G.fmt_key(k)))
-        if k not in out:
-            problems.append(f"{cid}: unexpected grid point")
-            continue
-        mcd = c.get("monte_carlo") or {}
-        idx = mcd.get("sample_index")
-        if idx is None or idx in seen[k]:
-            problems.append(f"{cid}: missing or duplicate sample index {idx!r}")
-            continue
-        seen[k].add(idx)
-        logp = (c.get("artifacts") or {}).get("log")
-        try:
-            log = read_log(logp) if logp else None
-        except OSError:
-            log = None
-        seeds = {s: mcd.get(s) for s in ("seed", "mismatch_seed", "process_seed")}
-        if not log:
-            diag = "; ".join(d.get("message", "")[:160] for d in c.get("diagnostics", []) if d.get("severity") == "error")
-            s = Sample(k, idx, seeds, {}, [f"no ngspice log retained ({diag or c.get('status')})"])
-        else:
-            vals = parse_scalars(log)
-            vcm = float((c.get("supply_v") or {}).get("vcm", k[2] / 2))
-            probs, lb = validate_sample(vals, vcm)
-            s = Sample(k, idx, seeds, vals, probs, lb)
-            if s.valid:
-                clamp_floor(s)
-        if not s.valid:
-            problems.append(f"{cid}: " + "; ".join(s.problems))
-        out[k].append(s)
-    for k in want:
-        got = sorted(seen[k])
-        if got != list(range(n_expected)):
-            problems.append(f"{G.fmt_key(k)}: sample indices {got[:5]}{'...' if len(got) > 5 else ''} "
-                            f"({len(got)}), expected 0..{n_expected - 1}")
-    return out, problems
+    """Samples per grid point from a klt Monte Carlo report (shared logic: harness.extract_mc_samples)."""
+    return extract_mc_samples(
+        report, want, n_expected, point_key=G.point_key, fmt_key=G.fmt_key, sample_cls=Sample,
+        parse_scalars=parse_scalars, validate_sample=validate_sample, clamp_floor=clamp_floor, read_log=read_log,
+    )
 
 
 # --------------------------------------------------------------------------
 # Statistics (pure; unit-tested offline)
 # --------------------------------------------------------------------------
-
-
-def percentile(values: list[float], q: float) -> float:
-    """Linear-interpolated percentile (numpy's default 'linear' method)."""
-    xs = sorted(values)
-    if not xs:
-        raise ValueError("no values")
-    pos = (len(xs) - 1) * q / 100.0
-    lo = math.floor(pos)
-    hi = min(lo + 1, len(xs) - 1)
-    return xs[lo] + (xs[hi] - xs[lo]) * (pos - lo)
 
 
 @dataclass
@@ -428,13 +373,6 @@ class FigStats:
     lower_bounds: int
 
 
-def _skew(xs: list[float]) -> float:
-    n = len(xs)
-    m = statistics.fmean(xs)
-    m2 = sum((x - m) ** 2 for x in xs) / n
-    return 0.0 if m2 <= 0 else sum((x - m) ** 3 for x in xs) / n / m2**1.5
-
-
 def fig_stats(samples: list[Sample], rail: str, f: str) -> FigStats:
     good = [s for s in samples if s.valid]
     if len(good) < 2:
@@ -448,7 +386,7 @@ def fig_stats(samples: list[Sample], rail: str, f: str) -> FigStats:
     return FigStats(
         n=len(good), mean_db=mean, sigma_db=sig, min_db=min(c), p1_db=percentile(c, 1), p5_db=percentile(c, 5),
         db_3s=mean - 3 * sig, a_mean=am, a_sigma=asg, ad_mean_db=adm,
-        lin_3s=adm - 20 * math.log10(am + 3 * asg), skew_db=_skew(c),
+        lin_3s=adm - 20 * math.log10(am + 3 * asg), skew_db=skew(c),
         lower_bounds=sum(rail in s.lower_bound for s in good),
     )
 

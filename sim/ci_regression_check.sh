@@ -94,7 +94,7 @@ control cmrr-mc test_cmrr_mc.py
 expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
   "guard: circuit-identical-to-systematic-bench check removed" \
   'if _circuit_lines(text) != _circuit_lines(SYSTEMATIC_TB.read_text()):' 'if False:'
-expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
+expect_fail cmrr-mc test_cmrr_mc.py harness.py \
   "extraction: duplicate sample index accepted" \
   'if idx is None or idx in seen[k]:' 'if False:'
 
@@ -136,7 +136,7 @@ expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
 expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
   "extraction: dm/supply parity check disabled" \
   'if abs(vals[f"pmc_par_{r}"]) > PARITY_TOL_V:' 'if False:'
-expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
+expect_fail psrr-mc test_psrr_mc.py harness.py \
   "accounting: fewer than N distinct samples accepted" \
   'if got != list(range(n_expected)):' 'if False:'
 expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
