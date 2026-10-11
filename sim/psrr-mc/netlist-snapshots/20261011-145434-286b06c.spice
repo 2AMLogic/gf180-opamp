@@ -1,0 +1,364 @@
+* netlist snapshot for PSRR Monte Carlo record 20261011-145434-286b06c (issue #99)
+* ---- committed testbench (sim/psrr-mc/testbench/tb_psrr_mc.spice) ----
+* | * tb_psrr_mc.spice -- mismatch-aware PSRR bench: the differential, VDD and
+* | * VSS excitations of ONE Monte Carlo sample in ONE deck (issue #99; spec row:
+* | * PSRR; DR-6 follow-up).
+* | *
+* | * DEVICE UNDER TEST: the committed xschem export
+* | * design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* | * (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* | * FILE. The driver (run_psrr_mc.py) materialises `opamp_two_stage.dut.spice`
+* | * from the committed export (the wrapper normalisation every bench uses) and
+* | * rewrites the two `.include` targets below to absolute paths of the per-run
+* | * work directory. test_psrr_mc.py guards both includes, the absence of
+* | * transistors and every line of the circuit below.
+* | *
+* | * This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* | * `.control` or `.end`. `klt sim` adds the corner's `.lib` cards, `.temp`,
+* | * the supply `alter`s, the Monte Carlo seed card and the `.ac` analysis.
+* | *
+* | * ---- Circuit: identical to sim/psrr/testbench/tb_psrr.spice ----
+* | * Same DUT instance with its `vss` port a DRIVEN node (`Vss vss 0 dc 0 ac
+* | * {acss}`), Ibias = 10 uA (ideal, so bias-generator supply rejection is
+* | * EXCLUDED), CL = 2 pF [DR-1], DC input common mode VCM = VDD/2 (vdd and vcm
+* | * swept together by `klt sim`), the same ideal DC servo, and every stimulus
+* | * and the load referenced to simulator ground. See sim/psrr/README.md.
+* | *
+* | * ---- What differs: one deck carries all three excitations ----
+* | * Under mismatch Monte Carlo, Ad, Avdd and Avss must come from the SAME
+* | * sampled devices. The systematic bench runs the three excitations as three
+* | * separate `klt sim` requests; here the driver appends control commands to
+* | * the analysis line so that ONE ngspice process runs
+* | *     ac (dm: acp = +0.5, acn = -0.5, rails quiet)   -> plot ac1
+* | *     op                                              (DC point, printed)
+* | *     alter vcm acmag=0 ; alter vnac acmag=0 ; alter vdd acmag=1
+* | *     ac (vdd: 1 V AC on the vdd rail only)           -> plot ac2
+* | *     op
+* | *     alter vdd acmag=0 ; alter vss acmag=1
+* | *     ac (vss: 1 V AC on the DUT's vss rail only)     -> plot ac3
+* | *     op
+* | * on one parsed circuit. The per-instance mismatch values are drawn once,
+* | * when the netlist is parsed, so all three sweeps see the same devices. The
+* | * driver checks that per sample: the DC output (which carries the sampled
+* | * offset, sigma ~ 5 mV) printed after each sweep must agree to 1 uV.
+* | *
+* | * ---- Mismatch switch ----
+* | * `sw_stat_mismatch` gates the per-instance MOS mismatch of the plain
+* | * `nfet_03v3`/`pfet_03v3` subcircuits (default 0 in design.ngspice). It is set
+* | * on the single `.param` line below, AFTER the design.ngspice include, so it
+* | * overrides the PDK default; `sw_stat_global` is not touched (global spread
+* | * is the five MOS corners). The driver rewrites only this `.param` line
+* | * (the excitation values are fixed at the dm drive; sw_stat_mismatch = 0 for
+* | * the mismatch-off control).
+* | 
+* | .include 'design.ngspice'
+* | .include 'opamp_two_stage.dut.spice'
+* | 
+* | .param acp=0.5 acn=-0.5 acdd=0 acss=0 rsv=1e9 csv=1e9 sw_stat_mismatch=1
+* | 
+* | Vdd vdd 0 dc 3.3 ac {acdd}
+* | Vss vss 0 dc 0 ac {acss}
+* | Vcm vinp 0 dc 1.65 ac {acp}
+* | Ibias vdd ibias dc 10u
+* | Xdut vdd vss vinp vinn vout ibias opamp_two_stage
+* | Esb vsb 0 vout 0 1
+* | Rsv vsb vsv {rsv}
+* | Csv vsv 0 {csv}
+* | Esv vinn vnac vsv 0 1
+* | Vnac vnac 0 dc 0 ac {acn}
+* | CL vout 0 2p
+* ---- DUT include (wrapper-normalised export), sha256 33b58dac62c747de ----
+* | ** sch_path: /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-42/design/opamp_two_stage.sch
+* | .subckt opamp_two_stage vdd vss vinp vinn vout ibias
+* | 
+* | *.iopin vdd
+* | *.iopin vss
+* | *.iopin vinp
+* | *.iopin vinn
+* | *.iopin vout
+* | *.iopin ibias
+* | XMB1 ibias ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM5 tail ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM1 n1 vinn tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM2 n2 vinp tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM4 n2 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM6 vout n2 vdd vdd pfet_03v3 L=1u W=72u nf=24 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM7 vout ibias vss vss nfet_03v3 L=2u W=36u nf=12 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XCC n2 nz cap_mim_2f0_m4m5_noshield c_width=16.8u c_length=16.8u m=1
+* | XRZ vout nz vss ppolyf_u_1k r_width=2u r_length=22u m=1
+* | .ends
+* ---- negative-control DUT copy (XM3 W changed), sha256 619e0d516bebf4c9: the changed line ----
+* | XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=5.4u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* ---- klt request `grid` ----
+* | {
+* |   "netlist": "tb.spice",
+* |   "engine": "ngspice",
+* |   "models": {
+* |     "pdk": "gf180mcuD",
+* |     "lib": "libs.tech/ngspice/sm141064.ngspice"
+* |   },
+* |   "corners": {
+* |     "process": [
+* |       {
+* |         "name": "typical",
+* |         "sections": [
+* |           "typical",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "ff",
+* |         "sections": [
+* |           "ff",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "ss",
+* |         "sections": [
+* |           "ss",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "fs",
+* |         "sections": [
+* |           "fs",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "sf",
+* |         "sections": [
+* |           "sf",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       }
+* |     ],
+* |     "supply_v": {
+* |       "vdd": [
+* |         3.3
+* |       ],
+* |       "vcm": [
+* |         1.65
+* |       ]
+* |     },
+* |     "temperature_c": [
+* |       27.0
+* |     ]
+* |   },
+* |   "analysis": {
+* |     "kind": "ac",
+* |     "args": "dec 20 0.1 1e+09\nop\nlet pmc_op1_vout = v(vout)\nlet pmc_op1_vinp = v(vinp)\nlet pmc_offset = v(vout) - v(vinp)\nalter vcm acmag=0\nalter vnac acmag=0\nalter vdd acmag=1\nac dec 20 0.1 1e+09\nop\nlet pmc_par_vdd = v(vout) - op1.v(vout)\nalter vdd acmag=0\nalter vss acmag=1\nac dec 20 0.1 1e+09\nop\nlet pmc_par_vss = v(vout) - op1.v(vout)\nsetplot ac3\nlet pmc_op1_vout = op1.pmc_op1_vout\nlet pmc_op1_vinp = op1.pmc_op1_vinp\nlet pmc_offset = op1.pmc_offset\nlet pmc_par_vdd = op2.pmc_par_vdd\nlet pmc_par_vss = op3.pmc_par_vss\nlet pmc_npts = length(frequency)\nlet pmc_f0 = real(frequency[0])\nlet pmc_f20 = real(frequency[20])\nlet pmc_f80 = real(frequency[80])\nlet pmc_f100 = real(frequency[100])\nlet pmc_f120 = real(frequency[120])\nlet pmc_f140 = real(frequency[140])\nlet pmc_vd1 = ac1.v(vinp) - ac1.v(vinn)\nlet pmc_dm_vderr = vecmax(mag(pmc_vd1 - 1))\nlet pmc_dm_vcerr = vecmax(mag((ac1.v(vinp) + ac1.v(vinn)) / 2))\nlet pmc_dm_railq = vecmax(mag(ac1.v(vdd))) + vecmax(mag(ac1.v(vss)))\nlet pmc_adv = ac1.v(vout) / pmc_vd1\nlet pmc_addb = db(pmc_adv)\nlet pmc_ad_spread = vecmax(pmc_addb[0,20]) - vecmin(pmc_addb[0,20])\nlet pmc_ad_b0 = pmc_addb[0]\nlet pmc_vdd_err = vecmax(mag(ac2.v(vdd) - 1))\nlet pmc_vdd_oth = vecmax(mag(ac2.v(vss)))\nlet pmc_vdd_inq = vecmax(mag(ac2.v(vinp))) + vecmax(mag(ac2.v(vinn)))\nlet pmc_vdd_av = ac2.v(vout) / ac2.v(vdd)\nlet pmc_vdd_leak = vecmax(mag(pmc_adv * (ac2.v(vinp) - ac2.v(vinn))) / (mag(ac2.v(vout)) + 1.45e-10))\nlet pmc_vdd_am = mag(pmc_vdd_av)\nlet pmc_vdd_amin = vecmin(pmc_vdd_am)\nlet pmc_vdd_ae = pmc_vdd_am + pos(1.45e-10 - pmc_vdd_am) * (1.45e-10 - pmc_vdd_am)\nlet pmc_vdd_adb = db(pmc_vdd_ae)\nlet pmc_vdd_cps = pmc_addb - pmc_vdd_adb\nlet pmc_vdd_spread = vecmax(pmc_vdd_cps[0,20]) - vecmin(pmc_vdd_cps[0,20])\nlet pmc_vdd_aspread = vecmax(pmc_vdd_adb[0,20]) - vecmin(pmc_vdd_adb[0,20])\nlet pmc_vdd_re0 = real(pmc_vdd_av[0])\nlet pmc_vdd_im0 = imag(pmc_vdd_av[0])\nlet pmc_psrr_vdd_dc = mean(pmc_vdd_cps[0,20])\nlet pmc_asup_vdd_dc = mean(pmc_vdd_ae[0,20])\nlet pmc_vdd_aband0 = pmc_vdd_ae[0]\nlet pmc_vdd_aband1 = pmc_vdd_ae[1]\nlet pmc_vdd_aband2 = pmc_vdd_ae[2]\nlet pmc_vdd_aband3 = pmc_vdd_ae[3]\nlet pmc_vdd_aband4 = pmc_vdd_ae[4]\nlet pmc_vdd_aband5 = pmc_vdd_ae[5]\nlet pmc_vdd_aband6 = pmc_vdd_ae[6]\nlet pmc_vdd_aband7 = pmc_vdd_ae[7]\nlet pmc_vdd_aband8 = pmc_vdd_ae[8]\nlet pmc_vdd_aband9 = pmc_vdd_ae[9]\nlet pmc_vdd_aband10 = pmc_vdd_ae[10]\nlet pmc_vdd_aband11 = pmc_vdd_ae[11]\nlet pmc_vdd_aband12 = pmc_vdd_ae[12]\nlet pmc_vdd_aband13 = pmc_vdd_ae[13]\nlet pmc_vdd_aband14 = pmc_vdd_ae[14]\nlet pmc_vdd_aband15 = pmc_vdd_ae[15]\nlet pmc_vdd_aband16 = pmc_vdd_ae[16]\nlet pmc_vdd_aband17 = pmc_vdd_ae[17]\nlet pmc_vdd_aband18 = pmc_vdd_ae[18]\nlet pmc_vdd_aband19 = pmc_vdd_ae[19]\nlet pmc_vdd_aband20 = pmc_vdd_ae[20]\nlet pmc_psrr_vdd_1k = pmc_vdd_cps[80]\nlet pmc_asup_vdd_1k = pmc_vdd_ae[80]\nlet pmc_psrr_vdd_10k = pmc_vdd_cps[100]\nlet pmc_asup_vdd_10k = pmc_vdd_ae[100]\nlet pmc_psrr_vdd_100k = pmc_vdd_cps[120]\nlet pmc_asup_vdd_100k = pmc_vdd_ae[120]\nlet pmc_psrr_vdd_1m = pmc_vdd_cps[140]\nlet pmc_asup_vdd_1m = pmc_vdd_ae[140]\nlet pmc_vss_err = vecmax(mag(ac3.v(vss) - 1))\nlet pmc_vss_oth = vecmax(mag(ac3.v(vdd)))\nlet pmc_vss_inq = vecmax(mag(ac3.v(vinp))) + vecmax(mag(ac3.v(vinn)))\nlet pmc_vss_av = ac3.v(vout) / ac3.v(vss)\nlet pmc_vss_leak = vecmax(mag(pmc_adv * (ac3.v(vinp) - ac3.v(vinn))) / (mag(ac3.v(vout)) + 1.45e-10))\nlet pmc_vss_am = mag(pmc_vss_av)\nlet pmc_vss_amin = vecmin(pmc_vss_am)\nlet pmc_vss_ae = pmc_vss_am + pos(1.45e-10 - pmc_vss_am) * (1.45e-10 - pmc_vss_am)\nlet pmc_vss_adb = db(pmc_vss_ae)\nlet pmc_vss_cps = pmc_addb - pmc_vss_adb\nlet pmc_vss_spread = vecmax(pmc_vss_cps[0,20]) - vecmin(pmc_vss_cps[0,20])\nlet pmc_vss_aspread = vecmax(pmc_vss_adb[0,20]) - vecmin(pmc_vss_adb[0,20])\nlet pmc_vss_re0 = real(pmc_vss_av[0])\nlet pmc_vss_im0 = imag(pmc_vss_av[0])\nlet pmc_psrr_vss_dc = mean(pmc_vss_cps[0,20])\nlet pmc_asup_vss_dc = mean(pmc_vss_ae[0,20])\nlet pmc_vss_aband0 = pmc_vss_ae[0]\nlet pmc_vss_aband1 = pmc_vss_ae[1]\nlet pmc_vss_aband2 = pmc_vss_ae[2]\nlet pmc_vss_aband3 = pmc_vss_ae[3]\nlet pmc_vss_aband4 = pmc_vss_ae[4]\nlet pmc_vss_aband5 = pmc_vss_ae[5]\nlet pmc_vss_aband6 = pmc_vss_ae[6]\nlet pmc_vss_aband7 = pmc_vss_ae[7]\nlet pmc_vss_aband8 = pmc_vss_ae[8]\nlet pmc_vss_aband9 = pmc_vss_ae[9]\nlet pmc_vss_aband10 = pmc_vss_ae[10]\nlet pmc_vss_aband11 = pmc_vss_ae[11]\nlet pmc_vss_aband12 = pmc_vss_ae[12]\nlet pmc_vss_aband13 = pmc_vss_ae[13]\nlet pmc_vss_aband14 = pmc_vss_ae[14]\nlet pmc_vss_aband15 = pmc_vss_ae[15]\nlet pmc_vss_aband16 = pmc_vss_ae[16]\nlet pmc_vss_aband17 = pmc_vss_ae[17]\nlet pmc_vss_aband18 = pmc_vss_ae[18]\nlet pmc_vss_aband19 = pmc_vss_ae[19]\nlet pmc_vss_aband20 = pmc_vss_ae[20]\nlet pmc_psrr_vss_1k = pmc_vss_cps[80]\nlet pmc_asup_vss_1k = pmc_vss_ae[80]\nlet pmc_psrr_vss_10k = pmc_vss_cps[100]\nlet pmc_asup_vss_10k = pmc_vss_ae[100]\nlet pmc_psrr_vss_100k = pmc_vss_cps[120]\nlet pmc_asup_vss_100k = pmc_vss_ae[120]\nlet pmc_psrr_vss_1m = pmc_vss_cps[140]\nlet pmc_asup_vss_1m = pmc_vss_ae[140]\nlet pmc_ad_dc = mean(pmc_addb[0,20])\nlet pmc_ad_1k = pmc_addb[80]\nlet pmc_ad_10k = pmc_addb[100]\nlet pmc_ad_100k = pmc_addb[120]\nlet pmc_ad_1m = pmc_addb[140]\nmeas ac pmc_fu_hz when pmc_addb=0 fall=1\nmeas ac pmc_psrr_vdd_fu find pmc_vdd_cps when pmc_addb=0 fall=1\nmeas ac pmc_asup_vdd_fu find pmc_vdd_ae when pmc_addb=0 fall=1\nmeas ac pmc_psrr_vss_fu find pmc_vss_cps when pmc_addb=0 fall=1\nmeas ac pmc_asup_vss_fu find pmc_vss_ae when pmc_addb=0 fall=1\nlet pmc_ad_fu = 0\nprint pmc_op1_vout\nprint pmc_op1_vinp\nprint pmc_offset\nprint pmc_par_vdd\nprint pmc_par_vss\nprint pmc_npts\nprint pmc_f0\nprint pmc_f20\nprint pmc_f80\nprint pmc_f100\nprint pmc_f120\nprint pmc_f140\nprint pmc_dm_vderr\nprint pmc_dm_vcerr\nprint pmc_dm_railq\nprint pmc_ad_spread\nprint pmc_ad_b0\nprint pmc_vdd_err\nprint pmc_vdd_oth\nprint pmc_vdd_inq\nprint pmc_vdd_leak\nprint pmc_vdd_amin\nprint pmc_vdd_spread\nprint pmc_vdd_aspread\nprint pmc_vdd_re0\nprint pmc_vdd_im0\nprint pmc_vdd_aband0\nprint pmc_vdd_aband1\nprint pmc_vdd_aband2\nprint pmc_vdd_aband3\nprint pmc_vdd_aband4\nprint pmc_vdd_aband5\nprint pmc_vdd_aband6\nprint pmc_vdd_aband7\nprint pmc_vdd_aband8\nprint pmc_vdd_aband9\nprint pmc_vdd_aband10\nprint pmc_vdd_aband11\nprint pmc_vdd_aband12\nprint pmc_vdd_aband13\nprint pmc_vdd_aband14\nprint pmc_vdd_aband15\nprint pmc_vdd_aband16\nprint pmc_vdd_aband17\nprint pmc_vdd_aband18\nprint pmc_vdd_aband19\nprint pmc_vdd_aband20\nprint pmc_vss_err\nprint pmc_vss_oth\nprint pmc_vss_inq\nprint pmc_vss_leak\nprint pmc_vss_amin\nprint pmc_vss_spread\nprint pmc_vss_aspread\nprint pmc_vss_re0\nprint pmc_vss_im0\nprint pmc_vss_aband0\nprint pmc_vss_aband1\nprint pmc_vss_aband2\nprint pmc_vss_aband3\nprint pmc_vss_aband4\nprint pmc_vss_aband5\nprint pmc_vss_aband6\nprint pmc_vss_aband7\nprint pmc_vss_aband8\nprint pmc_vss_aband9\nprint pmc_vss_aband10\nprint pmc_vss_aband11\nprint pmc_vss_aband12\nprint pmc_vss_aband13\nprint pmc_vss_aband14\nprint pmc_vss_aband15\nprint pmc_vss_aband16\nprint pmc_vss_aband17\nprint pmc_vss_aband18\nprint pmc_vss_aband19\nprint pmc_vss_aband20\nprint pmc_ad_dc\nprint pmc_ad_1k\nprint pmc_ad_10k\nprint pmc_ad_100k\nprint pmc_ad_1m\nprint pmc_ad_fu\nprint pmc_psrr_vdd_dc\nprint pmc_psrr_vdd_1k\nprint pmc_psrr_vdd_10k\nprint pmc_psrr_vdd_100k\nprint pmc_psrr_vdd_1m\nprint pmc_psrr_vdd_fu\nprint pmc_asup_vdd_dc\nprint pmc_asup_vdd_1k\nprint pmc_asup_vdd_10k\nprint pmc_asup_vdd_100k\nprint pmc_asup_vdd_1m\nprint pmc_asup_vdd_fu\nprint pmc_psrr_vss_dc\nprint pmc_psrr_vss_1k\nprint pmc_psrr_vss_10k\nprint pmc_psrr_vss_100k\nprint pmc_psrr_vss_1m\nprint pmc_psrr_vss_fu\nprint pmc_asup_vss_dc\nprint pmc_asup_vss_1k\nprint pmc_asup_vss_10k\nprint pmc_asup_vss_100k\nprint pmc_asup_vss_1m\nprint pmc_asup_vss_fu\nprint pmc_fu_hz"
+* |   },
+* |   "measurements": [],
+* |   "options": {
+* |     "timeout_s": 300,
+* |     "keep_artifacts": true,
+* |     "waveforms": false
+* |   },
+* |   "monte_carlo": {
+* |     "n": 300,
+* |     "seed": 45,
+* |     "vary": "mismatch"
+* |   },
+* |   "batch": {
+* |     "runner_version_check": "warn"
+* |   }
+* | }
+* ---- klt request `switch-off` ----
+* | {
+* |   "netlist": "tb.spice",
+* |   "engine": "ngspice",
+* |   "models": {
+* |     "pdk": "gf180mcuD",
+* |     "lib": "libs.tech/ngspice/sm141064.ngspice"
+* |   },
+* |   "corners": {
+* |     "process": [
+* |       {
+* |         "name": "typical",
+* |         "sections": [
+* |           "typical",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "ff",
+* |         "sections": [
+* |           "ff",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "ss",
+* |         "sections": [
+* |           "ss",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "fs",
+* |         "sections": [
+* |           "fs",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "sf",
+* |         "sections": [
+* |           "sf",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       }
+* |     ],
+* |     "supply_v": {
+* |       "vdd": [
+* |         3.3
+* |       ],
+* |       "vcm": [
+* |         1.65
+* |       ]
+* |     },
+* |     "temperature_c": [
+* |       27.0
+* |     ]
+* |   },
+* |   "analysis": {
+* |     "kind": "ac",
+* |     "args": "dec 20 0.1 1e+09\nop\nlet pmc_op1_vout = v(vout)\nlet pmc_op1_vinp = v(vinp)\nlet pmc_offset = v(vout) - v(vinp)\nalter vcm acmag=0\nalter vnac acmag=0\nalter vdd acmag=1\nac dec 20 0.1 1e+09\nop\nlet pmc_par_vdd = v(vout) - op1.v(vout)\nalter vdd acmag=0\nalter vss acmag=1\nac dec 20 0.1 1e+09\nop\nlet pmc_par_vss = v(vout) - op1.v(vout)\nsetplot ac3\nlet pmc_op1_vout = op1.pmc_op1_vout\nlet pmc_op1_vinp = op1.pmc_op1_vinp\nlet pmc_offset = op1.pmc_offset\nlet pmc_par_vdd = op2.pmc_par_vdd\nlet pmc_par_vss = op3.pmc_par_vss\nlet pmc_npts = length(frequency)\nlet pmc_f0 = real(frequency[0])\nlet pmc_f20 = real(frequency[20])\nlet pmc_f80 = real(frequency[80])\nlet pmc_f100 = real(frequency[100])\nlet pmc_f120 = real(frequency[120])\nlet pmc_f140 = real(frequency[140])\nlet pmc_vd1 = ac1.v(vinp) - ac1.v(vinn)\nlet pmc_dm_vderr = vecmax(mag(pmc_vd1 - 1))\nlet pmc_dm_vcerr = vecmax(mag((ac1.v(vinp) + ac1.v(vinn)) / 2))\nlet pmc_dm_railq = vecmax(mag(ac1.v(vdd))) + vecmax(mag(ac1.v(vss)))\nlet pmc_adv = ac1.v(vout) / pmc_vd1\nlet pmc_addb = db(pmc_adv)\nlet pmc_ad_spread = vecmax(pmc_addb[0,20]) - vecmin(pmc_addb[0,20])\nlet pmc_ad_b0 = pmc_addb[0]\nlet pmc_vdd_err = vecmax(mag(ac2.v(vdd) - 1))\nlet pmc_vdd_oth = vecmax(mag(ac2.v(vss)))\nlet pmc_vdd_inq = vecmax(mag(ac2.v(vinp))) + vecmax(mag(ac2.v(vinn)))\nlet pmc_vdd_av = ac2.v(vout) / ac2.v(vdd)\nlet pmc_vdd_leak = vecmax(mag(pmc_adv * (ac2.v(vinp) - ac2.v(vinn))) / (mag(ac2.v(vout)) + 1.45e-10))\nlet pmc_vdd_am = mag(pmc_vdd_av)\nlet pmc_vdd_amin = vecmin(pmc_vdd_am)\nlet pmc_vdd_ae = pmc_vdd_am + pos(1.45e-10 - pmc_vdd_am) * (1.45e-10 - pmc_vdd_am)\nlet pmc_vdd_adb = db(pmc_vdd_ae)\nlet pmc_vdd_cps = pmc_addb - pmc_vdd_adb\nlet pmc_vdd_spread = vecmax(pmc_vdd_cps[0,20]) - vecmin(pmc_vdd_cps[0,20])\nlet pmc_vdd_aspread = vecmax(pmc_vdd_adb[0,20]) - vecmin(pmc_vdd_adb[0,20])\nlet pmc_vdd_re0 = real(pmc_vdd_av[0])\nlet pmc_vdd_im0 = imag(pmc_vdd_av[0])\nlet pmc_psrr_vdd_dc = mean(pmc_vdd_cps[0,20])\nlet pmc_asup_vdd_dc = mean(pmc_vdd_ae[0,20])\nlet pmc_vdd_aband0 = pmc_vdd_ae[0]\nlet pmc_vdd_aband1 = pmc_vdd_ae[1]\nlet pmc_vdd_aband2 = pmc_vdd_ae[2]\nlet pmc_vdd_aband3 = pmc_vdd_ae[3]\nlet pmc_vdd_aband4 = pmc_vdd_ae[4]\nlet pmc_vdd_aband5 = pmc_vdd_ae[5]\nlet pmc_vdd_aband6 = pmc_vdd_ae[6]\nlet pmc_vdd_aband7 = pmc_vdd_ae[7]\nlet pmc_vdd_aband8 = pmc_vdd_ae[8]\nlet pmc_vdd_aband9 = pmc_vdd_ae[9]\nlet pmc_vdd_aband10 = pmc_vdd_ae[10]\nlet pmc_vdd_aband11 = pmc_vdd_ae[11]\nlet pmc_vdd_aband12 = pmc_vdd_ae[12]\nlet pmc_vdd_aband13 = pmc_vdd_ae[13]\nlet pmc_vdd_aband14 = pmc_vdd_ae[14]\nlet pmc_vdd_aband15 = pmc_vdd_ae[15]\nlet pmc_vdd_aband16 = pmc_vdd_ae[16]\nlet pmc_vdd_aband17 = pmc_vdd_ae[17]\nlet pmc_vdd_aband18 = pmc_vdd_ae[18]\nlet pmc_vdd_aband19 = pmc_vdd_ae[19]\nlet pmc_vdd_aband20 = pmc_vdd_ae[20]\nlet pmc_psrr_vdd_1k = pmc_vdd_cps[80]\nlet pmc_asup_vdd_1k = pmc_vdd_ae[80]\nlet pmc_psrr_vdd_10k = pmc_vdd_cps[100]\nlet pmc_asup_vdd_10k = pmc_vdd_ae[100]\nlet pmc_psrr_vdd_100k = pmc_vdd_cps[120]\nlet pmc_asup_vdd_100k = pmc_vdd_ae[120]\nlet pmc_psrr_vdd_1m = pmc_vdd_cps[140]\nlet pmc_asup_vdd_1m = pmc_vdd_ae[140]\nlet pmc_vss_err = vecmax(mag(ac3.v(vss) - 1))\nlet pmc_vss_oth = vecmax(mag(ac3.v(vdd)))\nlet pmc_vss_inq = vecmax(mag(ac3.v(vinp))) + vecmax(mag(ac3.v(vinn)))\nlet pmc_vss_av = ac3.v(vout) / ac3.v(vss)\nlet pmc_vss_leak = vecmax(mag(pmc_adv * (ac3.v(vinp) - ac3.v(vinn))) / (mag(ac3.v(vout)) + 1.45e-10))\nlet pmc_vss_am = mag(pmc_vss_av)\nlet pmc_vss_amin = vecmin(pmc_vss_am)\nlet pmc_vss_ae = pmc_vss_am + pos(1.45e-10 - pmc_vss_am) * (1.45e-10 - pmc_vss_am)\nlet pmc_vss_adb = db(pmc_vss_ae)\nlet pmc_vss_cps = pmc_addb - pmc_vss_adb\nlet pmc_vss_spread = vecmax(pmc_vss_cps[0,20]) - vecmin(pmc_vss_cps[0,20])\nlet pmc_vss_aspread = vecmax(pmc_vss_adb[0,20]) - vecmin(pmc_vss_adb[0,20])\nlet pmc_vss_re0 = real(pmc_vss_av[0])\nlet pmc_vss_im0 = imag(pmc_vss_av[0])\nlet pmc_psrr_vss_dc = mean(pmc_vss_cps[0,20])\nlet pmc_asup_vss_dc = mean(pmc_vss_ae[0,20])\nlet pmc_vss_aband0 = pmc_vss_ae[0]\nlet pmc_vss_aband1 = pmc_vss_ae[1]\nlet pmc_vss_aband2 = pmc_vss_ae[2]\nlet pmc_vss_aband3 = pmc_vss_ae[3]\nlet pmc_vss_aband4 = pmc_vss_ae[4]\nlet pmc_vss_aband5 = pmc_vss_ae[5]\nlet pmc_vss_aband6 = pmc_vss_ae[6]\nlet pmc_vss_aband7 = pmc_vss_ae[7]\nlet pmc_vss_aband8 = pmc_vss_ae[8]\nlet pmc_vss_aband9 = pmc_vss_ae[9]\nlet pmc_vss_aband10 = pmc_vss_ae[10]\nlet pmc_vss_aband11 = pmc_vss_ae[11]\nlet pmc_vss_aband12 = pmc_vss_ae[12]\nlet pmc_vss_aband13 = pmc_vss_ae[13]\nlet pmc_vss_aband14 = pmc_vss_ae[14]\nlet pmc_vss_aband15 = pmc_vss_ae[15]\nlet pmc_vss_aband16 = pmc_vss_ae[16]\nlet pmc_vss_aband17 = pmc_vss_ae[17]\nlet pmc_vss_aband18 = pmc_vss_ae[18]\nlet pmc_vss_aband19 = pmc_vss_ae[19]\nlet pmc_vss_aband20 = pmc_vss_ae[20]\nlet pmc_psrr_vss_1k = pmc_vss_cps[80]\nlet pmc_asup_vss_1k = pmc_vss_ae[80]\nlet pmc_psrr_vss_10k = pmc_vss_cps[100]\nlet pmc_asup_vss_10k = pmc_vss_ae[100]\nlet pmc_psrr_vss_100k = pmc_vss_cps[120]\nlet pmc_asup_vss_100k = pmc_vss_ae[120]\nlet pmc_psrr_vss_1m = pmc_vss_cps[140]\nlet pmc_asup_vss_1m = pmc_vss_ae[140]\nlet pmc_ad_dc = mean(pmc_addb[0,20])\nlet pmc_ad_1k = pmc_addb[80]\nlet pmc_ad_10k = pmc_addb[100]\nlet pmc_ad_100k = pmc_addb[120]\nlet pmc_ad_1m = pmc_addb[140]\nmeas ac pmc_fu_hz when pmc_addb=0 fall=1\nmeas ac pmc_psrr_vdd_fu find pmc_vdd_cps when pmc_addb=0 fall=1\nmeas ac pmc_asup_vdd_fu find pmc_vdd_ae when pmc_addb=0 fall=1\nmeas ac pmc_psrr_vss_fu find pmc_vss_cps when pmc_addb=0 fall=1\nmeas ac pmc_asup_vss_fu find pmc_vss_ae when pmc_addb=0 fall=1\nlet pmc_ad_fu = 0\nprint pmc_op1_vout\nprint pmc_op1_vinp\nprint pmc_offset\nprint pmc_par_vdd\nprint pmc_par_vss\nprint pmc_npts\nprint pmc_f0\nprint pmc_f20\nprint pmc_f80\nprint pmc_f100\nprint pmc_f120\nprint pmc_f140\nprint pmc_dm_vderr\nprint pmc_dm_vcerr\nprint pmc_dm_railq\nprint pmc_ad_spread\nprint pmc_ad_b0\nprint pmc_vdd_err\nprint pmc_vdd_oth\nprint pmc_vdd_inq\nprint pmc_vdd_leak\nprint pmc_vdd_amin\nprint pmc_vdd_spread\nprint pmc_vdd_aspread\nprint pmc_vdd_re0\nprint pmc_vdd_im0\nprint pmc_vdd_aband0\nprint pmc_vdd_aband1\nprint pmc_vdd_aband2\nprint pmc_vdd_aband3\nprint pmc_vdd_aband4\nprint pmc_vdd_aband5\nprint pmc_vdd_aband6\nprint pmc_vdd_aband7\nprint pmc_vdd_aband8\nprint pmc_vdd_aband9\nprint pmc_vdd_aband10\nprint pmc_vdd_aband11\nprint pmc_vdd_aband12\nprint pmc_vdd_aband13\nprint pmc_vdd_aband14\nprint pmc_vdd_aband15\nprint pmc_vdd_aband16\nprint pmc_vdd_aband17\nprint pmc_vdd_aband18\nprint pmc_vdd_aband19\nprint pmc_vdd_aband20\nprint pmc_vss_err\nprint pmc_vss_oth\nprint pmc_vss_inq\nprint pmc_vss_leak\nprint pmc_vss_amin\nprint pmc_vss_spread\nprint pmc_vss_aspread\nprint pmc_vss_re0\nprint pmc_vss_im0\nprint pmc_vss_aband0\nprint pmc_vss_aband1\nprint pmc_vss_aband2\nprint pmc_vss_aband3\nprint pmc_vss_aband4\nprint pmc_vss_aband5\nprint pmc_vss_aband6\nprint pmc_vss_aband7\nprint pmc_vss_aband8\nprint pmc_vss_aband9\nprint pmc_vss_aband10\nprint pmc_vss_aband11\nprint pmc_vss_aband12\nprint pmc_vss_aband13\nprint pmc_vss_aband14\nprint pmc_vss_aband15\nprint pmc_vss_aband16\nprint pmc_vss_aband17\nprint pmc_vss_aband18\nprint pmc_vss_aband19\nprint pmc_vss_aband20\nprint pmc_ad_dc\nprint pmc_ad_1k\nprint pmc_ad_10k\nprint pmc_ad_100k\nprint pmc_ad_1m\nprint pmc_ad_fu\nprint pmc_psrr_vdd_dc\nprint pmc_psrr_vdd_1k\nprint pmc_psrr_vdd_10k\nprint pmc_psrr_vdd_100k\nprint pmc_psrr_vdd_1m\nprint pmc_psrr_vdd_fu\nprint pmc_asup_vdd_dc\nprint pmc_asup_vdd_1k\nprint pmc_asup_vdd_10k\nprint pmc_asup_vdd_100k\nprint pmc_asup_vdd_1m\nprint pmc_asup_vdd_fu\nprint pmc_psrr_vss_dc\nprint pmc_psrr_vss_1k\nprint pmc_psrr_vss_10k\nprint pmc_psrr_vss_100k\nprint pmc_psrr_vss_1m\nprint pmc_psrr_vss_fu\nprint pmc_asup_vss_dc\nprint pmc_asup_vss_1k\nprint pmc_asup_vss_10k\nprint pmc_asup_vss_100k\nprint pmc_asup_vss_1m\nprint pmc_asup_vss_fu\nprint pmc_fu_hz"
+* |   },
+* |   "measurements": [],
+* |   "options": {
+* |     "timeout_s": 300,
+* |     "keep_artifacts": true,
+* |     "waveforms": false
+* |   },
+* |   "monte_carlo": {
+* |     "n": 4,
+* |     "seed": 45,
+* |     "vary": "mismatch"
+* |   },
+* |   "batch": {
+* |     "runner_version_check": "warn"
+* |   }
+* | }
+* ---- klt request `process-only` ----
+* | {
+* |   "netlist": "tb.spice",
+* |   "engine": "ngspice",
+* |   "models": {
+* |     "pdk": "gf180mcuD",
+* |     "lib": "libs.tech/ngspice/sm141064.ngspice"
+* |   },
+* |   "corners": {
+* |     "process": [
+* |       {
+* |         "name": "typical",
+* |         "sections": [
+* |           "typical",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       }
+* |     ],
+* |     "supply_v": {
+* |       "vdd": [
+* |         3.3
+* |       ],
+* |       "vcm": [
+* |         1.65
+* |       ]
+* |     },
+* |     "temperature_c": [
+* |       27.0
+* |     ]
+* |   },
+* |   "analysis": {
+* |     "kind": "ac",
+* |     "args": "dec 20 0.1 1e+09\nop\nlet pmc_op1_vout = v(vout)\nlet pmc_op1_vinp = v(vinp)\nlet pmc_offset = v(vout) - v(vinp)\nalter vcm acmag=0\nalter vnac acmag=0\nalter vdd acmag=1\nac dec 20 0.1 1e+09\nop\nlet pmc_par_vdd = v(vout) - op1.v(vout)\nalter vdd acmag=0\nalter vss acmag=1\nac dec 20 0.1 1e+09\nop\nlet pmc_par_vss = v(vout) - op1.v(vout)\nsetplot ac3\nlet pmc_op1_vout = op1.pmc_op1_vout\nlet pmc_op1_vinp = op1.pmc_op1_vinp\nlet pmc_offset = op1.pmc_offset\nlet pmc_par_vdd = op2.pmc_par_vdd\nlet pmc_par_vss = op3.pmc_par_vss\nlet pmc_npts = length(frequency)\nlet pmc_f0 = real(frequency[0])\nlet pmc_f20 = real(frequency[20])\nlet pmc_f80 = real(frequency[80])\nlet pmc_f100 = real(frequency[100])\nlet pmc_f120 = real(frequency[120])\nlet pmc_f140 = real(frequency[140])\nlet pmc_vd1 = ac1.v(vinp) - ac1.v(vinn)\nlet pmc_dm_vderr = vecmax(mag(pmc_vd1 - 1))\nlet pmc_dm_vcerr = vecmax(mag((ac1.v(vinp) + ac1.v(vinn)) / 2))\nlet pmc_dm_railq = vecmax(mag(ac1.v(vdd))) + vecmax(mag(ac1.v(vss)))\nlet pmc_adv = ac1.v(vout) / pmc_vd1\nlet pmc_addb = db(pmc_adv)\nlet pmc_ad_spread = vecmax(pmc_addb[0,20]) - vecmin(pmc_addb[0,20])\nlet pmc_ad_b0 = pmc_addb[0]\nlet pmc_vdd_err = vecmax(mag(ac2.v(vdd) - 1))\nlet pmc_vdd_oth = vecmax(mag(ac2.v(vss)))\nlet pmc_vdd_inq = vecmax(mag(ac2.v(vinp))) + vecmax(mag(ac2.v(vinn)))\nlet pmc_vdd_av = ac2.v(vout) / ac2.v(vdd)\nlet pmc_vdd_leak = vecmax(mag(pmc_adv * (ac2.v(vinp) - ac2.v(vinn))) / (mag(ac2.v(vout)) + 1.45e-10))\nlet pmc_vdd_am = mag(pmc_vdd_av)\nlet pmc_vdd_amin = vecmin(pmc_vdd_am)\nlet pmc_vdd_ae = pmc_vdd_am + pos(1.45e-10 - pmc_vdd_am) * (1.45e-10 - pmc_vdd_am)\nlet pmc_vdd_adb = db(pmc_vdd_ae)\nlet pmc_vdd_cps = pmc_addb - pmc_vdd_adb\nlet pmc_vdd_spread = vecmax(pmc_vdd_cps[0,20]) - vecmin(pmc_vdd_cps[0,20])\nlet pmc_vdd_aspread = vecmax(pmc_vdd_adb[0,20]) - vecmin(pmc_vdd_adb[0,20])\nlet pmc_vdd_re0 = real(pmc_vdd_av[0])\nlet pmc_vdd_im0 = imag(pmc_vdd_av[0])\nlet pmc_psrr_vdd_dc = mean(pmc_vdd_cps[0,20])\nlet pmc_asup_vdd_dc = mean(pmc_vdd_ae[0,20])\nlet pmc_vdd_aband0 = pmc_vdd_ae[0]\nlet pmc_vdd_aband1 = pmc_vdd_ae[1]\nlet pmc_vdd_aband2 = pmc_vdd_ae[2]\nlet pmc_vdd_aband3 = pmc_vdd_ae[3]\nlet pmc_vdd_aband4 = pmc_vdd_ae[4]\nlet pmc_vdd_aband5 = pmc_vdd_ae[5]\nlet pmc_vdd_aband6 = pmc_vdd_ae[6]\nlet pmc_vdd_aband7 = pmc_vdd_ae[7]\nlet pmc_vdd_aband8 = pmc_vdd_ae[8]\nlet pmc_vdd_aband9 = pmc_vdd_ae[9]\nlet pmc_vdd_aband10 = pmc_vdd_ae[10]\nlet pmc_vdd_aband11 = pmc_vdd_ae[11]\nlet pmc_vdd_aband12 = pmc_vdd_ae[12]\nlet pmc_vdd_aband13 = pmc_vdd_ae[13]\nlet pmc_vdd_aband14 = pmc_vdd_ae[14]\nlet pmc_vdd_aband15 = pmc_vdd_ae[15]\nlet pmc_vdd_aband16 = pmc_vdd_ae[16]\nlet pmc_vdd_aband17 = pmc_vdd_ae[17]\nlet pmc_vdd_aband18 = pmc_vdd_ae[18]\nlet pmc_vdd_aband19 = pmc_vdd_ae[19]\nlet pmc_vdd_aband20 = pmc_vdd_ae[20]\nlet pmc_psrr_vdd_1k = pmc_vdd_cps[80]\nlet pmc_asup_vdd_1k = pmc_vdd_ae[80]\nlet pmc_psrr_vdd_10k = pmc_vdd_cps[100]\nlet pmc_asup_vdd_10k = pmc_vdd_ae[100]\nlet pmc_psrr_vdd_100k = pmc_vdd_cps[120]\nlet pmc_asup_vdd_100k = pmc_vdd_ae[120]\nlet pmc_psrr_vdd_1m = pmc_vdd_cps[140]\nlet pmc_asup_vdd_1m = pmc_vdd_ae[140]\nlet pmc_vss_err = vecmax(mag(ac3.v(vss) - 1))\nlet pmc_vss_oth = vecmax(mag(ac3.v(vdd)))\nlet pmc_vss_inq = vecmax(mag(ac3.v(vinp))) + vecmax(mag(ac3.v(vinn)))\nlet pmc_vss_av = ac3.v(vout) / ac3.v(vss)\nlet pmc_vss_leak = vecmax(mag(pmc_adv * (ac3.v(vinp) - ac3.v(vinn))) / (mag(ac3.v(vout)) + 1.45e-10))\nlet pmc_vss_am = mag(pmc_vss_av)\nlet pmc_vss_amin = vecmin(pmc_vss_am)\nlet pmc_vss_ae = pmc_vss_am + pos(1.45e-10 - pmc_vss_am) * (1.45e-10 - pmc_vss_am)\nlet pmc_vss_adb = db(pmc_vss_ae)\nlet pmc_vss_cps = pmc_addb - pmc_vss_adb\nlet pmc_vss_spread = vecmax(pmc_vss_cps[0,20]) - vecmin(pmc_vss_cps[0,20])\nlet pmc_vss_aspread = vecmax(pmc_vss_adb[0,20]) - vecmin(pmc_vss_adb[0,20])\nlet pmc_vss_re0 = real(pmc_vss_av[0])\nlet pmc_vss_im0 = imag(pmc_vss_av[0])\nlet pmc_psrr_vss_dc = mean(pmc_vss_cps[0,20])\nlet pmc_asup_vss_dc = mean(pmc_vss_ae[0,20])\nlet pmc_vss_aband0 = pmc_vss_ae[0]\nlet pmc_vss_aband1 = pmc_vss_ae[1]\nlet pmc_vss_aband2 = pmc_vss_ae[2]\nlet pmc_vss_aband3 = pmc_vss_ae[3]\nlet pmc_vss_aband4 = pmc_vss_ae[4]\nlet pmc_vss_aband5 = pmc_vss_ae[5]\nlet pmc_vss_aband6 = pmc_vss_ae[6]\nlet pmc_vss_aband7 = pmc_vss_ae[7]\nlet pmc_vss_aband8 = pmc_vss_ae[8]\nlet pmc_vss_aband9 = pmc_vss_ae[9]\nlet pmc_vss_aband10 = pmc_vss_ae[10]\nlet pmc_vss_aband11 = pmc_vss_ae[11]\nlet pmc_vss_aband12 = pmc_vss_ae[12]\nlet pmc_vss_aband13 = pmc_vss_ae[13]\nlet pmc_vss_aband14 = pmc_vss_ae[14]\nlet pmc_vss_aband15 = pmc_vss_ae[15]\nlet pmc_vss_aband16 = pmc_vss_ae[16]\nlet pmc_vss_aband17 = pmc_vss_ae[17]\nlet pmc_vss_aband18 = pmc_vss_ae[18]\nlet pmc_vss_aband19 = pmc_vss_ae[19]\nlet pmc_vss_aband20 = pmc_vss_ae[20]\nlet pmc_psrr_vss_1k = pmc_vss_cps[80]\nlet pmc_asup_vss_1k = pmc_vss_ae[80]\nlet pmc_psrr_vss_10k = pmc_vss_cps[100]\nlet pmc_asup_vss_10k = pmc_vss_ae[100]\nlet pmc_psrr_vss_100k = pmc_vss_cps[120]\nlet pmc_asup_vss_100k = pmc_vss_ae[120]\nlet pmc_psrr_vss_1m = pmc_vss_cps[140]\nlet pmc_asup_vss_1m = pmc_vss_ae[140]\nlet pmc_ad_dc = mean(pmc_addb[0,20])\nlet pmc_ad_1k = pmc_addb[80]\nlet pmc_ad_10k = pmc_addb[100]\nlet pmc_ad_100k = pmc_addb[120]\nlet pmc_ad_1m = pmc_addb[140]\nmeas ac pmc_fu_hz when pmc_addb=0 fall=1\nmeas ac pmc_psrr_vdd_fu find pmc_vdd_cps when pmc_addb=0 fall=1\nmeas ac pmc_asup_vdd_fu find pmc_vdd_ae when pmc_addb=0 fall=1\nmeas ac pmc_psrr_vss_fu find pmc_vss_cps when pmc_addb=0 fall=1\nmeas ac pmc_asup_vss_fu find pmc_vss_ae when pmc_addb=0 fall=1\nlet pmc_ad_fu = 0\nprint pmc_op1_vout\nprint pmc_op1_vinp\nprint pmc_offset\nprint pmc_par_vdd\nprint pmc_par_vss\nprint pmc_npts\nprint pmc_f0\nprint pmc_f20\nprint pmc_f80\nprint pmc_f100\nprint pmc_f120\nprint pmc_f140\nprint pmc_dm_vderr\nprint pmc_dm_vcerr\nprint pmc_dm_railq\nprint pmc_ad_spread\nprint pmc_ad_b0\nprint pmc_vdd_err\nprint pmc_vdd_oth\nprint pmc_vdd_inq\nprint pmc_vdd_leak\nprint pmc_vdd_amin\nprint pmc_vdd_spread\nprint pmc_vdd_aspread\nprint pmc_vdd_re0\nprint pmc_vdd_im0\nprint pmc_vdd_aband0\nprint pmc_vdd_aband1\nprint pmc_vdd_aband2\nprint pmc_vdd_aband3\nprint pmc_vdd_aband4\nprint pmc_vdd_aband5\nprint pmc_vdd_aband6\nprint pmc_vdd_aband7\nprint pmc_vdd_aband8\nprint pmc_vdd_aband9\nprint pmc_vdd_aband10\nprint pmc_vdd_aband11\nprint pmc_vdd_aband12\nprint pmc_vdd_aband13\nprint pmc_vdd_aband14\nprint pmc_vdd_aband15\nprint pmc_vdd_aband16\nprint pmc_vdd_aband17\nprint pmc_vdd_aband18\nprint pmc_vdd_aband19\nprint pmc_vdd_aband20\nprint pmc_vss_err\nprint pmc_vss_oth\nprint pmc_vss_inq\nprint pmc_vss_leak\nprint pmc_vss_amin\nprint pmc_vss_spread\nprint pmc_vss_aspread\nprint pmc_vss_re0\nprint pmc_vss_im0\nprint pmc_vss_aband0\nprint pmc_vss_aband1\nprint pmc_vss_aband2\nprint pmc_vss_aband3\nprint pmc_vss_aband4\nprint pmc_vss_aband5\nprint pmc_vss_aband6\nprint pmc_vss_aband7\nprint pmc_vss_aband8\nprint pmc_vss_aband9\nprint pmc_vss_aband10\nprint pmc_vss_aband11\nprint pmc_vss_aband12\nprint pmc_vss_aband13\nprint pmc_vss_aband14\nprint pmc_vss_aband15\nprint pmc_vss_aband16\nprint pmc_vss_aband17\nprint pmc_vss_aband18\nprint pmc_vss_aband19\nprint pmc_vss_aband20\nprint pmc_ad_dc\nprint pmc_ad_1k\nprint pmc_ad_10k\nprint pmc_ad_100k\nprint pmc_ad_1m\nprint pmc_ad_fu\nprint pmc_psrr_vdd_dc\nprint pmc_psrr_vdd_1k\nprint pmc_psrr_vdd_10k\nprint pmc_psrr_vdd_100k\nprint pmc_psrr_vdd_1m\nprint pmc_psrr_vdd_fu\nprint pmc_asup_vdd_dc\nprint pmc_asup_vdd_1k\nprint pmc_asup_vdd_10k\nprint pmc_asup_vdd_100k\nprint pmc_asup_vdd_1m\nprint pmc_asup_vdd_fu\nprint pmc_psrr_vss_dc\nprint pmc_psrr_vss_1k\nprint pmc_psrr_vss_10k\nprint pmc_psrr_vss_100k\nprint pmc_psrr_vss_1m\nprint pmc_psrr_vss_fu\nprint pmc_asup_vss_dc\nprint pmc_asup_vss_1k\nprint pmc_asup_vss_10k\nprint pmc_asup_vss_100k\nprint pmc_asup_vss_1m\nprint pmc_asup_vss_fu\nprint pmc_fu_hz"
+* |   },
+* |   "measurements": [],
+* |   "options": {
+* |     "timeout_s": 300,
+* |     "keep_artifacts": true,
+* |     "waveforms": false
+* |   },
+* |   "monte_carlo": {
+* |     "n": 20,
+* |     "seed": 45,
+* |     "vary": "process"
+* |   },
+* |   "batch": {
+* |     "runner_version_check": "warn"
+* |   }
+* | }
+* ---- klt request `imbalance` ----
+* | {
+* |   "netlist": "tb.spice",
+* |   "engine": "ngspice",
+* |   "models": {
+* |     "pdk": "gf180mcuD",
+* |     "lib": "libs.tech/ngspice/sm141064.ngspice"
+* |   },
+* |   "corners": {
+* |     "process": [
+* |       {
+* |         "name": "typical",
+* |         "sections": [
+* |           "typical",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       }
+* |     ],
+* |     "supply_v": {
+* |       "vdd": [
+* |         3.3
+* |       ],
+* |       "vcm": [
+* |         1.65
+* |       ]
+* |     },
+* |     "temperature_c": [
+* |       27.0
+* |     ]
+* |   },
+* |   "analysis": {
+* |     "kind": "ac",
+* |     "args": "dec 20 0.1 1e+09\nop\nlet pmc_op1_vout = v(vout)\nlet pmc_op1_vinp = v(vinp)\nlet pmc_offset = v(vout) - v(vinp)\nalter vcm acmag=0\nalter vnac acmag=0\nalter vdd acmag=1\nac dec 20 0.1 1e+09\nop\nlet pmc_par_vdd = v(vout) - op1.v(vout)\nalter vdd acmag=0\nalter vss acmag=1\nac dec 20 0.1 1e+09\nop\nlet pmc_par_vss = v(vout) - op1.v(vout)\nsetplot ac3\nlet pmc_op1_vout = op1.pmc_op1_vout\nlet pmc_op1_vinp = op1.pmc_op1_vinp\nlet pmc_offset = op1.pmc_offset\nlet pmc_par_vdd = op2.pmc_par_vdd\nlet pmc_par_vss = op3.pmc_par_vss\nlet pmc_npts = length(frequency)\nlet pmc_f0 = real(frequency[0])\nlet pmc_f20 = real(frequency[20])\nlet pmc_f80 = real(frequency[80])\nlet pmc_f100 = real(frequency[100])\nlet pmc_f120 = real(frequency[120])\nlet pmc_f140 = real(frequency[140])\nlet pmc_vd1 = ac1.v(vinp) - ac1.v(vinn)\nlet pmc_dm_vderr = vecmax(mag(pmc_vd1 - 1))\nlet pmc_dm_vcerr = vecmax(mag((ac1.v(vinp) + ac1.v(vinn)) / 2))\nlet pmc_dm_railq = vecmax(mag(ac1.v(vdd))) + vecmax(mag(ac1.v(vss)))\nlet pmc_adv = ac1.v(vout) / pmc_vd1\nlet pmc_addb = db(pmc_adv)\nlet pmc_ad_spread = vecmax(pmc_addb[0,20]) - vecmin(pmc_addb[0,20])\nlet pmc_ad_b0 = pmc_addb[0]\nlet pmc_vdd_err = vecmax(mag(ac2.v(vdd) - 1))\nlet pmc_vdd_oth = vecmax(mag(ac2.v(vss)))\nlet pmc_vdd_inq = vecmax(mag(ac2.v(vinp))) + vecmax(mag(ac2.v(vinn)))\nlet pmc_vdd_av = ac2.v(vout) / ac2.v(vdd)\nlet pmc_vdd_leak = vecmax(mag(pmc_adv * (ac2.v(vinp) - ac2.v(vinn))) / (mag(ac2.v(vout)) + 1.45e-10))\nlet pmc_vdd_am = mag(pmc_vdd_av)\nlet pmc_vdd_amin = vecmin(pmc_vdd_am)\nlet pmc_vdd_ae = pmc_vdd_am + pos(1.45e-10 - pmc_vdd_am) * (1.45e-10 - pmc_vdd_am)\nlet pmc_vdd_adb = db(pmc_vdd_ae)\nlet pmc_vdd_cps = pmc_addb - pmc_vdd_adb\nlet pmc_vdd_spread = vecmax(pmc_vdd_cps[0,20]) - vecmin(pmc_vdd_cps[0,20])\nlet pmc_vdd_aspread = vecmax(pmc_vdd_adb[0,20]) - vecmin(pmc_vdd_adb[0,20])\nlet pmc_vdd_re0 = real(pmc_vdd_av[0])\nlet pmc_vdd_im0 = imag(pmc_vdd_av[0])\nlet pmc_psrr_vdd_dc = mean(pmc_vdd_cps[0,20])\nlet pmc_asup_vdd_dc = mean(pmc_vdd_ae[0,20])\nlet pmc_vdd_aband0 = pmc_vdd_ae[0]\nlet pmc_vdd_aband1 = pmc_vdd_ae[1]\nlet pmc_vdd_aband2 = pmc_vdd_ae[2]\nlet pmc_vdd_aband3 = pmc_vdd_ae[3]\nlet pmc_vdd_aband4 = pmc_vdd_ae[4]\nlet pmc_vdd_aband5 = pmc_vdd_ae[5]\nlet pmc_vdd_aband6 = pmc_vdd_ae[6]\nlet pmc_vdd_aband7 = pmc_vdd_ae[7]\nlet pmc_vdd_aband8 = pmc_vdd_ae[8]\nlet pmc_vdd_aband9 = pmc_vdd_ae[9]\nlet pmc_vdd_aband10 = pmc_vdd_ae[10]\nlet pmc_vdd_aband11 = pmc_vdd_ae[11]\nlet pmc_vdd_aband12 = pmc_vdd_ae[12]\nlet pmc_vdd_aband13 = pmc_vdd_ae[13]\nlet pmc_vdd_aband14 = pmc_vdd_ae[14]\nlet pmc_vdd_aband15 = pmc_vdd_ae[15]\nlet pmc_vdd_aband16 = pmc_vdd_ae[16]\nlet pmc_vdd_aband17 = pmc_vdd_ae[17]\nlet pmc_vdd_aband18 = pmc_vdd_ae[18]\nlet pmc_vdd_aband19 = pmc_vdd_ae[19]\nlet pmc_vdd_aband20 = pmc_vdd_ae[20]\nlet pmc_psrr_vdd_1k = pmc_vdd_cps[80]\nlet pmc_asup_vdd_1k = pmc_vdd_ae[80]\nlet pmc_psrr_vdd_10k = pmc_vdd_cps[100]\nlet pmc_asup_vdd_10k = pmc_vdd_ae[100]\nlet pmc_psrr_vdd_100k = pmc_vdd_cps[120]\nlet pmc_asup_vdd_100k = pmc_vdd_ae[120]\nlet pmc_psrr_vdd_1m = pmc_vdd_cps[140]\nlet pmc_asup_vdd_1m = pmc_vdd_ae[140]\nlet pmc_vss_err = vecmax(mag(ac3.v(vss) - 1))\nlet pmc_vss_oth = vecmax(mag(ac3.v(vdd)))\nlet pmc_vss_inq = vecmax(mag(ac3.v(vinp))) + vecmax(mag(ac3.v(vinn)))\nlet pmc_vss_av = ac3.v(vout) / ac3.v(vss)\nlet pmc_vss_leak = vecmax(mag(pmc_adv * (ac3.v(vinp) - ac3.v(vinn))) / (mag(ac3.v(vout)) + 1.45e-10))\nlet pmc_vss_am = mag(pmc_vss_av)\nlet pmc_vss_amin = vecmin(pmc_vss_am)\nlet pmc_vss_ae = pmc_vss_am + pos(1.45e-10 - pmc_vss_am) * (1.45e-10 - pmc_vss_am)\nlet pmc_vss_adb = db(pmc_vss_ae)\nlet pmc_vss_cps = pmc_addb - pmc_vss_adb\nlet pmc_vss_spread = vecmax(pmc_vss_cps[0,20]) - vecmin(pmc_vss_cps[0,20])\nlet pmc_vss_aspread = vecmax(pmc_vss_adb[0,20]) - vecmin(pmc_vss_adb[0,20])\nlet pmc_vss_re0 = real(pmc_vss_av[0])\nlet pmc_vss_im0 = imag(pmc_vss_av[0])\nlet pmc_psrr_vss_dc = mean(pmc_vss_cps[0,20])\nlet pmc_asup_vss_dc = mean(pmc_vss_ae[0,20])\nlet pmc_vss_aband0 = pmc_vss_ae[0]\nlet pmc_vss_aband1 = pmc_vss_ae[1]\nlet pmc_vss_aband2 = pmc_vss_ae[2]\nlet pmc_vss_aband3 = pmc_vss_ae[3]\nlet pmc_vss_aband4 = pmc_vss_ae[4]\nlet pmc_vss_aband5 = pmc_vss_ae[5]\nlet pmc_vss_aband6 = pmc_vss_ae[6]\nlet pmc_vss_aband7 = pmc_vss_ae[7]\nlet pmc_vss_aband8 = pmc_vss_ae[8]\nlet pmc_vss_aband9 = pmc_vss_ae[9]\nlet pmc_vss_aband10 = pmc_vss_ae[10]\nlet pmc_vss_aband11 = pmc_vss_ae[11]\nlet pmc_vss_aband12 = pmc_vss_ae[12]\nlet pmc_vss_aband13 = pmc_vss_ae[13]\nlet pmc_vss_aband14 = pmc_vss_ae[14]\nlet pmc_vss_aband15 = pmc_vss_ae[15]\nlet pmc_vss_aband16 = pmc_vss_ae[16]\nlet pmc_vss_aband17 = pmc_vss_ae[17]\nlet pmc_vss_aband18 = pmc_vss_ae[18]\nlet pmc_vss_aband19 = pmc_vss_ae[19]\nlet pmc_vss_aband20 = pmc_vss_ae[20]\nlet pmc_psrr_vss_1k = pmc_vss_cps[80]\nlet pmc_asup_vss_1k = pmc_vss_ae[80]\nlet pmc_psrr_vss_10k = pmc_vss_cps[100]\nlet pmc_asup_vss_10k = pmc_vss_ae[100]\nlet pmc_psrr_vss_100k = pmc_vss_cps[120]\nlet pmc_asup_vss_100k = pmc_vss_ae[120]\nlet pmc_psrr_vss_1m = pmc_vss_cps[140]\nlet pmc_asup_vss_1m = pmc_vss_ae[140]\nlet pmc_ad_dc = mean(pmc_addb[0,20])\nlet pmc_ad_1k = pmc_addb[80]\nlet pmc_ad_10k = pmc_addb[100]\nlet pmc_ad_100k = pmc_addb[120]\nlet pmc_ad_1m = pmc_addb[140]\nmeas ac pmc_fu_hz when pmc_addb=0 fall=1\nmeas ac pmc_psrr_vdd_fu find pmc_vdd_cps when pmc_addb=0 fall=1\nmeas ac pmc_asup_vdd_fu find pmc_vdd_ae when pmc_addb=0 fall=1\nmeas ac pmc_psrr_vss_fu find pmc_vss_cps when pmc_addb=0 fall=1\nmeas ac pmc_asup_vss_fu find pmc_vss_ae when pmc_addb=0 fall=1\nlet pmc_ad_fu = 0\nprint pmc_op1_vout\nprint pmc_op1_vinp\nprint pmc_offset\nprint pmc_par_vdd\nprint pmc_par_vss\nprint pmc_npts\nprint pmc_f0\nprint pmc_f20\nprint pmc_f80\nprint pmc_f100\nprint pmc_f120\nprint pmc_f140\nprint pmc_dm_vderr\nprint pmc_dm_vcerr\nprint pmc_dm_railq\nprint pmc_ad_spread\nprint pmc_ad_b0\nprint pmc_vdd_err\nprint pmc_vdd_oth\nprint pmc_vdd_inq\nprint pmc_vdd_leak\nprint pmc_vdd_amin\nprint pmc_vdd_spread\nprint pmc_vdd_aspread\nprint pmc_vdd_re0\nprint pmc_vdd_im0\nprint pmc_vdd_aband0\nprint pmc_vdd_aband1\nprint pmc_vdd_aband2\nprint pmc_vdd_aband3\nprint pmc_vdd_aband4\nprint pmc_vdd_aband5\nprint pmc_vdd_aband6\nprint pmc_vdd_aband7\nprint pmc_vdd_aband8\nprint pmc_vdd_aband9\nprint pmc_vdd_aband10\nprint pmc_vdd_aband11\nprint pmc_vdd_aband12\nprint pmc_vdd_aband13\nprint pmc_vdd_aband14\nprint pmc_vdd_aband15\nprint pmc_vdd_aband16\nprint pmc_vdd_aband17\nprint pmc_vdd_aband18\nprint pmc_vdd_aband19\nprint pmc_vdd_aband20\nprint pmc_vss_err\nprint pmc_vss_oth\nprint pmc_vss_inq\nprint pmc_vss_leak\nprint pmc_vss_amin\nprint pmc_vss_spread\nprint pmc_vss_aspread\nprint pmc_vss_re0\nprint pmc_vss_im0\nprint pmc_vss_aband0\nprint pmc_vss_aband1\nprint pmc_vss_aband2\nprint pmc_vss_aband3\nprint pmc_vss_aband4\nprint pmc_vss_aband5\nprint pmc_vss_aband6\nprint pmc_vss_aband7\nprint pmc_vss_aband8\nprint pmc_vss_aband9\nprint pmc_vss_aband10\nprint pmc_vss_aband11\nprint pmc_vss_aband12\nprint pmc_vss_aband13\nprint pmc_vss_aband14\nprint pmc_vss_aband15\nprint pmc_vss_aband16\nprint pmc_vss_aband17\nprint pmc_vss_aband18\nprint pmc_vss_aband19\nprint pmc_vss_aband20\nprint pmc_ad_dc\nprint pmc_ad_1k\nprint pmc_ad_10k\nprint pmc_ad_100k\nprint pmc_ad_1m\nprint pmc_ad_fu\nprint pmc_psrr_vdd_dc\nprint pmc_psrr_vdd_1k\nprint pmc_psrr_vdd_10k\nprint pmc_psrr_vdd_100k\nprint pmc_psrr_vdd_1m\nprint pmc_psrr_vdd_fu\nprint pmc_asup_vdd_dc\nprint pmc_asup_vdd_1k\nprint pmc_asup_vdd_10k\nprint pmc_asup_vdd_100k\nprint pmc_asup_vdd_1m\nprint pmc_asup_vdd_fu\nprint pmc_psrr_vss_dc\nprint pmc_psrr_vss_1k\nprint pmc_psrr_vss_10k\nprint pmc_psrr_vss_100k\nprint pmc_psrr_vss_1m\nprint pmc_psrr_vss_fu\nprint pmc_asup_vss_dc\nprint pmc_asup_vss_1k\nprint pmc_asup_vss_10k\nprint pmc_asup_vss_100k\nprint pmc_asup_vss_1m\nprint pmc_asup_vss_fu\nprint pmc_fu_hz"
+* |   },
+* |   "measurements": [],
+* |   "options": {
+* |     "timeout_s": 300,
+* |     "keep_artifacts": true,
+* |     "waveforms": false
+* |   },
+* |   "monte_carlo": {
+* |     "n": 300,
+* |     "seed": 45,
+* |     "vary": "mismatch"
+* |   },
+* |   "batch": {
+* |     "runner_version_check": "warn"
+* |   }
+* | }

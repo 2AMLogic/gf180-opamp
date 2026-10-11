@@ -48,13 +48,32 @@ def good_vals(pp: float = 100.0, pm: float | None = None, avdd: float = 0.6, avs
         v.update({f"pmc_{r}_err": 1e-15, f"pmc_{r}_oth": 0.0, f"pmc_{r}_inq": 1e-18, f"pmc_{r}_leak": 1e-15,
                   f"pmc_{r}_amin": a / 2, f"pmc_{r}_spread": 1e-4, f"pmc_{r}_aspread": 1e-4,
                   f"pmc_{r}_re0": a, f"pmc_{r}_im0": 1e-4})
+        v.update({f"pmc_{r}_aband{i}": a for i in range(m.BAND[0], m.BAND[1] + 1)})
     for f in m.FIGS:
         v[f"pmc_ad_{f}"] = ad_dc if f != "fu" else 0.0
         v[f"pmc_psrr_vdd_{f}"] = pp if f != "fu" else 0.8
         v[f"pmc_asup_vdd_{f}"] = avdd if f != "fu" else 0.9
         v[f"pmc_psrr_vss_{f}"] = ad_dc - 20 * math.log10(avss) if f != "fu" else 37.0
         v[f"pmc_asup_vss_{f}"] = avss if f != "fu" else 0.014
+    v["pmc_ad_b0"] = ad_dc
     return v
+
+
+def knee_profile(vals: dict, rail: str, rise_db: float) -> dict:
+    """Make `rail`'s DC band a monotone in-band knee of `rise_db` total (the
+    near-cancellation signature: clamped |Asupply| rising, minimum at the
+    0.1 Hz edge), with the printed scalars kept self-consistent."""
+    n = m.BAND[1] - m.BAND[0]
+    mult = 10 ** (rise_db / 20.0 / n)
+    prof = [vals[f"pmc_{rail}_aband{m.BAND[0]}"] * mult**i for i in range(n + 1)]
+    for i, a in enumerate(prof):
+        vals[f"pmc_{rail}_aband{m.BAND[0] + i}"] = a
+    vals[f"pmc_{rail}_spread"] = rise_db
+    vals[f"pmc_{rail}_aspread"] = rise_db
+    vals[f"pmc_{rail}_amin"] = prof[0]
+    vals[f"pmc_asup_{rail}_dc"] = statistics.fmean(prof)
+    vals[f"pmc_psrr_{rail}_dc"] = vals["pmc_ad_dc"] - 20 * math.log10(statistics.fmean(prof))
+    return vals
 
 
 def log_of(vals: dict) -> str:
@@ -253,8 +272,6 @@ class ParseAndValidateTests(unittest.TestCase):
             "pmc_f100": (1.1e4, "sweep grid"),
             "pmc_op1_vinp": (1.6, "vinp"),
             "pmc_op1_vout": (1.9, "from VCM"),
-            "pmc_vdd_spread": (0.2, "PSRR+/|Avdd| plateau"),
-            "pmc_vss_aspread": (0.2, "PSRR-/|Avss| plateau"),
             "pmc_ad_spread": (0.2, "Ad plateau"),
             "pmc_fu_hz": (2e9, "outside the sweep"),
         }
@@ -263,6 +280,54 @@ class ParseAndValidateTests(unittest.TestCase):
             v[key] = bad
             p, _ = m.validate_sample(v, 1.65)
             self.assertTrue(p and any(needle in x for x in p), f"{key}: {p}")
+
+    def test_nonflat_band_without_a_knee_is_invalid(self):
+        # a falling band: no plateau and not the near-cancellation signature
+        v = good_vals()
+        v["pmc_vdd_spread"] = v["pmc_vdd_aspread"] = 0.5
+        v["pmc_vdd_aband20"] = v["pmc_vdd_aband0"] / 2
+        p, _ = m.validate_sample(v, 1.65)
+        self.assertTrue(any("not a near-cancellation knee" in x for x in p), p)
+        # a humped band: rises, then falls
+        v = good_vals()
+        v["pmc_vss_spread"] = v["pmc_vss_aspread"] = 2.0
+        v["pmc_vss_aband10"] = v["pmc_vss_aband0"] * 2
+        p, _ = m.validate_sample(v, 1.65)
+        self.assertTrue(any("PSRR-" in x and "not a near-cancellation knee" in x for x in p), p)
+
+    def test_near_cancellation_knee_is_valid_flagged_and_dc_reads_the_edge(self):
+        # the diagnosed case: |Avdd| = 1.9e-3 at 0.1 Hz rising 7.7 dB in band,
+        # 1.3e7 x the floor, every bench check healthy
+        v = knee_profile(good_vals(pp=147.9, avdd=1.9e-3, avss=0.2), "vdd", 7.7)
+        p, lb = m.validate_sample(v, 1.65)
+        self.assertEqual(p, [])
+        self.assertEqual(lb, set())
+        s = sample(v)
+        self.assertEqual(s.knee_rails(), {"vdd"})
+        psrr0, a0 = s.dc_figure("vdd")
+        self.assertAlmostEqual(psrr0, v["pmc_ad_b0"] - 20 * math.log10(v["pmc_vdd_aband0"]), places=12)
+        self.assertEqual(a0, v["pmc_vdd_aband0"])
+        # the plateau rail keeps the band-mean figures
+        self.assertEqual(s.dc_figure("vss"), (s.psrr("vss", "dc"), s.asup("vss", "dc")))
+        # both rails knee: each reads its own edge
+        v2 = knee_profile(knee_profile(good_vals(), "vdd", 1.2), "vss", 3.3)
+        self.assertEqual(sample(v2).knee_rails(), {"vdd", "vss"})
+        # statistics: the knee enters at its asymptote, and is counted
+        st = m.fig_stats([s, sample(good_vals(pp=100.0, avdd=0.6))], "vdd", "dc")
+        self.assertEqual(st.knees, 1)
+        self.assertAlmostEqual(st.mean_db, (psrr0 + 100.0) / 2, places=9)
+        st1k = m.fig_stats([s, sample(good_vals(pp=100.0, avdd=0.6))], "vdd", "1k")
+        self.assertEqual(st1k.knees, 0)
+        self.assertAlmostEqual(st1k.min_db, min(s.psrr("vdd", "1k"), 100.0), places=9)
+
+    def test_knee_monotonicity_slack(self):
+        # steps within the printed-precision slack stay a knee; a real fall is not
+        v = knee_profile(good_vals(), "vdd", 2.0)
+        v["pmc_vdd_aband7"] = v["pmc_vdd_aband6"] * (1 - 5e-6)
+        self.assertEqual(m.classify_rail_dc(v, "vdd"), "knee")
+        v = knee_profile(good_vals(), "vdd", 2.0)
+        v["pmc_vdd_aband7"] = v["pmc_vdd_aband6"] * (1 - 1e-4)
+        self.assertEqual(m.classify_rail_dc(v, "vdd"), "invalid")
 
     def test_missing_or_nonfinite_scalar_is_invalid(self):
         v = good_vals()
@@ -439,6 +504,7 @@ class RecordTests(unittest.TestCase):
         keys = m.G.expected_keys(m.CORNERS, m.TEMPS, m.SUPPLIES)
         samples = {k: [sample(good_vals(100 + (i % 5), 70 + 3 * (i % 7), offset=1e-3 * (i % 9 - 4)), i)
                        for i in range(12)] for k in keys}
+        samples[NOM][3] = sample(knee_profile(good_vals(147.9, avdd=1.9e-3), "vdd", 7.7), 3)
         stats = m.point_stats(samples)
         off = {k: [sample(good_vals(100.0), i) for i in range(2)] for k in keys}
         off_probs, off_rows = m.check_switch_off(off, {})
@@ -465,6 +531,9 @@ class RecordTests(unittest.TestCase):
         self.assertIn("## Measurement fingerprint inputs", md)
         self.assertIn("Negative control: mirror imbalance", md)
         self.assertIn("near-cancellation", md)
+        self.assertIn("Near-cancellation knees (1 sample rails)", md)
+        self.assertIn(f"| {m.G.fmt_key(NOM)} | 3 | PSRR+ | 7.700 |", md)
+        self.assertIn("| knee DCs", md)
         self.assertNotIn("PASS verdict", md)
         with tempfile.TemporaryDirectory() as d:
             p = Path(d) / "s.csv"
@@ -472,6 +541,7 @@ class RecordTests(unittest.TestCase):
             lines = p.read_text().splitlines()
             self.assertEqual(len(lines), 1 + 5 * 12)
             self.assertIn("pmc_psrr_vss_10k", lines[0])
+            self.assertIn("knee_rails", lines[0])
 
 
 class SimTests(unittest.TestCase):
