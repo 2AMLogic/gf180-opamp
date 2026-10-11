@@ -324,7 +324,8 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   switch-off, process-only and mirror-imbalance controls. Reported, not graded
   (issue #99; follow-up of #61 / DR-6). It carries its own
   `measurement_config.py` fingerprint (#89 convention); it is not selected by
-  the characterization report.
+  the characterization report. No full record is committed yet (only the N=3
+  fleet probe `20261010-234232-efa5c81`), so PSRR remains systematic-only.
 - [`slew-swing-power/`](slew-swing-power/README.md) — slew rate (unity-gain
   follower, CL = 2 pF, slower of rise/fall, 20–80 % slope), output swing
   (inverting unity gain; first of −3 dB gain collapse or M6/M7 leaving
