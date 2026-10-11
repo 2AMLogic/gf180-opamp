@@ -177,3 +177,10 @@ configuration (issue #89 convention): the bench, the three-sweep tail, the
 dm drive, the figure definitions and floor, the Monte Carlo request, the
 control settings and the corner/model axes. `sim/test_measurement_config.py`
 fails when a configuration constant does not move the fingerprint.
+
+The characterization report selects the record for the PSRR row (issue #182):
+`sim/report/characterization_report.py` re-derives every per-point linear and dB
+3-sigma figure, the worst points and the knee accounting from the record's
+tables, cross-checks them against `corners/<record>/samples.csv`, and lists them
+beside (never merged with) the systematic PVT figures. Temperature and supply
+are not sampled under mismatch, and the row stays proposed, not graded.

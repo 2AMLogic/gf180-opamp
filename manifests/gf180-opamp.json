@@ -10,11 +10,11 @@
       "file": "manifests/attest/item-10.evidence.json"
     },
     "8": {
-      "content_hash": "sha256:7161fa1bc39524eed0512093f1d0ebe670e49e5648aef990fc7e58db1daffb1e",
+      "content_hash": "sha256:d613d6da993731e5dfdf799c5c65d12f182fb5eb6801c7042723b24bcf101b9c",
       "file": "sim/reports/characterization-report.evidence.json"
     },
     "9": {
-      "content_hash": "sha256:9488842fe77eb2d28378e61227129a10efe7e20adeeecf78499373d32dcf1320",
+      "content_hash": "sha256:1b76f789e78f8726786a800e8435ba318ebc5d6648fb29b2c36dd4cdf09d1f1d",
       "file": "manifests/attest/item-9.evidence.json"
     }
   },

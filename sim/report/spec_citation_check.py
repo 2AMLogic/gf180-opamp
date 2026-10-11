@@ -20,7 +20,8 @@ never the network -- and fails when they drift apart:
      nothing for.
 
 The CMRR row's mismatch Monte-Carlo record under sim/cmrr-mc/ is selected
-beside the systematic one (issue #124) and is governed the same way (ROW_ALSO).
+beside the systematic one (issue #124), and the PSRR row's under sim/psrr-mc/
+likewise (issue #182); both are governed the same way (ROW_ALSO).
 Records of any other experiment cited as supporting evidence are not governed
 by selection.json and are checked for existence only.
 
@@ -54,7 +55,7 @@ ROW_EXPERIMENT = {
 
 #: Rows that also cite a second experiment's selected record (issue #124: the CMRR row's mismatch
 #: Monte Carlo record, selected for the report beside the systematic one); governed like the primary.
-ROW_ALSO = {"cmrr": (("cmrr-mc", None),)}
+ROW_ALSO = {"cmrr": (("cmrr-mc", None),), "psrr": (("psrr-mc", None),)}
 
 RID = r"\d{8}-\d{6}-[0-9a-f]{7}"
 _LINK = re.compile(r"\[([^\]]*)\]\(([^)\s]*?/sim/([\w.-]+)/records/(" + RID + r")\.md)\)")

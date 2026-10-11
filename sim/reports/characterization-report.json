@@ -8,7 +8,7 @@
     "cmrr-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "gain-gbw-pm-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "input-common-mode: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
-    "ngspice versions differ: ngspice 42 <- gain-gbw-pm-mc (local); ngspice 46 <- cmrr (local), cmrr (klt engine), cmrr-mc (local), cmrr-mc (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), gain-gbw-pm-mc (klt engine), input-common-mode (local), input-common-mode (klt engine), noise (local), offset-mc (local), psrr (local), psrr (klt engine), slew-swing-power (local), slew-swing-power (klt engine)",
+    "ngspice versions differ: ngspice 42 <- gain-gbw-pm-mc (local), psrr-mc (local); ngspice 46 <- cmrr (local), cmrr (klt engine), cmrr-mc (local), cmrr-mc (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), gain-gbw-pm-mc (klt engine), input-common-mode (local), input-common-mode (klt engine), noise (local), offset-mc (local), psrr (local), psrr (klt engine), psrr-mc (klt engine), slew-swing-power (local), slew-swing-power (klt engine)",
     "coverage differs between sources (see each row's coverage; e.g. the CMRR mismatch Monte Carlo record is 5 corner points at 27 C / 3.30 V while the AC rows are full 45-point grids)",
     "supplementary gain-gbw-pm-passive-corners: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "supplementary gain-gbw-pm-passive-corners-full: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
@@ -24,6 +24,7 @@
     "noise": "sim/noise/records/20261010-163507-0127eb7.md",
     "offset-mc": "sim/offset-mc/records/20261010-185141-e4be1ac.md",
     "psrr": "sim/psrr/records/20261010-163854-0127eb7.md",
+    "psrr-mc": "sim/psrr-mc/records/20261011-145434-286b06c.md",
     "slew-swing-power": "sim/slew-swing-power/records/20261010-161852-0127eb7.md"
   },
   "rows": [
@@ -1964,20 +1965,910 @@
           "corner": "ss / -40 C / 2.97 V",
           "label": "PSRR- at f_u (differential unity gain), lowest (information only, not graded)",
           "value": "35.10 dB"
+        },
+        {
+          "corner": null,
+          "label": "mismatch Monte Carlo population (information only, not graded; seed 45, vary \"mismatch\", 1500 samples)",
+          "value": "5 MOS corners (typical, ff, ss, fs, sf) x N=300 mismatch samples at 27 C, 3.30 V only (5 corner points)"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ DC plateau (0.1-1 Hz), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "93.71 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ DC plateau (0.1-1 Hz), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "87.43 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ 1 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "83.28 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ 1 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "83.18 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ 10 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "63.59 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ 10 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "63.26 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ 100 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "43.59 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ 100 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "43.26 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ 1 MHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "23.60 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ 1 MHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "23.26 dB"
+        },
+        {
+          "corner": "sf / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ at f_u (differential unity gain), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "0.68 dB"
+        },
+        {
+          "corner": "sf / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ at f_u (differential unity gain), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "0.68 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR+ sample minimum over all samples, DC plateau (empirical, N=300 per corner; information only)",
+          "value": "93.84 dB"
+        },
+        {
+          "corner": "sf / 27 C / 3.30 V",
+          "label": "mismatch PSRR- DC plateau (0.1-1 Hz), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "82.59 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR- DC plateau (0.1-1 Hz), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "67.72 dB"
+        },
+        {
+          "corner": "sf / 27 C / 3.30 V",
+          "label": "mismatch PSRR- 1 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "82.57 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR- 1 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "68.04 dB"
+        },
+        {
+          "corner": "sf / 27 C / 3.30 V",
+          "label": "mismatch PSRR- 10 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "82.58 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR- 10 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "71.38 dB"
+        },
+        {
+          "corner": "sf / 27 C / 3.30 V",
+          "label": "mismatch PSRR- 100 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "82.84 dB"
+        },
+        {
+          "corner": "ff / 27 C / 3.30 V",
+          "label": "mismatch PSRR- 100 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "80.17 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR- 1 MHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "73.38 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR- 1 MHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "73.39 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR- at f_u (differential unity gain), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "36.01 dB"
+        },
+        {
+          "corner": "ss / 27 C / 3.30 V",
+          "label": "mismatch PSRR- at f_u (differential unity gain), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
+          "value": "36.00 dB"
+        },
+        {
+          "corner": "sf / 27 C / 3.30 V",
+          "label": "mismatch PSRR- sample minimum over all samples, DC plateau (empirical, N=300 per corner; information only)",
+          "value": "79.46 dB"
+        },
+        {
+          "corner": null,
+          "label": "mismatch controls: switch-off max deviation from the systematic record (DC..1 MHz / at f_u; information only)",
+          "value": "0.0000 dB / 0.004 dB"
+        },
+        {
+          "corner": null,
+          "label": "mismatch controls: mirror-imbalance negative control, shift of mean |Avdd| at DC (PSRR+; information only)",
+          "value": "+0.6028 V/V (40.5 standard errors)"
+        },
+        {
+          "corner": null,
+          "label": "mismatch controls: mirror-imbalance negative control, shift of mean |Avss| at DC (PSRR-; information only)",
+          "value": "+0.7145 V/V (6.7 standard errors)"
+        },
+        {
+          "corner": null,
+          "label": "mismatch near-cancellation knee rails (DC figure = 0.1 Hz asymptote; information only)",
+          "value": "4 of 3000 sample rails"
+        },
+        {
+          "corner": null,
+          "label": "mismatch per-point statistics re-derived from the retained samples (information only)",
+          "value": "1500 samples at 5 points agree with the record (sim/psrr-mc/corners/20261011-145434-286b06c/samples.csv, sha256 c0f3ec852f87226b)"
         }
       ],
       "key": "psrr",
       "limitations": [
         "bound proposed by a decision record and not ratified: this report grades ratified rows only, so the row is not graded and is counted neither among the ratified rows judged nor as not measured; see the spec status column for the evidence it cites",
+        "the figures listed first come from the selected systematic (mismatch-free) PVT record and are information only; the selected mismatch Monte Carlo record is listed separately below (27 C / 3.30 V only), and the systematic figures are optimistic against it",
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "PSRR-: Avss changes sign across the grid, so low-frequency PSRR- near the flip is a cancellation, not design margin; the worst-case figure is the one to use",
         "systematic figure of a perfectly matched schematic; mismatch-limited PSRR is not covered",
         "no ratified bound (DR-3 residual e4)",
+        "the mismatch-inclusive figures below come from the selected PSRR mismatch Monte Carlo record (20261011-145434-286b06c): 5 MOS corners x N=300 = 1500 samples, seed 45, vary \"mismatch\", 27 C / 3.30 V only. They are measured information, not graded, and are not combined with the systematic PVT figures: the systematic record covers T and VDD (matched devices), the Monte Carlo record covers mismatch (one T / VDD point)",
+        "temperature and supply are NOT sampled under mismatch: 27 C / 3.30 V only (the systematic psrr record covers T and VDD for matched devices only; its four Avss sign-flip points, all at 125 C, remain systematic-only)",
+        "MOS mismatch only; passives (RZ, CC) at typical with no passive mismatch, resistor and capacitor mismatch not modelled",
+        "N=300 cannot resolve a 0.135 % tail: neither the linear nor the dB 3-sigma figure is a sample statistic; the empirical minimum and percentiles are the normality cross-check",
+        "4 near-cancellation knee rail(s) (PSRR+ DC band non-flat but monotonically rising) are accepted with the 0.1 Hz asymptote as their DC figure",
+        "supply rejection of the bias generator is excluded (the ideal 10 uA bias source carries no small-signal current)",
+        "mismatch Monte Carlo of the PSRR; no numeric bound proposed or judged here (DR-6 is proposed, not ratified)",
         "supplementary side study `sim/psrr/records/20261011-102729-6612014.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures, as information only with no verdict (bound-free: the row's bound is proposed, not ratified): PSRR+ 1 kHz worst 81.02 dB at ss / 125 C / 2.97 V, RZ worst, CC worst (best 86.68 dB; worst over the 45 typical-passive cells 81.82 dB, so the passive spread moves the worst case by -0.80 dB; delta vs typical passives at matching PVT -0.805 .. +0.887 dB over 360 cells); PSRR+ 10 kHz worst 61.09 dB at ss / 125 C / 2.97 V, RZ worst, CC worst (best 66.77 dB; worst over the 45 typical-passive cells 61.90 dB, so the passive spread moves the worst case by -0.81 dB; delta vs typical passives at matching PVT -0.815 .. +0.899 dB over 360 cells); PSRR- 1 kHz worst 101.01 dB at ss / -40 C / 2.97 V, RZ best, CC worst (best 135.88 dB; worst over the 45 typical-passive cells 101.01 dB, so the passive spread moves the worst case by -0.00 dB; delta vs typical passives at matching PVT -0.625 .. +0.673 dB over 360 cells); PSRR- 10 kHz worst 100.88 dB at ss / -40 C / 2.97 V, RZ best, CC worst (best 116.24 dB; worst over the 45 typical-passive cells 100.90 dB, so the passive spread moves the worst case by -0.02 dB; delta vs typical passives at matching PVT -0.630 .. +0.679 dB over 360 cells)"
       ],
       "points_pass": null,
       "points_total": null,
+      "psrr_mc": {
+        "basis": "mismatch-inclusive, information only, not graded; linear 3-sigma and dB 3-sigma are separate figures",
+        "controls": {
+          "imbalance": {
+            "PSRR+": {
+              "shift_asup_vv": 0.6028,
+              "shift_se": 0.0149
+            },
+            "PSRR-": {
+              "shift_asup_vv": 0.7145,
+              "shift_se": 0.107
+            }
+          },
+          "process_only_offset_sigma_mv": 5.876,
+          "process_only_psrr_minus_dc_sigma_db": 10.487,
+          "process_only_psrr_plus_dc_sigma_db": 3.221,
+          "switch_off_max_dev_db_at_fu": 0.004,
+          "switch_off_max_dev_db_dc_to_1m": 0.0
+        },
+        "floor_samples": {
+          "PSRR+": 0,
+          "PSRR-": 0
+        },
+        "knee_rails": 4,
+        "measurement_config": {
+          "fingerprint": "107ce74555af6baee8938d4ceea18e8675ac1b55786a07858d92248a81b322c3",
+          "status": "current",
+          "version": 1
+        },
+        "per_point": {
+          "PSRR+ 100k": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 43.95,
+              "lin3": 44.32,
+              "mean": 44.32,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 43.81,
+              "lin3": 44.14,
+              "mean": 44.14,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 43.42,
+              "lin3": 43.76,
+              "mean": 43.76,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 43.26,
+              "lin3": 43.59,
+              "mean": 43.59,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 43.64,
+              "lin3": 43.96,
+              "mean": 43.96,
+              "n": 300,
+              "sigma": 0.11
+            }
+          },
+          "PSRR+ 10k": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 63.95,
+              "lin3": 64.31,
+              "mean": 64.32,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 63.81,
+              "lin3": 64.14,
+              "mean": 64.14,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 63.42,
+              "lin3": 63.76,
+              "mean": 63.76,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 63.26,
+              "lin3": 63.59,
+              "mean": 63.59,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 63.64,
+              "lin3": 63.96,
+              "mean": 63.96,
+              "n": 300,
+              "sigma": 0.11
+            }
+          },
+          "PSRR+ 1k": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 83.88,
+              "lin3": 84.08,
+              "mean": 84.22,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 83.71,
+              "lin3": 83.84,
+              "mean": 84.03,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 83.38,
+              "lin3": 83.53,
+              "mean": 83.67,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 83.18,
+              "lin3": 83.28,
+              "mean": 83.48,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 83.55,
+              "lin3": 83.69,
+              "mean": 83.86,
+              "n": 300,
+              "sigma": 0.1
+            }
+          },
+          "PSRR+ 1m": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 23.96,
+              "lin3": 24.32,
+              "mean": 24.32,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 23.82,
+              "lin3": 24.15,
+              "mean": 24.15,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 23.42,
+              "lin3": 23.77,
+              "mean": 23.77,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 23.26,
+              "lin3": 23.6,
+              "mean": 23.6,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 23.64,
+              "lin3": 23.97,
+              "mean": 23.97,
+              "n": 300,
+              "sigma": 0.11
+            }
+          },
+          "PSRR+ dc": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 93.8,
+              "lin3": 95.99,
+              "mean": 101.47,
+              "n": 300,
+              "sigma": 2.56
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 87.61,
+              "lin3": 94.41,
+              "mean": 101.12,
+              "n": 300,
+              "sigma": 4.5
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 89.77,
+              "lin3": 95.2,
+              "mean": 101.63,
+              "n": 300,
+              "sigma": 3.95
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 87.43,
+              "lin3": 93.71,
+              "mean": 100.83,
+              "n": 300,
+              "sigma": 4.47
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 91.04,
+              "lin3": 94.78,
+              "mean": 101.09,
+              "n": 300,
+              "sigma": 3.35
+            }
+          },
+          "PSRR+ fu": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 0.73,
+              "lin3": 0.73,
+              "mean": 0.78,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 0.83,
+              "lin3": 0.83,
+              "mean": 0.89,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 0.68,
+              "lin3": 0.68,
+              "mean": 0.73,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 0.78,
+              "lin3": 0.78,
+              "mean": 0.83,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 0.76,
+              "lin3": 0.76,
+              "mean": 0.81,
+              "n": 300,
+              "sigma": 0.02
+            }
+          },
+          "PSRR- 100k": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 80.17,
+              "lin3": 83.09,
+              "mean": 92.1,
+              "n": 300,
+              "sigma": 3.98
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 80.66,
+              "lin3": 83.19,
+              "mean": 91.73,
+              "n": 300,
+              "sigma": 3.69
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 80.24,
+              "lin3": 82.84,
+              "mean": 91.64,
+              "n": 300,
+              "sigma": 3.8
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 80.41,
+              "lin3": 83.0,
+              "mean": 91.42,
+              "n": 300,
+              "sigma": 3.67
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 80.47,
+              "lin3": 82.9,
+              "mean": 91.58,
+              "n": 300,
+              "sigma": 3.7
+            }
+          },
+          "PSRR- 10k": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 71.39,
+              "lin3": 82.79,
+              "mean": 96.34,
+              "n": 300,
+              "sigma": 8.32
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 71.89,
+              "lin3": 82.89,
+              "mean": 96.01,
+              "n": 300,
+              "sigma": 8.04
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 71.96,
+              "lin3": 82.58,
+              "mean": 95.39,
+              "n": 300,
+              "sigma": 7.81
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 71.38,
+              "lin3": 82.72,
+              "mean": 95.68,
+              "n": 300,
+              "sigma": 8.1
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 72.4,
+              "lin3": 82.68,
+              "mean": 95.35,
+              "n": 300,
+              "sigma": 7.65
+            }
+          },
+          "PSRR- 1k": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 68.74,
+              "lin3": 82.77,
+              "mean": 96.79,
+              "n": 300,
+              "sigma": 9.35
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 68.74,
+              "lin3": 82.87,
+              "mean": 96.52,
+              "n": 300,
+              "sigma": 9.26
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 69.95,
+              "lin3": 82.57,
+              "mean": 95.71,
+              "n": 300,
+              "sigma": 8.59
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 68.04,
+              "lin3": 82.7,
+              "mean": 96.2,
+              "n": 300,
+              "sigma": 9.39
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 70.3,
+              "lin3": 82.67,
+              "mean": 95.69,
+              "n": 300,
+              "sigma": 8.46
+            }
+          },
+          "PSRR- 1m": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 75.06,
+              "lin3": 75.02,
+              "mean": 76.42,
+              "n": 300,
+              "sigma": 0.45
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 74.43,
+              "lin3": 74.39,
+              "mean": 75.71,
+              "n": 300,
+              "sigma": 0.43
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 74.18,
+              "lin3": 74.14,
+              "mean": 75.89,
+              "n": 300,
+              "sigma": 0.57
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 73.39,
+              "lin3": 73.38,
+              "mean": 75.08,
+              "n": 300,
+              "sigma": 0.56
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 74.13,
+              "lin3": 74.13,
+              "mean": 75.74,
+              "n": 300,
+              "sigma": 0.54
+            }
+          },
+          "PSRR- dc": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 68.57,
+              "lin3": 82.76,
+              "mean": 96.81,
+              "n": 300,
+              "sigma": 9.41
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 68.51,
+              "lin3": 82.86,
+              "mean": 96.54,
+              "n": 300,
+              "sigma": 9.34
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 69.83,
+              "lin3": 82.59,
+              "mean": 95.73,
+              "n": 300,
+              "sigma": 8.63
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 67.72,
+              "lin3": 82.74,
+              "mean": 96.24,
+              "n": 300,
+              "sigma": 9.51
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 70.22,
+              "lin3": 82.7,
+              "mean": 95.7,
+              "n": 300,
+              "sigma": 8.49
+            }
+          },
+          "PSRR- fu": {
+            "ff / 27 C / 3.30 V": {
+              "db3": 38.44,
+              "lin3": 38.45,
+              "mean": 38.77,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 37.58,
+              "lin3": 37.57,
+              "mean": 37.86,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 36.76,
+              "lin3": 36.75,
+              "mean": 37.07,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "ss / 27 C / 3.30 V": {
+              "db3": 36.0,
+              "lin3": 36.01,
+              "mean": 36.3,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / 27 C / 3.30 V": {
+              "db3": 37.15,
+              "lin3": 37.14,
+              "mean": 37.42,
+              "n": 300,
+              "sigma": 0.09
+            }
+          }
+        },
+        "population": {
+          "n_per_point": 300,
+          "processes": [
+            "typical",
+            "ff",
+            "ss",
+            "fs",
+            "sf"
+          ],
+          "samples": 1500,
+          "seed": 45,
+          "temperature_and_supply_sampled": false,
+          "temperature_c": "27",
+          "vary": "mismatch",
+          "vdd_v": "3.30"
+        },
+        "retained_evidence": {
+          "path": "sim/psrr-mc/corners/20261011-145434-286b06c/samples.csv",
+          "points": 5,
+          "samples": 1500,
+          "sha256": "c0f3ec852f87226b91224b5cc00cddee1dc5dbd3ae2556236b5fe451ac4e86b4"
+        },
+        "source": {
+          "experiment": "psrr-mc",
+          "path": "sim/psrr-mc/records/20261011-145434-286b06c.md",
+          "record_id": "20261011-145434-286b06c",
+          "sha256": "19cc8de044b0fda168f2e7ce977a0ce10ce90eea80caa8f57f27d6f76c08538c"
+        },
+        "worst_per_figure": {
+          "PSRR+ 100k": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 43.26
+            },
+            "lin3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 43.59
+            },
+            "min": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 43.22
+            },
+            "p5": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 43.41
+            }
+          },
+          "PSRR+ 10k": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 63.26
+            },
+            "lin3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 63.59
+            },
+            "min": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 63.22
+            },
+            "p5": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 63.41
+            }
+          },
+          "PSRR+ 1k": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 83.18
+            },
+            "lin3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 83.28
+            },
+            "min": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 83.17
+            },
+            "p5": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 83.33
+            }
+          },
+          "PSRR+ 1m": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 23.26
+            },
+            "lin3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 23.6
+            },
+            "min": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 23.22
+            },
+            "p5": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 23.41
+            }
+          },
+          "PSRR+ dc": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 87.43
+            },
+            "lin3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 93.71
+            },
+            "min": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 93.84
+            },
+            "p5": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 95.97
+            }
+          },
+          "PSRR+ fu": {
+            "db3": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 0.68
+            },
+            "lin3": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 0.68
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 0.69
+            },
+            "p5": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 0.7
+            }
+          },
+          "PSRR- 100k": {
+            "db3": {
+              "at": "ff / 27 C / 3.30 V",
+              "value": 80.17
+            },
+            "lin3": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 82.84
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 79.34
+            },
+            "p5": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 84.73
+            }
+          },
+          "PSRR- 10k": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 71.38
+            },
+            "lin3": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 82.58
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 79.46
+            },
+            "p5": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 84.93
+            }
+          },
+          "PSRR- 1k": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 68.04
+            },
+            "lin3": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 82.57
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 79.46
+            },
+            "p5": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 84.93
+            }
+          },
+          "PSRR- 1m": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 73.39
+            },
+            "lin3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 73.38
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 73.23
+            },
+            "p5": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 74.04
+            }
+          },
+          "PSRR- dc": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 67.72
+            },
+            "lin3": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 82.59
+            },
+            "min": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 79.46
+            },
+            "p5": {
+              "at": "sf / 27 C / 3.30 V",
+              "value": 84.93
+            }
+          },
+          "PSRR- fu": {
+            "db3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 36.0
+            },
+            "lin3": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 36.01
+            },
+            "min": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 36.06
+            },
+            "p5": {
+              "at": "ss / 27 C / 3.30 V",
+              "value": 36.14
+            }
+          }
+        }
+      },
       "row": "PSRR",
       "source": {
         "experiment": "psrr",
@@ -1986,7 +2877,7 @@
         "sha256": "bf895436b24b672ff09dd6cb5c3edb0814474572350f8ba634735e2e81bb8a69"
       },
       "spec_bound": "proposed, not ratified: PSRR+ ≥ 60 dB and PSRR− ≥ 60 dB at the DC plateau and at 1 kHz; ≥ 50 dB each at 10 kHz [DR-6]",
-      "spec_status": "Proposed [DR-6] — measured: covered at all 45 PVT points (PSRR+ worst 98.45 dB DC, 81.82 dB at 1 kHz, 61.90 dB at 10 kHz; PSRR− worst 101.01 dB DC, 101.01 dB at 1 kHz, 100.90 dB at 10 kHz; not bounded: PSRR+ 41.90 dB at 100 kHz, 21.90 dB at 1 MHz and 0.73 dB at f_u (SF / 27 °C / 2.97 V), PSRR− 93.90 / 73.15 / 35.10 dB; record 20261010-163854-0127eb7)",
+      "spec_status": "Proposed [DR-6] — measured: covered at all 45 PVT points (PSRR+ worst 98.45 dB DC, 81.82 dB at 1 kHz, 61.90 dB at 10 kHz; PSRR− worst 101.01 dB DC, 101.01 dB at 1 kHz, 100.90 dB at 10 kHz; not bounded: PSRR+ 41.90 dB at 100 kHz, 21.90 dB at 1 MHz and 0.73 dB at f_u (SF / 27 °C / 2.97 V), PSRR− 93.90 / 73.15 / 35.10 dB; record 20261010-163854-0127eb7); mismatch-inclusive: measured, covered (every statistic is at or above the proposed bounds; linear 3σ worst PSRR+ 93.71 dB at DC, 83.28 dB at 1 kHz, 63.59 dB at 10 kHz (SS), PSRR− 82.59 dB at DC, 82.57 dB at 1 kHz, 82.58 dB at 10 kHz (SF); five MOS corners, 27 °C / 3.30 V, 1 500 samples, record 20261011-145434-286b06c; dB mean − 3σ worst PSRR+ 87.43 / 83.18 / 63.26 dB, PSRR− 67.72 / 68.04 / 71.38 dB; empirical sample minimum PSRR+ 93.84 / 83.17 / 63.22 dB, PSRR− 79.46 dB at all three; reported only: PSRR+ 43.59 dB at 100 kHz, 23.60 dB at 1 MHz, 0.68 dB at f_u, PSRR− 82.84 / 73.38 / 36.01 dB; limitations: temperature and supply are not sampled under mismatch, so the 125 °C Avss sign-flip points remain systematic-only; four near-cancellation knees are accepted with the 0.1 Hz asymptote as the DC figure; bias-generator supply rejection is excluded; no bound is ratified, graded or relaxed by this figure)",
       "status": "proposed-not-graded",
       "verdict": null,
       "worst": null,
@@ -2960,6 +3851,30 @@
       "record_id": "20261010-163854-0127eb7",
       "sha256": "bf895436b24b672ff09dd6cb5c3edb0814474572350f8ba634735e2e81bb8a69"
     },
+    "psrr-mc": {
+      "backend": "aws-batch-fleet",
+      "dut_sha256": "33b58dac62c747de",
+      "fleet_runner_mismatch": true,
+      "klt_client": "0.7.0+g122d607d5c52",
+      "measurement_config": {
+        "fingerprint": "107ce74555af6baee8938d4ceea18e8675ac1b55786a07858d92248a81b322c3",
+        "status": "current",
+        "version": 1
+      },
+      "ngspice_engine": "46",
+      "ngspice_local": "42",
+      "path": "sim/psrr-mc/records/20261011-145434-286b06c.md",
+      "pdk_client_resolved": null,
+      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "record_id": "20261011-145434-286b06c",
+      "retained_evidence": {
+        "path": "sim/psrr-mc/corners/20261011-145434-286b06c/samples.csv",
+        "points": 5,
+        "samples": 1500,
+        "sha256": "c0f3ec852f87226b91224b5cc00cddee1dc5dbd3ae2556236b5fe451ac4e86b4"
+      },
+      "sha256": "19cc8de044b0fda168f2e7ce977a0ce10ce90eea80caa8f57f27d6f76c08538c"
+    },
     "slew-swing-power": {
       "backend": "aws-batch-fleet",
       "dut_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
@@ -2981,7 +3896,7 @@
   },
   "spec": {
     "path": "spec/target-spec.md",
-    "sha256": "6da5488ea040b67b26a365c9f745556e504f3fa5f3e7ce868afaa6529020ad99"
+    "sha256": "65dbee851385213a1a07798bb3997641cdbbbc48429d757e7bd550fbd2d0f204"
   },
   "summary": {
     "fail": 0,

@@ -125,6 +125,20 @@
       ]
     },
     {
+      "documented_invocation": "python3 sim/psrr-mc/run_psrr_mc.py --smoke",
+      "documented_smoke_invocation": "python3 sim/psrr-mc/run_psrr_mc.py --smoke",
+      "driver": "sim/psrr-mc/run_psrr_mc.py",
+      "experiment": "psrr-mc",
+      "readme": "sim/psrr-mc/README.md",
+      "run_by_characterize_sh": false,
+      "testbenches": [
+        {
+          "content_hash": "sha256:5b0eb891409b950ddf3a2d45ffd4adf2d78db76d488549781d0420d082480ce6",
+          "path": "sim/psrr-mc/testbench/tb_psrr_mc.spice"
+        }
+      ]
+    },
+    {
       "documented_invocation": "python3 sim/slew-swing-power/run_slew_swing_power.py",
       "documented_smoke_invocation": "python3 sim/slew-swing-power/run_slew_swing_power.py --smoke",
       "driver": "sim/slew-swing-power/run_slew_swing_power.py",

@@ -8,6 +8,7 @@
     "noise": "sim/noise/records/20261010-163507-0127eb7.md",
     "offset-mc": "sim/offset-mc/records/20261010-185141-e4be1ac.md",
     "psrr": "sim/psrr/records/20261010-163854-0127eb7.md",
+    "psrr-mc": "sim/psrr-mc/records/20261011-145434-286b06c.md",
     "slew-swing-power": "sim/slew-swing-power/records/20261010-161852-0127eb7.md"
   },
   "supplementary": {
