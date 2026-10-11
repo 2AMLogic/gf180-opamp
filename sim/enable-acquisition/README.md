@@ -49,16 +49,20 @@ enable completes: 4 us (> 200 tau at the ratified GBW floor).
   last 200 ns, and the in-band tail is >= 10 % of the window; otherwise the event
   is **censored / not acquired** (inf), ranked worst, never a finite number.
 * Any censored event is re-run over a 10x longer window before persistent
-  failure is described; the record shows both.
+  failure is described; the record shows both. The follow-up keeps the same
+  evidence as a primary case (decks, logs, `.dat.gz` traces, sanitised klt
+  report under `corners/<rid>/long_<scenario>_<ramp>/`; its request and
+  schedule in the netlist snapshot) and is re-derived from the committed
+  traces with the primary points.
 * Peaks: overshoot / undershoot about v_ref after the ramps complete; peak excess
-  of vout over the instantaneous rail.
+  of vout over the instantaneous rail (`rail+`, 0 when vout stays at or below it).
 * Invalid (never a result): powered start, unreached final rail or bias, bias not
   removed in the cycle, missing samples, non-finite or off-level reference.
 
 ## Controls (local single units, nominal point, simultaneous / fast)
 
 `nominal`; `cl-x5` (CL = 10 pF must acquire later); `ibias-zero` (dead bias must
-never be acquired); `powered-start` (must be rejected as invalid).
+never be acquired, and must itself be a valid run); `powered-start` (must be rejected as invalid).
 
 ## Timing pilot (local, single nominal corner, `--pilot`)
 

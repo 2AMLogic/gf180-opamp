@@ -48,6 +48,7 @@ bias-generator is outside this study.
 Evidence produced (append-only, a new record id every run):
 
     corners/<rid>/<scenario>_<ramp>/<process>_<T>c_<vdd>v.{log,cir,dat.gz}   one set per point
+    corners/<rid>/long_<scenario>_<ramp>/...   long-window follow-up points (same set + report)
     corners/<rid>/reference/...      powered steady DC reference
     corners/<rid>/*/klt-report.json  sanitised klt reports
     corners/<rid>/controls/...       single-unit controls
@@ -238,7 +239,7 @@ class Event:
     dwell_s: float = float("nan")  # in-band tail duration
     over_mv: float = float("nan")  # peak output excess over v_ref after the ramps complete
     under_mv: float = float("nan")  # peak output shortfall below v_ref after the ramps complete
-    rail_excess_mv: float = float("nan")  # peak (vout - instantaneous vdd) over the event, mV
+    rail_excess_mv: float = float("nan")  # peak (vout - instantaneous vdd) over the event, clamped at 0, mV
     vout_peak: float = float("nan")
 
     @property
@@ -290,7 +291,7 @@ def extract_event(t, vo, vd, ev: Event, v_ref: float, tstep: float) -> tuple[Eve
     post = tw >= tc
     over = max(0.0, float(err[post].max())) * 1e3
     under = max(0.0, -float(err[post].min())) * 1e3
-    rail = float(np.max(vw - np.interp(tw, t, vd))) * 1e3
+    rail = max(0.0, float(np.max(vw - np.interp(tw, t, vd)))) * 1e3  # 0 when vout never exceeds the rail
     base = dict(v_final=v_final, drift=drift, over_mv=over, under_mv=under, rail_excess_mv=rail,
                 vout_peak=float(vw.max()))
     out_ev = Event(ev.name, t0, tc, t1, **base)
@@ -489,7 +490,9 @@ def save_point_data(m: Metrics, path: Path) -> None:
         return
     head = ([] if m.valid else [f"INVALID: {m.reason}"]) + [DAT_HEADER]
     with gzip.open(path, "wt") as fh:
-        np.savetxt(fh, _columns(m.vec), header="\n".join(head), fmt=["%.9e"] + ["%.6e"] * (len(DAT_COLS) - 1))
+        # 10 significant digits on every column: at %.6e the voltage quantisation (~1 uV) moved a
+        # slowly-settling (late, long-window) acquisition instant by > 0.01 ns on re-derivation.
+        np.savetxt(fh, _columns(m.vec), header="\n".join(head), fmt="%.9e")
 
 
 def rederive(path: Path, sched: dict, vdd_final: float, v_ref: float) -> Metrics:
@@ -519,6 +522,49 @@ def same_result(a: Metrics, b: Metrics) -> bool:
             if abs(getattr(ea, f) - getattr(eb, f)) > 1e-3:
                 return False
     return True
+
+
+def persist_points(sub: Path, results: dict, arts: dict, report: dict) -> None:
+    """One case's committed evidence: per-point logs, decks and `.dat.gz`
+    traces, plus the sanitised klt report. Used for the primary grids and for
+    the long-window follow-ups alike (a follow-up keeps its evidence too)."""
+    for k, a in arts.items():
+        stem = g.point_stem(k)
+        if a["log"]:
+            shutil.copyfile(a["log"], sub / f"{stem}.log")
+        if a["deck"]:
+            shutil.copyfile(a["deck"], sub / f"{stem}.cir")
+        save_point_data(results[k], sub / f"{stem}.dat.gz")
+    (sub / "klt-report.json").write_text(json.dumps(sanitise_report(report), indent=1))
+
+
+def check_rederive(sub: Path, sched: dict, results: dict, refs: dict, label: str,
+                   rbad: list[str]) -> tuple[int, int]:
+    """Re-extract every persisted point of `sub` from its committed `.dat.gz`
+    trace and compare with the in-memory metrics; mismatch / unreadable points
+    are appended to `rbad` (prefixed `label`). Returns (n_ok, n_all)."""
+    n_ok = n_all = 0
+    for k, m in results.items():
+        n_all += 1
+        try:
+            m2 = rederive(sub / f"{g.point_stem(k)}.dat.gz", sched, k[2], refs[k])
+        except (ValueError, OSError) as exc:
+            rbad.append(f"{label} {g.fmt_key(k)}: {exc}")
+            continue
+        if same_result(m, m2):
+            n_ok += 1
+        else:
+            rbad.append(f"{label} {g.fmt_key(k)}")
+    return n_ok, n_all
+
+
+def snapshot_case_lines(label: str, req: dict, sched: dict) -> list[str]:
+    """The netlist-snapshot comment block recording one grid request and its
+    schedule (follow-up requests are recorded the same way as the primaries)."""
+    return [f"* ---- case {label} ----",
+            *("* " + ln for ln in
+              json.dumps({k: v for k, v in req.items() if k != "netlist"}, indent=1).splitlines()),
+            "* schedule .param values: " + json.dumps(sched["params"])]
 
 
 # --------------------------------------------------------------------------
@@ -644,7 +690,9 @@ def control_failures(ctrls: list[ControlRun]) -> list[str]:
                        f"nominal {tn * 1e9 if math.isfinite(tn) else tn:.1f} ns -- the extraction does not see the heavier load")
     if dead is None or dead.metrics is None:
         bad.append(f"ibias-zero: did not simulate ({dead.error if dead else 'missing'})")
-    elif dead.metrics.valid and any(math.isfinite(e.acq_s) for e in dead.metrics.events):
+    elif not dead.metrics.valid:
+        bad.append(f"ibias-zero: invalid ({dead.metrics.reason}) -- the dead-bias control must be a valid, censored run")
+    elif any(math.isfinite(e.acq_s) for e in dead.metrics.events):
         bad.append("ibias-zero: a dead amplifier produced an acquired output -- the extraction cannot be trusted")
     if pw is None or pw.metrics is None:
         bad.append(f"powered-start: did not simulate ({pw.error if pw else 'missing'})")
@@ -824,7 +872,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_descs, case_re
         add("")
         names = [e[0] for e in sched["events"]]
         add("Acquisition in ns after the event's ramps complete; peaks in mV about v_ref after the ramps complete; "
-            "`rail+` is the peak excess of vout over the instantaneous rail.")
+            "`rail+` is the peak excess of vout over the instantaneous rail (0 when vout stays at or below it).")
         add("")
         hdr = "| Process | T (C) | VDD (V) | v_ref (V) | " + " | ".join(
             f"{n} acq (ns) | {n} over/under (mV) | {n} rail+ (mV)" for n in names) + " | note |"
@@ -872,6 +920,12 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_descs, case_re
                     add(f"| {scenario} | {ramp} | `{k[0]}` | {k[1]:g} | {k[2]:.2f} | {e.name} | "
                         + (f"still not acquired after {(e.t_end - e.t_complete) * 1e6:g} us ({e.why})" if e.censored
                            else f"acquired late, {_acq_ns(e.acq_s)} after the ramps complete") + " |")
+        add("")
+        add("Committed follow-up evidence (decks, logs, `.dat.gz` traces, sanitised klt reports, and the follow-up "
+            "requests in the netlist snapshot): "
+            + ", ".join(f"`sim/enable-acquisition/corners/{record}/long_{scenario}_{ramp}/`"
+                        for (scenario, _ramp) in long_results)
+            + ". The re-derivation count above includes these files.")
     add("")
     add("## Controls (single local units at the nominal point, simultaneous / fast; separate from the grid evidence)")
     add("")
@@ -1059,6 +1113,8 @@ def main(argv: list[str] | None = None) -> int:
 
         # 3. long-window follow-up of any censored event (batch, one superset request per case)
         long_results: dict = {}
+        long_arts: dict = {}
+        long_reports: dict = {}
         for (scenario, ramp), (sched, results) in case_results.items():
             unresolved = [k for k, m in results.items() if m.censored]
             if not unresolved:
@@ -1075,10 +1131,12 @@ def main(argv: list[str] | None = None) -> int:
             except KltError as exc:
                 return fail(f"the long-window follow-up {scenario}/{ramp} could not be run: {str(exc)[-600:]}")
             wantl = g.expected_keys(procs, temps, sups)
-            lres, _, problems = analyse_report(rep, wantl, lsched, refs)
+            lres, larts, problems = analyse_report(rep, wantl, lsched, refs)
             if problems:
                 return fail(f"the long-window follow-up {scenario}/{ramp} did not complete cleanly: " + "; ".join(problems[:8]))
             long_results[(scenario, ramp)] = (lsched, {k: lres[k] for k in unresolved})
+            long_arts[(scenario, ramp)] = {k: larts[k] for k in unresolved}
+            long_reports[(scenario, ramp)] = (req, rep)
             backend_descs[f"long-window {scenario} / {ramp}"] = describe_backend(rep)
             print(f"  long-window {scenario}/{ramp}: {len(unresolved)} unresolved point(s) re-run")
 
@@ -1100,26 +1158,19 @@ def main(argv: list[str] | None = None) -> int:
         for (scenario, ramp), (sched, results) in case_results.items():
             sub = cdir / f"{scenario}_{ramp}"
             sub.mkdir()
-            req, rep = case_reports[(scenario, ramp)]
-            for k, a in case_arts[(scenario, ramp)].items():
-                stem = g.point_stem(k)
-                if a["log"]:
-                    shutil.copyfile(a["log"], sub / f"{stem}.log")
-                if a["deck"]:
-                    shutil.copyfile(a["deck"], sub / f"{stem}.cir")
-                save_point_data(results[k], sub / f"{stem}.dat.gz")
-            (sub / "klt-report.json").write_text(json.dumps(sanitise_report(rep), indent=1))
-            for k, m in results.items():
-                n_all += 1
-                try:
-                    m2 = rederive(sub / f"{g.point_stem(k)}.dat.gz", sched, k[2], refs[k])
-                except (ValueError, OSError) as exc:
-                    rbad.append(f"{scenario}/{ramp} {g.fmt_key(k)}: {exc}")
-                    continue
-                if same_result(m, m2):
-                    n_ok += 1
-                else:
-                    rbad.append(f"{scenario}/{ramp} {g.fmt_key(k)}")
+            _req, rep = case_reports[(scenario, ramp)]
+            persist_points(sub, results, case_arts[(scenario, ramp)], rep)
+            a, b = check_rederive(sub, sched, results, refs, f"{scenario}/{ramp}", rbad)
+            n_ok += a
+            n_all += b
+        for (scenario, ramp), (lsched, lres) in long_results.items():
+            lsub = cdir / f"long_{scenario}_{ramp}"
+            lsub.mkdir()
+            _lreq, lrep = long_reports[(scenario, ramp)]
+            persist_points(lsub, lres, long_arts[(scenario, ramp)], lrep)
+            a, b = check_rederive(lsub, lsched, lres, refs, f"long {scenario}/{ramp}", rbad)
+            n_ok += a
+            n_all += b
         ccdir = cdir / "controls"
         ccdir.mkdir()
         for c in ctrls:
@@ -1133,9 +1184,9 @@ def main(argv: list[str] | None = None) -> int:
                  "* Reproduces the measured design: DUT contents, testbench, conditions.",
                  "* ---- conditions: klt sim requests (one per case; netlist path elided) ----"]
         for (scenario, ramp), (req, _rep) in case_reports.items():
-            lines.append(f"* ---- case {scenario}/{ramp} ----")
-            lines += ["* " + ln for ln in json.dumps({k: v for k, v in req.items() if k != "netlist"}, indent=1).splitlines()]
-            lines += ["* schedule .param values: " + json.dumps(mc.schedule(scenario, ramp)["params"])]
+            lines += snapshot_case_lines(f"{scenario}/{ramp}", req, mc.schedule(scenario, ramp))
+        for (scenario, ramp), (lreq, _lrep) in long_reports.items():
+            lines += snapshot_case_lines(f"long-window {scenario}/{ramp}", lreq, long_results[(scenario, ramp)][0])
         lines += ["", "* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----",
                   dut_text, "* ---- testbench: sim/enable-acquisition/testbench/tb_enable.spice (verbatim; schedule .param lines are "
                   "substituted per case as listed above) ----", TESTBENCH.read_text()]

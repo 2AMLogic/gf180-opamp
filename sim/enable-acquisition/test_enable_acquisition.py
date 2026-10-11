@@ -13,6 +13,7 @@ checked by mutating the committed testbench / DUT text in memory.
 
 from __future__ import annotations
 
+import json
 import math
 import re
 import sys
@@ -357,6 +358,11 @@ class ControlTests(unittest.TestCase):
         self.assertTrue(r.control_failures([mk("nominal", nm), mk("cl-x5", nm), mk("ibias-zero", dead), mk("powered-start", pw)]))
         # a dead bias must not be accepted as acquired
         self.assertTrue(r.control_failures([mk("nominal", nm), mk("cl-x5", bg), mk("ibias-zero", nm), mk("powered-start", pw)]))
+        # ... nor pass for the wrong reason: an invalid dead-bias run is not a passing control
+        bad_dead = r.extract_enable(*reversed(enable_vec(powered_start=True)), VDD, VCM)
+        self.assertFalse(bad_dead.valid)
+        fails = r.control_failures([mk("nominal", nm), mk("cl-x5", bg), mk("ibias-zero", bad_dead), mk("powered-start", pw)])
+        self.assertTrue(any(f.startswith("ibias-zero: invalid") for f in fails), fails)
         # a powered start must not be accepted as valid
         _, okpw = run()
         self.assertTrue(r.control_failures([mk("nominal", nm), mk("cl-x5", bg), mk("ibias-zero", dead), mk("powered-start", okpw)]))
@@ -427,6 +433,18 @@ def _raw(vec) -> str:
     return head + "\n".join(rows) + "\n"
 
 
+class RailExcessTests(unittest.TestCase):
+    def test_rail_excess_is_clamped_at_zero(self):
+        _, m = run()
+        for e in m.events:
+            self.assertGreaterEqual(e.rail_excess_mv, 0.0)
+        tc = r.mc.schedule("simultaneous", "fast")["events"][0][2]
+        # a brief 2 V spike just after completion lifts vout above the 3.3 V rail: a real, positive excess
+        _, hot = run(extra=lambda t: np.where(np.abs(t - tc - 20e-9) < 6e-9, 2.0, 0.0))
+        self.assertTrue(hot.valid, hot.reason)
+        self.assertGreater(hot.events[0].rail_excess_mv, 100.0)
+
+
 class ReportTests(unittest.TestCase):
     def _corner(self, raw_path, meas):
         return {"process": "typical", "temperature_c": 27.0, "supply_v": {"vdd": 3.3, "vcm": 1.65},
@@ -477,6 +495,129 @@ class ReportTests(unittest.TestCase):
         c["measurements"] = []
         refs, _, problems = r.analyse_reference({"corners": [c]}, [r.NOMINAL])
         self.assertTrue(problems and not refs)
+
+
+class LongWindowPersistenceTests(unittest.TestCase):
+    """A long-window follow-up must leave the same committed evidence trail as
+    a primary case -- schedule/request in the netlist snapshot, per-point log,
+    deck and `.dat.gz` trace, sanitised klt report -- and the committed traces
+    must re-extract to the recorded figures (review feedback, PR #193)."""
+
+    KEY = r.NOMINAL
+
+    def _censored_primary(self):
+        sched, vec = enable_vec(("supply-first", "slow"))
+        stuck(sched, vec, 0.5)
+        m = r.extract_enable(vec, sched, VDD, VCM)
+        self.assertTrue(any(e.censored for e in m.events))
+        return sched, m
+
+    def _long_followup(self):
+        saved = r.mc.WINDOW_T
+        r.mc.WINDOW_T = saved * r.mc.LONG_WINDOW_FACTOR
+        try:
+            lsched, lvec = enable_vec(("supply-first", "slow"))
+            stuck(lsched, lvec, 0.5)
+            lm = r.extract_enable(lvec, lsched, VDD, VCM)
+        finally:
+            r.mc.WINDOW_T = saved
+        self.assertGreater(lsched["tstop"], r.mc.schedule("supply-first", "slow")["tstop"])
+        return lsched, lm
+
+    @staticmethod
+    def _arts(d: Path):
+        log, deck = d / "klt.log", d / "klt.cir"
+        log.write_text("log text\n")
+        deck.write_text("* deck\n")
+        return {LongWindowPersistenceTests.KEY: {"log": log, "deck": deck, "klt_meas": {}}}
+
+    def test_censored_primary_and_followup_keep_evidence_and_rederive(self):
+        """End to end through `analyse_report`: a slow-settling point is
+        censored in the primary window, the synthetic long-window klt report
+        resolves it as acquired late, and both cases' evidence is written and
+        re-extracts from the committed traces."""
+        slow = lambda s: np.exp(-np.clip(s, 0, None) / 1.5e-6)  # noqa: E731
+        case = ("supply-first", "slow")
+        sched, vec = enable_vec(case, h=slow)
+        saved = r.mc.WINDOW_T
+        r.mc.WINDOW_T = saved * r.mc.LONG_WINDOW_FACTOR
+        try:
+            lsched, lvec = enable_vec(case, h=slow)
+        finally:
+            r.mc.WINDOW_T = saved
+        self.assertEqual(lsched["params"], r.mc.schedule(*case, saved * r.mc.LONG_WINDOW_FACTOR)["params"])
+        refs = {self.KEY: VCM}
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            reports = {}
+            for tag, v in (("primary", vec), ("long", lvec)):
+                raw, log, deck = d / f"{tag}.raw", d / f"{tag}.log", d / f"{tag}.cir"
+                raw.write_text(_raw(v))
+                log.write_text(f"{tag} log\n")
+                deck.write_text(f"* {tag} deck\n")
+                reports[tag] = {"corners": [{
+                    "process": "typical", "temperature_c": 27.0, "supply_v": {"vdd": 3.3, "vcm": 1.65},
+                    "diagnostics": [], "measurements": [],
+                    "artifacts": {"raw": str(raw), "log": str(log), "deck": str(deck)}}]}
+            res, arts, problems = r.analyse_report(reports["primary"], [self.KEY], sched, refs)
+            self.assertEqual(problems, [])
+            self.assertTrue(res[self.KEY].valid and res[self.KEY].censored, res[self.KEY].reason)
+            unresolved = [k for k, m in res.items() if m.censored]
+            lres, larts, problems = r.analyse_report(reports["long"], [self.KEY], lsched, refs)
+            self.assertEqual(problems, [])
+            lres = {k: lres[k] for k in unresolved}
+            larts = {k: larts[k] for k in unresolved}
+            self.assertTrue(lres[self.KEY].valid and not lres[self.KEY].censored, lres[self.KEY].reason)
+
+            primary, follow = d / "supply-first_slow", d / "long_supply-first_slow"
+            primary.mkdir()
+            follow.mkdir()
+            r.persist_points(primary, res, arts, reports["primary"])
+            r.persist_points(follow, lres, larts, reports["long"])
+            stem = r.g.point_stem(self.KEY)
+            for sub, tag in ((primary, "primary"), (follow, "long")):
+                self.assertEqual((sub / f"{stem}.log").read_text(), f"{tag} log\n")
+                self.assertEqual((sub / f"{stem}.cir").read_text(), f"* {tag} deck\n")
+                self.assertTrue((sub / f"{stem}.dat.gz").is_file(), sub)
+                rep = json.loads((sub / "klt-report.json").read_text())
+                self.assertEqual(len(rep["corners"]), 1)
+                self.assertNotIn(str(d), json.dumps(rep))  # sanitised: no scratch paths
+            rbad = []
+            n_ok = n_all = 0
+            for sub, s, rr, label in ((primary, sched, res, "supply-first/slow"),
+                                      (follow, lsched, lres, "long supply-first/slow")):
+                a, b = r.check_rederive(sub, s, rr, refs, label, rbad)
+                n_ok += a
+                n_all += b
+            self.assertEqual((n_ok, n_all, rbad), (2, 2, []))
+            # the re-derived follow-up is the late acquisition, not the primary's censored result
+            m2 = r.rederive(follow / f"{stem}.dat.gz", lsched, self.KEY[2], VCM)
+            self.assertFalse(m2.censored)
+
+    def test_lost_trace_is_flagged_not_silently_accepted(self):
+        sched, m = self._censored_primary()
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            sub = d / "supply-first_slow"
+            sub.mkdir()
+            r.persist_points(sub, {self.KEY: m}, self._arts(d), {"corners": []})
+            (sub / f"{r.g.point_stem(self.KEY)}.dat.gz").unlink()
+            rbad = []
+            n_ok, n_all = r.check_rederive(sub, sched, {self.KEY: m}, {self.KEY: VCM}, "supply-first/slow", rbad)
+            self.assertEqual((n_ok, n_all), (0, 1))
+            self.assertEqual(len(rbad), 1)
+            self.assertIn("supply-first/slow", rbad[0])
+
+    def test_snapshot_records_the_followup_request(self):
+        lsched, _ = self._long_followup()
+        req = {"netlist": "/scratch/secret/tb.spice", "corners": {"process": ["typical"]},
+               "analysis": {"kind": "tran", "args": "5n 50u"}}
+        lines = r.snapshot_case_lines("long-window supply-first/slow", req, lsched)
+        self.assertEqual(lines[0], "* ---- case long-window supply-first/slow ----")
+        joined = "\n".join(lines)
+        self.assertNotIn("/scratch", joined)  # netlist path elided, as for the primaries
+        self.assertIn('"analysis"', joined)
+        self.assertIn(json.dumps(lsched["params"]), joined)
 
 
 class GuardTests(unittest.TestCase):
