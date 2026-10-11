@@ -116,6 +116,27 @@ this block's nearest same-PDK siblings (`gf180-bandgap`, `gf180-ldo`) and
 block's current distance from the klayout-tools T1 ("sim-validated")
 design-evidence tier.
 
+## Reproducing the results
+
+Every recorded result comes from a committed testbench under `sim/<experiment>/testbench/`
+driven by one `sim/<experiment>/run_*.py`. Prerequisites (ngspice, xschem 3.4.7, the
+pinned `klt`, and the gf180mcu PDK at the open_pdks revision pinned in
+`sim/harness.py`) are listed in [`sim/README.md`](sim/README.md).
+
+```bash
+sim/selftest.sh                      # fast check: no records written, one local nominal point per bench
+sim/characterize.sh                  # full PVT grids; appends new records, then rebuilds the report
+python3 sim/report/characterization_report.py --check   # committed report + evidence sidecar current
+python3 manifests/t1_attest.py --check                  # T1 items 1/9/10 inventories current
+klt signoff --manifest manifests/gf180-opamp.json \
+            --tiers-doc manifests/design-evidence-tiers.md --format json   # see manifests/README.md
+```
+
+Multi-corner and Monte Carlo grids go through `klt sim` (never hand-looped `ngspice`).
+The experiments `sim/characterize.sh` does not drive (for example `sim/cmrr-mc/`) document
+their own commands in their READMEs. The testbench inventory behind signoff T1 item 9 is
+[`manifests/attest/testbench-inventory.json`](manifests/attest/testbench-inventory.json).
+
 ## Orchestration notes
 
 Sweep coordinators that need a main-clean baseline should follow

@@ -1,0 +1,21 @@
+{
+  "kind": "generic",
+  "provenance": {
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:36edcf4ae3eb940a0a33b0e3b80a74efbccbbce8579c771729f0bf546e2d6454",
+      "path": {
+        "path": "manifests/attest/design-sources.json",
+        "scope": "repo"
+      }
+    },
+    "klayout_version": null,
+    "klt_version": null,
+    "pdk": null
+  },
+  "schema_version": 1,
+  "source": "manifests/attest/design-sources.json",
+  "status": "pass",
+  "summary": "every design source and the derived netlist are inventoried; the netlist is regenerated from the schematic and checked in CI",
+  "t1_item": 1
+}

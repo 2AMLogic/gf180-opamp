@@ -5,7 +5,7 @@
   "tier": null,
   "t1_item_count": 11,
   "build_t1_item_count": 11,
-  "t1_met_count": 1,
+  "t1_met_count": 4,
   "source_doc": "manifests/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:4c67ffc59128482d00f7d87cf446b6a96b9ab0c41ae5234098244e3052033335",
   "build": {
@@ -25,10 +25,29 @@
       "partition": null,
       "text": "committed schematic sources (or generator) plus the netlist derived from them, regenerated on design change.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/attest/item-1.evidence.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:36edcf4ae3eb940a0a33b0e3b80a74efbccbbce8579c771729f0bf546e2d6454",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 1,
+          "path": {
+            "path": "manifests/attest/design-sources.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:36edcf4ae3eb940a0a33b0e3b80a74efbccbbce8579c771729f0bf546e2d6454",
+          "input_verified": true,
+          "summary": "every design source and the derived netlist are inventoried; the netlist is regenerated from the schematic and checked in CI",
+          "source": "manifests/attest/design-sources.json"
+        }
+      }
     },
     {
       "tier": "T1",
@@ -133,10 +152,29 @@
       "partition": null,
       "text": "every claimed measurement's testbench committed, with a documented cold-start invocation a third party can run; pinned PDK revision.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/attest/item-9.evidence.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:868557fad50272cde7cb02d45f1d7a84f472e448df50b3aa957e2c4ea9242562",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 9,
+          "path": {
+            "path": "manifests/attest/testbench-inventory.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:868557fad50272cde7cb02d45f1d7a84f472e448df50b3aa957e2c4ea9242562",
+          "input_verified": true,
+          "summary": "every claimed measurement's testbench is committed with a documented invocation; PDK revision pinned and CI-enforced",
+          "source": "manifests/attest/testbench-inventory.json"
+        }
+      }
     },
     {
       "tier": "T1",
@@ -145,10 +183,29 @@
       "partition": null,
       "text": "a README stating what the block is, its spec table, and how to reproduce every result; a license; CI that at minimum keeps the harness and evidence formats valid.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/attest/item-10.evidence.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:5ecc92ae55016051d7ec14b3c0d787fd90c5ac6576456c79fec77514a4df4edf",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 10,
+          "path": {
+            "path": "manifests/attest/repo-hygiene.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:5ecc92ae55016051d7ec14b3c0d787fd90c5ac6576456c79fec77514a4df4edf",
+          "input_verified": true,
+          "summary": "README (block, spec table link, reproduction), license and CI audited",
+          "source": "manifests/attest/repo-hygiene.json"
+        }
+      }
     },
     {
       "tier": "T1",
