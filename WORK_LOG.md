@@ -2,8 +2,15 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-11
+
+- **PR #143**: docs(#141): reconcile sim/README coverage-and-gaps with selected records
+- **Issue #141** (closed): docs: reconcile sim/README.md coverage-and-gaps section with the 45-point offset record and post-retune results
+
 ### 2026-10-10
 
+- **PR #138**: design(#42): retune Miller compensation so phase margin meets 60 deg at 45/45 PVT points
+- **PR #137**: feat(#114): ibias and CL sensitivity record
 - **PR #135**: sim: mismatch Monte Carlo runner for gain, GBW and phase margin (#129)
 - **PR #134**: docs(#133): reconcile status prose with passive-corner side study
 - **PR #132**: ci(#131): extend regression-check mutations to ibias-cl-sensitivity and shared sim modules
@@ -15,6 +22,8 @@ Merged pull requests and closed issues recorded by Guide.
 - **PR #122**: feat(#114): ibias and CL sensitivity experiment (record pending)
 - **PR #119**: feat(#97): passive-corner side-study record for slew/swing/power
 - **PR #118**: sim: offset Monte Carlo over the 45-point T/VDD grid (--grid full, N=300 per point)
+- **Issue #42** (closed): Design: phase margin misses the ratified 60 deg target at 30/45 PVT points (worst 57.34 deg at FS / 125 C / 2.97 V)
+- **Issue #114** (closed): sim: ibias and CL sensitivity of GBW, PM, slew and power (evidence for the PM shortfall)
 - **Issue #129** (closed): sim: mismatch Monte Carlo of gain, GBW and phase margin (statistical evidence for the PM/GBW rows)
 - **Issue #133** (closed): docs: reconcile README, sim/README and target-spec status with the committed slew/swing/power passive-corner study
 - **Issue #131** (closed): ci: extend ci_regression_check.sh mutation coverage to ibias-cl-sensitivity and shared sim modules
