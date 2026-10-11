@@ -5,7 +5,7 @@
 # breaks one testbench source guard and one extraction in EACH simulator-free
 # experiment (gain-gbw-pm, noise, offset-mc, cmrr, cmrr-mc, gain-gbw-pm-mc, psrr,
 # psrr-mc, slew-swing-power, input-common-mode, step-response,
-# overdrive-recovery, ibias-cl-sensitivity),
+# overdrive-recovery, enable-acquisition, ibias-cl-sensitivity),
 # and requires that experiment's unit suite to FAIL for each (after a control
 # run of the unmutated suite). Issue #131 adds the shared modules whose suites
 # are wired into selftest.sh: sim/harness.py (test_harness.py) and
@@ -202,6 +202,30 @@ expect_fail overdrive-recovery test_overdrive_recovery.py gain-gbw-pm/run_gain_g
 expect_fail overdrive-recovery test_overdrive_recovery.py overdrive-recovery/run_overdrive_recovery.py \
   "extraction: recovery band halved" \
   'band_v = BAND_FRAC * abs(v_ref)' 'band_v = 0.5 * BAND_FRAC * abs(v_ref)'
+
+# enable-acquisition (issue #191) reuses the gain driver's testbench and DUT guards
+# (mutation lands in gain-gbw-pm/run_gain_gbw_pm.py) and has its own extraction rules:
+# the initial-state (unpowered start) limit, the censoring of an unresolved window,
+# the single-crossing dwell rule and the diagnostic band.
+control enable-acquisition test_enable_acquisition.py
+expect_fail enable-acquisition test_enable_acquisition.py gain-gbw-pm/run_gain_gbw_pm.py \
+  "guard: shared gain-driver DUT-include check removed" \
+  'if DUT_INCLUDE_NAME not in targets:' 'if False:'
+expect_fail enable-acquisition test_enable_acquisition.py gain-gbw-pm/run_gain_gbw_pm.py \
+  "guard: stale/altered DUT line no longer rejected" \
+  'errs.append(f"export line missing or altered in the DUT: {ln[:70]}")' 'pass'
+expect_fail enable-acquisition test_enable_acquisition.py enable-acquisition/run_enable_acquisition.py \
+  "extraction: acquisition band doubled" \
+  'band = BAND_FRAC * abs(v_ref)' 'band = 2 * BAND_FRAC * abs(v_ref)'
+expect_fail enable-acquisition test_enable_acquisition.py enable-acquisition/run_enable_acquisition.py \
+  "extraction: an output still outside the band at the window end is no longer censored" \
+  'if i + 1 >= tw.size or tw[i] >= ref_start:' 'if False:'
+expect_fail enable-acquisition test_enable_acquisition.py enable-acquisition/run_enable_acquisition.py \
+  "extraction: single in-band crossing near the window end accepted as acquired" \
+  'if dwell < MIN_DWELL_FRAC * (t1 - tc):' 'if False:'
+expect_fail enable-acquisition test_enable_acquisition.py enable-acquisition/measurement_config.py \
+  "extraction: powered-at-t0 initial state accepted (limit opened to 50 V)" \
+  'INIT_MAX_V = 0.05' 'INIT_MAX_V = 50.0'
 
 # ibias-cl-sensitivity (issue #131): the substitution helpers' exactly-one-match
 # guard and the control-vs-committed-record comparison.

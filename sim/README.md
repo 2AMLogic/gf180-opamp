@@ -442,6 +442,16 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   within it, or settled at a wrong level) and worst points identified.
   Evidence only: no spec row exists for overload recovery and none is
   proposed (that would need a `spec/` decision record) (issue #183).
+- [`enable-acquisition/`](enable-acquisition/README.md) — **supply and
+  external-bias enable acquisition** of the same follower, starting from a
+  true unpowered / unbiased state: simultaneous rail+bias enable, supply-first
+  with a delayed bias, and bias disable / re-enable at fixed supply, each with
+  a fast / slow diagnostic ramp pair across the same 45-point grid (one
+  `klt sim` request per case). Last-exit acquisition to a ±1 % diagnostic band
+  about a separately derived powered steady level, with unresolved windows kept
+  censored ("not acquired") and re-run over a 10x longer window. Evidence of
+  schematic behaviour only: no startup spec row exists and none is proposed,
+  and the ramp conditions are not consumer guarantees (issue #191).
 
 ## Coverage and gaps
 
