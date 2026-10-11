@@ -400,6 +400,23 @@ class ControlTests(unittest.TestCase):
         probs, _ = m.check_imbalance(base, half)
         self.assertTrue(probs and all("Avss" in p or "PSRR-" in p for p in probs), probs)
 
+    def test_imbalance_rails_pinned(self):
+        self.assertEqual(m.IMBALANCE_RAILS, ("vdd", "vss"))
+
+    def test_offset_sigma_gate_blocks_when_mismatch_not_acting(self):
+        def pts(scale):
+            out = []
+            for i in range(20):
+                v = good_vals(100.0)
+                v["pmc_offset"] = scale * (i - 9.5)
+                out.append(sample(v, i))
+            return out
+        self.assertEqual(m.check_offset_sigma({NOM: pts(1e-3)}), [])
+        probs = m.check_offset_sigma({NOM: pts(1e-3), ("ss", 27.0, 3.30): pts(1e-6)})
+        self.assertEqual(len(probs), 1, probs)
+        self.assertIn("mismatch not acting", probs[0])
+        self.assertTrue(m.check_offset_sigma({NOM: pts(0.0)}))
+
     def test_systematic_reference_reads_the_current_committed_record(self):
         ref = m.systematic_reference(m.G.expected_keys(m.CORNERS, m.TEMPS, m.SUPPLIES))
         self.assertEqual(len(ref), 5)

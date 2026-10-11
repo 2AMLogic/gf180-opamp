@@ -142,6 +142,9 @@ expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
 expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
   "control: imbalance shift criterion disabled" \
   'if not shift > CONTROL_SE_MULT * se:' 'if False:'
+expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
+  "gate: per-point offset sigma > 1 mV check disabled" \
+  'if not sg > MIN_OFFSET_SIGMA_V:' 'if False:'
 
 control slew-swing-power test_slew_swing_power.py
 # slew-swing-power reuses the gain driver's testbench guard (`g.guard_testbench`),
