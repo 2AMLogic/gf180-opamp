@@ -13,6 +13,10 @@ ngspice or the PDK is unavailable.
 
 from __future__ import annotations
 
+import contextlib
+import datetime
+import io
+import json
 import math
 import shutil
 import statistics
@@ -20,12 +24,14 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_cmrr_mc as m  # noqa: E402
-from harness import PdkNotFound, find_pdk, skip_or_fail  # noqa: E402
+from harness import KltError, PdkNotFound, find_pdk, skip_or_fail  # noqa: E402
 
 NOM = ("typical", 27.0, 3.30)
 
@@ -311,6 +317,196 @@ class ControlTests(unittest.TestCase):
         self.assertAlmostEqual(ref[NOM]["fu"], 63.17)
         self.assertAlmostEqual(ref[NOM]["fu_hz"], 16.399e6)
         self.assertIn(("ss", 27.0, 3.30), ref)
+
+
+class FakePdk:
+    variant = "gf180mcuD"
+    path = Path("/pdk/gf180mcuD")
+    version = "test"
+    source = "stub"
+
+
+def mc_samples(key, n=m.MC_N) -> list:
+    """Cheap synthetic Samples for one point (no logs)."""
+    return [m.Sample(key, i, {"seed": i}, {}, []) for i in range(n)]
+
+
+class ChunkPlanTests(unittest.TestCase):
+    """Issue #140: bounded batch requests, deterministic partition."""
+
+    def test_full_grid_is_covered_once_under_the_cap(self):
+        chunks = m.plan_chunks("full")
+        want = m.keys_of(m.CORNERS, *m.GRIDS["full"])
+        self.assertEqual(len(want), 45)
+        self.assertEqual(len(chunks), 15)
+        self.assertEqual(m.check_plan(chunks, want), [])
+        self.assertEqual(sorted(k for c in chunks for k in c.keys()), sorted(want))
+        for c in chunks:
+            self.assertLessEqual(c.units(), m.MAX_UNITS_PER_REQUEST)
+            self.assertEqual(c.units(), 900)
+            self.assertEqual(len(c.corners), 1)
+            self.assertEqual(len(c.temps), 1)
+        self.assertEqual(len({c.tag for c in chunks}), 15)
+        self.assertEqual(chunks[0].tag, "grid.typical.-40C")
+
+    def test_nominal_is_one_request_identical_to_the_unchunked_one(self):
+        chunks = m.plan_chunks("nominal")
+        self.assertEqual(len(chunks), 1)
+        c = chunks[0]
+        self.assertEqual(c.tag, "grid")
+        self.assertEqual(c.units(), 1500)
+        a = m.request(Path("/w/tb.spice"), FakePdk, list(c.corners), list(c.temps), list(c.supplies), n=m.MC_N)
+        b = m.request(Path("/w/tb.spice"), FakePdk, m.CORNERS, [27.0], [3.30], n=m.MC_N)
+        self.assertEqual(a, b)
+
+    def test_chunk_requests_keep_n_and_seed_and_are_deterministic(self):
+        def bodies():
+            return [json.dumps(m.request(Path("/w/tb.spice"), FakePdk, list(c.corners), list(c.temps),
+                                         list(c.supplies), n=m.MC_N), sort_keys=True) for c in m.plan_chunks("full")]
+
+        first, second = bodies(), bodies()
+        self.assertEqual(first, second)
+        self.assertEqual([c.tag for c in m.plan_chunks("full")], [c.tag for c in m.plan_chunks("full")])
+        for body in first:
+            self.assertEqual(json.loads(body)["monte_carlo"], {"n": 300, "seed": 45, "vary": "mismatch"})
+
+    def test_planted_oversize_grid_is_refused(self):
+        with mock.patch.dict(m.GRIDS, {"big": ([-40.0, 27.0], [3.0, 3.3, 3.6, 3.9, 4.2, 4.5, 4.8, 5.0])}):
+            chunks = m.plan_chunks("big")  # per (process, T) is 8 x 300 = 2400 units
+            want = m.keys_of(m.CORNERS, *m.GRIDS["big"])
+            self.assertTrue(any("MAX_UNITS_PER_REQUEST" in x for x in m.check_plan(chunks, want)))
+        run = mock.Mock()
+        args = SimpleNamespace(backend=None)
+        with mock.patch.object(m, "_run", run):
+            with self.assertRaises(ValueError):
+                m.submit("x", Path("/w/tb.spice"), FakePdk, m.CORNERS, [27.0], [3.0, 3.3, 3.6, 3.9, 4.2], m.MC_N, args, Path("/w"))
+        run.assert_not_called()
+
+    def test_check_plan_catches_gaps_and_overlaps(self):
+        chunks = m.plan_chunks("full")
+        want = m.keys_of(m.CORNERS, *m.GRIDS["full"])
+        self.assertTrue(any("in no chunk" in x for x in m.check_plan(chunks[1:], want)))
+        self.assertTrue(any("in 2 chunks" in x for x in m.check_plan(chunks + [chunks[0]], want)))
+
+
+class MergeTests(unittest.TestCase):
+    def parts(self, n=m.MC_N):
+        chunks = m.plan_chunks("full")
+        want = m.keys_of(m.CORNERS, *m.GRIDS["full"])
+        return chunks, want, [(c.tag, {k: mc_samples(k, n) for k in c.keys()}) for c in chunks]
+
+    def test_merged_population_is_45_x_300_with_unique_keys(self):
+        _, want, parts = self.parts()
+        merged, probs = m.merge_samples(parts, want, m.MC_N)
+        self.assertEqual(probs, [])
+        self.assertEqual(list(merged), want)
+        self.assertEqual(sum(len(v) for v in merged.values()), 13500)
+        ident = {(k[0], k[1], k[2], s.index) for k, v in merged.items() for s in v}
+        self.assertEqual(len(ident), 13500)
+        for v in merged.values():
+            self.assertEqual(sorted(s.index for s in v), list(range(300)))
+
+    def test_missing_duplicate_and_overlapping_chunks_are_problems(self):
+        _, want, parts = self.parts()
+        _, probs = m.merge_samples(parts[1:], want, m.MC_N)
+        self.assertTrue(any("missing chunk" in x for x in probs), probs)
+        _, probs = m.merge_samples(parts + [parts[3]], want, m.MC_N)
+        self.assertTrue(any("overlap or duplicate chunk" in x for x in probs), probs)
+        k = next(iter(parts[5][1]))
+        overlap = ("extra", {k: mc_samples(k)})
+        _, probs = m.merge_samples(parts + [overlap], want, m.MC_N)
+        self.assertTrue(any("already supplied" in x for x in probs), probs)
+        _, probs = m.merge_samples(parts + [("alien", {("ff", 99.0, 3.3): mc_samples(("ff", 99.0, 3.3))})], want, m.MC_N)
+        self.assertTrue(any("unexpected grid point" in x for x in probs), probs)
+
+    def test_missing_or_duplicate_sample_index_is_a_problem(self):
+        _, want, parts = self.parts()
+        k = next(iter(parts[0][1]))
+        parts[0][1][k].pop(7)
+        _, probs = m.merge_samples(parts, want, m.MC_N)
+        self.assertTrue(any("expected 0..299" in x for x in probs), probs)
+        _, want, parts = self.parts()
+        parts[0][1][k][7] = m.Sample(k, 6, {}, {}, [])  # index 6 twice, 7 missing
+        _, probs = m.merge_samples(parts, want, m.MC_N)
+        self.assertTrue(any("expected 0..299" in x for x in probs), probs)
+
+
+class RecordProvenanceTests(unittest.TestCase):
+    def test_record_lists_every_chunk_with_units_and_wall_fraction(self):
+        key = ("typical", -40.0, 3.0)
+        ss = [sample(good_vals(90 + i * 0.1, offset=2e-3 + i * 1e-4, vcm=key[2] / 2), i, key) for i in range(5)]
+        samples = {key: ss}
+        chunks = m.plan_chunks("full")[:2]
+        reports, walls = {}, {}
+        for n, c in enumerate(chunks):
+            reports[c.tag] = {"environment": {"engine": "ngspice", "engine_version": "46", "remote": {
+                "provider": "batch", "job_id": f"klt-sim-job{n}", "spot": True, "instance_type": "m6i.4xlarge",
+                "state": "succeeded", "runner_klt_version": "0.5.0", "client_klt_version": "0.5.0",
+                "runner_compatibility": "ok"}}}
+            walls[c.tag] = 700.0 + n * 90
+        text = m.build_record(
+            record="r", stamp=m.datetime_for_test() if hasattr(m, "datetime_for_test") else __import__("datetime").datetime(2026, 10, 11),
+            pdk=FakePdk, ngspice="46", kver="0.5.0", grid="full", reports=reports, walls=walls, samples=samples,
+            stats=m.point_stats(samples), off_rows=[], off_probs=[], proc_stats=None, imb_info=None, imb_probs=[],
+            link={"available": False}, mc_env={}, dut_sha="0" * 64, problems_none="yes",
+            chunk_units={c.tag: c.units() for c in chunks})
+        for c in chunks:
+            self.assertIn(f"`{c.tag}`: backend `batch`, job `klt-sim-job", text)
+            self.assertIn(f"`{c.tag}` 900", text)
+        self.assertIn("klt-sim-job0", text)
+        self.assertIn("klt-sim-job1", text)
+        self.assertIn(f"Longest chunk `{chunks[1].tag}`: 790 s = 21.9 % of the 3600 s fleet job limit", text)
+        self.assertIn("2 sequential `klt sim` requests", text)
+
+
+class FailClosedTests(unittest.TestCase):
+    """A failing chunk: exit 2, the chunk tag is named, nothing is written,
+    and no local fallback is tried."""
+
+    def run_main(self, runner):
+        with tempfile.TemporaryDirectory() as d:
+            here = Path(d)
+            err = io.StringIO()
+            patches = [
+                mock.patch.object(m, "HERE", here),
+                mock.patch.object(m, "find_pdk", lambda: FakePdk),
+                mock.patch.object(m, "klt_version", lambda: "0.5.0"),
+                mock.patch.object(m, "ngspice_version", lambda: "46"),
+                mock.patch.object(m, "load_dut_text", lambda: "* dut\n"),
+                mock.patch.object(m, "imbalance_dut", lambda: "* dut\n"),
+                mock.patch.object(m, "materialise", lambda work, pdk, **kw: Path(work) / "tb.spice"),
+                mock.patch.object(m, "_run", runner),
+            ]
+            with contextlib.ExitStack() as st:
+                for p in patches:
+                    st.enter_context(p)
+                with contextlib.redirect_stderr(err), contextlib.redirect_stdout(io.StringIO()):
+                    rc = m.main(["--grid", "full"])
+            written = sorted(str(p.relative_to(here)) for p in here.rglob("*"))
+            return rc, err.getvalue(), written
+
+    def test_klt_error_in_a_chunk_writes_nothing(self):
+        calls = []
+
+        def runner(req, outdir, args, workdir):
+            calls.append(req["corners"]["process"][0]["name"] + str(req["corners"]["temperature_c"]))
+            if len(calls) == 4:
+                raise KltError("job exceeded 3600s; report.json not valid JSON")
+            return {"corners": [], "environment": {}}
+
+        rc, err, written = self.run_main(runner)
+        self.assertEqual(rc, 2)
+        self.assertEqual(len(calls), 4, "stops at the failing chunk; no further requests, no local fallback")
+        self.assertIn("grid.ff.-40C", err)
+        self.assertIn("NO RECORD WRITTEN", err)
+        self.assertEqual(written, [])
+
+    def test_invalid_chunk_reports_fail_validation_and_write_nothing(self):
+        rc, err, written = self.run_main(lambda req, outdir, args, workdir: {"corners": [], "environment": {}})
+        self.assertEqual(rc, 2)
+        self.assertIn("VALIDATION FAILED", err)
+        self.assertIn("[grid.typical.-40C]", err)
+        self.assertEqual(written, [])
 
 
 class SimTests(unittest.TestCase):

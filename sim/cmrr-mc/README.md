@@ -63,6 +63,9 @@ runs the 45-point T/VDD grid under mismatch (13 500 units).
 python3 sim/cmrr-mc/test_cmrr_mc.py               # offline tests (+ 1 local unit)
 python3 sim/cmrr-mc/run_cmrr_mc.py --smoke         # one local unit, no record
 python3 sim/cmrr-mc/run_cmrr_mc.py --probe         # N=3 AC+MC probe (batch)
+python3 sim/cmrr-mc/run_cmrr_mc.py --probe-seeds   # seed partition-invariance probe (batch, issue #140)
+python3 sim/cmrr-mc/run_cmrr_mc.py --grid full --batch-runner-version-check warn \
+        --batch-submit-retries 10                  # 45-point grid, chunked (see below)
 python3 sim/cmrr-mc/run_cmrr_mc.py --batch-runner-version-check warn \
         --batch-submit-retries 10                  # full run + record (append-only)
 ```
@@ -71,12 +74,44 @@ On a dispatch worker the Monte Carlo requests go to the Spot batch fleet
 (`$KLT_SIM_BACKEND=batch`); the job ids are in the record. If a submit fails
 the driver stops and writes no record; it never falls back to a local grid.
 
+## Chunked grid requests (issue #140)
+
+The fleet kills a batch job at 3600 s. One 13 500-unit request for `--grid full`
+ran 3698 s and timed out, so the driver never submits more than
+`MAX_UNITS_PER_REQUEST = 1500` units in one `klt sim` request (`submit()` raises
+before submitting if asked to; the largest size measured to finish is 1 500
+units, 1 203 s wall, about 0.76 s/unit). `plan_chunks` partitions a grid
+deterministically:
+
+- `--grid nominal` (5 corners x 1 T x 1 VDD x N=300 = 1 500 units) stays ONE
+  request tagged `grid`; its request and evidence layout are unchanged.
+- `--grid full` becomes 15 sequential requests, one per (process corner,
+  temperature), each with all three supplies (3 x 300 = 900 units, about 690 s
+  at the measured rate), tagged `grid.<process>.<T>C`.
+- Every chunk keeps `monte_carlo = {n: 300, seed: 45, vary: "mismatch"}`
+  unchanged (no per-chunk seed or N offset): klt derives each sample's seeds
+  from (seed, corner, sample index), checked by the seed partition-invariance
+  probe under `probes/` (`--probe-seeds`: the same points as one request and as
+  separate requests give identical seeds and offsets).
+- The chunk reports are merged on the sample key (process, T, VDD,
+  sample_index) before any validation; a missing or duplicated chunk, an
+  overlapping point, or a missing/duplicate sample index is a blocking problem.
+  Per-sample validity, population validity and the offset-sigma check then run on
+  the merged population as before.
+- Fail closed: if any chunk raises a `KltError` or fails validation the driver
+  exits 2, names the chunk, and writes no record and no partial `samples.csv`;
+  it never falls back to a local grid.
+- The record lists one execution line per chunk (job id, instance, state, klt
+  versions, wall), the units per chunk, and the longest chunk's wall as a
+  fraction of 3600 s.
+
 ## Evidence layout (append-only)
 
 ```
 records/<rid>.md                         statistics, controls, validation
 corners/<rid>/samples.csv                one row per sample incl. all three seeds
-corners/<rid>/klt-report.*.json          sanitised klt reports (grid + controls)
+corners/<rid>/klt-report.*.json          sanitised klt reports (grid + controls); chunked
+                                         grids: klt-report.grid.<process>.<T>C.json per chunk
 corners/<rid>/controls/*.csv             control samples
 netlist-snapshots/<rid>.spice            DUT + testbench + requests
 probes/<rid>.{md,json}                   capability probes
