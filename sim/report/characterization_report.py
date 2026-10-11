@@ -69,9 +69,13 @@ MULTI_RECORD = {"slew-swing-power": ("power", "slew", "swing")}
 #: one (`run_slew_swing_power.py --passive-corners`, issue #97). The offset
 #: Monte Carlo PVT-grid record (`run_offset_mc.py --grid full`, issue #106) is
 #: NOT a side study: the offset extractor reads its per-point layout (issue #120).
+#: The PSRR RZ x CC study (`run_psrr.py --passive-corners`, issue #155) is a
+#: standalone side study: listed here ONLY so `--latest` keeps selecting the
+#: PSRR grid record; it has no SUPPLEMENTARY key and is not parsed or shown.
 STUDY_TITLES = {
     "gain-gbw-pm": ("# gain/GBW/PM passive-corner study",),
     "slew-swing-power": ("# slew/swing/power passive-corner study",),  # issue #97
+    "psrr": ("# PSRR passive-corner study",),  # issue #155 (exclusion only)
 }
 CORNER_ORDER = ["typical", "ff", "ss", "fs", "sf"]
 FULL_GRID = 45
