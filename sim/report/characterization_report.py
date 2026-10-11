@@ -60,7 +60,7 @@ OUT_DIR_REL = "sim/reports"
 OUT_NAME = "characterization-report"
 DUT_REL = "design/netlist/opamp_two_stage.spice"
 
-EXPERIMENTS = ["gain-gbw-pm", "offset-mc", "noise", "cmrr", "cmrr-mc", "psrr", "slew-swing-power", "input-common-mode"]
+EXPERIMENTS = ["gain-gbw-pm", "gain-gbw-pm-mc", "offset-mc", "noise", "cmrr", "cmrr-mc", "psrr", "slew-swing-power", "input-common-mode"]
 #: Experiments whose rows may come from different records: a record may judge
 #: only a subset of the rows (e.g. a single-figure re-run), so the manifest
 #: entry may be an object {row: record path}, naming the record each row is
@@ -845,6 +845,247 @@ def cmrr_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
                 raise ReportError(f"{label}: the record's worst {col} for {head} disagrees with the retained "
                                   f"evidence {rel}")
     return {"path": rel, "sha256": sha256_file(p), "samples": len(seen), "points": len(by)}
+
+
+# --------------------------------------------------------------------------
+# gain/GBW/PM mismatch Monte Carlo (issue #172): measured, never graded here
+# --------------------------------------------------------------------------
+GAIN_MC_EXP = "gain-gbw-pm-mc"
+GAIN_MC_TITLE = "# Gain / GBW / PM mismatch Monte Carlo record"
+GAIN_MC_MIN_N = 300
+#: The three AC rows a mismatch sample is compared with, in the record's order:
+#: (row key, samples.csv metric column, scale from the column to the published unit, unit)
+GAIN_MC_ROWS = (("gain", "dc_gain_db", 1.0, "dB"), ("gbw", "gbw_hz", 1e-6, "MHz"), ("pm", "pm_deg", 1.0, "deg"))
+#: Display precision of the record's statistics table (dB / deg at 2 decimals, MHz at 3)
+_GAIN_MC_TOL = {"dB": 0.005 + 1e-6, "MHz": 0.0005 + 1e-6, "deg": 0.005 + 1e-6}
+_GAIN_MC_FRAC_TOL = 0.00005 + 1e-9  # the failure fraction is displayed to 4 decimals
+_GAIN_MC_DERIVE_TOL = 0.03  # mean-3sigma re-derived from displayed (rounded) mean and sigma
+_GAIN_MC_ROW_RX = re.compile(r"(gain|gbw|pm) \(>= ([\d.]+) (dB|MHz|deg)\)")
+
+
+def extract_gain_gbw_pm_mc(text: str, label: str) -> dict:
+    """Gain/GBW/PM mismatch Monte Carlo record (issue #129): per-corner valid / mean / sigma /
+    mean-3sigma / below-bound / invalid / failure-fraction for each of the three AC rows, each
+    re-derived from the record's own columns and stated against the ratified bounds. The retained
+    per-sample evidence (samples.csv) is cross-checked separately (`gain_gbw_pm_mc_crosscheck`).
+    The record grades nothing: the deterministic gain/GBW/PM record stays responsible for the
+    graded rows."""
+    if not text.lstrip().startswith(GAIN_MC_TITLE):
+        raise ReportError(f"{label}: not a '{GAIN_MC_TITLE.lstrip('# ')}' record")
+    prov = parse_provenance(text, label)
+    pop = re.search(r"^- \*\*Population\*\*: process ([\w, ]+); (-?\d+) C; VDD ([\d.]+) V .*?"
+                    r"`monte_carlo = \{n: (\d+), seed: (\d+), vary: \"(\w+)\"\}` -> (\d+) x (\d+) = (\d+) samples",
+                    header_of(text), re.M)
+    if not pop:
+        raise ReportError(f"{label}: no Population line (processes, T, VDD, monte_carlo n / seed / vary)")
+    procs = [p.strip() for p in pop.group(1).split(",")]
+    t_c, vdd = pop.group(2), pop.group(3)
+    n_want, seed, vary = int(pop.group(4)), int(pop.group(5)), pop.group(6)
+    n_pts, n_each, n_total = int(pop.group(7)), int(pop.group(8)), int(pop.group(9))
+    if vary != "mismatch":
+        raise ReportError(f"{label}: Monte Carlo varies '{vary}', not the mismatch population this report ingests")
+    if n_want < GAIN_MC_MIN_N:
+        raise ReportError(f"{label}: insufficient samples: the record's Monte Carlo request is N={n_want} per corner; "
+                          f"the mismatch statistic needs N >= {GAIN_MC_MIN_N}")
+    if (n_pts, n_each, n_total) != (len(procs), n_want, len(procs) * n_want) or len(set(procs)) != len(procs):
+        raise ReportError(f"{label}: Population line is inconsistent ({n_pts} x {n_each} = {n_total} samples for "
+                          f"{len(procs)} processes at N={n_want})")
+    order = [_okey(p, t_c, vdd) for p in procs]
+    sec = section(text, "Statistics per corner")
+    lines = [ln for ln in sec.splitlines() if ln.startswith("|")]
+    if len(lines) < 3:
+        raise ReportError(f"{label}: no statistics table under '## Statistics per corner'")
+    stats: dict = {}
+    bounds: dict = {}
+    units: dict = {}
+    for ln in lines[2:]:
+        c = split_cells(ln)
+        m = re.fullmatch(_PT, c[0]) if c else None
+        if not m or len(c) != 9:
+            raise ReportError(f"{label}: malformed statistics row: {ln.strip()}")
+        k = _okey(*m.groups())
+        if k not in order:
+            raise ReportError(f"{label}: unexpected grid point {fmt_point(*k)} in the statistics table "
+                              "(not in the Population line)")
+        rm = re.fullmatch(_GAIN_MC_ROW_RX, c[1])
+        if not rm:
+            raise ReportError(f"{label}: malformed statistics row label '{c[1]}' "
+                              "(expected '<row> (>= <bound> <unit>)')")
+        rk, bval, bunit = rm.group(1), float(rm.group(2)), rm.group(3)
+        if rk in stats.setdefault(k, {}):
+            raise ReportError(f"{label}: duplicate {rk} row at {fmt_point(*k)}")
+        try:
+            valid, n = (int(x) for x in c[2].split("/"))
+            mean_s, sigma_s, m3_s = c[3], c[4], c[5]
+            mean, sigma, m3 = (float(x.split()[0]) for x in (mean_s, sigma_s, m3_s))
+            unit = mean_s.split()[1]
+            below, invalid = int(c[6]), int(c[7])
+            fm = re.fullmatch(r"(\d+)/(\d+) = ([\d.]+)", c[8])
+            fbelow, fden, frac = (int(fm.group(1)), int(fm.group(2)), float(fm.group(3))) if fm else (None, None, None)
+        except (ValueError, IndexError):
+            raise ReportError(f"{label}: malformed statistics row: {ln.strip()}") from None
+        if unit != bunit or units.setdefault(rk, unit) != unit:
+            raise ReportError(f"{label}: {rk} row at {fmt_point(*k)} carries unit '{unit}', but its bound is "
+                              f"'{bunit}'" if unit != bunit else
+                              f"{label}: {rk} rows disagree on their unit ({units[rk]} vs {unit})")
+        if n != n_want:
+            raise ReportError(f"{label}: fixed denominator violated at {fmt_point(*k)} ({rk}): the table states "
+                              f"N={n}, the request is N={n_want} per corner")
+        if valid + invalid != n or not (0 <= below <= valid) or invalid < 0:
+            raise ReportError(f"{label}: inconsistent population at {fmt_point(*k)} ({rk}): valid {valid} + "
+                              f"invalid {invalid} != N {n}, or below-bound {below} exceeds the valid count")
+        for fname, fval in (("mean", mean), ("sigma", sigma), ("mean-3sigma", m3)):
+            if not math.isfinite(fval):
+                raise ReportError(f"{label}: non-finite {fname} at {fmt_point(*k)} ({rk}): the published "
+                                  "statistics must be finite")
+        if sigma <= 0:
+            raise ReportError(f"{label}: non-positive sigma at {fmt_point(*k)} ({rk})")
+        if abs(m3 - (mean - 3 * sigma)) > _GAIN_MC_DERIVE_TOL:
+            raise ReportError(f"{label}: inconsistent summary at {fmt_point(*k)} ({rk}): its mean-3sigma column "
+                              "disagrees with its own mean and sigma")
+        if (fbelow, fden) != (below + invalid, n) or abs(frac - (below + invalid) / n) > _GAIN_MC_FRAC_TOL:
+            raise ReportError(f"{label}: inconsistent failure fraction at {fmt_point(*k)} ({rk}): it does not state "
+                              f"({below} + {invalid})/{n} to the displayed precision")
+        stats[k][rk] = {"n": n, "valid": valid, "mean": mean, "sigma": sigma, "mean3": m3,
+                        "mean_text": mean_s, "sigma_text": sigma_s, "mean3_text": m3_s,
+                        "below": below, "invalid": invalid, "fraction": frac, "fraction_text": c[8],
+                        "bound": f">= {rm.group(2)} {bunit}", "bound_value": bval}
+    missing = [(k, rk) for k in order for rk, _, _, _ in GAIN_MC_ROWS if rk not in stats.get(k, {})]
+    if missing:
+        k, rk = missing[0]
+        raise ReportError(f"{label}: statistics table is missing {len(missing)} of {len(order) * 3} rows "
+                          f"(first: {rk} at {fmt_point(*k)})")
+    for k in order:  # one shared population per corner: the three rows must agree on it
+        vs = {stats[k][rk]["valid"] for rk, _, _, _ in GAIN_MC_ROWS}
+        iv = {stats[k][rk]["invalid"] for rk, _, _, _ in GAIN_MC_ROWS}
+        if len(vs) > 1 or len(iv) > 1:
+            raise ReportError(f"{label}: the three rows disagree on the shared population at {fmt_point(*k)} "
+                              f"(valid {sorted(vs)}, invalid {sorted(iv)})")
+    bounds = {}
+    for rk, _, _, _ in GAIN_MC_ROWS:
+        ref = stats[order[0]][rk]
+        for k in order:
+            if stats[k][rk]["bound"] != ref["bound"]:
+                raise ReportError(f"{label}: {rk} bound at {fmt_point(*k)} is '{stats[k][rk]['bound']}', but the "
+                                  f"shared bound at {fmt_point(*order[0])} is '{ref['bound']}': the ratified "
+                                  "bound must be identical at every corner")
+        bounds[rk] = {"text": ref["bound"], "value": ref["bound_value"], "unit": units[rk]}
+    cov = coverage_of(set(order))
+    cov["mc_samples_per_corner"] = n_want
+    n_invalid = sum(next(iter({stats[k][rk]["invalid"] for rk, _, _, _ in GAIN_MC_ROWS})) for k in order)
+    lim = common_limitations(text, prov, cov)
+    lim += [f"temperature and supply are NOT sampled under mismatch: {t_c} C / {vdd} V only; the deterministic "
+            "gain/GBW/PM record covers the full T x VDD grid (matched devices)"]
+    if "typical passives" in text:
+        lim.append("typical passives only (res_typical, mimcap_typical): no passive-corner axis and no passive "
+                   "mismatch")
+    lim += ["MOS mismatch only (sw_stat_mismatch = 1); resistor and capacitor mismatch not modelled",
+            f"mean - 3 sigma is a descriptive figure from N = {n_want} per corner (sample sigma, ddof = 1): "
+            "not a tail estimate and not a yield claim",
+            f"N = {n_want} with zero observed failures does not establish yield: T1 signoff item 6 accepts only "
+            "yield envelopes and stays unmet",
+            "mismatch Monte Carlo of the three AC rows; the ratified bounds are graded by the deterministic "
+            "record, and no bound is proposed or relaxed here"]
+    if n_invalid:
+        lim.append(f"the record discloses an invalid population ({n_invalid} samples across the corners): invalid "
+                   "samples are excluded from the statistics and count as failures of all three rows, never "
+                   "silently dropped")
+    return {"prov": prov, "coverage": cov, "order": order, "stats": stats, "bounds": bounds,
+            "n_per_point": n_want, "n_total": n_total, "seed": seed, "vary": vary, "t_c": t_c, "vdd": vdd,
+            "n_invalid": n_invalid, "limitations": lim}
+
+
+def gain_gbw_pm_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
+    """Re-derive every corner's statistics from the record's retained per-sample evidence
+    (corners/<rid>/samples.csv) within the record's display precision, and re-count the below-bound
+    samples against the record's stated bounds. Validates the identity (exactly the indices
+    0..N-1 per corner, each once), the klt status and the finite valid metrics. Offline."""
+    import csv
+    import math
+    import statistics
+    rel = f"sim/{GAIN_MC_EXP}/corners/{rid}/samples.csv"
+    p = root / rel
+    if not p.is_file():
+        raise ReportError(f"{label}: retained per-sample evidence is missing: {rel} (the record's statistics cannot "
+                          "be cross-checked)")
+    need = ["process", "temperature_c", "vdd_v", "sample_index", "seed", "mismatch_seed", "process_seed",
+            "klt_status", "valid", "reason"] + [col for _, col, _, _ in GAIN_MC_ROWS]
+    by: dict = {}
+    idx_by: dict = {}
+    seen = set()
+    with p.open(newline="") as fh:
+        rd = csv.DictReader(fh)
+        if not rd.fieldnames or any(f not in rd.fieldnames for f in need):
+            raise ReportError(f"{label}: {rel} lacks the columns it needs")
+        for r in rd:
+            try:
+                k = _okey(r["process"], r["temperature_c"], r["vdd_v"])
+                idx = int(r["sample_index"])
+                int(r["seed"]), int(r["mismatch_seed"]), int(r["process_seed"])
+                valid = int(r["valid"])
+                vals = {rk: float(r[col]) * scale for rk, col, scale, _ in GAIN_MC_ROWS}
+            except (ValueError, KeyError, TypeError):
+                raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
+            if k not in ex["order"]:
+                raise ReportError(f"{label}: {rel}: sample at unexpected grid point {fmt_point(*k)}")
+            if (k, idx) in seen:
+                raise ReportError(f"{label}: {rel}: duplicate sample index {idx} at {fmt_point(*k)}")
+            if not 0 <= idx < ex["n_per_point"]:
+                raise ReportError(f"{label}: {rel}: sample index {idx} at {fmt_point(*k)} is outside the declared "
+                                  f"identity 0..{ex['n_per_point'] - 1}")
+            if valid not in (0, 1):
+                raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} has invalid flag {valid}")
+            if valid == 1:
+                if r["klt_status"] != "pass":
+                    raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} is marked valid but its klt "
+                                      f"status is '{r['klt_status']}'")
+                if not all(math.isfinite(v) for v in vals.values()):
+                    raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} carries a non-finite metric")
+            elif not r["reason"].strip():
+                raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)} discloses no reason")
+            seen.add((k, idx))
+            idx_by.setdefault(k, set()).add(idx)
+            if valid == 1:
+                by.setdefault(k, []).append(vals)
+    for k in ex["order"]:
+        missing = sorted(set(range(ex["n_per_point"])) - idx_by.get(k, set()))
+        if missing:
+            raise ReportError(f"{label}: {rel}: {len(missing)} sample indices missing at {fmt_point(*k)} "
+                              f"(first: {missing[0]}; the identity is exactly 0..{ex['n_per_point'] - 1}, each once)")
+        valids = by.get(k, [])
+        n_invalid = len(idx_by[k]) - len(valids)
+        if len(valids) < 2:
+            raise ReportError(f"{label}: {rel}: only {len(valids)} valid samples at {fmt_point(*k)}: the corner's "
+                              "statistics cannot be re-derived")
+        for rk, _, _, unit in GAIN_MC_ROWS:
+            rec = ex["stats"][k][rk]
+            col = [v[rk] for v in valids]
+            below = sum(1 for x in col if x < rec["bound_value"])
+            mean, sigma = statistics.fmean(col), statistics.stdev(col)
+            tol = _GAIN_MC_TOL[unit]
+            for f, fname in (("mean", "mean"), ("sigma", "sigma"), ("mean3", "mean-3sigma")):
+                if not math.isfinite(rec[f]):
+                    raise ReportError(f"{label}: non-finite {fname} at {fmt_point(*k)} ({rk}): the published "
+                                      "statistics must be finite")
+            bad = []
+            if len(valids) != rec["valid"]:
+                bad.append("valid count")
+            if n_invalid != rec["invalid"]:
+                bad.append("invalid count")
+            if abs(rec["mean"] - mean) > tol:
+                bad.append("mean")
+            if abs(rec["sigma"] - sigma) > tol:
+                bad.append("sigma")
+            if abs(rec["mean3"] - (mean - 3 * sigma)) > tol:
+                bad.append("mean-3sigma")
+            if below != rec["below"]:
+                bad.append("below-bound count")
+            if abs(rec["fraction"] - (below + n_invalid) / ex["n_per_point"]) > _GAIN_MC_FRAC_TOL:
+                bad.append("failure fraction")
+            if bad:
+                raise ReportError(f"{label}: inconsistent summary at {fmt_point(*k)} ({rk}): the record's "
+                                  f"{', '.join(bad)} disagree(s) with the retained evidence {rel}")
+    return {"path": rel, "sha256": sha256_file(p), "samples": len(seen), "points": len(idx_by)}
 
 
 def extract_psrr(text: str, label: str) -> dict:
@@ -2121,9 +2362,9 @@ def study_observation(f: dict) -> str:
     return s
 
 
-EXTRACTORS = {"gain-gbw-pm": extract_gain, "offset-mc": extract_offset, "noise": extract_noise,
-              "cmrr": extract_cmrr, "cmrr-mc": extract_cmrr_mc, "psrr": extract_psrr, "slew-swing-power": extract_ssp,
-              ICMR_EXP: extract_icmr}
+EXTRACTORS = {"gain-gbw-pm": extract_gain, GAIN_MC_EXP: extract_gain_gbw_pm_mc, "offset-mc": extract_offset,
+              "noise": extract_noise, "cmrr": extract_cmrr, "cmrr-mc": extract_cmrr_mc, "psrr": extract_psrr,
+              "slew-swing-power": extract_ssp, ICMR_EXP: extract_icmr}
 
 
 # --------------------------------------------------------------------------
@@ -2587,6 +2828,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                 ex["retained"] = offset_grid_crosscheck(root, p.stem, ex, f"{exp}:{p.stem}")
             if exp == CMRR_MC_EXP:
                 ex["retained"] = cmrr_mc_crosscheck(root, p.stem, ex, f"{exp}:{p.stem}")
+            if exp == GAIN_MC_EXP:
+                ex["retained"] = gain_gbw_pm_mc_crosscheck(root, p.stem, ex, f"{exp}:{p.stem}")
             if w:
                 ex["limitations"].append(w)
                 for r_ in ex.get("rows", {}).values():
@@ -2618,6 +2861,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
             sources[skey] = {"record_id": p.stem, "path": posix_rel(p, root), "sha256": sha256_file(p), **pv,
                              "measurement_config": fresh}
             if exp == CMRR_MC_EXP:
+                sources[skey]["retained_evidence"] = ex["retained"]
+            if exp == GAIN_MC_EXP:
                 sources[skey]["retained_evidence"] = ex["retained"]
     # DUT compatibility: compare on the 16-hex prefix (not all records keep the full hash).
     duts = {}
@@ -2690,6 +2935,7 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
             glob_lim.append(f"no record selected for {exp}: " + (
                 "the proposed input common-mode range row carries no measurement (explicitly missing; "
                 "nothing is inferred from the spec status text)" if exp == ICMR_EXP
+                else "the AC rows carry no mismatch-inclusive evidence in this report" if exp == GAIN_MC_EXP
                 else "its rows are reported as not measured"))
 
     spec_rows = parse_spec(root / spec_rel)
@@ -2796,6 +3042,56 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
             "measurement_config": srec["measurement_config"],
         }
 
+    def gain_mc_row(row, ex, source, srec):
+        """Mismatch-inclusive gain/GBW/PM figures of a graded AC row: separate, labelled, information only.
+
+        Never in `worst`, never a verdict; the deterministic record stays responsible for the graded
+        row; the population is 27 C / 3.30 V only (T and VDD are not sampled under mismatch).
+        """
+        rv = ex["retained"]
+        row["limitations"].append(
+            "the mismatch-inclusive figures below come from the selected gain/GBW/PM mismatch Monte Carlo record "
+            f"({source['record_id']}): {len(ex['order'])} MOS corners x N={ex['n_per_point']} = {ex['n_total']} "
+            f"samples, seed {ex['seed']}, vary \"{ex['vary']}\", {ex['t_c']} C / {ex['vdd']} V only. They are "
+            "measured information, not graded, and are not combined with the deterministic PVT figures: the "
+            "deterministic record grades the ratified bound over its matched-device PVT grid, the Monte Carlo "
+            "record covers mismatch (one T / VDD point)")
+        row["limitations"] += [l for l in ex["limitations"] if l not in row["limitations"]]
+        row["figures"].append({"label": "mismatch Monte Carlo population (information only, not graded; seed "
+                                        f"{ex['seed']}, vary \"{ex['vary']}\", {ex['n_total']} samples)",
+                               "value": coverage_text(ex["coverage"]), "corner": None})
+        for k in ex["order"]:
+            pt = fmt_point(*k)
+            for rk, _, _, _ in GAIN_MC_ROWS:
+                s = ex["stats"][k][rk]
+                row["figures"].append({
+                    "label": f"mismatch {rk} at {pt} (bound {s['bound']}; valid {s['valid']}/{s['n']}; "
+                             "information only, not graded)",
+                    "value": f"mean {s['mean_text']}, sigma {s['sigma_text']}, mean - 3 sigma {s['mean3_text']}; "
+                             f"below bound {s['below']}, invalid {s['invalid']}, fail fraction {s['fraction_text']}",
+                    "corner": None})
+        row["figures"].append({"label": "mismatch per-corner statistics re-derived from the retained samples "
+                                        "(information only)",
+                               "value": f"{rv['samples']} samples at {rv['points']} corners agree with the record "
+                                        f"({rv['path']}, sha256 {rv['sha256'][:16]})", "corner": None})
+        row["gain_gbw_pm_mc"] = {
+            "basis": "mismatch-inclusive, information only, not graded; the deterministic record grades the "
+                     "ratified bound over its matched-device PVT grid",
+            "population": {"processes": [k[0] for k in ex["order"]], "temperature_c": ex["t_c"], "vdd_v": ex["vdd"],
+                           "n_per_point": ex["n_per_point"], "samples": ex["n_total"], "seed": ex["seed"],
+                           "vary": ex["vary"], "temperature_and_supply_sampled": False},
+            "bounds": {rk: b["text"] for rk, b in ex["bounds"].items()},
+            "per_corner": {fmt_point(*k): {rk: {"n": s["n"], "valid": s["valid"], "mean": s["mean"],
+                                                "sigma": s["sigma"], "mean_minus_3sigma": s["mean3"],
+                                                "below_bound": s["below"], "invalid": s["invalid"],
+                                                "fail_fraction": s["fraction"], "bound": s["bound"]}
+                                           for rk, s in ex["stats"][k].items()} for k in ex["order"]},
+            "retained_evidence": rv,
+            "source": source,
+            "measurement_config": srec["measurement_config"],
+        }
+
+    gain_mc_shown = False
     for sr in spec_rows:
         k = sr["key"]
         row = base(sr)
@@ -2812,6 +3108,15 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
             if k == "gain" and ex["stretch_gain_70db"]:
                 row["figures"].append({"label": "stretch >= 70 dB (not a mandatory row), points holding",
                                        "value": ex["stretch_gain_70db"], "corner": None})
+            gm = extracted.get(GAIN_MC_EXP)
+            if gm:
+                mb = gm["bounds"][k]
+                if (mb["value"], mb["unit"]) != (r["bound_value"], r["bound_text"].split()[-1]):
+                    raise ReportError(f"gain-gbw-pm-mc:{sources[GAIN_MC_EXP]['record_id']}: record bound "
+                                      f"'{mb['text']}' for {sr['name']} is not the current ratified bound "
+                                      f"('{r['bound_text']}') the deterministic record grades")
+                gain_mc_row(row, gm, src(GAIN_MC_EXP), sources[GAIN_MC_EXP])
+                gain_mc_shown = True
         elif k in ("power", "slew", "swing") and k in row_source:
             skey = row_source[k]
             ex = extracted[skey]; r = ex["rows"][k]
@@ -2955,6 +3260,10 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
             if k in SUPPLEMENTARY[skey]["rows"]:
                 row["limitations"].append(study_row_note(st, k))
         out_rows.append(row)
+
+    if GAIN_MC_EXP in extracted and not gain_mc_shown:
+        raise ReportError(f"gain-gbw-pm-mc: selected but not shown: the graded gain/GBW/PM rows need a selected "
+                          "deterministic gain-gbw-pm record beside it")
 
     out_rows.append({
         "row": "Post-layout verification (extracted parasitics)", "key": "post-layout",

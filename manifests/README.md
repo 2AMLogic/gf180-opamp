@@ -222,8 +222,12 @@ checks against the tree and refuses to write (exit 2) if any fails. It means the
 inventory is complete and consistent, **not** that every measurement passes
 (that is item 5/8's business) and not that the testbenches are correct. Coverage
 limit to read with item 9: `sim/characterize.sh` runs seven experiments;
-`cmrr-mc` is selected in the report but is run from its own README command, and
-the inventory records that per experiment.
+`cmrr-mc` and `gain-gbw-pm-mc` are selected in the report but are run from
+their own README commands, and
+the inventory records that per experiment. `gain-gbw-pm-mc` has no testbench
+of its own: its driver stages a guarded, mismatch-switched copy of the
+committed gain bench (`sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice`), and
+the inventory hash-pins that reused bench.
 
 Regenerate after changing any audited artifact (this rewrites `attest/` and
 re-pins `gf180-opamp.json`; then regenerate the signoff record as above, in the

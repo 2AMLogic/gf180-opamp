@@ -109,6 +109,13 @@ def design_sources(root: Path) -> dict:
 
 
 # --------------------------------------------------------------- item 9 ----
+#: Experiments with no `testbench/` of their own: the committed bench they run
+#: is another experiment's, staged by their driver (a derived copy, guarded
+#: against the committed bench) and documented in their README. The inventory
+#: hash-pins the reused bench, so editing it still stales the attestation.
+BENCH_REUSE = {"gain-gbw-pm-mc": "gain-gbw-pm"}
+
+
 def testbench_inventory(root: Path) -> dict:
     sel = json.loads(read(root, SELECTION))
     exps = sorted(sel["experiments"])
@@ -129,24 +136,39 @@ def testbench_inventory(root: Path) -> dict:
             raise AttestError(f"{d}: expected exactly one run_*.py driver, found {drivers}")
         driver = drivers[0]
         tbs = sorted(p.name for p in (root / d / "testbench").glob("tb_*.spice"))
+        reuse = BENCH_REUSE.get(e)
         if not tbs:
-            raise AttestError(f"{d}/testbench: no committed tb_*.spice")
+            if reuse is None:
+                raise AttestError(f"{d}/testbench: no committed tb_*.spice")
         readme = read(root, f"{d}/README.md").decode()
         cmd = re.search(rf"^(python3 {re.escape(d)}/{re.escape(driver)}(?: [^\n#]*)?)", readme, re.M)
         if not cmd:
             raise AttestError(f"{d}/README.md documents no 'python3 {d}/{driver}' invocation")
         smoke = re.search(rf"^(python3 {re.escape(d)}/{re.escape(driver)} --smoke)", readme, re.M)
+        if reuse:
+            # bench reuse must be documented, and the reused bench must exist (exactly one)
+            if f"sim/{reuse}/testbench/" not in readme:
+                raise AttestError(f"{d}/README.md does not document reusing sim/{reuse}/testbench/")
+            rtbs = sorted(p.name for p in (root / f"sim/{reuse}/testbench").glob("tb_*.spice"))
+            if len(rtbs) != 1:
+                raise AttestError(f"sim/{reuse}/testbench: expected exactly one committed tb_*.spice, found {len(rtbs)}")
+            tb_paths = [f"sim/{reuse}/testbench/{rtbs[0]}"]
+            tb_note = (f"no testbench/ of its own: {d}/{driver} stages a derived copy of {tb_paths[0]} "
+                       "(mismatch switch added) and guards it against the committed bench")
+        else:
+            tb_paths = [f"{d}/testbench/{t}" for t in tbs]
+            tb_note = None
         entries.append({
             "experiment": e,
             "testbenches": [
-                {"path": f"{d}/testbench/{t}", "content_hash": sha(read(root, f"{d}/testbench/{t}"))}
-                for t in tbs
+                {"path": p, "content_hash": sha(read(root, p))} for p in tb_paths
             ],
             "driver": f"{d}/{driver}",
             "readme": f"{d}/README.md",
             "documented_invocation": cmd.group(1).strip(),
             "documented_smoke_invocation": smoke.group(1) if smoke else None,
             "run_by_characterize_sh": f"{e}/{driver}" in char,
+            **({"testbench_reuse": tb_note} if tb_note else {}),
         })
     for p in ("sim/characterize.sh", "sim/selftest.sh", "sim/ci_prereqs.py", "sim/ci_pdk_rev_check.sh"):
         read(root, p)
@@ -168,7 +190,9 @@ def testbench_inventory(root: Path) -> dict:
         },
         "experiments": entries,
         "checks": [
-            "each selected experiment has exactly one run_*.py driver and at least one committed testbench/tb_*.spice",
+            "each selected experiment has exactly one run_*.py driver and at least one committed "
+            "testbench/tb_*.spice of its own, or (BENCH_REUSE) pins the committed bench of the "
+            "experiment it reuses, with the reuse documented in its README",
             "each experiment README documents a 'python3 sim/<exp>/<driver>' invocation",
             "sim/harness.py PINNED_PDK_REV equals selftest.yml GF180_PDK_REV",
             "sim/characterize.sh, sim/selftest.sh, sim/ci_prereqs.py, sim/ci_pdk_rev_check.sh exist",

@@ -15,9 +15,10 @@ gain, GBW and phase margin.
 > 95.70-96.09 dB / 0.05 dB, GBW 15.45-17.46 MHz / 0.23-0.29 MHz, PM
 > 76.48-78.72 deg / 0.21-0.24 deg; the lowest mean - 3 sigma is 14.78 MHz GBW
 > (ss), 75.75 deg PM (fs) and 95.54 dB gain (ss). These are descriptive
-> figures, not a yield claim. The record is not in `sim/report/selection.json`
-> (the aggregate report has no gain-gbw-pm-mc extractor; integration is
-> deferred), is not cited by `manifests/`, and T1 item 6 stays unmet.
+> figures, not a yield claim. The record is selected in `sim/report/selection.json`
+> and shown beside the deterministic AC rows in the aggregate report, ungraded
+> and hash-pinned (`sim/report/characterization_report.py`, issue #172); it is
+> not cited by `manifests/`, and T1 item 6 stays unmet.
 
 It measures; it judges nothing new. Samples are compared with the ratified
 bounds the deterministic driver uses (gain ≥ 60 dB, GBW ≥ 10 MHz into

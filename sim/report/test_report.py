@@ -32,6 +32,10 @@ LEGACY_SWING_REC = "20261009-143715-4d5aa43"  # pre-retune DUT: swing only, with
 LEGACY_RECS = {"noise": "sim/noise/records/20261009-082007-68b4567.md", "cmrr": "sim/cmrr/records/20261009-105631-30ec86d.md",
                "psrr": "sim/psrr/records/20261009-105929-30ec86d.md"}  # pre-retune, unfingerprinted
 SSP = "sim/slew-swing-power/records/"
+GMC = "sim/gain-gbw-pm-mc"
+GMC_REC = "20261011-072005-9c9b0f1"  # issue #129 record, selected by issue #172
+GMC_MD = f"{GMC}/records/{GMC_REC}.md"
+GMC_CSV = f"{GMC}/corners/{GMC_REC}/samples.csv"
 ICMR = "sim/input-common-mode"
 ICMR_REC = "20261010-164310-0127eb7"
 ICMR_MD = f"{ICMR}/records/{ICMR_REC}.md"
@@ -78,9 +82,11 @@ def make_root(tmp: Path) -> Path:
     for p in (list((REPO / ICMR).glob("corners/*/samples.csv")) + list((REPO / ICMR).glob("records/*-addendum/ADDENDUM.md"))
               + list((REPO / OFF).glob("corners/*/offset_samples.csv"))
               + list((REPO / CMC).glob("corners/*/samples.csv"))  # CMRR mismatch MC (issue #124)
+              + list((REPO / CMC).glob("corners/*/samples.csv"))  # CMRR mismatch MC (issue #124)
               # full PSRR passive study (issue #173): its retained per-cell curves and partition membership
               + [q for d in (REPO / PSRR).glob("corners/*/partitions.json")
-                 for q in [d, *d.parent.glob("*.psrr.dat")]]):
+                 for q in [d, *d.parent.glob("*.psrr.dat")]]
+              + list((REPO / GMC).glob("corners/*/samples.csv"))):  # gain/GBW/PM mismatch MC (issue #172)
         dst = tmp / p.relative_to(REPO)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(p, dst)
@@ -326,10 +332,12 @@ class CommittedReport(unittest.TestCase):
         for k in ("gain", "noise", "cmrr", "psrr", "slew", "swing", "power"):
             self.assertEqual(r[k]["coverage"]["points"], 45, k)
         # issue #124: the CMRR mismatch Monte Carlo record (5 corner points at 27 C / 3.30 V) is a
-        # different population from the 45-point AC grids, and the report says so
+        # different population from the 45-point AC grids, and the report says so; the gain/GBW/PM
+        # mismatch record (#172) covers the same 5-corner population
         self.assertEqual(r["cmrr"]["coverage"]["points"], 45)
+        self.assertEqual(r["gain"]["coverage"]["points"], 45)
         self.assertTrue(any("coverage differs" in l for l in rep["limitations"]))
-        without = cr.build(REPO, manifest(cmrr_mc=None))
+        without = cr.build(REPO, manifest(cmrr_mc=None, gain_gbw_pm_mc=None))
         self.assertFalse(any("coverage differs" in l for l in without["limitations"]))
         # ... and a nominal offset selection is still disclosed as a coverage difference
         # (the committed nominal offset record measures the pre-retune DUT, whose offset is unchanged by
@@ -338,12 +346,18 @@ class CommittedReport(unittest.TestCase):
             root2 = make_root(Path(d))
             p2 = root2 / OFF_NOM_MD
             p2.write_text(p2.read_text().replace("81fbd914f8254a49", "33b58dac62c747de"))
-            rep2 = cr.build(root2, manifest(offset_mc=OFF_NOM_MD, cmrr_mc=None))
+            rep2 = cr.build(root2, manifest(offset_mc=OFF_NOM_MD, cmrr_mc=None, gain_gbw_pm_mc=None))
         self.assertTrue(any("coverage differs" in l for l in rep2["limitations"]))
         # the revised-design records were all re-measured at one pinned PDK revision and ngspice, so
-        # neither difference is disclosed any more (test_pdk_mismatch_is_flagged_not_fatal covers the flag)
+        # neither difference is disclosed any more (test_pdk_mismatch_is_flagged_not_fatal covers the flag);
+        # the gain/GBW/PM mismatch campaign (#129) ran on the batch fleet with a local ngspice 42
+        # beside its klt engine 46: a real cross-source difference, disclosed and named
         self.assertFalse(any("PDK revision differs" in l for l in rep["limitations"]))
-        self.assertFalse(any("ngspice versions differ" in l for l in rep["limitations"]))
+        ng = next(l for l in rep["limitations"] if l.startswith("ngspice versions differ"))
+        self.assertIn("ngspice 42 <- gain-gbw-pm-mc (local)", ng)
+        # the deterministic record's local runs sit in the ngspice-46 group (experiments are listed
+        # alphabetically after "ngspice 46 <-", so match inside that group, not on the prefix)
+        self.assertIn("gain-gbw-pm (local)", ng.split("ngspice 46 <-", 1)[1])
         for s in rep["sources"].values():
             self.assertRegex(s["sha256"], r"^[0-9a-f]{64}$")
 
@@ -780,10 +794,10 @@ class MeasurementConfigFreshness(unittest.TestCase):
         rep = cr.build(self.root, manifest())
         sel = json.loads(MANIFEST.read_text())["experiments"]
         for e, s in rep["sources"].items():
-            if e not in (cr.ICMR_EXP, cr.CMRR_MC_EXP):  # every instrumented selected record is fingerprinted
-                self.assertEqual(s["measurement_config"]["status"], "current", e)
+            if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # uninstrumented: disclosed, never "current"
+                self.assertEqual(s["measurement_config"]["status"], "unknown", e)
                 continue
-            self.assertEqual(s["measurement_config"]["status"], "unknown", e)
+            self.assertEqual(s["measurement_config"]["status"], "current", e)
         joined = " ".join(rep["limitations"])
         self.assertIn(f"{cr.ICMR_EXP}: measurement-configuration freshness unknown", joined)
         self.assertIn("freshness unknown", cr.render_md(rep))
@@ -957,8 +971,11 @@ class MigratedExperimentFreshness(unittest.TestCase):
         stamp_record(self.root, exp, self.sel[exp])
 
     def test_all_selected_experiments_are_registered(self):
-        # the ICMR record (issue #90) is not instrumented yet: disclosed as unknown, never "current"
-        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG), sorted(e for e in self.sel if e not in (cr.ICMR_EXP, cr.CMRR_MC_EXP)))
+        # the ICMR record (issue #90) is not instrumented yet: disclosed as unknown, never "current".
+        # The mismatch MC campaigns (cmrr-mc #124, gain-gbw-pm-mc #172) are uninstrumented by policy:
+        # no measurement fingerprint exists, freshness is disclosed as unknown.
+        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG),
+                         sorted(e for e in self.sel if e not in (cr.ICMR_EXP, cr.CMRR_MC_EXP, cr.GAIN_MC_EXP)))
         mc = cr.build(REPO, manifest())["sources"][cr.ICMR_EXP]["measurement_config"]
         self.assertEqual(mc["status"], "unknown")
         self.assertIn("not instrumented", mc["detail"])
@@ -967,9 +984,12 @@ class MigratedExperimentFreshness(unittest.TestCase):
         # the selected (revised-design) records are all fingerprinted; the pre-retune records are not.
         rep = cr.build(REPO, manifest())
         for e, src in rep["sources"].items():
-            if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP):  # ICMR, cmrr-mc: not instrumented
+            if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # ICMR, mismatch MC: not instrumented
                 continue
             self.assertEqual(src["measurement_config"]["status"], "current", e)
+        gmc = rep["sources"][cr.GAIN_MC_EXP]["measurement_config"]
+        self.assertEqual(gmc["status"], "unknown")
+        self.assertIn("not instrumented", gmc["detail"])
         joined = " ".join(rep["limitations"])
         for e in ("noise", "cmrr", "psrr", "offset-mc", "gain-gbw-pm"):
             self.assertNotIn(f"{e}: measurement-configuration freshness unknown", joined)
@@ -991,7 +1011,7 @@ class MigratedExperimentFreshness(unittest.TestCase):
                 rep = cr.build(self.root, self.m)
                 self.assertEqual(rep["sources"][exp]["measurement_config"]["status"], "current")
                 for e, src in rep["sources"].items():
-                    if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP):  # not instrumented
+                    if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # not instrumented
                         self.assertEqual(src["measurement_config"]["status"], "unknown", e)
                     else:  # every other selected record is fingerprinted
                         self.assertEqual(src["measurement_config"]["status"], "current", e)
@@ -1554,6 +1574,328 @@ class CmrrMismatchRecord(unittest.TestCase):
         self.edit(CMC_MD, "N = 300 cannot resolve", "N = 301 cannot resolve")  # prose only: one byte
         self.assertNotEqual(self.build()["sources"]["cmrr-mc"]["sha256"], before)
         self.assertEqual(cr.main(base), 1)
+
+
+class GainGbwPmMismatchRecord(unittest.TestCase):
+    """Issue #172: the committed gain/GBW/PM mismatch Monte Carlo record (issue #129) is selected,
+    re-derived from its retained samples, and shown beside (never merged with) the deterministic
+    graded AC rows. No verdict, no worst value, no yield claim."""
+
+    TYP_GAIN = "| typical / 27 C / 3.30 V | gain (>= 60.00 dB) | 300 / 300 | 95.98 dB | 0.05 dB | 95.83 dB | 0 | 0 | 0/300 = 0.0000 |"
+    TYP_GBW = "| typical / 27 C / 3.30 V | gbw (>= 10.000 MHz) | 300 / 300 | 16.417 MHz | 0.239 MHz | 15.700 MHz | 0 | 0 | 0/300 = 0.0000 |"
+    TYP_PM = "| typical / 27 C / 3.30 V | pm (>= 60.00 deg) | 300 / 300 | 77.60 deg | 0.21 deg | 76.98 deg | 0 | 0 | 0/300 = 0.0000 |"
+    SS_GBW = "| ss / 27 C / 3.30 V | gbw (>= 10.000 MHz) | 300 / 300 | 15.451 MHz | 0.225 MHz | 14.776 MHz | 0 | 0 | 0/300 = 0.0000 |"
+    FF_GAIN = "| ff / 27 C / 3.30 V | gain (>= 60.00 dB) | 300 / 300 | 96.09 dB | 0.05 dB | 95.93 dB | 0 | 0 | 0/300 = 0.0000 |"
+    SAMPLE0 = "typical,27,3.30,0,1240223581,1073930998,250201949,pass,1,,96.01688145891897"
+    SAMPLE1 = "typical,27,3.30,1,1176304945,1947764510,250201949,pass,1,,95.98895491623537"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def edit(self, rel, old, new, count=1):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertIn(old, t)
+        p.write_text(t.replace(old, new, count))
+
+    def edit_csv(self, old, new, count=1):
+        self.edit(GMC_CSV, old, new, count)
+
+    def build(self, m=None):
+        return cr.build(self.root, m or manifest())
+
+    def rejects(self, rx, m=None):
+        with self.assertRaisesRegex(cr.ReportError, rx):
+            self.build(m)
+
+    # ---- the committed rows ----
+
+    def test_committed_selection_and_rows(self):
+        sel = json.loads(MANIFEST.read_text())["experiments"]
+        self.assertEqual(sel["gain-gbw-pm-mc"], GMC_MD)
+        rep = cr.build(REPO, cr.load_manifest(MANIFEST))
+        r = rows_by_key(rep)
+        # the graded AC rows stay deterministic: same verdict, same 45-point counts, same worst values
+        for k, worst, corner in (("gain", "93.79 dB", "ss / 125 C / 2.97 V"),
+                                 ("gbw", "11.910 MHz", "ss / 125 C / 2.97 V"),
+                                 ("pm", "71.99 deg", "fs / 125 C / 2.97 V")):
+            row = r[k]
+            self.assertEqual((row["status"], row["verdict"], row["points_pass"], row["points_total"]),
+                             ("measured-verdict", "PASS", 45, 45), k)
+            self.assertEqual((row["worst"], row["worst_corner"]), (worst, corner), k)
+            self.assertEqual(row["source"]["experiment"], "gain-gbw-pm", k)
+        # summary counts unchanged: the mismatch evidence is not a verdict, point or row
+        self.assertEqual(rep["summary"], {"ratified_rows_judged": 6, "pass": 6, "fail": 0,
+                                          "not_measured": 2, "measured_no_bound": 2,
+                                          "proposed_not_graded": 3})
+        gmc = r["gain"]["gain_gbw_pm_mc"]
+        self.assertEqual(gmc["population"], {"processes": ["typical", "ff", "ss", "fs", "sf"],
+                                             "temperature_c": "27", "vdd_v": "3.30", "n_per_point": 300,
+                                             "samples": 1500, "seed": 45, "vary": "mismatch",
+                                             "temperature_and_supply_sampled": False})
+        self.assertEqual(gmc["bounds"], {"gain": ">= 60.00 dB", "gbw": ">= 10.000 MHz", "pm": ">= 60.00 deg"})
+        self.assertEqual(set(gmc["per_corner"]), {f"{p} / 27 C / 3.30 V" for p in ("typical", "ff", "ss", "fs", "sf")})
+        self.assertEqual(gmc["per_corner"]["ss / 27 C / 3.30 V"]["gbw"]["mean_minus_3sigma"], 14.776)
+        self.assertEqual(gmc["per_corner"]["fs / 27 C / 3.30 V"]["pm"]["mean_minus_3sigma"], 75.75)
+        for pt, stats in gmc["per_corner"].items():
+            for rk, s in stats.items():
+                self.assertEqual((s["n"], s["valid"], s["below_bound"], s["invalid"], s["fail_fraction"]),
+                                 (300, 300, 0, 0, 0.0), f"{pt}/{rk}")
+        rv = gmc["retained_evidence"]
+        self.assertEqual((rv["samples"], rv["points"]), (1500, 5))
+        self.assertRegex(rv["sha256"], r"^[0-9a-f]{64}$")
+        self.assertEqual(rep["sources"]["gain-gbw-pm-mc"]["retained_evidence"], rv)
+        self.assertEqual(rep["sources"]["gain-gbw-pm-mc"]["measurement_config"]["status"], "unknown")
+        self.assertEqual(gmc["measurement_config"], rep["sources"]["gain-gbw-pm-mc"]["measurement_config"])
+        # every row carries the population, its per-corner statistics and the honest disclosures
+        for k in ("gain", "gbw", "pm"):
+            figs = r[k]["figures"]
+            self.assertEqual(len([f for f in figs if f["label"].startswith("mismatch ")]), 17, k)
+            for f in figs:
+                if f["label"].startswith("mismatch ") and "population" not in f["label"] \
+                        and "re-derived" not in f["label"]:
+                    self.assertIn("information only, not graded", f["label"], k)
+            lim = " ".join(r[k]["limitations"])
+            self.assertIn("not graded, and are not combined with the deterministic PVT figures", lim, k)
+            self.assertIn("temperature and supply are NOT sampled under mismatch", lim, k)
+            self.assertIn("typical passives only", lim, k)
+            self.assertIn("fleet runner klt version differs", lim, k)
+            self.assertIn("mean - 3 sigma is a descriptive figure", lim, k)
+            self.assertIn("does not establish yield: T1 signoff item 6", lim, k)
+            self.assertIn("measurement-configuration freshness unknown", lim, k)
+
+    def test_markdown_shows_the_mismatch_block(self):
+        md = cr.render_md(cr.build(REPO, cr.load_manifest(MANIFEST)))
+        self.assertIn("5 MOS corners (typical, ff, ss, fs, sf) x N=300 mismatch samples at 27 C, 3.30 V only", md)
+        self.assertIn("mismatch gbw at ss / 27 C / 3.30 V", md)
+        self.assertIn("mean 15.451 MHz, sigma 0.225 MHz, mean - 3 sigma 14.776 MHz", md)
+        self.assertIn("samples.csv, sha256 ", md)
+        self.assertIn("| gain-gbw-pm-mc |", md)
+
+    def test_unmodified_copy_matches_committed(self):
+        self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
+
+    def test_absent_selection_still_builds(self):
+        rep = self.build(manifest(gain_gbw_pm_mc=None))
+        r = rows_by_key(rep)
+        for k in ("gain", "gbw", "pm"):
+            self.assertNotIn("gain_gbw_pm_mc", r[k])
+        self.assertNotIn("gain-gbw-pm-mc", rep["sources"])
+        self.assertTrue(any(l.startswith("no record selected for gain-gbw-pm-mc") for l in rep["limitations"]))
+        self.assertTrue(any("the AC rows carry no mismatch-inclusive evidence" in l
+                            for l in rep["limitations"]))
+
+    def test_selection_without_the_deterministic_record_rejected(self):
+        self.rejects(r"gain-gbw-pm-mc: selected but not shown", manifest(gain_gbw_pm=None))
+
+    # ---- the record's own statistics table ----
+
+    def test_altered_mean_and_mean3_rejected_by_samples(self):
+        # mean and mean-3sigma moved together (self-consistent): only the retained samples catch it
+        self.edit(GMC_MD, self.SS_GBW,
+                  self.SS_GBW.replace("15.451 MHz", "15.951 MHz").replace("14.776 MHz", "15.276 MHz"))
+        self.rejects(r"inconsistent summary at ss / 27 C / 3\.30 V \(gbw\): the record's .* disagree\(s\) "
+                     r"with the retained evidence .*samples\.csv")
+
+    def test_altered_mean3sigma_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("95.83 dB", "96.83 dB"))
+        self.rejects(r"inconsistent summary at typical / 27 C / 3\.30 V \(gain\): its mean-3sigma column "
+                     r"disagrees with its own mean and sigma")
+
+    def test_altered_fail_fraction_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("0/300 = 0.0000", "0/300 = 0.1000"))
+        self.rejects(r"inconsistent failure fraction at typical / 27 C / 3\.30 V \(gain\)")
+
+    def test_altered_valid_count_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("300 / 300", "299 / 300"))
+        self.rejects(r"inconsistent population at typical / 27 C / 3\.30 V \(gain\): valid 299 \+ invalid 0 != N 300")
+
+    def test_fixed_denominator_violated_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("| 300 / 300 |", "| 300 / 250 |"))
+        self.rejects(r"fixed denominator violated at typical / 27 C / 3\.30 V \(gain\): the table states N=250, "
+                     r"the request is N=300")
+
+    def test_missing_corner_row_rejected(self):
+        p = self.root / GMC_MD
+        lines = p.read_text().splitlines(keepends=True)
+        p.write_text("".join(ln for ln in lines if not ln.startswith("| sf / 27 C / 3.30 V | gain ")))
+        self.rejects(r"statistics table is missing 1 of 15 rows \(first: gain at sf / 27 C / 3\.30 V\)")
+
+    def test_missing_entire_corner_rejected(self):
+        p = self.root / GMC_MD
+        lines = p.read_text().splitlines(keepends=True)
+        p.write_text("".join(ln for ln in lines if not ln.startswith("| sf / 27 C / 3.30 V |")))
+        self.rejects(r"statistics table is missing 3 of 15 rows \(first: gain at sf / 27 C / 3\.30 V\)")
+
+    def test_duplicate_row_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN + "\n", self.TYP_GAIN + "\n" + self.TYP_GAIN + "\n")
+        self.rejects(r"duplicate gain row at typical / 27 C / 3\.30 V")
+
+    def test_unexpected_point_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN,
+                  self.TYP_GAIN.replace("typical / 27 C", "tt / 27 C", 1) + "\n" + self.TYP_GAIN)
+        self.rejects(r"unexpected grid point tt / 27 C / 3\.30 V in the statistics table")
+
+    def test_malformed_row_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("95.98 dB", "dB"))
+        self.rejects(r"malformed statistics row")
+
+    def test_malformed_row_label_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("gain (>= 60.00 dB)", "gain (>= 60)"))
+        self.rejects(r"malformed statistics row label")
+
+    def test_inconsistent_unit_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("95.98 dB", "95.98 deg"))
+        self.rejects(r"gain row at typical / 27 C / 3\.30 V carries unit 'deg', but its bound is 'dB'")
+
+    def test_non_finite_mean_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("95.98 dB", "nan dB", 1))
+        self.rejects(r"non-finite mean at typical / 27 C / 3\.30 V \(gain\): the published statistics must be finite")
+
+    def test_non_finite_sigma_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("0.05 dB", "nan dB", 1))
+        self.rejects(r"non-finite sigma at typical / 27 C / 3\.30 V \(gain\): the published statistics "
+                     r"must be finite")
+
+    def test_non_finite_mean3sigma_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("95.83 dB", "nan dB", 1))
+        self.rejects(r"non-finite mean-3sigma at typical / 27 C / 3\.30 V \(gain\): the published statistics "
+                     r"must be finite")
+
+    # ---- population ----
+
+    def test_n_below_basis_rejected(self):
+        self.edit(GMC_MD, "monte_carlo = {n: 300, seed: 45", "monte_carlo = {n: 200, seed: 45")
+        self.rejects(r"insufficient samples: .* N=200 per corner; the mismatch statistic needs N >= 300")
+
+    def test_population_count_inconsistent_rejected(self):
+        self.edit(GMC_MD, "-> 5 x 300 = 1500 samples", "-> 5 x 300 = 1600 samples")
+        self.rejects(r"Population line is inconsistent \(5 x 300 = 1600 samples for 5 processes at N=300\)")
+
+    def test_duplicate_process_rejected(self):
+        self.edit(GMC_MD, "process typical, ff, ss, fs, sf;", "process typical, ff, ss, fs, ff;")
+        self.rejects(r"Population line is inconsistent")
+
+    def test_non_mismatch_population_rejected(self):
+        self.edit(GMC_MD, 'vary: "mismatch"', 'vary: "process"')
+        self.rejects(r"varies 'process', not the mismatch population")
+
+    def test_missing_population_line_rejected(self):
+        self.edit(GMC_MD, "- **Population**: process typical", "- **Subjects**: process typical")
+        self.rejects(r"no Population line")
+
+    # ---- bounds ----
+
+    def test_bound_must_match_the_ratified_bound(self):
+        # every corner carries the (uniformly wrong) 70 dB bound: the cross-corner agreement gate
+        # passes and the shared bound itself is rejected against the ratified spec bound
+        self.edit(GMC_MD, "gain (>= 60.00 dB)", "gain (>= 70.00 dB)", 5)
+        self.rejects(r"gain-gbw-pm-mc:20261011-072005-9c9b0f1: record bound '>= 70\.00 dB' for Open-loop DC gain "
+                     r"is not the current ratified bound \('>= 60 dB'\)")
+
+    def test_stale_bound_unit_rejected(self):
+        self.edit(GMC_MD, self.SS_GBW, self.SS_GBW.replace("gbw (>= 10.000 MHz)", "gbw (>= 10.000 dB)"))
+        self.rejects(r"gbw row at ss / 27 C / 3\.30 V carries unit 'MHz', but its bound is 'dB'")
+
+    def test_non_first_corner_bound_mismatch_rejected(self):
+        # the shared bounds were previously taken from the first corner only: a bound retuned on a
+        # later corner escaped both the ratified-bound comparison (which sees only the shared bound)
+        # and the retained-sample crosscheck (whose below-bound count moved with the altered bound)
+        self.edit(GMC_MD, self.FF_GAIN, self.FF_GAIN.replace("gain (>= 60.00 dB)", "gain (>= 70.00 dB)"))
+        self.rejects(r"gain bound at ff / 27 C / 3\.30 V is '>= 70\.00 dB', but the shared bound at "
+                     r"typical / 27 C / 3\.30 V is '>= 60\.00 dB': the ratified bound must be identical "
+                     r"at every corner")
+
+    # ---- the retained samples ----
+
+    def test_missing_samples_csv_rejected(self):
+        (self.root / GMC_CSV).unlink()
+        self.rejects(r"retained per-sample evidence is missing: sim/gain-gbw-pm-mc/corners/20261011-072005-9c9b0f1/samples\.csv")
+
+    def test_tampered_sample_rejected(self):
+        self.edit_csv(self.SAMPLE0, self.SAMPLE0.replace("96.01688145891897", "91.01688145891897"))
+        self.rejects(r"inconsistent summary at typical / 27 C / 3\.30 V \(gain\): the record's .* disagree\(s\) "
+                     r"with the retained evidence")
+
+    def test_duplicate_sample_index_rejected(self):
+        rows = (self.root / GMC_CSV).read_text().splitlines(keepends=True)
+        (self.root / GMC_CSV).write_text("\n".join(rows + [rows[1]]))
+        self.rejects(r"duplicate sample index 0 at typical / 27 C / 3\.30 V")
+
+    def test_missing_sample_index_rejected(self):
+        rows = (self.root / GMC_CSV).read_text().splitlines(keepends=True)
+        (self.root / GMC_CSV).write_text("".join(r for r in rows if not r.startswith("typical,27,3.30,299,")))
+        self.rejects(r"1 sample indices missing at typical / 27 C / 3\.30 V \(first: 299; the identity is "
+                     r"exactly 0\.\.299, each once\)")
+
+    def test_index_out_of_range_rejected(self):
+        self.edit_csv("typical,27,3.30,299,", "typical,27,3.30,300,")
+        self.rejects(r"sample index 300 at typical / 27 C / 3\.30 V is outside the declared identity 0\.\.299")
+
+    def test_non_finite_metric_rejected(self):
+        self.edit_csv("96.01688145891897,16259883.348597879", "nan,16259883.348597879")
+        self.rejects(r"sample 0 at typical / 27 C / 3\.30 V carries a non-finite metric")
+
+    def test_malformed_sample_row_rejected(self):
+        self.edit_csv("96.01688145891897,16259883.348597879", "96.01688145891897,16.259e6x")
+        self.rejects(r"malformed sample row")
+
+    def test_invalid_sample_rejected(self):
+        self.edit_csv("250201949,pass,1,,96.01688145891897", "250201949,pass,0,,96.01688145891897")
+        self.rejects(r"invalid sample 0 at typical / 27 C / 3\.30 V discloses no reason")
+
+    def test_klt_status_not_pass_rejected(self):
+        self.edit_csv("250201949,pass,1,,96.01688145891897", "250201949,fail,1,,96.01688145891897")
+        self.rejects(r"marked valid but its klt status is 'fail'")
+
+    def test_missing_columns_rejected(self):
+        rows = (self.root / GMC_CSV).read_text().splitlines()
+        bad = [ln for ln in rows]
+        bad[0] = bad[0].replace(",dc_gain_db", "")
+        bad[1] = ",".join(c for c in bad[1].split(",")[:-2])
+        (self.root / GMC_CSV).write_text("\n".join(bad) + "\n")
+        self.rejects(r"lacks the columns it needs")
+
+    def test_invalid_population_disclosed_not_dropped(self):
+        # one sample retires with a reason; the record's typical rows are updated consistently
+        # (all three rows: valid 299/300, invalid 1, fraction 1/300): the report builds and
+        # discloses the invalid population
+        new1 = self.SAMPLE1.replace(",pass,1,,", ",pass,0,no plateau,")
+        self.edit_csv(self.SAMPLE1, new1)
+        for row in (self.TYP_GAIN, self.TYP_GBW, self.TYP_PM):
+            new = (row.replace("300 / 300 |", "299 / 300 |")
+                   .replace("| 0 | 0 | 0/300 = 0.0000", "| 0 | 1 | 1/300 = 0.0033"))
+            if row is self.TYP_GBW:  # the published figures are over the valid samples only
+                new = new.replace("15.700 MHz", "15.699 MHz")
+            self.edit(GMC_MD, row, new)
+        rep = self.build()
+        r = rows_by_key(rep)["gain"]["gain_gbw_pm_mc"]
+        self.assertEqual((r["per_corner"]["typical / 27 C / 3.30 V"]["gain"]["valid"],
+                          r["per_corner"]["typical / 27 C / 3.30 V"]["gain"]["invalid"]), (299, 1))
+        self.assertTrue(any("discloses an invalid population (1 samples" in l
+                            for l in rows_by_key(rep)["gain"]["limitations"]))
+
+    def test_rows_disagreeing_on_the_shared_population_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("300 / 300", "299 / 300")
+                  .replace("| 0 | 0 | 0/300 = 0.0000", "| 0 | 1 | 1/300 = 0.0033"))
+        self.rejects(r"the three rows disagree on the shared population at typical / 27 C / 3\.30 V")
+
+    # ---- DUT identity and hash binding ----
+
+    def test_stale_dut_names_gain_gbw_pm_mc(self):
+        p = self.root / "design/netlist/opamp_two_stage.spice"
+        p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
+        self.rejects(r"stale DUT.*Experiments needing a rerun: [^.]*gain-gbw-pm-mc")
+        self.assertEqual(cr.build(self.root, manifest(), archival=True)["sources"][cr.GAIN_MC_EXP]["record_id"],
+                         GMC_REC)
+
+    def test_mixed_dut_names_gain_gbw_pm_mc(self):
+        self.edit(GMC_MD, "33b58dac62c747de", "0123456789abcdef")
+        self.rejects(r"different DUT versions .*0123456789abcdef: gain-gbw-pm-mc")
 
 
 class ICMREvidence(unittest.TestCase):

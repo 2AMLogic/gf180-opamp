@@ -140,7 +140,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:a2fa39e789149e2b24159e177b821618b753f23e84a2e6915f6b770afb480981",
+        "content_hash": "sha256:7161fa1bc39524eed0512093f1d0ebe670e49e5648aef990fc7e58db1daffb1e",
         "input_verified": true,
         "exit_status": 0
       }
@@ -160,7 +160,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:868557fad50272cde7cb02d45f1d7a84f472e448df50b3aa957e2c4ea9242562",
+        "content_hash": "sha256:9488842fe77eb2d28378e61227129a10efe7e20adeeecf78499373d32dcf1320",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -169,7 +169,7 @@
             "path": "manifests/attest/testbench-inventory.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:868557fad50272cde7cb02d45f1d7a84f472e448df50b3aa957e2c4ea9242562",
+          "content_hash": "sha256:9488842fe77eb2d28378e61227129a10efe7e20adeeecf78499373d32dcf1320",
           "input_verified": true,
           "summary": "every claimed measurement's testbench is committed with a documented invocation; PDK revision pinned and CI-enforced",
           "source": "manifests/attest/testbench-inventory.json"

@@ -3,6 +3,7 @@
     "cmrr": "sim/cmrr/records/20261010-163601-0127eb7.md",
     "cmrr-mc": "sim/cmrr-mc/records/20261010-202454-e4be1ac.md",
     "gain-gbw-pm": "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md",
+    "gain-gbw-pm-mc": "sim/gain-gbw-pm-mc/records/20261011-072005-9c9b0f1.md",
     "input-common-mode": "sim/input-common-mode/records/20261010-164310-0127eb7.md",
     "noise": "sim/noise/records/20261010-163507-0127eb7.md",
     "offset-mc": "sim/offset-mc/records/20261010-185141-e4be1ac.md",
