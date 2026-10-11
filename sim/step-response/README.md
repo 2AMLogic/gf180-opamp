@@ -68,7 +68,10 @@ bench (record `sim/slew-swing-power/records/20261009-142137-1dab1db.md`), so
 the output stage is not slewing. The rising and falling edges are not identical (nominal overshoot 7.3 %
 vs 9.4 %), so the input pair is not perfectly linear at ±50 mV; the record
 reports both edges rather than hiding that asymmetry. The step size is the
-issue's; a smaller step would be a different experiment.
+issue's; a smaller step would be a different experiment. (These are the
+**first record's** numbers, i.e. the pre-retune DUT; on the retuned DUT the
+nominal overshoot is 0.00 % on both edges — see the comparison below — so the
+step is, if anything, more small-signal there.)
 
 ## Extraction
 
@@ -161,6 +164,7 @@ no spec row for it to fill.
 | Record | Result | Notes |
 |---|---|---|
 | [`20261010-082214-a2cc91f`](records/20261010-082214-a2cc91f.md) | 45/45 points valid. Worst overshoot **11.30 %** at fs / 125 °C / 3.63 V (11.28 % at fs / 125 °C / 2.97 V, the gain record's lowest-PM point, 57.34°); worst settling **84.1 ns to 1 %** and **122.7 ns to 0.1 %**, both at fs / 125 °C / 2.97 V; non-monotonic (overshoot > 0.1 %) at 45/45; preshoot ≤ 0.08 % | One fleet request (`aws-batch-fleet`, job `klt-sim-aae64f5afc3d`, Spot; runner klt 0.5.0, `runner_version_check: warn`, as for the sibling grids). `.meas` cross-checks 45/45, re-derivation 45/45, controls behave. Its Method section does not spell out the reference-window drift rule; the rule was applied (the extraction code is the committed one) and the largest drift over the grid is 1e-7 % of the step, so it decides nothing in this record. Later records state it |
+| [`20261011-140956-cb03235`](records/20261011-140956-cb03235.md) | 45/45 points valid, **retuned DUT** (hash `33b58dac…`, PR #138). Worst overshoot **0.90 %** at fs / 125 °C / 2.97 V; worst settling **47.1 ns to 1 %** and **72.2 ns to 0.1 %**, both at sf / −40 °C / 2.97 V; monotonic at 33/45; invalid/not-settled: none | One fleet request (`aws-batch-fleet`, job `klt-sim-d0edb05d6e10`, Spot c7i.4xlarge; runner klt 0.5.0, `runner_version_check: warn`). `.meas` cross-checks 45/45, re-derivation 45/45, controls behave (nominal 0.00 % / monotonic; `cl-x10` 51.25 %, not settled, non-monotonic; `ibias-zero` INVALID as required) |
 
 ### Reading the first record (observations, not a verdict)
 
@@ -184,3 +188,44 @@ no spec row for it to fill.
 Whether ≈ 11 % overshoot / ≈ 120 ns 0.1 % settling is acceptable for the
 consumers in `spec/target-spec.md` §5 is **not** decided here; that is a
 question for #42 and, if a bound is wanted, a `spec/` decision record.
+
+## First record vs retuned DUT (comparison, 2026-10-11)
+
+PR #138 (closes #42) retuned the Miller compensation (RZ 2.11 k → 11.23 kΩ,
+CC 0.619 → 0.578 pF; DUT hash `81fbd914…` → `33b58dac…`). Record
+[`20261011-140956-cb03235`](records/20261011-140956-cb03235.md) re-ran this
+bench, unchanged (same 45-point grid, same extraction, same measurement
+fingerprint `6dd55e80…`), on the retuned DUT; issue #139 asked for exactly
+this remeasurement. **Descriptive comparison only** — `spec/target-spec.md`
+still has no overshoot or settling row, so nothing below is a compliance
+claim.
+
+| Figure (worse edge) | First record `a2cc91f` (pre-retune `81fbd914…`) | Retuned record `cb03235` (`33b58dac…`) |
+|---|---|---|
+| Worst overshoot | **11.30 %** at fs / 125 °C / 3.63 V | **0.90 %** at fs / 125 °C / 2.97 V |
+| Worst settling to 1 % | **84.1 ns** at fs / 125 °C / 2.97 V | **47.1 ns** at sf / −40 °C / 2.97 V |
+| Worst settling to 0.1 % | **122.7 ns** at fs / 125 °C / 2.97 V | **72.2 ns** at sf / −40 °C / 2.97 V |
+| Nominal (typical / 27 °C / 3.30 V) overshoot | 9.37 % (7.31 % rise) | 0.00 % (both edges) |
+| Nominal settling 1 % / 0.1 % | 53.1 / 84.4 ns | 44.6 / 67.2 ns |
+| Monotonic points | 0/45 | 33/45 |
+| Invalid / not-settled points | none | none |
+
+- **Overshoot collapsed everywhere** (worst 11.30 % → 0.90 %), tracking the
+  PM rise of the retune (gain record worst PM 57.34° → 71.99°). The old
+  PM < 60° / PM ≥ 60° split (9.14–11.30 % vs 7.40–8.70 %) has no counterpart:
+  on the retuned DUT every point (all 45, PM 71.99–81.98°) overshoots
+  0.00–0.90 %.
+- **The binding point moved.** Overshoot still binds at fs / 125 °C but the
+  worst supply changed (2.97 V now, was 3.63 V). Settling binds at
+  **sf / −40 °C / 2.97 V**, no longer at fs / 125 °C / 2.97 V — there the
+  retuned DUT settles to 0.1 % in 64.0 ns at the worse edge (44.1 / 64.0 ns
+  rise/fall; was 122.7 ns).
+- **12 of 45 points remain non-monotonic** (typical / ss / fs at 125 °C and
+  ff at −40 °C, each across all three supplies). At the 125 °C points the
+  falling edge really overshoots (0.37–0.90 %); at ff / −40 °C overshoot and
+  preshoot are 0.00 % and the flag comes from a mid-transition fall below the
+  running maximum exceeding the 0.1 % threshold — a property of the 0.1 %
+  monotonicity definition, not ringing comparable to the first record.
+- The old grid's headline numbers (≈ 11 % / ≈ 120 ns) described the
+  pre-retune DUT and remain valid **for that record**; they no longer
+  describe the committed design.
