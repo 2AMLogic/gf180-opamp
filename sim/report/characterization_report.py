@@ -2808,6 +2808,7 @@ MEASUREMENT_CONFIG = {
     "psrr": "sim/psrr/measurement_config.py",
     "psrr-mc": "sim/psrr-mc/measurement_config.py",
     "slew-swing-power": "sim/slew-swing-power/measurement_config.py",
+    "input-common-mode": "sim/input-common-mode/measurement_config.py",
 }
 _FP_LINE = re.compile(r"^- \*\*Measurement fingerprint\*\*: version (\d+), sha256 `([0-9a-f]{64})`", re.M)
 _FP_BLOCK = re.compile(r"^## Measurement fingerprint inputs\n.*?^```json\n(.*?)\n```", re.M | re.S)

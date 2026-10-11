@@ -7,7 +7,7 @@
   "limitations": [
     "cmrr-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "gain-gbw-pm-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
-    "input-common-mode: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
+    "input-common-mode: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "ngspice versions differ: ngspice 42 <- gain-gbw-pm-mc (local), psrr-mc (local); ngspice 46 <- cmrr (local), cmrr (klt engine), cmrr-mc (local), cmrr-mc (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), gain-gbw-pm-mc (klt engine), input-common-mode (local), input-common-mode (klt engine), noise (local), offset-mc (local), psrr (local), psrr (klt engine), psrr-mc (klt engine), slew-swing-power (local), slew-swing-power (klt engine)",
     "coverage differs between sources (see each row's coverage; e.g. the CMRR mismatch Monte Carlo record is 5 corner points at 27 C / 3.30 V while the AC rows are full 45-point grids)",
     "supplementary gain-gbw-pm-passive-corners: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
@@ -3483,7 +3483,7 @@
           "fleet_runner_mismatch": true,
           "klt_client": "0.7.0+g21e45ce7233b",
           "measurement_config": {
-            "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+            "detail": "this record predates measurement fingerprinting",
             "status": "unknown"
           },
           "ngspice_engine": "46",
@@ -3539,7 +3539,7 @@
         "sampled coverage: each edge is the nearest verified passing sample; the true transition lies within the stated bracket on the non-passing side (initial scan <= 50 mV, transitions refined to <= 5 mV)",
         "the bench-validity tolerances (1 mV saturation tolerance, 0.10 V output tolerance) are not ratified bounds; 15 passing samples have a negative saturation margin inside the 1 mV tolerance",
         "468 of 6165 samples are invalid (never passing, never bridged); see the record's validity-failure section",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": null,
@@ -3786,7 +3786,7 @@
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g21e45ce7233b",
       "measurement_config": {
-        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "detail": "this record predates measurement fingerprinting",
         "status": "unknown"
       },
       "ngspice_engine": "46",

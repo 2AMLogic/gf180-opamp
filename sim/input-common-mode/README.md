@@ -97,6 +97,32 @@ VCM, or no Ad plateau can be established.
 | unequal CM drive | acn = 0.99 must be rejected |
 | retained-data recomputation | all samples are re-derived from the retained archives through a separate read path and agree with `samples.csv` and the headline numbers |
 
+## Measurement-configuration fingerprint (issue #180)
+
+Three separate properties are never conflated:
+
+- **Evidence availability** — a record exists, is committed and is selected by
+  the report. This never expires.
+- **Measurement freshness** — the record carries a versioned
+  **Measurement fingerprint** (the sha256 of its canonical effective inputs,
+  `measurement_config.py`) and those inputs still hash to the same value: the
+  bench, the 0.1–10 Hz `.ac` analysis with its appended operating-point print,
+  the dm/cm excitations and servo, the isolation and unequal-drive control
+  settings, the coarse VCM scan and refinement policy, and the corner /
+  model-library / passive-section axes. The committed records predate this
+  instrumentation, so their freshness is reported as **unknown** (disclosed,
+  never "current"); a fingerprinted record whose inputs changed is **stale**
+  and names the experiment to rerun.
+- **Bound ratification** — DR-5's ICMR bound is still *proposed*. The
+  fingerprint says nothing about the bound and ratifies nothing; grading is a
+  `spec/` decision record's job.
+
+Not fingerprinted (extraction-only, read after a simulation; fixing them needs
+no new simulation): the plateau band and its flatness tolerance, the 1 mV
+saturation and 0.10 V follower-output tolerances, the input-current floor, the
+control tolerances and the 60 dB gain bound. Record IDs, workspace paths and
+backend/retry/scheduling options never enter the fingerprint either.
+
 ## Running
 
 ```bash

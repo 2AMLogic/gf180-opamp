@@ -195,9 +195,11 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   `input-common-mode/corners/<rid>/samples.csv` (its sha256 is reported). A
   disagreement, a malformed or overlapping interval, or a missing
   `samples.csv` is an error. Without a selected ICMR record the row stays
-  explicitly missing; nothing is read from the spec status text. ICMR records
-  carry no measurement fingerprint, so their configuration freshness is
-  reported as unknown. If DR-5 is ratified (the in-row tag removed) while an
+  explicitly missing; nothing is read from the spec status text. ICMR is
+  instrumented for measurement-configuration freshness since issue #180 (new
+  records carry the fingerprint; the committed records predate their
+  experiment's instrumentation, so their configuration freshness is reported
+  as unknown). If DR-5 is ratified (the in-row tag removed) while an
   ICMR record is selected, generation fails until the report learns to grade
   the row.
 - Measurement-configuration freshness (issue #85), additive to the DUT gate:
@@ -211,8 +213,8 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   `canonical_bench_lines`): comments, blank lines, whitespace, case and
   `.include` paths are ignored; values are not numerically re-parsed. Excluded:
   record IDs, workspace paths, backend/retry options, extraction code. Instrumented
-  experiments (issues #85, #89): `gain-gbw-pm`, `noise`, `offset-mc`, `cmrr`,
-  `psrr` and `slew-swing-power`, each with a stdlib
+  experiments (issues #85, #89, #180): `gain-gbw-pm`, `noise`, `offset-mc`,
+  `cmrr`, `psrr`, `slew-swing-power` and `input-common-mode`, each with a stdlib
   `sim/<experiment>/measurement_config.py` that its runner imports its
   fingerprinted constants from (one source; per-experiment tests compare the
   runner's klt request with the fingerprint inputs, and
@@ -224,7 +226,16 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   settings and the operating-point print; slew/swing/power timing, sweep and
   criterion settings **per figure** (the record retains only the figures it
   measured, so a power-only record never certifies slew or swing
-  configuration, and the report recomputes exactly that figure set). Records
+  configuration, and the report recomputes exactly that figure set);
+  input-common-mode the 0.1–10 Hz `.ac` stop plus its appended operating-point
+  print (with device currents) and the coarse VCM scan / refinement policy
+  (its excitation, servo, isolation and device set are the CMRR config's
+  objects, and its grid start/density the gain config's — one source per
+  shared bench). The ICMR bench-validity / range-grading settings (plateau
+  band and flatness tolerance, saturation and follower-output tolerances,
+  input-current floor, control tolerances, the 60 dB bound) are read only
+  after a simulation and stay outside the fingerprint: an extraction-only fix
+  needs no new simulation. Records
   written before the migration, and every older record, are reported as
   "measurement-configuration freshness unknown" (per source, per row and in
   the report limitations), never as current. To migrate a further experiment,

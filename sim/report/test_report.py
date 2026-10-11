@@ -73,7 +73,7 @@ def make_root(tmp: Path) -> Path:
     shutil.copy(REPO / "design" / "netlist" / "opamp_two_stage.spice", net / "opamp_two_stage.spice")
     # psrr/measurement_config.py loads the shared passive helpers (issue #155)
     shutil.copy(REPO / "sim" / "passive_corners.py", tmp / "sim" / "passive_corners.py")
-    for exp in ("gain-gbw-pm", "noise", "offset-mc", "cmrr", "psrr", "psrr-mc", "slew-swing-power"):
+    for exp in ("gain-gbw-pm", "noise", "offset-mc", "cmrr", "psrr", "psrr-mc", "slew-swing-power", "input-common-mode"):
         mc = tmp / "sim" / exp
         (mc / "testbench").mkdir(parents=True, exist_ok=True)
         shutil.copy(REPO / "sim" / exp / "measurement_config.py", mc / "measurement_config.py")
@@ -803,10 +803,18 @@ class MeasurementConfigFreshness(unittest.TestCase):
         rep = cr.build(self.root, manifest())
         sel = json.loads(MANIFEST.read_text())["experiments"]
         for e, s in rep["sources"].items():
-            if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # uninstrumented: disclosed, never "current"
+            if e in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # uninstrumented by policy: disclosed, never "current"
                 self.assertEqual(s["measurement_config"]["status"], "unknown", e)
+                self.assertIn("not instrumented", s["measurement_config"]["detail"], e)
+                continue
+            if e == cr.ICMR_EXP:  # committed record predates its experiment's fingerprint (issue #180)
+                self.assertEqual(s["measurement_config"]["status"], "unknown", e)
+                self.assertIn("predates measurement fingerprinting", s["measurement_config"]["detail"], e)
                 continue
             self.assertEqual(s["measurement_config"]["status"], "current", e)
+        ic = rep["sources"][cr.ICMR_EXP]["measurement_config"]
+        self.assertEqual(ic["status"], "unknown")
+        self.assertIn("predates measurement fingerprinting", ic["detail"])
         joined = " ".join(rep["limitations"])
         self.assertIn(f"{cr.ICMR_EXP}: measurement-configuration freshness unknown", joined)
         self.assertIn("freshness unknown", cr.render_md(rep))
@@ -918,6 +926,7 @@ EXP_BENCH = {
     "offset-mc": "sim/offset-mc/testbench/tb_offset_mc.spice",
     "cmrr": "sim/cmrr/testbench/tb_cmrr.spice",
     "psrr": "sim/psrr/testbench/tb_psrr.spice",
+    "input-common-mode": "sim/input-common-mode/testbench/tb_input_common_mode.spice",
 }
 #: (experiment, file, old, new, changed-input group named in the rejection)
 STALE_CASES = [
@@ -939,6 +948,17 @@ STALE_CASES = [
     ("psrr", "sim/psrr/measurement_config.py", '"vss": {**QUIET, "acss": 1.0},', '"vss": {**QUIET, "acss": 2.0},', "excitation"),
     ("psrr", "sim/psrr/measurement_config.py", "FEEDTHROUGH_R = 100e3", "FEEDTHROUGH_R = 50e3", "controls"),
     ("psrr", "sim/cmrr/measurement_config.py", "ISOLATION_CSV = (1e7, 1e11)", "ISOLATION_CSV = (1e7, 1e12)", "controls"),
+    # input-common-mode (issue #180): bench, scan/refinement policy, analysis and controls
+    ("input-common-mode", "sim/input-common-mode/testbench/tb_input_common_mode.spice", "CL vout 0 2p", "CL vout 0 3p", "bench"),
+    ("input-common-mode", "sim/input-common-mode/measurement_config.py", "SCAN_STEP_MV = 50", "SCAN_STEP_MV = 25", "scan"),
+    ("input-common-mode", "sim/input-common-mode/measurement_config.py", "MAX_REFINE_ROUNDS = 3", "MAX_REFINE_ROUNDS = 4", "refinement"),
+    ("input-common-mode", "sim/input-common-mode/measurement_config.py",
+     "AC_FSTART, AC_FSTOP, AC_PPD = _GAIN.AC_FSTART, 10.0, _GAIN.AC_PPD",
+     "AC_FSTART, AC_FSTOP, AC_PPD = _GAIN.AC_FSTART, 12.0, _GAIN.AC_PPD", "analysis"),
+    ("input-common-mode", "sim/input-common-mode/measurement_config.py", "UNEQUAL_CM = _CMRR.UNEQUAL_CM",
+     'UNEQUAL_CM = {"acp": 1.0, "acn": 0.98}', "controls"),
+    ("input-common-mode", "sim/input-common-mode/measurement_config.py", "MODEL_LIB = _GAIN.MODEL_LIB",
+     'MODEL_LIB = "libs.tech/ngspice/sm141064.other.ngspice"', "models"),
 ]
 CLEAN_CASES = [
     # (experiment, replacement producing an equivalent bench)
@@ -946,6 +966,7 @@ CLEAN_CASES = [
     ("offset-mc", lambda t: "* extra comment\n\n" + t.replace("Ibias vdd ibias dc 10u", "ibias  vdd ibias   dc 10u $ bias")),
     ("cmrr", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
     ("psrr", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
+    ("input-common-mode", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
 ]
 
 
@@ -980,20 +1001,27 @@ class MigratedExperimentFreshness(unittest.TestCase):
         stamp_record(self.root, exp, self.sel[exp])
 
     def test_all_selected_experiments_are_registered(self):
-        # the ICMR record (issue #90) is not instrumented yet: disclosed as unknown, never "current".
-        # The mismatch MC campaigns (cmrr-mc #124, gain-gbw-pm-mc #172) are uninstrumented by policy:
-        # no measurement fingerprint exists, freshness is disclosed as unknown.
+        # input-common-mode registered since issue #180; its committed records predate the
+        # fingerprint and are disclosed as unknown. The mismatch MC campaigns (cmrr-mc #124,
+        # gain-gbw-pm-mc #172) are uninstrumented by policy: no measurement fingerprint exists,
+        # freshness is disclosed as unknown.
         self.assertEqual(sorted(cr.MEASUREMENT_CONFIG),
-                         sorted(e for e in self.sel if e not in (cr.ICMR_EXP, cr.CMRR_MC_EXP, cr.GAIN_MC_EXP)))
+                         sorted(e for e in self.sel if e not in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP)))
         mc = cr.build(REPO, manifest())["sources"][cr.ICMR_EXP]["measurement_config"]
         self.assertEqual(mc["status"], "unknown")
-        self.assertIn("not instrumented", mc["detail"])
+        self.assertIn("predates measurement fingerprinting", mc["detail"])
 
     def test_committed_legacy_records_stay_unknown(self):
-        # the selected (revised-design) records are all fingerprinted; the pre-retune records are not.
+        # the selected (revised-design) records are all fingerprinted and current, except the
+        # ICMR record: it predates its experiment's instrumentation (issue #180).
         rep = cr.build(REPO, manifest())
         for e, src in rep["sources"].items():
-            if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # ICMR, mismatch MC: not instrumented
+            if e in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # mismatch MC: not instrumented
+                self.assertEqual(src["measurement_config"]["status"], "unknown", e)
+                continue
+            if e == cr.ICMR_EXP:
+                self.assertEqual(src["measurement_config"]["status"], "unknown", e)
+                self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"])
                 continue
             self.assertEqual(src["measurement_config"]["status"], "current", e)
         gmc = rep["sources"][cr.GAIN_MC_EXP]["measurement_config"]
@@ -1020,8 +1048,13 @@ class MigratedExperimentFreshness(unittest.TestCase):
                 rep = cr.build(self.root, self.m)
                 self.assertEqual(rep["sources"][exp]["measurement_config"]["status"], "current")
                 for e, src in rep["sources"].items():
-                    if e in (cr.ICMR_EXP, cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # not instrumented
+                    if e == exp:
+                        continue
+                    if e in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # uninstrumented by policy
                         self.assertEqual(src["measurement_config"]["status"], "unknown", e)
+                    elif e == cr.ICMR_EXP:  # committed record predates fingerprinting (issue #180)
+                        self.assertEqual(src["measurement_config"]["status"], "unknown", e)
+                        self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"])
                     else:  # every other selected record is fingerprinted
                         self.assertEqual(src["measurement_config"]["status"], "current", e)
                 self.assertFalse(any(l.startswith(f"{exp}: measurement-configuration") for l in rep["limitations"]))
@@ -2144,6 +2177,54 @@ class ICMREvidence(unittest.TestCase):
     def test_latest_selection_includes_icmr(self):
         self.assertEqual(cr.latest_selection(REPO)[cr.ICMR_EXP], ICMR_MD)
         self.assertEqual(json.loads(MANIFEST.read_text())["experiments"][cr.ICMR_EXP], ICMR_MD)
+
+    # ---- measurement-configuration freshness (issue #180) ----
+
+    def test_committed_record_freshness_is_unknown_and_disclosed(self):
+        # the committed records predate the experiment's instrumentation: availability and
+        # structure are unaffected, the configuration freshness is just unknown
+        rep = self.build()
+        mcst = rep["sources"][cr.ICMR_EXP]["measurement_config"]
+        self.assertEqual(mcst["status"], "unknown")
+        self.assertIn("predates measurement fingerprinting", mcst["detail"])
+        self.assertIn(f"{cr.ICMR_EXP}: measurement-configuration freshness unknown",
+                      " ".join(rep["limitations"]))
+
+    def test_stamped_record_is_current(self):
+        stamp_record(self.root, cr.ICMR_EXP, ICMR_MD)
+        rep = self.build()
+        self.assertEqual(rep["sources"][cr.ICMR_EXP]["measurement_config"]["status"], "current")
+        self.assertNotIn(f"{cr.ICMR_EXP}: measurement-configuration freshness unknown",
+                         " ".join(rep["limitations"]))
+
+    def test_setting_change_rejects_the_stamped_selection_and_archival_discloses(self):
+        cases = (
+            (f"{ICMR}/testbench/tb_input_common_mode.spice", "CL vout 0 2p", "CL vout 0 3p", "bench"),
+            (f"{ICMR}/measurement_config.py", "SCAN_STEP_MV = 50", "SCAN_STEP_MV = 25", "scan"),
+            (f"{ICMR}/measurement_config.py", "MAX_REFINE_ROUNDS = 3", "MAX_REFINE_ROUNDS = 4", "refinement"),
+            (f"{ICMR}/measurement_config.py",
+             "AC_FSTART, AC_FSTOP, AC_PPD = _GAIN.AC_FSTART, 10.0, _GAIN.AC_PPD",
+             "AC_FSTART, AC_FSTOP, AC_PPD = _GAIN.AC_FSTART, 12.0, _GAIN.AC_PPD", "analysis"),
+        )
+        for rel, old, new, group in cases:
+            with self.subTest(group):
+                with tempfile.TemporaryDirectory() as d:
+                    root = make_root(Path(d))
+                    stamp_record(root, cr.ICMR_EXP, ICMR_MD)
+                    p = root / rel
+                    t = p.read_text()
+                    self.assertEqual(t.count(old), 1, rel)
+                    p.write_text(t.replace(old, new, 1))
+                    with self.assertRaisesRegex(
+                            cr.ReportError,
+                            rf"stale measurement configuration.*input-common-mode: changed [^;]*{group}"
+                            rf".*Experiments needing a rerun: [\w, -]*input-common-mode"):
+                        cr.build(root, manifest())
+                    rep = cr.build(root, manifest(), archival=True)
+                    self.assertEqual(rep["sources"][cr.ICMR_EXP]["measurement_config"]["status"], "stale")
+                    self.assertTrue(any(
+                        l.startswith("input-common-mode: measurement configuration differs") and "archival report only" in l
+                        for l in rep["limitations"]))
 
     # ---- missing evidence ----
 

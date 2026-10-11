@@ -20,7 +20,7 @@ sys.path.insert(0, str(HERE))
 
 import harness  # noqa: E402
 
-EXPERIMENTS = ("noise", "offset-mc", "cmrr", "psrr", "psrr-mc", "slew-swing-power")
+EXPERIMENTS = ("noise", "offset-mc", "cmrr", "psrr", "psrr-mc", "slew-swing-power", "input-common-mode")
 
 #: Public constants that deliberately do NOT enter the fingerprint (identity
 #: or cosmetic). Anything else a config module defines must move its inputs.
@@ -147,7 +147,7 @@ class Completeness(unittest.TestCase):
                 finally:
                     setattr(cmrr2, n, old)
         gain = harness.load_config_module(HERE / "gain-gbw-pm" / "measurement_config.py")
-        for exp in ("noise", "cmrr", "slew-swing-power"):
+        for exp in ("noise", "cmrr", "slew-swing-power", "input-common-mode"):
             m = load(exp)
             for n in ("CORNERS", "TEMPS_C", "SUPPLIES_V", "PASSIVE_SECTIONS", "MODEL_LIB"):
                 self.assertIs(getattr(m, n), getattr(gain, n), (exp, n))
@@ -159,6 +159,13 @@ class Completeness(unittest.TestCase):
                 self.assertNotEqual(m.fingerprint(tt), b, exp)
             finally:
                 m.TEMPS_C = old
+        # input-common-mode (issue #180): excitations/servo/isolation/devices come from cmrr,
+        # the AC start/density from gain -- the same objects its runner imports.
+        icmr = load("input-common-mode")
+        for n in ("MODES", "SERVO_NOMINAL", "ISOLATION_CSV", "ISOLATION_INADEQUATE_CSV", "UNEQUAL_CM", "DEVICES"):
+            self.assertIs(getattr(icmr, n), getattr(load("cmrr"), n), n)
+        for n in ("AC_FSTART", "AC_PPD"):
+            self.assertIs(getattr(icmr, n), getattr(gain, n), n)
 
 
 class BenchNormalisation(unittest.TestCase):
@@ -169,6 +176,7 @@ class BenchNormalisation(unittest.TestCase):
             "cmrr": ("Rsv vsb vsv {rsv}", "Rsv vsb vsv {rsv}\nRx vsv 0 1e12"),
             "psrr": ("Vss vss 0 dc 0 ac {acss}", "Vss vss 0 dc 0.1 ac {acss}"),
             "psrr-mc": ("Vss vss 0 dc 0 ac {acss}", "Vss vss 0 dc 0.1 ac {acss}"),
+            "input-common-mode": ("CL vout 0 2p", "CL vout 0 3p"),
         }
         for exp, (old, new) in edits.items():
             with self.subTest(exp):
@@ -188,6 +196,7 @@ class BenchNormalisation(unittest.TestCase):
             "cmrr": ("MODES", lambda m: {**m.MODES, "cm": {"acp": 1.0, "acn": 0.5}}),
             "psrr": ("MODES", lambda m: {**m.MODES, "vss": {**m.MODES["vss"], "acss": 2.0}}),
             "psrr-mc": ("MC_SEED", lambda m: m.MC_SEED + 1),
+            "input-common-mode": ("SCAN_STEP_MV", lambda m: m.SCAN_STEP_MV // 2),
         }
         for exp, (name, f) in cases.items():
             with self.subTest(exp):
@@ -215,6 +224,44 @@ class Scheduling(unittest.TestCase):
                      .replace("'opamp_two_stage.dut.spice'", "'/scratch/run-17/opamp_two_stage.dut.spice'")
                      for k, v in texts(exp, m).items()}
                 self.assertEqual(m.fingerprint(t), m.fingerprint(texts(exp, m)))
+
+
+class InputCommonMode(unittest.TestCase):
+    """Issue #180: the ICMR scan/refinement policy and its low-frequency analysis are
+    fingerprinted inputs, and the inputs block names the explicit samples."""
+    m = load("input-common-mode")
+
+    def t(self):
+        return texts("input-common-mode", self.m)
+
+    def moves(self, name, value):
+        t = self.t()
+        base, old = self.m.fingerprint(t), getattr(self.m, name)
+        setattr(self.m, name, value)
+        try:
+            self.assertNotEqual(self.m.fingerprint(t), base, name)
+        finally:
+            setattr(self.m, name, old)
+
+    def test_scan_and_target_move(self):
+        self.moves("SCAN_STEP_MV", 25)
+        self.moves("TARGET_VCM_MV", 1201)
+
+    def test_refinement_policy_moves(self):
+        self.moves("REFINE_STEP_MV", 4)
+        self.moves("MAX_REFINE_ROUNDS", 4)
+
+    def test_analysis_and_controls_move(self):
+        self.moves("AC_FSTOP", 12.0)
+        self.moves("UNEQUAL_CM", {"acp": 1.0, "acn": 0.98})
+        self.moves("ISOLATION_CSV", (1e7, 1e12))
+
+    def test_inputs_name_the_scan_and_refinement_policy(self):
+        inp = self.m.inputs(self.t())
+        self.assertEqual(inp["scan"], {"vcm_step_mv": 50, "explicit_mv": ["vdd", "vdd/2", 1200]})
+        self.assertEqual(inp["refinement"], {"step_mv": 5, "max_rounds": 3})
+        self.assertIn("0.1", harness.fingerprint_json(inp))  # the AC start is retained
+        self.assertIn("vdsat", harness.fingerprint_json(inp))  # the op print (with ids) is retained
 
 
 class SlewSwingPower(unittest.TestCase):
