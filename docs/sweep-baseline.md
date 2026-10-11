@@ -27,6 +27,12 @@ and redirects to an unresolved destination (`> $V/fresh.json`) are denied for
 the same reason. Those denials are intended; keep them. Store the baseline
 outside the repository instead.
 
+The measured decisions for the literal-scratch, mktemp, checkpoint/lease/registry
+and cross-worktree shapes, with a repeatable hook-only reproduction, are in
+[guard-confinement-reproduction.md](guard-confinement-reproduction.md). The
+literal-path recipe below is the form that package verifies as allowed (cases
+A1-A3, D4); the unresolved and main-checkout forms are its negative controls.
+
 ## Recipe
 
 Run each step as its own tool call. Do not bundle them.
