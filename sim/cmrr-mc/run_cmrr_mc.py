@@ -29,14 +29,9 @@ after each sweep (it carries the sampled offset) must agree to 1 uV.
 
 What it runs
 ------------
-the five MOS corners at the grid's temperature and supply points with
-`monte_carlo = {n: 300, seed: 45, vary: "mismatch"}` -- the same corners, N and
-seed as `sim/offset-mc/`. A grid of at most `MAX_UNITS_PER_REQUEST` (1 500)
-units (`--grid nominal`) is ONE `klt sim` request; a larger one (`--grid full`,
-13 500 units) is split by `plan_chunks` into one sequential request per
-(process corner, temperature), each with the unchanged N and seed, and merged on
-(process, T, VDD, sample_index) before validation (issue #140: one 13 500-unit
-request exceeds the fleet's 3 600 s job limit). Which backend executes it
+ONE `klt sim` request: the five MOS corners at the grid's temperature and
+supply points with `monte_carlo = {n: 300, seed: 45, vary: "mismatch"}` --
+the same corners, N and seed as `sim/offset-mc/`. Which backend executes it
 is klt's decision (`--backend`, `$KLT_SIM_BACKEND`); on a dispatch worker that
 is the Spot batch fleet. This script never launches ngspice itself, never
 loops ngspice over a grid and never falls back to a local grid when a batch
@@ -134,13 +129,6 @@ MC_N = 300
 MC_SEED = 45
 MC_VARY = "mismatch"
 PROBE_N = 3
-#: Hard cap on the units (corners x temps x supplies x N) of ONE `klt sim`
-#: batch request. The fleet kills a job at 3600 s (issue #140: the 13 500-unit
-#: full grid ran 3698 s and timed out). 1 500 units is the largest size
-#: measured to finish (1 203 s wall, ~0.76 s/unit, one instance, concurrency 1).
-MAX_UNITS_PER_REQUEST = 1500
-#: The fleet's per-job limit, for the recorded wall-fraction of each chunk.
-FLEET_JOB_LIMIT_S = 3600
 CONTROL_OFF_N = 4
 CONTROL_PROC_N = 20
 CONTROL_IMB_N = 300
@@ -680,12 +668,9 @@ def _run(req, outdir, args, workdir) -> dict:
 
 def submit(tag: str, tb: Path, pdk: Pdk, corners, temps, supplies, n: int, args, work: Path, *,
            vary: str = MC_VARY, expr: tuple[str, ...] = ()) -> tuple[dict, dict, float]:
-    units = len(corners) * len(temps) * len(supplies) * n
-    if units > MAX_UNITS_PER_REQUEST:
-        raise ValueError(f"`{tag}`: {units} units exceeds MAX_UNITS_PER_REQUEST ({MAX_UNITS_PER_REQUEST}); the fleet "
-                         f"kills a job at {FLEET_JOB_LIMIT_S} s (issue #140). Split the request.")
     req = request(tb, pdk, corners, temps, supplies, n=n, vary=vary, expr=expr)
     req["batch"] = batch_block(args)
+    units = len(corners) * len(temps) * len(supplies) * n
     print(f"  submitting `{tag}` ({units} units)...", flush=True)
     t0 = time.time()
     rep = _run(req, work / tag / "out", args, work / tag)
@@ -697,95 +682,6 @@ def submit(tag: str, tb: Path, pdk: Pdk, corners, temps, supplies, n: int, args,
 
 def keys_of(corners, temps, supplies) -> list[tuple]:
     return G.expected_keys(corners, temps, supplies)
-
-
-# --------------------------------------------------------------------------
-# Chunk planner (issue #140)
-# --------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class Chunk:
-    """One `klt sim` batch request of the grid population."""
-
-    tag: str
-    corners: tuple
-    temps: tuple
-    supplies: tuple
-
-    def units(self, n: int = MC_N) -> int:
-        return len(self.corners) * len(self.temps) * len(self.supplies) * n
-
-    def keys(self) -> list[tuple]:
-        return keys_of(list(self.corners), list(self.temps), list(self.supplies))
-
-
-def plan_chunks(grid: str, *, n: int | None = None) -> list[Chunk]:
-    """Deterministic partition of a grid into batch requests.
-
-    A grid that fits `MAX_UNITS_PER_REQUEST` is ONE request tagged `grid` (the
-    `nominal` request, unchanged). A larger grid is split into one request per
-    (process corner, temperature) -- each covering all supplies -- tagged
-    `grid.<process>.<T>C`, in corner-then-temperature order. No randomness, and
-    NO seed or N change: every chunk keeps `monte_carlo = {n, seed, vary}`.
-    """
-    n = MC_N if n is None else n
-    temps, supplies = GRIDS[grid]
-    whole = Chunk("grid", tuple(CORNERS), tuple(temps), tuple(supplies))
-    if whole.units(n) <= MAX_UNITS_PER_REQUEST:
-        return [whole]
-    return [Chunk(f"grid.{c}.{t:g}C", (c,), (t,), tuple(supplies)) for c in CORNERS for t in temps]
-
-
-def check_plan(chunks: list[Chunk], want: list[tuple], *, n: int | None = None) -> list[str]:
-    """Problems of a chunk plan: every grid point exactly once, every chunk
-    within the unit cap, distinct tags."""
-    n = MC_N if n is None else n
-    probs: list[str] = []
-    seen: dict[tuple, int] = {}
-    for ch in chunks:
-        if ch.units(n) > MAX_UNITS_PER_REQUEST:
-            probs.append(f"chunk `{ch.tag}`: {ch.units(n)} units > MAX_UNITS_PER_REQUEST ({MAX_UNITS_PER_REQUEST})")
-        for k in ch.keys():
-            seen[k] = seen.get(k, 0) + 1
-    probs += [f"{G.fmt_key(k)}: in {seen[k]} chunks" for k in seen if seen[k] > 1]
-    probs += [f"{G.fmt_key(k)}: in no chunk" for k in want if k not in seen]
-    probs += [f"{G.fmt_key(k)}: chunked but not in the grid" for k in seen if k not in set(want)]
-    tags = [ch.tag for ch in chunks]
-    if len(set(tags)) != len(tags):
-        probs.append("duplicate chunk tags")
-    return probs
-
-
-def merge_samples(parts: list[tuple[str, dict[tuple, list[Sample]]]], want: list[tuple], n_expected: int
-                  ) -> tuple[dict[tuple, list[Sample]], list[str]]:
-    """Merge per-chunk samples into one population ordered like `want`.
-
-    Sample identity is (process, T, VDD, sample_index): each point must come
-    from exactly one chunk and carry the distinct indices 0..n-1.
-    """
-    probs: list[str] = []
-    owner: dict[tuple, str] = {}
-    merged: dict[tuple, list[Sample]] = {k: [] for k in want}
-    for tag, part in parts:
-        for k, ss in part.items():
-            if k not in merged:
-                probs.append(f"[{tag}] {G.fmt_key(k)}: unexpected grid point")
-                continue
-            if k in owner:
-                probs.append(f"[{tag}] {G.fmt_key(k)}: already supplied by chunk `{owner[k]}` (overlap or duplicate chunk)")
-                continue
-            owner[k] = tag
-            merged[k] = list(ss)
-    for k in want:
-        if k not in owner:
-            probs.append(f"{G.fmt_key(k)}: no chunk supplied this point (missing chunk)")
-            continue
-        idx = sorted(s.index for s in merged[k] if s.index is not None)
-        if idx != list(range(n_expected)) or len(merged[k]) != n_expected:
-            probs.append(f"{G.fmt_key(k)}: merged sample indices {idx[:5]}{'...' if len(idx) > 5 else ''} "
-                         f"({len(merged[k])}), expected 0..{n_expected - 1} once each")
-    return merged, probs
 
 
 # --------------------------------------------------------------------------
@@ -844,8 +740,7 @@ def fmt(x: float, nd: int = 2) -> str:
 
 
 def build_record(*, record, stamp, pdk, ngspice, kver, grid, reports, walls, samples, stats, off_rows, off_probs,
-                 proc_stats, imb_info, imb_probs, link, mc_env, dut_sha, problems_none,
-                 chunk_units: dict[str, int] | None = None) -> str:
+                 proc_stats, imb_info, imb_probs, link, mc_env, dut_sha, problems_none) -> str:
     L: list[str] = []
     add = L.append
     temps, supplies = GRIDS[grid]
@@ -863,15 +758,6 @@ def build_record(*, record, stamp, pdk, ngspice, kver, grid, reports, walls, sam
     add("- **Execution**: `klt sim` Monte Carlo requests (one ngspice process per sample, both excitations in it):")
     for tag in reports:
         add(exec_line(tag, reports[tag], walls[tag]))
-    if chunk_units and len(chunk_units) > 1:
-        cw = {t: walls[t] for t in chunk_units}
-        tmax = max(cw, key=cw.get)
-        add(f"- **Chunked grid** (issue #140): the grid ran as {len(chunk_units)} sequential `klt sim` requests, one per "
-            f"(process, temperature), each <= {MAX_UNITS_PER_REQUEST} units (`MAX_UNITS_PER_REQUEST`), every one with the "
-            f"unchanged `monte_carlo = {{n: {MC_N}, seed: {MC_SEED}, vary: \"{MC_VARY}\"}}`; merged on the sample key "
-            f"(process, T, VDD, sample_index) before validation. Units per chunk: "
-            f"{', '.join(f'`{t}` {u}' for t, u in chunk_units.items())}. Longest chunk `{tmax}`: {cw[tmax]:.0f} s = "
-            f"{cw[tmax] / FLEET_JOB_LIMIT_S * 100:.1f} % of the {FLEET_JOB_LIMIT_S} s fleet job limit.")
     add(f"- **Population**: process {', '.join(CORNERS)}; T {', '.join(f'{t:g} C' for t in temps)}; "
         f"VDD {', '.join(f'{v:.2f} V' for v in supplies)} (VCM = VDD/2); ibias = 10 uA (ideal); CL = 2 pF; "
         f"`monte_carlo = {{n: {MC_N}, seed: {MC_SEED}, vary: \"{MC_VARY}\"}}` per grid point -> "
@@ -1018,8 +904,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, grid, reports, walls, sam
     add("```")
     add("")
     add(f"- Per-sample scalars (all three klt seeds, offset, parity, every figure): `corners/{record}/samples.csv`; "
-        f"controls: `corners/{record}/controls/*.csv`; sanitised klt reports `corners/{record}/klt-report.*.json` "
-        "(one `klt-report.grid.<process>.<T>C.json` per chunk when the grid is chunked).")
+        f"controls: `corners/{record}/controls/*.csv`; sanitised klt reports `corners/{record}/klt-report.*.json`.")
     add("- Testbench `sim/cmrr-mc/testbench/tb_cmrr_mc.spice`; driver `sim/cmrr-mc/run_cmrr_mc.py`; tests "
         "`sim/cmrr-mc/test_cmrr_mc.py`.")
     add(f"- Timestamp / author: {stamp:%Y-%m-%dT%H:%M:%SZ}, agent-builder (issue #61)")
@@ -1286,40 +1171,23 @@ def main(argv: list[str] | None = None) -> int:
     with ctx as scratch:
         work = Path(scratch)
         reports, reqs, walls = {}, {}, {}
-        chunks = plan_chunks(args.grid)
-        plan_probs = check_plan(chunks, want)
-        if plan_probs:
-            print("CHUNK PLAN INVALID; NOTHING SUBMITTED:\n  " + "\n  ".join(plan_probs), file=sys.stderr)
-            return 2
-        current = "plan"
         try:
             tb = materialise(work / "grid", pdk)
-            for ch in chunks:
-                current = ch.tag
-                reports[ch.tag], reqs[ch.tag], walls[ch.tag] = submit(
-                    ch.tag, tb, pdk, list(ch.corners), list(ch.temps), list(ch.supplies), MC_N, args, work)
-            current = "switch-off"
+            reports["grid"], reqs["grid"], walls["grid"] = submit("grid", tb, pdk, CORNERS, temps, supplies, MC_N, args, work)
             tb0 = materialise(work / "switch-off", pdk, mismatch=0)
             reports["switch-off"], reqs["switch-off"], walls["switch-off"] = submit(
                 "switch-off", tb0, pdk, CORNERS, [27.0], [3.30], CONTROL_OFF_N, args, work)
-            current = "process-only"
             tbp = materialise(work / "process-only", pdk)
             reports["process-only"], reqs["process-only"], walls["process-only"] = submit(
                 "process-only", tbp, pdk, ["typical"], [27.0], [3.30], CONTROL_PROC_N, args, work, vary="process")
-            current = "imbalance"
             tbi = materialise(work / "imbalance", pdk, dut_text=ctl_dut, allow_missing=(CONTROL_MIRROR[0].lower(),))
             reports["imbalance"], reqs["imbalance"], walls["imbalance"] = submit(
                 "imbalance", tbi, pdk, ["typical"], [27.0], [3.30], CONTROL_IMB_N, args, work)
         except KltError as exc:
-            print(f"ERROR: Monte Carlo request `{current}` could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
+            print(f"ERROR: a Monte Carlo request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
             return 2
         problems: list[str] = []
-        parts = []
-        for ch in chunks:
-            part, p = extract(reports[ch.tag], ch.keys(), MC_N)
-            problems += [f"[{ch.tag}] {x}" for x in p]
-            parts.append((ch.tag, part))
-        samples, p = merge_samples(parts, want, MC_N)
+        samples, p = extract(reports["grid"], want, MC_N)
         problems += p
         for k, ss in samples.items():
             sg = offset_sigma(ss)
@@ -1346,7 +1214,7 @@ def main(argv: list[str] | None = None) -> int:
         ps = proc_s[("typical", 27.0, 3.30)]
         proc_stats = (fig_stats(ps, "dc"), offset_sigma(ps))
         link = offset_mc_link(samples)
-        mc_env = (reports[chunks[0].tag].get("environment") or {}).get("monte_carlo")
+        mc_env = (reports["grid"].get("environment") or {}).get("monte_carlo")
 
         cdir = paths["corners"]
         (cdir / "controls").mkdir(parents=True)
@@ -1363,7 +1231,7 @@ def main(argv: list[str] | None = None) -> int:
             record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, kver=kver, grid=args.grid, reports=reports,
             walls=walls, samples=samples, stats=stats, off_rows=off_rows, off_probs=off_probs, proc_stats=proc_stats,
             imb_info=imb_info, imb_probs=imb_probs, link=link, mc_env=mc_env, dut_sha=_sha(dut),
-            problems_none="yes", chunk_units={ch.tag: ch.units() for ch in chunks}))
+            problems_none="yes"))
     print(f"record written: {paths['record'].relative_to(REPO_ROOT)}")
     return 0
 
