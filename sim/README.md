@@ -419,6 +419,15 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   Evidence only: no spec row exists for settling/overshoot and none is
   proposed (that would need a `spec/` decision record) (issue #113; context
   #42).
+- [`overdrive-recovery/`](overdrive-recovery/README.md) — **input-overdrive /
+  output-saturation recovery** of the same follower: the input driven beyond
+  the rails so the output clips at each output-stage limit in turn, the
+  overdrive removed, and the recovery time to ±1 % of the linear output
+  measured across the same 45-point grid as one `klt sim` request, with an
+  explicit latch check (not back inside the band at window end, drifting
+  within it, or settled at a wrong level) and worst points identified.
+  Evidence only: no spec row exists for overload recovery and none is
+  proposed (that would need a `spec/` decision record) (issue #183).
 
 ## Coverage and gaps
 
