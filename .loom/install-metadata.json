@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.1043",
-  "loom_commit": "1f414afc0388fba3ddd4b792d653b22230c33389",
+  "loom_version": "0.19.1047",
+  "loom_commit": "b801ec198a3113b88fa9292ccd75f934ab0c1679",
   "install_date": "2026-09-05",
   "loom_source_remote": "git@github.com:rjwalters/loom.git",
   "installed_files": [
@@ -539,7 +539,10 @@
     ".claude/commands/loom/sweep-mode-c-lifecycle.md",
     ".claude/commands/loom/sweep-summary-output.md",
     ".claude/commands/loom/sweep-wave-lifecycle.md",
-    ".loom/scripts/tests/test-champion-pr-merge-negation-guard.sh"
+    ".loom/scripts/tests/test-champion-pr-merge-negation-guard.sh",
+    ".loom/docs/native-sweep.md",
+    ".loom/docs/premise-gate.md",
+    ".loom/scripts/tests/test-premise-check.sh"
   ],
   "last_resync": "2026-10-11",
   "requires_daemon": "0.19.772"
