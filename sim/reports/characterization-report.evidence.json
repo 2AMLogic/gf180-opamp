@@ -3,13 +3,23 @@
   "kind": "generic",
   "provenance": {
     "input": {
-      "content_hash": "sha256:a08f99fb382ab4f6a3085962f2a0ca527affff9b503cecab3ba887d5067b7421",
+      "content_hash": "sha256:51f0297328aa73b684fc04ae68cc8bd514360e0ac1d58b242ecfcf296b55dc7b",
       "path": "sim/reports/characterization-report.json"
     }
   },
   "report": {
     "markdown": "sim/reports/characterization-report.md",
     "path": "sim/reports/characterization-report.json"
+  },
+  "report_derived": {
+    "offset_temperature_drift": {
+      "available": true,
+      "graded": false,
+      "input": "sim/offset-mc/corners/20261010-185141-e4be1ac/offset_samples.csv",
+      "input_sha256": "67932852d4984cf5c5ce5672b6ceb00d02f71f643852609fa546ccf5d4f72ea4",
+      "record_sha256": "6d7f3da43d4c3c7a363d95931c52bf4b46b63635c6eb64dc9792cf7dfebec817",
+      "verdict": null
+    }
   },
   "report_summary": {
     "fail": 0,

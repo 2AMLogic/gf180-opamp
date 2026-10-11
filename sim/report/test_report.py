@@ -1390,6 +1390,232 @@ class OffsetGridRecord(unittest.TestCase):
         self.rejects(r"different DUT versions")
 
 
+class OffsetDriftView(unittest.TestCase):
+    """Issue #184: the derived offset temperature drift / systematic-vs-statistical split. Synthetic
+    samples with a known drift and noise are checked against independently computed expected values;
+    the committed view is checked for provenance, byte-reproducibility and freshness."""
+
+    TEMPS = (-40.0, 27.0, 125.0)  # unevenly spaced, as the committed grid
+    N = 100
+
+    @staticmethod
+    def samples(mean_v: float, sigma_v: float, n: int = 100) -> list:
+        # n/2 pairs at mean +/- sigma: sample sigma is exactly sigma * sqrt(n / (n - 1))
+        return [mean_v + sigma_v * z for z in ([-1.0, 1.0] * (n // 2))]
+
+    def make_ex(self, groups: dict, n: int = 100) -> dict:
+        """groups: {(process, vdd): {T: (mean_V, sigma_V)}} -> the extractor dict the view reads."""
+        order, stats = [], {}
+        for (proc, vdd), pts in groups.items():
+            for t, (m, s) in pts.items():
+                k = cr._okey(proc, t, vdd)
+                order.append(k)
+                stats[k] = cr.offset_stats(self.samples(m, s, n))
+        return {"grid": True, "order": order, "sample_stats": stats, "n_per_point": n,
+                "seed_independence": "independent", "retained": {"path": "x.csv", "sha256": "0" * 64}}
+
+    REC = {"path": "r.md", "sha256": "1" * 64}
+
+    def lin(self, drift_uv_per_c: float, sigma_v: float, mean27_uv: float = 50.0) -> dict:
+        return {t: ((mean27_uv + drift_uv_per_c * (t - 27.0)) * 1e-6, sigma_v) for t in self.TEMPS}
+
+    def view(self, groups: dict, n: int = 100) -> dict:
+        return cr.offset_drift_view(self.make_ex(groups, n), self.REC)
+
+    def test_known_drifts_units_and_uncertainties(self):
+        import math
+        sig_v = 1e-3
+        v = self.view({("typical", "3.30"): self.lin(+2.0, sig_v), ("ff", "3.30"): self.lin(-1.5, sig_v),
+                       ("ss", "3.30"): self.lin(0.0, sig_v)})
+        sig_uv = sig_v * 1e6 * math.sqrt(self.N / (self.N - 1))  # exact sample sigma of the +/- pairs
+        se = sig_uv / math.sqrt(self.N)
+        sxx = (-40 - 37 - 1 / 3) ** 2 + (27 - 37 - 1 / 3) ** 2 + (125 - 37 - 1 / 3) ** 2
+        self.assertEqual(v["temps_c"], [-40.0, 27.0, 125.0])
+        for g, d in zip(v["groups"], (2.0, -1.5, 0.0)):
+            e2e, fit = g["drift_end_to_end"], g["drift_fit"]
+            self.assertAlmostEqual(e2e["uv_per_c"], d, places=5)
+            self.assertAlmostEqual(fit["uv_per_c"], d, places=5)
+            self.assertAlmostEqual(e2e["se_uv_per_c"], se * math.sqrt(2) / 165.0, places=5)
+            self.assertAlmostEqual(fit["se_uv_per_c"], se / math.sqrt(sxx), places=5)
+            self.assertEqual([s_["from_c"] for s_ in g["segments"]], [-40.0, 27.0])
+            for s_ in g["segments"]:
+                self.assertAlmostEqual(s_["uv_per_c"], d, places=5)
+            for p in g["points"]:
+                self.assertAlmostEqual(p["sigma_uv"], sig_uv, places=4)
+                self.assertAlmostEqual(p["se_mean_uv"], se, places=4)
+                self.assertAlmostEqual(p["abs_mean_uv"], abs(50.0 + d * (p["temp_c"] - 27.0)), places=4)
+                self.assertAlmostEqual(p["three_sigma_uv"], 3 * sig_uv, places=3)
+                self.assertAlmostEqual(p["abs3_uv"], p["abs_mean_uv"] + p["three_sigma_uv"], places=3)
+                self.assertAlmostEqual(p["systematic_fraction"], p["abs_mean_uv"] / p["abs3_uv"], places=5)
+        # the worst |mean| + 3 sigma point of the +2 uV/C group is its hottest (largest |mean|)
+        self.assertEqual(v["groups"][0]["worst_point"]["temp_c"], 125.0)
+        self.assertEqual(v["groups"][1]["worst_point"]["temp_c"], -40.0)
+        self.assertEqual((v["worst_overall"]["process"], v["worst_overall"]["temp_c"]), ("typical", 125.0))
+
+    def test_unequal_segments_are_two_segment_not_extrapolated(self):
+        # kinked mean: flat to 27 C, then +10 uV/C: segments differ, no value outside the grid is produced
+        pts = {-40.0: (0.0, 1e-3), 27.0: (0.0, 1e-3), 125.0: (980e-6, 1e-3)}
+        g = self.view({("typical", "3.30"): pts})["groups"][0]
+        self.assertAlmostEqual(g["segments"][0]["uv_per_c"], 0.0, places=6)
+        self.assertAlmostEqual(g["segments"][1]["uv_per_c"], 10.0, places=5)
+        self.assertAlmostEqual(g["drift_end_to_end"]["uv_per_c"], 980 / 165, places=5)
+        self.assertNotAlmostEqual(g["drift_fit"]["uv_per_c"], g["drift_end_to_end"]["uv_per_c"], places=2)
+        self.assertTrue(any("two-segment" in l and "extrapolated" in l for l in self.view({("a", "3.30"): pts})["limitations"]))
+
+    def test_resolution_threshold(self):
+        quiet = self.view({("typical", "3.30"): self.lin(5.0, 0.2e-3)})["groups"][0]
+        noisy = self.view({("typical", "3.30"): self.lin(5.0, 20e-3)})["groups"][0]
+        for key in ("drift_end_to_end", "drift_fit"):
+            self.assertTrue(quiet[key]["resolved"], key)
+            self.assertFalse(noisy[key]["resolved"], key)
+            self.assertAlmostEqual(quiet[key]["uv_per_c"], noisy[key]["uv_per_c"], places=5)
+        # the documented threshold: |drift| just above / below K standard errors
+        se = noisy["drift_end_to_end"]["se_uv_per_c"]
+        k = cr.DRIFT_RESOLVE_K
+        self.assertEqual(cr._drift_entry(k * se * 1.01, se)["resolved"], True)
+        self.assertEqual(cr._drift_entry(k * se * 0.99, se)["resolved"], False)
+        self.assertEqual(cr._drift_entry(-k * se * 1.01, se)["resolved"], True)
+
+    def test_row_order_invariance_and_group_isolation(self):
+        g1, g2 = self.lin(2.0, 1e-3), self.lin(-3.0, 2e-3, mean27_uv=-20.0)
+        a = self.view({("typical", "3.30"): g1, ("ff", "3.63"): g2})
+        rev = {("ff", "3.63"): dict(reversed(list(g2.items()))), ("typical", "3.30"): dict(reversed(list(g1.items())))}
+        ex = self.make_ex(rev)
+        ex["order"] = list(reversed(ex["order"]))
+        ex["sample_stats"] = dict(reversed(list(ex["sample_stats"].items())))
+        b = cr.offset_drift_view(ex, self.REC)
+        key = lambda g: (g["process"], g["vdd_v"])
+        self.assertEqual({key(g): g for g in a["groups"]}, {key(g): g for g in b["groups"]})
+        self.assertEqual(a["worst_overall"], b["worst_overall"])
+        # changing one corner/supply leaves the others untouched
+        c = self.view({("typical", "3.30"): g1, ("ff", "3.63"): self.lin(9.0, 2e-3)})
+        self.assertEqual(a["groups"][0], c["groups"][0])
+        self.assertNotEqual(a["groups"][1], c["groups"][1])
+
+    def test_sigma_versus_temperature(self):
+        pts = {-40.0: (0.0, 1e-3), 27.0: (0.0, 2e-3), 125.0: (0.0, 4e-3)}
+        g = self.view({("typical", "3.30"): pts})["groups"][0]
+        self.assertAlmostEqual(g["sigma_vs_t"]["max_over_min"], 4.0, places=5)
+        self.assertEqual(g["worst_point"]["temp_c"], 125.0)
+        self.assertAlmostEqual(g["worst_point"]["systematic_fraction"], 0.0, places=9)
+
+    def test_defined_handling_of_degenerate_data(self):
+        # zero spread and zero mean: no NaN / Infinity anywhere, share undefined (None), drift exactly zero, unresolved
+        v = self.view({("typical", "3.30"): {t: (0.0, 0.0) for t in self.TEMPS}})
+        json.dumps(v, allow_nan=False)
+        g = v["groups"][0]
+        self.assertIsNone(g["worst_point"]["systematic_fraction"])
+        self.assertIsNone(g["sigma_vs_t"]["max_over_min"])
+        self.assertEqual((g["drift_fit"]["uv_per_c"], g["drift_fit"]["resolved"]), (0.0, False))
+        # zero spread but a real drift: zero standard error, resolved, still finite
+        v = self.view({("typical", "3.30"): self.lin(1.0, 0.0)})
+        json.dumps(v, allow_nan=False)
+        self.assertTrue(v["groups"][0]["drift_end_to_end"]["resolved"])
+        # one temperature only: no drift, defined
+        g = self.view({("typical", "3.30"): {27.0: (1e-4, 1e-3)}})["groups"][0]
+        self.assertEqual((g["drift_end_to_end"], g["drift_fit"], g["segments"]), (None, None, []))
+        # nominal-only selection: unavailable, with a reason
+        self.assertFalse(cr.offset_drift_view({"grid": False}, self.REC)["available"])
+        # non-finite and too-few samples are refused, never rendered
+        with self.assertRaises(cr.ReportError):
+            cr._fin(float("nan"))
+        with self.assertRaises(ValueError):
+            cr.offset_stats([float("nan"), 0.0])
+        with self.assertRaises(ValueError):
+            cr.offset_stats([0.0])
+
+    # ---- the committed view ----
+
+    def committed(self):
+        return cr.build(REPO, cr.load_manifest(MANIFEST))
+
+    def test_committed_view_provenance_and_consistency(self):
+        rep = self.committed()
+        od = rep["offset_drift"]
+        self.assertTrue(od["available"])
+        self.assertEqual((od["n_per_point"], od["temps_c"], len(od["groups"])), (300, [-40.0, 27.0, 125.0], 15))
+        self.assertEqual(od["input_sha256"], hashlib.sha256((REPO / OFF_GRID_CSV).read_bytes()).hexdigest())
+        self.assertEqual(od["record_sha256"], hashlib.sha256((REPO / OFF_GRID_MD).read_bytes()).hexdigest())
+        self.assertEqual(od["seed_independence"], "independent")
+        # agrees with the row's own worst point (15.458 mV at typical / 27 C / 3.30 V)
+        w = od["worst_overall"]
+        self.assertEqual((w["process"], w["temp_c"], w["vdd_v"]), ("typical", 27.0, "3.30"))
+        self.assertAlmostEqual(w["abs3_uv"] / 1e3, 15.458, places=3)
+        self.assertAlmostEqual(w["abs_mean_uv"] + w["three_sigma_uv"], w["abs3_uv"], places=3)
+        # no verdict anywhere; the ratified-row summary is untouched
+        self.assertNotIn("\"verdict\"", json.dumps(od))
+        self.assertEqual(rows_by_key(rep)["offset"]["verdict"], None)
+        md = cr.render_md(rep)
+        self.assertIn("## Offset temperature drift and systematic-vs-statistical split (derived; not graded)", md)
+        self.assertIn("| typical | 3.30 | 27 | 618.7 | 14839.4 | 15458.1 | 4.0 % |", md)
+        ev = json.loads(cr.render_evidence(cr.render_json(rep)))
+        self.assertEqual(ev["report_derived"]["offset_temperature_drift"]["input_sha256"], od["input_sha256"])
+        self.assertFalse(ev["report_derived"]["offset_temperature_drift"]["graded"])
+
+    def test_byte_reproducible_and_committed_up_to_date(self):
+        a = cr.generate(REPO, MANIFEST)
+        b = cr.generate(REPO, MANIFEST)
+        self.assertEqual(a, b)
+        out = REPO / cr.OUT_DIR_REL
+        self.assertEqual((out / "characterization-report.md").read_text(), a[0])
+        self.assertEqual((out / "characterization-report.json").read_text(), a[1])
+        self.assertEqual((out / "characterization-report.evidence.json").read_text(), cr.render_evidence(a[1]))
+
+    def test_editing_committed_drift_output_fails_check(self):
+        out = REPO / cr.OUT_DIR_REL
+        with tempfile.TemporaryDirectory() as d:
+            for f in out.glob("characterization-report*"):
+                shutil.copy(f, d)
+            self.assertEqual(cr.main(["--check", "--out-dir", d]), 0)
+            j = Path(d) / "characterization-report.json"
+            rep = json.loads(j.read_text())
+            rep["offset_drift"]["groups"][0]["drift_fit"]["uv_per_c"] += 0.5
+            j.write_text(cr.render_json(rep))
+            self.assertEqual(cr.main(["--check", "--out-dir", d]), 1)
+
+    def test_mutated_samples_are_rejected_or_rehashed(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = make_root(Path(d))
+            base = cr.build(root, manifest())["offset_drift"]
+            # a tampered sample no longer agrees with the record's summary: refused, not silently re-derived
+            p = root / OFF_GRID_CSV
+            lines = p.read_text().splitlines(keepends=True)
+            i = next(i for i, l in enumerate(lines) if l.startswith("fs,-40.0,3.3,1.65,0,"))
+            c = lines[i].rstrip("\n").split(",")
+            c[-1] = repr(float(c[-1]) + 0.002)
+            lines[i] = ",".join(c) + "\n"
+            p.write_text("".join(lines))
+            with self.assertRaisesRegex(cr.ReportError, r"inconsistent summary"):
+                cr.build(root, manifest())
+            # non-finite sample
+            lines[i] = ",".join(c[:-1] + ["nan"]) + "\n"
+            p.write_text("".join(lines))
+            with self.assertRaisesRegex(cr.ReportError, r"invalid sample 0"):
+                cr.build(root, manifest())
+            # shared mismatch seeds across temperatures are disclosed (values untouched)
+            p.write_text((REPO / OFF_GRID_CSV).read_text())
+            t = p.read_text().splitlines(keepends=True)
+            a = next(i for i, l in enumerate(t) if l.startswith("typical,-40.0,2.97,1.485,0,"))
+            b = next(i for i, l in enumerate(t) if l.startswith("typical,27.0,2.97,1.485,0,"))
+            cb = t[b].split(",")
+            cb[6] = t[a].split(",")[6]
+            t[b] = ",".join(cb)
+            p.write_text("".join(t))
+            od = cr.build(root, manifest())["offset_drift"]
+            self.assertEqual(od["seed_independence"], "shared")
+            self.assertEqual(od["groups"][0]["drift_fit"], base["groups"][0]["drift_fit"])
+            self.assertNotEqual(od["input_sha256"], base["input_sha256"])
+
+    def test_nominal_only_selection_reports_drift_unavailable(self):
+        with tempfile.TemporaryDirectory() as d:
+            root = make_root(Path(d))
+            p = root / OFF_NOM_MD
+            p.write_text(p.read_text().replace("81fbd914f8254a49", "33b58dac62c747de"))
+            rep = cr.build(root, manifest(offset_mc=OFF_NOM_MD))
+            self.assertFalse(rep["offset_drift"]["available"])
+            self.assertIn("Not available", cr.render_md(rep))
+
+
 class CmrrMismatchRecord(unittest.TestCase):
     """Issue #124: the committed CMRR mismatch Monte Carlo record (issue #61) is selected, re-derived
     from its own tables and its retained samples, and shown beside (never merged with) the
