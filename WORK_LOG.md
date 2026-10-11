@@ -4,6 +4,53 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-11
 
+- **PR #188**: sim: input-overdrive and output-saturation recovery across the PVT grid
+- **PR #187**: report: derive offset temperature drift and systematic-vs-statistical split (#184)
+- **PR #186**: sim: fingerprint the input-common-mode measurement configuration
+- **PR #185**: report: include the committed PSRR mismatch Monte Carlo record in the characterization report
+- **PR #181**: feat(#99): commit the full PSRR+/PSRR- mismatch Monte Carlo record
+- **PR #178**: report: integrate the gain/GBW/PM mismatch Monte Carlo record as ungraded, hash-pinned evidence
+- **PR #177**: ci: fail PRs that modify or delete committed sim/ evidence (#159)
+- **PR #176**: sim: re-measure step response and ibias/CL sensitivity on the retuned DUT
+- **PR #175**: report: integrate ungraded full-passive PSRR evidence (bound-free supplementary adapter)
+- **PR #174**: fix: require exact 45 default stems in latest_gain_dir selection
+- **PR #171**: sim/report: check live verdict prose against the characterization report
+- **PR #170**: fix: reject gain verdict-token, binding-corner and stretch-count contradictions in extract_gain
+- **PR #169**: fix(sim): pin offset driver to full PVT grid in one-command campaign
+- **PR #165**: signoff: cite artifact-anchored envelopes for T1 items 1, 9, 10 (#160)
+- **PR #164**: sim: standalone full RZ/CC x PVT PSRR study at 1 kHz and 10 kHz
+- **PR #163**: docs: correct pre-retune verdict prose in spec/target-spec.md and manifests/README.md
+- **PR #162**: refactor(sim): share MC percentile/skew/extract between cmrr-mc and psrr-mc
+- **PR #158**: docs: guard confinement reproduction and evidence package (#146)
+- **PR #157**: sim: gain/GBW/PM mismatch Monte Carlo campaign on the retuned DUT (#142)
+- **PR #152**: sim: extend independent RZ/CC verification to the full 405-cell PVT envelope
+- **PR #151**: test(sim/psrr-mc): offset-sigma gate test, IMBALANCE_RAILS pin, gate mutation (#99, partial)
+- **PR #149**: sim(cmrr-mc): seed partition-invariance probe for #140 (seeds NOT invariant; chunked grid parked)
+- **PR #148**: fix(report): preserve published evidence bundle when candidate validation fails
+- **PR #145**: feat(sim/psrr-mc): PSRR+/PSRR- mismatch Monte Carlo driver, controls and tests (record pending)
+- **Issue #184** (closed): report: derive offset temperature drift and systematic-vs-statistical split from the committed offset Monte Carlo
+- **Issue #183** (closed): sim: input-overdrive and output-saturation recovery across the PVT grid
+- **Issue #182** (closed): report: include the committed PSRR mismatch Monte Carlo record in the characterization report
+- **Issue #180** (closed): sim: add measurement-configuration freshness for input common-mode evidence
+- **Issue #179** (closed): Auditor: review force-op:detached guard decisions
+- **Issue #173** (closed): report: integrate ungraded full-passive PSRR evidence
+- **Issue #172** (closed): report: integrate descriptive gain/GBW/PM mismatch evidence
+- **Issue #168** (closed): report: validate gain verdict tokens and binding corners against per-point evidence
+- **Issue #167** (closed): characterize: preserve full-PVT offset coverage in the default campaign
+- **Issue #161** (closed): sim: latest_gain_dir() now picks the 405-cell passive study dir, breaking the default CMRR/PSRR/noise gain-bench cross-check
+- **Issue #160** (closed): signoff: determine which klt envelopes honestly back T1 items 1, 9 and 10, cite them or file the tool gap
+- **Issue #159** (closed): ci: fail PRs that modify or delete committed sim/ evidence (enforce append-only beyond write time)
+- **Issue #156** (closed): sim/report: extend the spec citation drift check to catch stale verdict prose
+- **Issue #155** (closed): sim: standalone full RZ/CC x PVT PSRR study at 1 kHz and 10 kHz
+- **Issue #154** (closed): docs: correct pre-retune verdict prose in spec/target-spec.md and manifests/README.md (PM no longer fails)
+- **Issue #153** (closed): Consolidate duplicated MC stats helpers (percentile/_skew/extract) in cmrr-mc and psrr-mc
+- **Issue #150** (closed): sim: extend independent RZ/CC verification to the full 405-cell PVT envelope
+- **Issue #147** (closed): report: preserve the published evidence bundle when candidate validation fails
+- **Issue #146** (closed): Auditor: capture reproducible scratch-path and checkpoint guard cases for upstream review
+- **Issue #142** (closed): sim: run the gain/GBW/PM mismatch Monte Carlo campaign on the retuned DUT now that the #42 gate is open
+- **Issue #139** (closed): Re-measure step-response and ibias/CL sensitivity on the retuned compensation DUT
+- **Issue #99** (closed): sim: PSRR+ / PSRR- mismatch Monte Carlo
+
 - **PR #143**: docs(#141): reconcile sim/README coverage-and-gaps with selected records
 - **Issue #141** (closed): docs: reconcile sim/README.md coverage-and-gaps section with the 45-point offset record and post-retune results
 
