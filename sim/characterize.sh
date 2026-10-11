@@ -10,7 +10,10 @@
 # Currently runs seven experiments (sim/gain-gbw-pm/: open-loop gain / GBW /
 # phase margin of the committed sized schematic over the full 45-point PVT
 # grid, issues #19 and #38; sim/offset-mc/: mismatch Monte Carlo of the
-# input offset, 5 corners x N=300, issue #45; sim/noise/: input-referred
+# input offset over the same 45-point grid x N=300 = 13500 units (the
+# standalone driver's default remains the 5-corner / 27 C / 3.30 V nominal
+# population of issue #45; the grid extension is issue #106), sharded over
+# 3 fleet jobs; sim/noise/: input-referred
 # noise over the same 45-point grid, issue #46; sim/cmrr/ and sim/psrr/:
 # common-mode and supply rejection over the same grid, two and three
 # excitation requests respectively, issue #39; sim/slew-swing-power/: slew
@@ -30,7 +33,12 @@
 # experiment (issue #50); it runs no simulator and takes no driver flags.
 #
 # Extra arguments are forwarded to EVERY driver below, so only flags all
-# drivers accept (--backend, --batch-*) belong on the command line.
+# drivers accept (--backend, --batch-*) belong on the command line. One
+# driver-specific flag is added by this wrapper itself: the offset driver
+# is pinned to `--grid full` (issue #167), so the one-command campaign
+# always mints a 45-point offset record -- the one the report's --latest
+# then selects -- instead of letting the driver's nominal-only default
+# shrink the coverage a rerun leaves behind.
 #
 # Each run mints a new append-only record under the experiment's own
 # records/ -- nothing here overwrites a previous run.
@@ -47,8 +55,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")"
 echo "== sim/gain-gbw-pm: full 45-point PVT grid (5 MOS corners x 3 T x 3 VDD) =="
 python3 gain-gbw-pm/run_gain_gbw_pm.py "$@"
 
-echo "== sim/offset-mc: mismatch Monte Carlo, 5 MOS corners x N=300 (1500 units) =="
-python3 offset-mc/run_offset_mc.py "$@"
+echo "== sim/offset-mc: mismatch Monte Carlo, full 45-point PVT grid x N=300 = 13500 units (3 fleet shards) =="
+python3 offset-mc/run_offset_mc.py "$@" --grid full
 
 echo "== sim/noise: input-referred noise, full 45-point PVT grid =="
 python3 noise/run_noise.py "$@"

@@ -194,6 +194,9 @@ A re-run mints a new record id; existing paths are never overwritten.
 
 - The default run is nominal temperature and supply only (issue #45 scope);
   the T/VDD axes are covered by `--grid full` (issue #106, above).
+  `sim/characterize.sh` invokes this driver with `--grid full`, so the
+  one-command campaign always mints the 45-point record; only a standalone
+  `run_offset_mc.py` invocation defaults to nominal.
 - MOS mismatch only (see audit); passive (RZ/CC) mismatch and global process
   spread beyond the five corners are not sampled.
 - Static follower offset; it says nothing about offset drift, CMRR/PSRR-induced
