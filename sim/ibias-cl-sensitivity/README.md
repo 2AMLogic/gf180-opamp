@@ -108,6 +108,7 @@ Shared 10 µA / 2 pF control points:
 | GBW-/slew-binding (ss / 125 °C / 2.97 V) GBW / PM | 10.422 MHz / 58.34° | 11.910 MHz / 72.37° |
 | nominal quiescent power @ 10 µA | 273.66 µW | 273.66 µW (identical) |
 | nominal slew @ 10 µA | 14.97 V/µs | 16.15 V/µs |
+| nominal DC gain | 95.99 dB | 95.99 dB (identical) |
 
 - **PM is now clearly `ibias`-sensitive.** Over the ±20 % sweep the nominal
   PM moves −2.4 % / +1.7 % (75.77–78.89°), where the first record moved only
@@ -120,6 +121,12 @@ Shared 10 µA / 2 pF control points:
   / −46.8 %), but in absolute terms CL = 4 pF now reads 60.67° (was
   46.87°) and CL = 10 pF 41.23° (was 31.63°) at nominal; at the PM-binding
   corner CL = 4 pF reads 56.08° (was 45.00°).
+- **Gain is flat against both sweeps, and unchanged between the records.**
+  Over the ±20 % `ibias` range DC gain moves at most 1.0 % at every corner
+  in both records (nominal 96.70 → 95.32 dB for 8 → 12 µA, identical values
+  record-for-record), and it is flat in CL to the printed 0.01 dB
+  (95.99 / 94.10 / 93.79 dB at the three AC corners for every CL). As with
+  power, this reflects the RC retune not moving the DC operating point.
 - **Power vs `ibias` is unchanged, slew is up ≈ 8 %.** Quiescent power and
   supply current are identical in both records at every corner (the RC
   retune does not move the DC operating point), while the slew control

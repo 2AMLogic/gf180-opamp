@@ -218,7 +218,8 @@ claim.
 - **The binding point moved.** Overshoot still binds at fs / 125 °C but the
   worst supply changed (2.97 V now, was 3.63 V). Settling binds at
   **sf / −40 °C / 2.97 V**, no longer at fs / 125 °C / 2.97 V — there the
-  retuned DUT settles to 0.1 % in 67.9 ns (was 122.7 ns).
+  retuned DUT settles to 0.1 % in 64.0 ns at the worse edge (44.1 / 64.0 ns
+  rise/fall; was 122.7 ns).
 - **12 of 45 points remain non-monotonic** (typical / ss / fs at 125 °C and
   ff at −40 °C, each across all three supplies). At the 125 °C points the
   falling edge really overshoots (0.37–0.90 %); at ff / −40 °C overshoot and
