@@ -351,9 +351,14 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
 
 As of the records selected in `report/selection.json`, benches exist for gain,
 GBW, phase margin, slew rate, output swing, quiescent power, noise, offset
-(mismatch Monte Carlo), CMRR and PSRR. Slew rate (worst 15.50 V/us after the #42 retune; 14.51 V/us before), output
-swing (worst 2.465 Vpp) and quiescent power (worst 310.98 uW) pass their
-ratified bounds at 45/45 points; the slew and power binding corners
+(mismatch Monte Carlo), CMRR (systematic, plus a mismatch Monte Carlo) and
+PSRR. Slew rate (worst 15.50 V/us), output swing (worst 2.465 Vpp) and
+quiescent power (worst 310.98 uW) pass their ratified bounds at 45/45 points
+in the selected record
+[`slew-swing-power/records/20261010-161852-0127eb7.md`](slew-swing-power/records/20261010-161852-0127eb7.md)
+(after the #42 retune; historical pre-retune record
+`20261009-142137-1dab1db`: slew worst 14.51 V/us, same swing and power
+worst values); the slew and power binding corners
 (ss / 125 C / 2.97 V and ff / -40 C / 3.63 V) differ in temperature from the
 spec's predicted SS / -40 C / low VDD and FF / 125 C / 3.63 V (see
 `slew-swing-power/README.md`). Common
@@ -363,9 +368,18 @@ points only
 ([`gain-gbw-pm/records/20261010-161720-0127eb7.md`](gain-gbw-pm/records/20261010-161720-0127eb7.md):
 PM 27/27 pass, worst 64.47 deg; GBW 27/27 pass, worst 10.726 MHz;
 [`slew-swing-power/records/20261010-162823-0127eb7.md`](slew-swing-power/records/20261010-162823-0127eb7.md):
-27/27 per row, slew worst 14.25 V/us); offset covers five process
-corners x 300 samples at 27 C / 3.30 V only (no temperature or supply axis);
-CMRR and PSRR are systematic-only (matched devices). Noise, offset, CMRR and
+27/27 per row, slew worst 14.25 V/us); offset covers the full 45-point
+T/VDD grid x 300 samples per point
+([`offset-mc/records/20261010-185141-e4be1ac.md`](offset-mc/records/20261010-185141-e4be1ac.md):
+worst |mean| + 3 sigma 15.458 mV at typical / 27 C / 3.30 V; the earlier
+five-corner x 300-sample record at 27 C / 3.30 V only, `20261009-072205-96bf3cc`,
+worst 15.635 mV at sf, is kept as a historical record); the CMRR mismatch
+Monte Carlo
+([`cmrr-mc/records/20261010-202454-e4be1ac.md`](cmrr-mc/records/20261010-202454-e4be1ac.md):
+worst linear 3-sigma DC CMRR 82.71 dB at typical / 27 C / 3.30 V) samples
+five process corners x 300 at 27 C / 3.30 V only (no temperature or supply
+axis), so CMRR across temperature and supply is systematic-only (matched
+devices), and PSRR is systematic-only at every point. Noise, offset, CMRR and
 PSRR are measured without a verdict because their numeric bounds are not
 ratified. There is no layout or post-layout evidence. The 5 V stretch row is
 not opened. These records are schematic-level evidence below the T1 tier.
