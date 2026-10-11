@@ -63,6 +63,7 @@ runs the 45-point T/VDD grid under mismatch (13 500 units).
 python3 sim/cmrr-mc/test_cmrr_mc.py               # offline tests (+ 1 local unit)
 python3 sim/cmrr-mc/run_cmrr_mc.py --smoke         # one local unit, no record
 python3 sim/cmrr-mc/run_cmrr_mc.py --probe         # N=3 AC+MC probe (batch)
+python3 sim/cmrr-mc/run_cmrr_mc.py --probe-seeds   # seed partition-invariance probe (batch, issue #140)
 python3 sim/cmrr-mc/run_cmrr_mc.py --batch-runner-version-check warn \
         --batch-submit-retries 10                  # full run + record (append-only)
 ```
@@ -70,6 +71,19 @@ python3 sim/cmrr-mc/run_cmrr_mc.py --batch-runner-version-check warn \
 On a dispatch worker the Monte Carlo requests go to the Spot batch fleet
 (`$KLT_SIM_BACKEND=batch`); the job ids are in the record. If a submit fails
 the driver stops and writes no record; it never falls back to a local grid.
+
+## Known limit: `--grid full` as one request (issue #140)
+
+`--grid full` (13 500 units) submitted as one request exceeds the fleet's
+3600 s job limit (about 0.76 s/unit measured; 1 500 units took 1 203 s) and
+does not complete. Splitting it into several requests is NOT yet valid: the
+seed partition-invariance probe `probes/20261011-021056-395e2cd.md` shows klt
+hands a sample different seeds (and so different devices) depending on which
+other points share the request (21 of 24 compared samples differ), so a split
+grid is not the same population and per-chunk seed offsets would change the
+statistic's definition. Filed as 2AMLogic/klayout-tools#3081. The tested chunk
+planner / unit cap / merge is parked on branch `wip/issue-140-chunk-planner`
+until that is resolved.
 
 ## Evidence layout (append-only)
 

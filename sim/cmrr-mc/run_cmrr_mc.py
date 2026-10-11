@@ -52,6 +52,7 @@ Controls (small requests, same deck):
     python3 sim/cmrr-mc/run_cmrr_mc.py --probe     # N=3 AC+MC capability probe
     python3 sim/cmrr-mc/run_cmrr_mc.py             # full run + record
     python3 sim/cmrr-mc/run_cmrr_mc.py --smoke     # one local unit, no record
+    python3 sim/cmrr-mc/run_cmrr_mc.py --probe-seeds   # seed partition-invariance probe (batch)
 
 No bound is judged here: bound ratification is a decision record's job.
 """
@@ -918,6 +919,9 @@ def build_record(*, record, stamp, pdk, ngspice, kver, grid, reports, walls, sam
 def add_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--smoke", action="store_true", help="one local unit at the nominal point (mismatch on, no MC)")
     ap.add_argument("--probe", action="store_true", help=f"N={PROBE_N} AC+monte_carlo capability probe at typical")
+    ap.add_argument("--probe-seeds", action="store_true",
+                    help="seed partition-invariance probe (issue #140): N=3 over 8 points, once as one request "
+                         "and once as 8 separate requests")
     ap.add_argument("--probe-expr", action="store_true",
                     help="probe: also declare one `expr` measurement (the klt 0.5.0 fleet runner rejects it)")
     ap.add_argument("--grid", choices=sorted(GRIDS), default="nominal")
@@ -1024,6 +1028,119 @@ def probe(pdk: Pdk, args) -> int:
     return 0 if not probs else 1
 
 
+#: Seed partition-invariance probe population (issue #140): two corners, two
+#: temperatures, two supplies.
+SEEDPROBE_CORNERS = ["typical", "ss"]
+SEEDPROBE_TEMPS = [27.0, 125.0]
+SEEDPROBE_SUPPLIES = [3.00, 3.30]
+
+
+def compare_partitions(together: dict[tuple, list[Sample]], separate: dict[tuple, list[Sample]]) -> tuple[list[str], list[dict]]:
+    """Per (point, sample index): are the three klt seeds (and the sampled
+    offset) identical whether the point shared a request or not?"""
+    probs: list[str] = []
+    rows: list[dict] = []
+    for k in sorted(set(together) | set(separate)):
+        a = {s.index: s for s in together.get(k, [])}
+        b = {s.index: s for s in separate.get(k, [])}
+        if sorted(a) != sorted(b):
+            probs.append(f"{G.fmt_key(k)}: sample indices differ ({sorted(a)} vs {sorted(b)})")
+        for i in sorted(set(a) & set(b)):
+            sa, sb = a[i], b[i]
+            same = {n: sa.seeds.get(n) == sb.seeds.get(n) for n in ("seed", "mismatch_seed", "process_seed")}
+            off_a, off_b = sa.vals.get("cmc_offset"), sb.vals.get("cmc_offset")
+            off_dev = abs(off_a - off_b) if off_a is not None and off_b is not None else float("nan")
+            rows.append({"key": k, "index": i, "together": sa.seeds, "separate": sb.seeds, "same": same,
+                         "offset_together": off_a, "offset_separate": off_b, "offset_dev": off_dev})
+            bad = [n for n, ok in same.items() if not ok]
+            if bad:
+                probs.append(f"{G.fmt_key(k)} sample {i}: {', '.join(bad)} differ between partitions "
+                             f"({sa.seeds} vs {sb.seeds})")
+            if not off_dev <= 1e-5:
+                probs.append(f"{G.fmt_key(k)} sample {i}: DC offset differs by {off_dev * 1e6:.3f} uV between partitions")
+    return probs, rows
+
+
+def probe_seeds(pdk: Pdk, args) -> int:
+    """Seed partition-invariance probe (issue #140): the same N=3 Monte Carlo
+    over 8 points as ONE request and as 8 separate requests. The chunked full
+    grid is only valid if every sample's klt seeds do not depend on which
+    other points share the request."""
+    record, stamp = allocate_record_id(REPO_ROOT)
+    base = HERE / "probes"
+    rec_path, data_path = base / f"{record}.md", base / f"{record}.json"
+    for p in (rec_path, data_path):
+        if p.exists():
+            raise FileExistsError(f"{p} exists; evidence is append-only")
+    kver = klt_version()
+    all_keys = keys_of(SEEDPROBE_CORNERS, SEEDPROBE_TEMPS, SEEDPROBE_SUPPLIES)
+    reports, walls, reqs = {}, {}, {}
+    with tempfile.TemporaryDirectory(prefix="cmrr-mc-seedprobe-") as scratch:
+        work = Path(scratch)
+        tb = materialise(work / "tb", pdk)
+        current = "together"
+        try:
+            reports[current], reqs[current], walls[current] = submit(
+                current, tb, pdk, SEEDPROBE_CORNERS, SEEDPROBE_TEMPS, SEEDPROBE_SUPPLIES, PROBE_N, args, work)
+            for k in all_keys:
+                current = f"sep.{k[0]}.{k[1]:g}C.{k[2]:.2f}V"
+                reports[current], reqs[current], walls[current] = submit(
+                    current, tb, pdk, [k[0]], [k[1]], [k[2]], PROBE_N, args, work)
+        except KltError as exc:
+            print(f"ERROR: probe request `{current}` could not be run; nothing recorded.\n{exc}", file=sys.stderr)
+            return 2
+        together, p1 = extract(reports["together"], all_keys, PROBE_N)
+        separate: dict[tuple, list[Sample]] = {}
+        probs = [f"[together] {x}" for x in p1]
+        for tag, rep in reports.items():
+            if tag == "together":
+                continue
+            k = next(kk for kk in all_keys if tag == f"sep.{kk[0]}.{kk[1]:g}C.{kk[2]:.2f}V")
+            part, p = extract(rep, [k], PROBE_N)
+            separate.update(part)
+            probs += [f"[{tag}] {x}" for x in p]
+        san = {t: sanitise_report(r) for t, r in reports.items()}
+    base.mkdir(parents=True, exist_ok=True)
+    cprobs, rows = compare_partitions(together, separate)
+    invariant = not probs and not cprobs
+    nseed = sum(all(r["same"].values()) for r in rows)
+    data_path.write_text(json.dumps({"comparison": [dict(r, key=list(r["key"])) for r in rows],
+                                     "klt_reports": san}, indent=1, sort_keys=True) + "\n")
+    L = [f"# CMRR Monte Carlo seed partition-invariance probe `{record}`", "",
+         f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; issue #140; klt `{kver}`; PDK open_pdks `{pdk.version}`",
+         f"- **Question**: does klt hand sample *i* of a grid point the same `rndseed` / `mismatch_seed` / `process_seed` "
+         "(and so the same sampled devices) whether the point shares a request with other points or not? The chunked "
+         "full grid (`plan_chunks`) is only the same statistic if so.",
+         f"- **Population**: process {', '.join(SEEDPROBE_CORNERS)}; T {', '.join(f'{t:g} C' for t in SEEDPROBE_TEMPS)}; "
+         f"VDD {', '.join(f'{v:.2f} V' for v in SEEDPROBE_SUPPLIES)}; `monte_carlo = {{n: {PROBE_N}, seed: {MC_SEED}, "
+         f"vary: \"{MC_VARY}\"}}`; the production deck (`run_cmrr_mc.analysis_tail`), mismatch on.",
+         f"- **Requests**: `together` (all {len(all_keys)} points in one request) and {len(all_keys)} `sep.*` requests "
+         "(one point each), submitted sequentially:"]
+    L += [exec_line(t, reports[t], walls[t]) for t in reports]
+    L += ["", "## Result", "",
+          f"- Samples compared: {len(rows)}; all three seeds identical: {nseed}/{len(rows)}.",
+          f"- DC offset (the sampled devices' fingerprint) within 10 uV: "
+          f"{sum(r['offset_dev'] <= 1e-5 for r in rows)}/{len(rows)}; max |dev| "
+          f"{max((r['offset_dev'] for r in rows), default=float('nan')) * 1e6:.3f} uV.",
+          f"- Problems: {'; '.join(probs + cprobs) if probs + cprobs else 'none'}",
+          "- **Verdict**: " + ("seeds ARE partition-invariant over this population; the chunked full grid draws the same "
+                              "samples as one request would." if invariant
+                              else "seeds are NOT partition-invariant; the chunked full grid must not be shipped."),
+          "", "| point | i | seed (together = separate) | mismatch_seed | process_seed | offset together (mV) | offset separate (mV) |",
+          "|---|---|---|---|---|---|---|"]
+    for r in rows:
+        t, sp = r["together"], r["separate"]
+        L.append(f"| {G.fmt_key(r['key'])} | {r['index']} | {t.get('seed')}{'' if r['same']['seed'] else ' / ' + str(sp.get('seed'))} | "
+                 f"{t.get('mismatch_seed')}{'' if r['same']['mismatch_seed'] else ' / ' + str(sp.get('mismatch_seed'))} | "
+                 f"{t.get('process_seed')}{'' if r['same']['process_seed'] else ' / ' + str(sp.get('process_seed'))} | "
+                 f"{(r['offset_together'] or float('nan')) * 1e3:+.4f} | {(r['offset_separate'] or float('nan')) * 1e3:+.4f} |")
+    L += ["", f"Comparison and sanitised klt reports: `probes/{record}.json`.", ""]
+    rec_path.write_text("\n".join(L))
+    print(f"probe record written: {rec_path.relative_to(REPO_ROOT)}")
+    print("\n".join(L))
+    return 0 if invariant else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     add_args(ap)
@@ -1033,6 +1150,8 @@ def main(argv: list[str] | None = None) -> int:
         return smoke(pdk)
     if args.probe:
         return probe(pdk, args)
+    if args.probe_seeds:
+        return probe_seeds(pdk, args)
     temps, supplies = GRIDS[args.grid]
     want = keys_of(CORNERS, temps, supplies)
     nominal = [k for k in keys_of(CORNERS, [27.0], [3.30])]

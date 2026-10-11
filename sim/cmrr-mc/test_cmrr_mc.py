@@ -313,6 +313,28 @@ class ControlTests(unittest.TestCase):
         self.assertIn(("ss", 27.0, 3.30), ref)
 
 
+class SeedProbeTests(unittest.TestCase):
+    """Issue #140: the partition-invariance comparison of the probe."""
+
+    def pop(self, seed_of):
+        out = {}
+        for k in [("typical", 27.0, 3.0), ("typical", 27.0, 3.3)]:
+            out[k] = [m.Sample(k, i, seed_of(k, i), {"cmc_offset": 1e-3 * i}, []) for i in range(3)]
+        return out
+
+    def test_identical_seeds_are_invariant(self):
+        f = lambda k, i: {"seed": i, "mismatch_seed": 10 + i, "process_seed": 99}
+        probs, rows = m.compare_partitions(self.pop(f), self.pop(f))
+        self.assertEqual(probs, [])
+        self.assertEqual(len(rows), 6)
+
+    def test_seeds_depending_on_the_request_are_reported(self):
+        a = self.pop(lambda k, i: {"seed": i, "mismatch_seed": 10 + i, "process_seed": 99})
+        b = self.pop(lambda k, i: {"seed": i + (k[2] > 3.1), "mismatch_seed": 10 + i, "process_seed": 99})
+        probs, _ = m.compare_partitions(a, b)
+        self.assertTrue(any("seed differ" in x for x in probs), probs)
+
+
 class SimTests(unittest.TestCase):
     """Local single units at the nominal point (never a grid, never MC)."""
 
