@@ -1,6 +1,6 @@
 {
   "checks": [
-    "each selected experiment has exactly one run_*.py driver and at least one committed testbench/tb_*.spice",
+    "each selected experiment has exactly one run_*.py driver and at least one committed testbench/tb_*.spice of its own, or (BENCH_REUSE) pins the committed bench of the experiment it reuses, with the reuse documented in its README",
     "each experiment README documents a 'python3 sim/<exp>/<driver>' invocation",
     "sim/harness.py PINNED_PDK_REV equals selftest.yml GF180_PDK_REV",
     "sim/characterize.sh, sim/selftest.sh, sim/ci_prereqs.py, sim/ci_pdk_rev_check.sh exist"
@@ -46,6 +46,21 @@
       "experiment": "gain-gbw-pm",
       "readme": "sim/gain-gbw-pm/README.md",
       "run_by_characterize_sh": true,
+      "testbenches": [
+        {
+          "content_hash": "sha256:c68b9c3fd6d0cbfd6bea70e0106b3e8f69d6613af28433ddf58cbad2202bdc0c",
+          "path": "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py --smoke",
+      "documented_smoke_invocation": "python3 sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py --smoke",
+      "driver": "sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py",
+      "experiment": "gain-gbw-pm-mc",
+      "readme": "sim/gain-gbw-pm-mc/README.md",
+      "run_by_characterize_sh": false,
+      "testbench_reuse": "no testbench/ of its own: sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py stages a derived copy of sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice (mismatch switch added) and guards it against the committed bench",
       "testbenches": [
         {
           "content_hash": "sha256:c68b9c3fd6d0cbfd6bea70e0106b3e8f69d6613af28433ddf58cbad2202bdc0c",
