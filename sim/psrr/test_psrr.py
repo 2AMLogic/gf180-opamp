@@ -431,6 +431,22 @@ class PassivePairingTests(unittest.TestCase):
         self.assertEqual(len(d), len(SMALL_WANT) - 2)  # every non-typical cell
         self.assertLess(d[(pc.passive_name("typical", "typical", "best"), 27.0, 3.30)], 0)  # smaller CC: lower PSRR+
 
+    def test_default_crosscheck_accepts_a_text_rounded_axis_and_rejects_another(self):
+        # the committed default `.dat` axis went through np.savetxt (~7 digits, ~4e-9 off)
+        pts, _ = r.pair_cells(self.per_mode(), SMALL_WANT, FLOOR)
+        k = (pc.passive_name("typical", "typical", "typical"), 27.0, 3.30)
+        pt = pts[k]
+        with tempfile.TemporaryDirectory() as t:
+            f = Path(t) / f"{r.point_stem(('typical', 27.0, 3.30))}.psrr.dat"
+            cols = np.column_stack([pt.freq] + [np.zeros(len(pt.freq))] * 5)
+            np.savetxt(f, cols, fmt="%.7g")
+            _, _, probs = r.default_crosscheck({k: pt}, Path(t))
+            self.assertFalse(any("frequency axis" in p for p in probs), probs)
+            cols[:, 0] *= 1.001
+            np.savetxt(f, cols)
+            _, _, probs = r.default_crosscheck({k: pt}, Path(t))
+            self.assertTrue(any("frequency axis" in p for p in probs))
+
     def test_missing_excitation_and_cross_cell_pairing_are_refused(self):
         pm = self.per_mode()
         k0, k1 = SMALL_WANT[0], SMALL_WANT[1]

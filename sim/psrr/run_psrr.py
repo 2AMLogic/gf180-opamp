@@ -835,6 +835,11 @@ def default_reference(dut_sha: str, root: Path = HERE) -> tuple[str, Path] | Non
     return None
 
 
+#: The committed `<point>.psrr.dat` axis went through `np.savetxt` (~7 significant
+#: digits, up to ~4e-9 relative); log spacing is ~1.2 %, so 1e-6 still pins the axis.
+AXIS_TEXT_RTOL = 1e-6
+
+
 def default_crosscheck(points: dict, cdir: Path) -> tuple[float, dict, list[str]]:
     """Typical-passive cells vs the default grid record's `<point>.psrr.dat`
     at 0.1 Hz and every spot frequency, both rails. Returns (max |dev| dB,
@@ -850,7 +855,7 @@ def default_crosscheck(points: dict, cdir: Path) -> tuple[float, dict, list[str]
             probs.append(f"default-record cross-check: {f.name} missing")
             continue
         d = np.loadtxt(f)
-        if d.shape[0] != len(p.freq) or np.any(np.abs(d[:, 0] / p.freq - 1) > 1e-9):
+        if d.shape[0] != len(p.freq) or np.any(np.abs(d[:, 0] / p.freq - 1) > AXIS_TEXT_RTOL):
             probs.append(f"default-record cross-check: {f.name} is on another frequency axis")
             continue
         dev = 0.0
