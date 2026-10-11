@@ -1038,7 +1038,8 @@
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "PSRR-: Avss changes sign across the grid, so low-frequency PSRR- near the flip is a cancellation, not design margin; the worst-case figure is the one to use",
         "systematic figure of a perfectly matched schematic; mismatch-limited PSRR is not covered",
-        "no ratified bound (DR-3 residual e4)"
+        "no ratified bound (DR-3 residual e4)",
+        "supplementary side study `sim/psrr/records/20261011-102729-6612014.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures, as information only with no verdict (bound-free: the row's bound is proposed, not ratified): PSRR+ 1 kHz worst 81.02 dB at ss / 125 C / 2.97 V, RZ worst, CC worst (best 86.68 dB; worst over the 45 typical-passive cells 81.82 dB, so the passive spread moves the worst case by -0.80 dB; delta vs typical passives at matching PVT -0.805 .. +0.887 dB over 360 cells); PSRR+ 10 kHz worst 61.09 dB at ss / 125 C / 2.97 V, RZ worst, CC worst (best 66.77 dB; worst over the 45 typical-passive cells 61.90 dB, so the passive spread moves the worst case by -0.81 dB; delta vs typical passives at matching PVT -0.815 .. +0.899 dB over 360 cells); PSRR- 1 kHz worst 101.01 dB at ss / -40 C / 2.97 V, RZ best, CC worst (best 135.88 dB; worst over the 45 typical-passive cells 101.01 dB, so the passive spread moves the worst case by -0.00 dB; delta vs typical passives at matching PVT -0.625 .. +0.673 dB over 360 cells); PSRR- 10 kHz worst 100.88 dB at ss / -40 C / 2.97 V, RZ best, CC worst (best 116.24 dB; worst over the 45 typical-passive cells 100.90 dB, so the passive spread moves the worst case by -0.02 dB; delta vs typical passives at matching PVT -0.630 .. +0.679 dB over 360 cells)"
       ],
       "points_pass": null,
       "points_total": null,
@@ -2276,6 +2277,314 @@
         "text": "FULL passive-by-PVT cross product: 5 MOS corners x 3 temperatures x 3 supplies (45 MOS/T/VDD points) x 3 RZ levels x 3 CC levels (typical, best, worst) = 405 cells"
       },
       "sha256": "8c049e8a42d8dd754f5d111b8e86ece11e6afe3d0bf48af735c46f3dd7cddf60"
+    },
+    "psrr-passive-corners-full": {
+      "backend": null,
+      "bound_free": true,
+      "dut_check": {
+        "matches_current_netlist": true,
+        "matches_selected_records": true
+      },
+      "dut_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
+      "experiment": "psrr",
+      "figures": {
+        "PSRR+ 1 kHz": {
+          "best": {
+            "cc": "best",
+            "point": "ff / -40 C / 3.63 V",
+            "rz": "best",
+            "value": "86.68"
+          },
+          "cells": 405,
+          "delta_vs_typical": {
+            "cells": 360,
+            "max_abs": "0.887",
+            "most_negative": {
+              "cc": "worst",
+              "point": "ff / 125 C / 3.63 V",
+              "rz": "worst",
+              "value": "-0.805"
+            },
+            "most_positive": {
+              "cc": "best",
+              "point": "ff / 125 C / 3.63 V",
+              "rz": "best",
+              "value": "+0.887"
+            }
+          },
+          "frequency": "1 kHz",
+          "label": "PSRR+ 1 kHz",
+          "passive_shift_of_worst": "-0.80",
+          "rail": "PSRR+",
+          "range": [
+            "81.02",
+            "86.68"
+          ],
+          "typical_passive_worst": {
+            "cells": 45,
+            "primary_record_worst": "81.82",
+            "value": "81.82"
+          },
+          "unit": "dB",
+          "worst": {
+            "cc": "worst",
+            "point": "ss / 125 C / 2.97 V",
+            "rz": "worst",
+            "value": "81.02"
+          }
+        },
+        "PSRR+ 10 kHz": {
+          "best": {
+            "cc": "best",
+            "point": "ff / -40 C / 3.63 V",
+            "rz": "best",
+            "value": "66.77"
+          },
+          "cells": 405,
+          "delta_vs_typical": {
+            "cells": 360,
+            "max_abs": "0.899",
+            "most_negative": {
+              "cc": "worst",
+              "point": "ff / 125 C / 3.63 V",
+              "rz": "worst",
+              "value": "-0.815"
+            },
+            "most_positive": {
+              "cc": "best",
+              "point": "ff / 125 C / 3.63 V",
+              "rz": "best",
+              "value": "+0.899"
+            }
+          },
+          "frequency": "10 kHz",
+          "label": "PSRR+ 10 kHz",
+          "passive_shift_of_worst": "-0.81",
+          "rail": "PSRR+",
+          "range": [
+            "61.09",
+            "66.77"
+          ],
+          "typical_passive_worst": {
+            "cells": 45,
+            "primary_record_worst": "61.90",
+            "value": "61.90"
+          },
+          "unit": "dB",
+          "worst": {
+            "cc": "worst",
+            "point": "ss / 125 C / 2.97 V",
+            "rz": "worst",
+            "value": "61.09"
+          }
+        },
+        "PSRR- 1 kHz": {
+          "best": {
+            "cc": "best",
+            "point": "typical / 125 C / 3.63 V",
+            "rz": "best",
+            "value": "135.88"
+          },
+          "cells": 405,
+          "delta_vs_typical": {
+            "cells": 360,
+            "max_abs": "0.673",
+            "most_negative": {
+              "cc": "worst",
+              "point": "typical / 125 C / 3.63 V",
+              "rz": "worst",
+              "value": "-0.625"
+            },
+            "most_positive": {
+              "cc": "best",
+              "point": "typical / 125 C / 3.63 V",
+              "rz": "best",
+              "value": "+0.673"
+            }
+          },
+          "frequency": "1 kHz",
+          "label": "PSRR- 1 kHz",
+          "passive_shift_of_worst": "-0.00",
+          "rail": "PSRR-",
+          "range": [
+            "101.01",
+            "135.88"
+          ],
+          "typical_passive_worst": {
+            "cells": 45,
+            "primary_record_worst": "101.01",
+            "value": "101.01"
+          },
+          "unit": "dB",
+          "worst": {
+            "cc": "worst",
+            "point": "ss / -40 C / 2.97 V",
+            "rz": "best",
+            "value": "101.01"
+          }
+        },
+        "PSRR- 10 kHz": {
+          "best": {
+            "cc": "best",
+            "point": "ff / 125 C / 3.30 V",
+            "rz": "best",
+            "value": "116.24"
+          },
+          "cells": 405,
+          "delta_vs_typical": {
+            "cells": 360,
+            "max_abs": "0.679",
+            "most_negative": {
+              "cc": "worst",
+              "point": "typical / 125 C / 3.63 V",
+              "rz": "worst",
+              "value": "-0.630"
+            },
+            "most_positive": {
+              "cc": "best",
+              "point": "typical / 125 C / 3.63 V",
+              "rz": "best",
+              "value": "+0.679"
+            }
+          },
+          "frequency": "10 kHz",
+          "label": "PSRR- 10 kHz",
+          "passive_shift_of_worst": "-0.02",
+          "rail": "PSRR-",
+          "range": [
+            "100.88",
+            "116.24"
+          ],
+          "typical_passive_worst": {
+            "cells": 45,
+            "primary_record_worst": "100.90",
+            "value": "100.90"
+          },
+          "unit": "dB",
+          "worst": {
+            "cc": "worst",
+            "point": "ss / -40 C / 2.97 V",
+            "rz": "best",
+            "value": "100.88"
+          }
+        }
+      },
+      "fleet_runner_mismatch": true,
+      "graded": false,
+      "grading": "none: measured information attached to the psrr row; its bound is proposed, not ratified, so no PASS/FAIL verdict is formed and no figure is compared with a bound",
+      "klt_client": "0.7.0+g612109ec5754",
+      "limitations": [
+        "side study: not a selected verdict record; its cells are not counted in any row's points or verdict nor in the ratified-row summary",
+        "fleet runner klt version differs from the client's (compatibility mismatch)",
+        "matched devices: systematic figures of a perfectly matched schematic, not mismatch-limited (mismatch-inclusive PSRR is not covered)",
+        "the ideal 10 uA bias source carries no small-signal current, so bias-generator supply sensitivity is excluded",
+        "passive corners are the PDK's global `res_*` / `mimcap_*` sections (RZ and CC varied independently): no RZ/CC mismatch and no layout parasitics",
+        "client-versus-fleet provenance: fleet runner klt 0.5.0 vs client klt 0.7.0+g612109ec5754; the fleet runner does not report its PDK revision and klt's provenance.pdk is resolved on the submitting client (the fleet library is tied to the pinned revision only indirectly, via the record's cross-checks)",
+        "bound-free: the PSRR bound is proposed by DR-6, not ratified, so these figures carry no PASS/FAIL verdict and are not compared with the proposed bound"
+      ],
+      "measurement_config": {
+        "fingerprint": "8c54575b23d5e46871f3560fd077dabf14314c3185314e08b5babd431100f5ff",
+        "status": "current",
+        "version": 1
+      },
+      "ngspice_engine": null,
+      "ngspice_local": "42",
+      "not_measured": {},
+      "path": "sim/psrr/records/20261011-102729-6612014.md",
+      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "population": {
+        "cells": 405,
+        "excitations": [
+          "dm",
+          "vdd",
+          "vss"
+        ],
+        "non_typical_cells": 360,
+        "typical_passive_cells": 45
+      },
+      "record_id": "20261011-102729-6612014",
+      "retained_evidence": {
+        "partitions": {
+          "excitations": {
+            "dm": 405,
+            "vdd": 405,
+            "vss": 405
+          },
+          "path": "sim/psrr/corners/20261011-102729-6612014/partitions.json",
+          "sha256": "e3b58753e0302cbb63bcef7365d884107e043a14390ce671bbe8b335dd14786a"
+        },
+        "path": "sim/psrr/corners/20261011-102729-6612014",
+        "psrr_dat_files": 405,
+        "sha256": "a55fc4104d983a7c024483d33e40357bed02be44845ea02ecb5e9be045907cbf",
+        "sha256_method": "sha256 of the sha256sum-format listing (hex digest, two spaces, file name; one line per cell, in study order) of every per-cell .psrr.dat curve"
+      },
+      "rows": [
+        "psrr"
+      ],
+      "scope": {
+        "cc_levels": [
+          "typical",
+          "best",
+          "worst"
+        ],
+        "cells": 405,
+        "full_pvt_cross_product": true,
+        "points": [
+          "typical / -40 C / 2.97 V",
+          "typical / -40 C / 3.30 V",
+          "typical / -40 C / 3.63 V",
+          "typical / 27 C / 2.97 V",
+          "typical / 27 C / 3.30 V",
+          "typical / 27 C / 3.63 V",
+          "typical / 125 C / 2.97 V",
+          "typical / 125 C / 3.30 V",
+          "typical / 125 C / 3.63 V",
+          "ff / -40 C / 2.97 V",
+          "ff / -40 C / 3.30 V",
+          "ff / -40 C / 3.63 V",
+          "ff / 27 C / 2.97 V",
+          "ff / 27 C / 3.30 V",
+          "ff / 27 C / 3.63 V",
+          "ff / 125 C / 2.97 V",
+          "ff / 125 C / 3.30 V",
+          "ff / 125 C / 3.63 V",
+          "ss / -40 C / 2.97 V",
+          "ss / -40 C / 3.30 V",
+          "ss / -40 C / 3.63 V",
+          "ss / 27 C / 2.97 V",
+          "ss / 27 C / 3.30 V",
+          "ss / 27 C / 3.63 V",
+          "ss / 125 C / 2.97 V",
+          "ss / 125 C / 3.30 V",
+          "ss / 125 C / 3.63 V",
+          "fs / -40 C / 2.97 V",
+          "fs / -40 C / 3.30 V",
+          "fs / -40 C / 3.63 V",
+          "fs / 27 C / 2.97 V",
+          "fs / 27 C / 3.30 V",
+          "fs / 27 C / 3.63 V",
+          "fs / 125 C / 2.97 V",
+          "fs / 125 C / 3.30 V",
+          "fs / 125 C / 3.63 V",
+          "sf / -40 C / 2.97 V",
+          "sf / -40 C / 3.30 V",
+          "sf / -40 C / 3.63 V",
+          "sf / 27 C / 2.97 V",
+          "sf / 27 C / 3.30 V",
+          "sf / 27 C / 3.63 V",
+          "sf / 125 C / 2.97 V",
+          "sf / 125 C / 3.30 V",
+          "sf / 125 C / 3.63 V"
+        ],
+        "rz_levels": [
+          "typical",
+          "best",
+          "worst"
+        ],
+        "text": "FULL passive-by-PVT cross product: 5 MOS corners x 3 temperatures x 3 supplies (45 MOS/T/VDD points) x 3 RZ levels x 3 CC levels (typical, best, worst) = 405 cells"
+      },
+      "sha256": "2ec6169c300e2e471b355a277383435675d62800aabcbc78b5fd2e4309ce6b8d",
+      "verdict": null
     },
     "slew-swing-power-passive-corners": {
       "backend": "aws-batch-fleet",
