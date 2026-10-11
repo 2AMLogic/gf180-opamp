@@ -22,7 +22,55 @@ MIM_FACTOR = {"typical": 1.0, "best": 0.9, "worst": 1.1}
 #: point (record 20261009-055759-2524b3e) and nominal.
 PASSIVE_POINTS = [("fs", 125.0, 2.97), ("ss", 125.0, 2.97), ("typical", 27.0, 3.30)]
 
+#: Full operating envelope (issue #150): every MOS corner x temperature x supply
+#: of the 45-point grid (must equal `measurement_config` CORNERS/TEMPS_C/
+#: SUPPLIES_V; a test pins that), each x 9 independent RZ x CC combinations =
+#: 405 cells per figure.
+FULL_MOS = ("typical", "ff", "ss", "fs", "sf")
+FULL_TEMPS = (-40.0, 27.0, 125.0)
+FULL_SUPPLIES = (2.97, 3.30, 3.63)
+FULL_POINTS = [(m, t, v) for m in FULL_MOS for t in FULL_TEMPS for v in FULL_SUPPLIES]
+
+#: `--passive-scope` choices. "limited" is the original 3-point screening mode
+#: (27 cells, issues #70/#97) and stays the default; "full" is the 405-cell mode.
+SCOPES = {"limited": PASSIVE_POINTS, "full": FULL_POINTS}
+SCOPE_CELLS = {"limited": 27, "full": 405}
+
 Key = tuple  # (process name, temperature_c, supply_v)
+
+
+def scope_points(scope: str) -> list:
+    if scope not in SCOPES:
+        raise ValueError(f"unknown passive scope {scope!r}; choose from {', '.join(SCOPES)}")
+    return list(SCOPES[scope])
+
+
+def scope_description(scope: str) -> str:
+    """One-line scope statement carried in every record (limited vs full)."""
+    pts = scope_points(scope)
+    n = len(pts) * len(PASSIVE_LEVELS) ** 2
+    if scope == "full":
+        return (f"FULL operating envelope: {len(FULL_MOS)} MOS corners x {len(FULL_TEMPS)} temperatures x "
+                f"{len(FULL_SUPPLIES)} supplies x 3 RZ x 3 CC = {n} cells per figure")
+    return (f"LIMITED screening: {len(pts)} selected MOS/T/VDD points x 3 RZ x 3 CC = {n} cells per figure; "
+            "not a full passive-by-PVT cross product")
+
+
+def key_set_problems(got, want) -> list[str]:
+    """Exact-key-set check: reports missing, duplicated and unexpected cells.
+    `got` is an iterable of keys (duplicates preserved), `want` the expected list."""
+    got = list(got)
+    want = list(want)
+    problems = []
+    if len(set(want)) != len(want):
+        problems.append("expected key list itself contains duplicates")
+    seen: dict = {}
+    for k in got:
+        seen[k] = seen.get(k, 0) + 1
+    problems += [f"duplicate cell {k}" for k, n in seen.items() if n > 1]
+    problems += [f"missing cell {k}" for k in want if k not in seen]
+    problems += [f"unexpected cell {k}" for k in seen if k not in set(want)]
+    return problems
 
 
 def passive_sections(res: str, mim: str) -> tuple[str, str]:
@@ -84,7 +132,10 @@ def apply_passive_matrix(req: dict, points=PASSIVE_POINTS) -> dict:
                         "temperature_c": t,
                         "supply_v": {"vdd": v},
                     })
-    req["exclude"] = exclude
+    if exclude:
+        req["exclude"] = exclude
+    else:  # full cross product: nothing to remove
+        req.pop("exclude", None)
     return req
 
 

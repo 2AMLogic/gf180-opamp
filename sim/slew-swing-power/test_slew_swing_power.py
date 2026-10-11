@@ -653,6 +653,57 @@ class PassiveCornerTests(unittest.TestCase):
         self.assertIn("No spec row or bound is edited", md)
         self.assertIn("9.50", md)
 
+    def test_full_scope_request_report_and_record(self):
+        """Issue #150: the full scope is 45 points x 9 RZ/CC = 405 cells per figure."""
+        pts = r.pc.scope_points("full")
+        req = r.passive_request("power", Path("/x/tb.spice"), self.PDK, pts)
+        self.assertEqual(len(req["corners"]["process"]), 45)
+        self.assertNotIn("exclude", req)
+        keys = r.pc.passive_expected_keys(pts)
+        self.assertEqual(len(keys), 405)
+        with tempfile.TemporaryDirectory() as t:
+            rep = self._fake_report_for(t, keys)
+            res, _, problems = r.analyse_passive_report("power", rep, keys)
+            self.assertEqual(problems, [])
+            self.assertEqual(len(res), 405)
+            # omitted, duplicated and unexpected cells fail completeness
+            _, _, p = r.analyse_passive_report("power", {"corners": rep["corners"][1:]}, keys)
+            self.assertTrue(any("missing" in x for x in p))
+            _, _, p = r.analyse_passive_report("power", {"corners": rep["corners"] + [rep["corners"][0]]}, keys)
+            self.assertTrue(any("duplicate" in x for x in p))
+            _, _, p = r.analyse_passive_report("power", rep, r.pc.passive_expected_keys())
+            self.assertTrue(any("unexpected" in x for x in p))
+        res = {k: r.Metrics(fig="slew", valid=True, slew_vus=14.0) for k in keys}
+        bad = (r.pc.passive_name("sf", "worst", "best"), -40.0, 3.63)
+        res[bad] = r.Metrics(fig="slew", valid=True, slew_vus=9.0)
+        verdicts = {f: r.judge_figure(f, res if f == "slew" else None, requested=f == "slew") for f in r.FIGURES}
+        md = r.build_passive_record(
+            record="20261010-000000-abcdef0", stamp=__import__("datetime").datetime(2026, 10, 10),
+            pdk=self.PDK, ngspice="n", klt_version="k", backend_descs={"slew": "b"}, all_results={"slew": res},
+            verdicts=verdicts, ctrls=[], ctrl_bad=[], dut_sha="0" * 64, not_run={}, figs=("slew",), scope="full",
+        )
+        self.assertIn("**Scope**: `full`", md)
+        self.assertIn("= 405 cells", md)
+        self.assertIn("passes at 404/405 cells", md)
+        self.assertIn("sf / -40 C / 3.63 V, RZ worst, CC best", md)
+        self.assertEqual(md.count("\n### "), 45)
+
+    def _fake_report_for(self, tmp, keys):
+        corners = []
+        for k in keys:
+            d = Path(tmp) / r.g.point_stem(k)
+            d.mkdir(exist_ok=True)
+            mos, rl, cl = r.pc.split_passive_key(k)
+            (d / "corner.cir").write_text(
+                "\n".join(f".lib /p/sm141064.ngspice {s}" for s in [mos, *r.pc.passive_sections(rl, cl)]))
+            (d / "raw").write_text(RAW_POWER.format(negidd=-100e-6, vdd=k[2]))
+            corners.append({
+                "process": k[0], "temperature_c": k[1], "supply_v": {"vdd": k[2], "vcm": k[2] / 2},
+                "measurements": [], "diagnostics": [],
+                "artifacts": {"raw": str(d / "raw"), "log": None, "deck": str(d / "corner.cir")},
+            })
+        return {"corners": corners}
+
     def test_aggregate_report_ignores_the_side_study(self):
         sys.path.insert(0, str(HERE.parents[1] / "sim" / "report"))
         import characterization_report as cr

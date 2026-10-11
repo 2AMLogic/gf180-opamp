@@ -1723,6 +1723,7 @@ class SupplementaryPassiveStudies(unittest.TestCase):
     checked, and their observations are derived from their tables -- outside every verdict."""
 
     GKEY, SKEY = "gain-gbw-pm-passive-corners", "slew-swing-power-passive-corners"
+    GFULL, SFULL = "gain-gbw-pm-passive-corners-full", "slew-swing-power-passive-corners-full"  # issue #150
 
     def setUp(self):
         self._t = tempfile.TemporaryDirectory()
@@ -1756,8 +1757,10 @@ class SupplementaryPassiveStudies(unittest.TestCase):
     # ---- positive ----
     def test_committed_selection_is_explicit(self):
         sel = json.loads(MANIFEST.read_text())
-        self.assertEqual(sel["supplementary"], {self.GKEY: GAIN_STUDY_MD, self.SKEY: SSP_STUDY_MD})
-        for rel in sel["supplementary"].values():  # never also a verdict source
+        sup = sel["supplementary"]
+        self.assertEqual({k: sup[k] for k in (self.GKEY, self.SKEY)}, {self.GKEY: GAIN_STUDY_MD, self.SKEY: SSP_STUDY_MD})
+        self.assertEqual(set(sup), {self.GKEY, self.SKEY, self.GFULL, self.SFULL})
+        for rel in sup.values():  # never also a verdict source
             self.assertNotIn(rel, json.dumps(sel["experiments"]))
 
     def test_both_studies_hashed_with_exact_scope(self):
@@ -1777,6 +1780,39 @@ class SupplementaryPassiveStudies(unittest.TestCase):
             self.assertTrue(any("freshness unknown" in l for l in st["limitations"]))
             self.assertTrue(any(l.startswith(f"supplementary {key}: measurement-configuration freshness unknown")
                                 for l in rep["limitations"]))
+
+    def test_full_grid_studies_are_405_cell_full_scope(self):
+        """Issue #150: the full-envelope records are selected under their own keys, parsed with
+        the same strictness, and described as the full passive-by-PVT cross product."""
+        rep = self.build()
+        for key in (self.GFULL, self.SFULL):
+            st = rep["supplementary"][key]
+            self.assertFalse(st["graded"])
+            sc = st["scope"]
+            self.assertEqual(sc["cells"], 405)
+            self.assertEqual(len(sc["points"]), 45)
+            self.assertTrue(sc["full_pvt_cross_product"])
+            self.assertIn("FULL passive-by-PVT cross product", sc["text"])
+            for f in st["figures"].values():
+                self.assertEqual(f["total"], 405)
+                self.assertEqual(f["pass"] + f["fail"], 405)
+        # the limited studies keep their 27-cell scope beside them
+        self.assertEqual(rep["supplementary"][self.GKEY]["scope"]["cells"], 27)
+        self.assertFalse(rep["supplementary"][self.GKEY]["scope"]["full_pvt_cross_product"])
+
+    def test_scope_must_match_the_selected_key(self):
+        sel = json.loads(MANIFEST.read_text())["supplementary"]
+        self.rejects(r"scope mismatch", self.sup(**{self.GKEY: sel[self.GFULL]}))
+        self.rejects(r"scope mismatch", self.sup(**{self.GFULL: sel[self.GKEY]}))
+
+    def test_incomplete_full_study_rejected(self):
+        rel = json.loads(MANIFEST.read_text())["supplementary"][self.GFULL]
+        p = self.root / rel
+        t = p.read_text()
+        i = t.index("\n### ", t.index("## Results"))
+        j = t.index("\n### ", i + 5)
+        p.write_text(t[:i] + t[j:])  # drop one point's table
+        self.rejects(r"no results table for study point")
 
     def test_gain_study_observations_derived_from_tables(self):
         f = self.build()["supplementary"][self.GKEY]["figures"]
@@ -1798,7 +1834,7 @@ class SupplementaryPassiveStudies(unittest.TestCase):
 
     def test_studies_never_change_verdicts_points_or_counts(self):
         with_s = self.build()
-        without = self.build(self.sup(**{self.GKEY: None, self.SKEY: None}))
+        without = self.build(self.sup(**{self.GKEY: None, self.SKEY: None, self.GFULL: None, self.SFULL: None}))
         self.assertEqual(with_s["summary"], without["summary"])
         self.assertEqual(without["supplementary"], {})
         for a, b in zip(with_s["rows"], without["rows"]):
@@ -1830,7 +1866,8 @@ class SupplementaryPassiveStudies(unittest.TestCase):
         # move the worst PM cell in both the table and the header: the derived text follows
         self.edit(GAIN_STUDY_MD, "| best | best | 64.47 |", "| best | best | 63.90 |")
         self.edit(GAIN_STUDY_MD, "worst 64.47 deg at fs", "worst 63.90 deg at fs")
-        rep = self.build()
+        # limited study only: the full-envelope study (issue #150) legitimately still reads 64.47
+        rep = self.build(self.sup(**{self.GFULL: None, self.SFULL: None}))
         pm = " ".join(rows_by_key(rep)["pm"]["limitations"])
         self.assertIn("range 63.90 .. 84.93 deg", pm)
         self.assertNotIn("64.47", pm)

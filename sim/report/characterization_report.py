@@ -1418,6 +1418,14 @@ SUPPLEMENTARY = {
     "slew-swing-power-passive-corners": {"experiment": "slew-swing-power",
                                          "title": STUDY_TITLES["slew-swing-power"][0],
                                          "rows": ("power", "slew", "swing")},
+    # issue #150: the same two studies over the FULL 5 MOS x 3 T x 3 VDD x 9 RZ/CC = 405-cell
+    # envelope (`--passive-scope full`); same record format, selected under their own keys so the
+    # limited three-point evidence stays visible beside them.
+    "gain-gbw-pm-passive-corners-full": {"experiment": "gain-gbw-pm", "title": STUDY_TITLES["gain-gbw-pm"][0],
+                                         "rows": ("gain", "gbw", "pm"), "scope": "full"},
+    "slew-swing-power-passive-corners-full": {"experiment": "slew-swing-power",
+                                              "title": STUDY_TITLES["slew-swing-power"][0],
+                                              "rows": ("power", "slew", "swing"), "scope": "full"},
 }
 PASSIVE_LEVELS = ("typical", "best", "worst")
 
@@ -1664,10 +1672,32 @@ def _cell_order(vals: dict, pts: list) -> dict:
 
 SUPPLEMENTARY["gain-gbw-pm-passive-corners"]["extract"] = extract_gain_passive_study
 SUPPLEMENTARY["slew-swing-power-passive-corners"]["extract"] = extract_ssp_passive_study
+SUPPLEMENTARY["gain-gbw-pm-passive-corners-full"]["extract"] = extract_gain_passive_study
+SUPPLEMENTARY["slew-swing-power-passive-corners-full"]["extract"] = extract_ssp_passive_study
 
 
-def study_scope(pts: list) -> dict:
+FULL_STUDY_POINTS = 45  # 5 MOS corners x 3 temperatures x 3 supplies
+
+
+def study_scope(pts: list, expect: str | None = None) -> dict:
+    """Scope of a side study from its stated points. A study is FULL only when its Points line
+    is the complete 5 x 3 x 3 grid; `expect` ('full') makes a mismatch an error so a limited
+    record cannot be selected under a full-grid key (or the reverse)."""
     n = len(pts) * len(PASSIVE_LEVELS) ** 2
+    mos = {p[0] for p in pts}
+    full = (len(pts) == FULL_STUDY_POINTS and len(set(pts)) == FULL_STUDY_POINTS and len(mos) == 5
+            and len({p[1] for p in pts}) == 3 and len({p[2] for p in pts}) == 3
+            and all(any(p[0] == m and p[1] == t and p[2] == v for p in pts) for m in mos
+                    for t in {q[1] for q in pts} for v in {q[2] for q in pts}))
+    if expect is not None and (expect == "full") != full:
+        raise ReportError(f"side study scope mismatch: selected under a {expect!r} key but its Points line states "
+                          f"{len(pts)} points ({'full' if full else 'limited'} scope)")
+    if full:
+        return {"points": [fmt_point(*p) for p in pts], "rz_levels": list(PASSIVE_LEVELS),
+                "cc_levels": list(PASSIVE_LEVELS), "cells": n, "full_pvt_cross_product": True,
+                "text": (f"FULL passive-by-PVT cross product: 5 MOS corners x 3 temperatures x 3 supplies "
+                         f"({len(pts)} MOS/T/VDD points) x {len(PASSIVE_LEVELS)} RZ levels x {len(PASSIVE_LEVELS)} CC "
+                         f"levels ({', '.join(PASSIVE_LEVELS)}) = {n} cells")}
     return {"points": [fmt_point(*p) for p in pts], "rz_levels": list(PASSIVE_LEVELS), "cc_levels": list(PASSIVE_LEVELS),
             "cells": n, "full_pvt_cross_product": False,
             "text": (f"{len(pts)} selected MOS/T/VDD points ({'; '.join(fmt_point(*p) for p in pts)}) x "
@@ -2071,7 +2101,7 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
             **{k_: prov[k_] for k_ in ("pdk_open_pdks", "ngspice_local", "ngspice_engine", "klt_client", "backend",
                                        "fleet_runner_mismatch")},
             "measurement_config": fresh,
-            "scope": study_scope(ex["points"]),
+            "scope": study_scope(ex["points"], spec.get("scope", "limited")),
             "rows": list(spec["rows"]),
             "figures": ex["figures"],
             "not_measured": ex["not_measured"],
@@ -2083,8 +2113,9 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
 def study_row_note(st: dict, row_key: str) -> str:
     """Row-detail citation of a side study, derived from its tables (never a verdict)."""
     head = (f"supplementary side study `{st['path']}` (not a selected verdict record; outside this row's verdict and "
-            f"point count; {st['scope']['cells']} cells = {len(st['scope']['points'])} MOS/T/VDD points x RZ x CC, not "
-            "a full passive-by-PVT cross product)")
+            f"point count; {st['scope']['cells']} cells = {len(st['scope']['points'])} MOS/T/VDD points x RZ x CC, "
+            + ("the full passive-by-PVT cross product)" if st["scope"]["full_pvt_cross_product"]
+               else "not a full passive-by-PVT cross product)"))
     if row_key in st["figures"]:
         return f"{head} measures {study_observation(st['figures'][row_key])}"
     return f"{head}: {st['not_measured'].get(row_key, 'no observation for this row')}"
