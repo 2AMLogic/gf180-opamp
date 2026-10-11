@@ -457,6 +457,16 @@ def point_stats(samples: dict[tuple, list[Sample]]) -> dict[tuple, dict[str, dic
     return {k: {r: {f: fig_stats(v, r, f) for f in FIGS} for r in RAILS} for k, v in samples.items() if v}
 
 
+def check_offset_sigma(samples: dict) -> list[str]:
+    """Blocking gate: at every point the sampled offset sigma must exceed MIN_OFFSET_SIGMA_V."""
+    probs = []
+    for k, ss in samples.items():
+        sg = offset_sigma(ss)
+        if not sg > MIN_OFFSET_SIGMA_V:
+            probs.append(f"{G.fmt_key(k)}: offset sigma {sg * 1e3:.3f} mV -- mismatch not acting")
+    return probs
+
+
 def offset_sigma(samples: list[Sample]) -> float:
     xs = [s.vals["pmc_offset"] for s in samples if s.valid]
     return statistics.stdev(xs) if len(xs) >= 2 else float("nan")
@@ -1081,10 +1091,7 @@ def main(argv: list[str] | None = None) -> int:
         problems: list[str] = []
         samples, p = extract(reports["grid"], want, MC_N)
         problems += p
-        for k, ss in samples.items():
-            sg = offset_sigma(ss)
-            if not sg > MIN_OFFSET_SIGMA_V:
-                problems.append(f"{G.fmt_key(k)}: offset sigma {sg * 1e3:.3f} mV -- mismatch not acting")
+        problems += check_offset_sigma(samples)
         off_s, p = extract(reports["switch-off"], want, CONTROL_OFF_N)
         problems += [f"[switch-off] {x}" for x in p]
         off_probs, off_rows = check_switch_off(off_s, systematic_reference(want))
