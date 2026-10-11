@@ -39,6 +39,9 @@ python3 test_harness.py
 echo "== sim: characterize.sh wrapper flag routing + fail-fast (stub drivers, no simulator; issue #167) =="
 python3 test_characterize_wrapper.py
 
+echo "== sim: committed-evidence append-only guard unit tests (temp git repos, no simulator; issue #159) =="
+python3 test_evidence_append_only.py
+
 echo "== sim/gain-gbw-pm: extraction + source-guard tests (no simulator) =="
 python3 gain-gbw-pm/test_gain_gbw_pm.py
 
