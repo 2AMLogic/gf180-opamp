@@ -347,6 +347,7 @@ class CommittedReport(unittest.TestCase):
         self.assertNotIn("ngspice -b", src)
 
 GAIN = "sim/gain-gbw-pm/records/"
+GAIN_REC = "20261010-161514-0127eb7"  # selected 45-point grid record (issue #168 fixtures)
 TB = "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice"
 MCFG = "sim/gain-gbw-pm/measurement_config.py"
 OLD_GAIN_REC = "20261009-055759-2524b3e"
@@ -514,6 +515,69 @@ class Mutations(unittest.TestCase):
         self.edit("sim/gain-gbw-pm/records/20261010-161514-0127eb7.md", "| **PASS** | 45/45 | 71.99 deg", "| **PASS** | 44/45 | 71.99 deg")
         with self.assertRaisesRegex(cr.ReportError, "disagrees with its own per-point table"):
             self.build()
+
+    def test_gain_verdict_token_flip_rejected(self):
+        # counts and worst value still agree; only the PASS token is flipped (issue #168)
+        self.edit(f"{GAIN}{GAIN_REC}.md", "| **PASS** | 45/45 | 93.79 dB", "| **FAIL** | 45/45 | 93.79 dB")
+        with self.assertRaisesRegex(cr.ReportError, "verdict token FAIL disagrees"):
+            self.build()
+
+    def test_gain_false_pass_with_failing_point_rejected(self):
+        # one PM point drops below 60 deg and the count/worst are fixed up to match,
+        # so the only remaining contradiction is the false PASS token
+        self.edit(f"{GAIN}{GAIN_REC}.md",
+                  "| `fs` | 125 | 2.97 | 94.10 | 12.726 | 71.99 | ok | ok | ok | ok | |",
+                  "| `fs` | 125 | 2.97 | 94.10 | 12.726 | 59.99 | ok | ok | ok | FAIL | |")
+        self.edit(f"{GAIN}{GAIN_REC}.md", "| **PASS** | 45/45 | 71.99 deg | fs / 125 C / 2.97 V |",
+                  "| **PASS** | 44/45 | 59.99 deg | fs / 125 C / 2.97 V |")
+        with self.assertRaisesRegex(cr.ReportError, "verdict token PASS disagrees"):
+            self.build()
+
+    def test_gain_binding_corner_non_worst_rejected(self):
+        # typical / 27 C / 3.30 V is a mid-grid point, not the minimum of any row
+        self.edit(f"{GAIN}{GAIN_REC}.md", "| **PASS** | 45/45 | 93.79 dB | ss / 125 C / 2.97 V |",
+                  "| **PASS** | 45/45 | 93.79 dB | typical / 27 C / 3.30 V |")
+        with self.assertRaisesRegex(cr.ReportError, "binding corner .* is not a worst point"):
+            self.build()
+
+    def test_gain_tied_minimum_binding_corner_accepted(self):
+        # fs / 125 C / 3.30 V is lowered into an exact display tie with the worst point:
+        # a genuinely tied point is a valid binding corner
+        self.edit(f"{GAIN}{GAIN_REC}.md", "| `fs` | 125 | 3.30 | 94.91 | 12.775 | 72.04 |",
+                  "| `fs` | 125 | 3.30 | 94.91 | 12.775 | 71.99 |")
+        self.edit(f"{GAIN}{GAIN_REC}.md", "| **PASS** | 45/45 | 71.99 deg | fs / 125 C / 2.97 V |",
+                  "| **PASS** | 45/45 | 71.99 deg | fs / 125 C / 3.30 V |")
+        rep = self.build()
+        self.assertEqual(rows_by_key(rep)["pm"]["worst_corner"], "fs / 125 C / 3.30 V")
+
+    def test_gain_tie_within_display_tolerance_accepted(self):
+        # 71.994 is within the documented display tolerance of the 71.99 minimum
+        self.edit(f"{GAIN}{GAIN_REC}.md", "| `fs` | 125 | 3.30 | 94.91 | 12.775 | 72.04 |",
+                  "| `fs` | 125 | 3.30 | 94.91 | 12.775 | 71.994 |")
+        self.edit(f"{GAIN}{GAIN_REC}.md", "| **PASS** | 45/45 | 71.99 deg | fs / 125 C / 2.97 V |",
+                  "| **PASS** | 45/45 | 71.99 deg | fs / 125 C / 3.30 V |")
+        self.build()
+
+    def test_gain_stretch_count_rejected(self):
+        self.edit(f"{GAIN}{GAIN_REC}.md", "open-loop DC gain >= 70 dB holds at 45/45 points.",
+                  "open-loop DC gain >= 70 dB holds at 44/45 points.")
+        with self.assertRaisesRegex(cr.ReportError, "stretch count .* disagrees"):
+            self.build()
+
+    def test_gain_stretch_total_rejected(self):
+        self.edit(f"{GAIN}{GAIN_REC}.md", "open-loop DC gain >= 70 dB holds at 45/45 points.",
+                  "open-loop DC gain >= 70 dB holds at 45/44 points.")
+        with self.assertRaisesRegex(cr.ReportError, "stretch count .* disagrees"):
+            self.build()
+
+    def test_gain_verdict_token_cli_fails_and_writes_nothing(self):
+        # issue #147 behavior: a rejected record must fail publication leaving no bundle behind
+        self.edit(f"{GAIN}{GAIN_REC}.md", "| **PASS** | 45/45 | 93.79 dB", "| **FAIL** | 45/45 | 93.79 dB")
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        out = self.root / "o"
+        self.assertEqual(cr.main(["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(out)]), 2)
+        self.assertFalse(out.exists())
 
     def test_pdk_mismatch_is_flagged_not_fatal(self):
         self.edit("sim/noise/records/20261010-163507-0127eb7.md", "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
