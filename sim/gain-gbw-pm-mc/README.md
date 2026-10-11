@@ -4,11 +4,20 @@ Runner, offline tests and documentation for a mismatch Monte Carlo of the
 three AC rows `sim/gain-gbw-pm/` measures on matched devices: open-loop DC
 gain, GBW and phase margin.
 
-> **No mismatch evidence exists yet.** This directory holds machinery
-> only. There is no `records/`, `corners/` or `netlist-snapshots/` here,
-> and nothing in `spec/`, `manifests/` or `sim/report/selection.json`
-> cites it. The N = 300 campaign is gated on #42 (see
-> [Campaign gate](#campaign-gate-42)).
+> **Measured evidence (issue #142):** record
+> [`records/20261011-072005-9c9b0f1.md`](records/20261011-072005-9c9b0f1.md)
+> (batch job `klt-sim-3b733505387d`, 431 s) is the N = 300 mismatch campaign
+> on the retuned DUT (normalised sha256 `33b58dac...e41b`, deterministic
+> record `sim/gain-gbw-pm/records/20261010-161514-0127eb7.md`). Population:
+> five MOS corners x 300 samples = 1500, all valid, at **27 C / 3.30 V only**
+> (mismatch only, seed 45; temperature and supply are not sampled). Measured
+> outcome: no sample is below any bound. Per corner (mean / sigma): gain
+> 95.70-96.09 dB / 0.05 dB, GBW 15.45-17.46 MHz / 0.23-0.29 MHz, PM
+> 76.48-78.72 deg / 0.21-0.24 deg; the lowest mean - 3 sigma is 14.78 MHz GBW
+> (ss), 75.75 deg PM (fs) and 95.54 dB gain (ss). These are descriptive
+> figures, not a yield claim. The record is not in `sim/report/selection.json`
+> (the aggregate report has no gain-gbw-pm-mc extractor; integration is
+> deferred), is not cited by `manifests/`, and T1 item 6 stays unmet.
 
 It measures; it judges nothing new. Samples are compared with the ratified
 bounds the deterministic driver uses (gain ≥ 60 dB, GBW ≥ 10 MHz into
@@ -104,7 +113,7 @@ request after a fleet capacity refusal.
   the runner prints a table labelled `DIAGNOSTIC ONLY`, with valid-only
   figures and their valid counts, and writes nothing.
 
-## Campaign gate (#42)
+## Campaign gate (#42, satisfied for the record above)
 
 PM is the one ratified row that currently fails (#42 is redesigning the DUT
 for it). A Monte Carlo of the pre-redesign DUT would describe a design
@@ -142,7 +151,7 @@ python3 sim/gain-gbw-pm-mc/test_gain_gbw_pm_mc.py          # offline tests (no s
 python3 sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py --smoke   # local single units, writes nothing
 python3 sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py --probe \
         --batch-runner-version-check warn                  # N=3 transport probe (batch), writes nothing
-# after #42 lands (revised DUT + its deterministic record on origin/main):
+# campaign (run once for record 20261011-072005-9c9b0f1; revised DUT + its deterministic record on origin/main):
 python3 sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py --revised-dut-sha256 <sha256> \
         --deterministic-record <gain-gbw-pm rid> --batch-runner-version-check warn \
         --batch-submit-retries 10                          # full campaign + record (append-only)

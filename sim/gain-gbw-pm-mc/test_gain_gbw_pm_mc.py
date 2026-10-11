@@ -602,8 +602,14 @@ m._extract_real = m.extract
 
 class NoRecordsTests(unittest.TestCase):
     def test_suite_writes_nothing_into_the_experiment(self):
-        for d in ("records", "corners", "netlist-snapshots", "probes"):
-            self.assertFalse((HERE / d).exists(), f"{d}/ must not exist until the #42-gated campaign runs")
+        # Issue #142 committed the one campaign record; the suite must add no other.
+        self.assertFalse((HERE / "probes").exists(), "probes/ must not exist (probe writes nothing)")
+        for d, expect in (("records", {"20261011-072005-9c9b0f1.md"}),
+                          ("corners", {"20261011-072005-9c9b0f1"}),
+                          ("netlist-snapshots", {"20261011-072005-9c9b0f1.spice"})):
+            p = HERE / d
+            got = {x.name for x in p.iterdir()} if p.exists() else set()
+            self.assertEqual(got, expect, f"{d}/ must hold only the committed #142 evidence")
 
 
 if __name__ == "__main__":
