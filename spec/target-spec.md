@@ -129,7 +129,7 @@ guessed — an explicit
 [DR-3](decision-records/0003-target-spec-ratification.md) open-verdict with
 its residual-register entry, never a silent one — per `CLAUDE.md`'s "no
 claim without a testbench." Every ratified target above is a **design-to
-bound, not a met result** (three have now been judged by a committed record: gain and GBW pass, phase margin fails): the [DR-2] bounds (DC gain, output swing) were
+bound, not a met result** (which rows have been judged by a committed record, and their verdicts, are given by the generated [characterization report](../sim/reports/characterization-report.md), not restated here): the [DR-2] bounds (DC gain, output swing) were
 argued from the committed gm/ID device data and [DR-1]'s topology/`CL`
 choices without any new amplifier-sizing decision; the remaining
 [DR-3](decision-records/0003-target-spec-ratification.md) §(b) bounds
