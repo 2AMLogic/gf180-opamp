@@ -108,6 +108,12 @@ python3 overdrive-recovery/test_overdrive_recovery.py
 echo "== sim/overdrive-recovery: smoke test (typical, 27C, 3.30 V, one local point) =="
 python3 overdrive-recovery/run_overdrive_recovery.py --smoke
 
+echo "== sim/enable-acquisition: extraction + source-guard tests (no simulator) =="
+python3 enable-acquisition/test_enable_acquisition.py
+
+echo "== sim/enable-acquisition: smoke test (typical, 27C, 3.30 V, one local point per scenario; writes no record) =="
+python3 enable-acquisition/run_enable_acquisition.py --smoke
+
 echo "== sim/input-common-mode: request/extraction/range tests (local nominal units run) =="
 python3 input-common-mode/test_input_common_mode.py
 
