@@ -5,7 +5,7 @@
 # breaks one testbench source guard and one extraction in EACH simulator-free
 # experiment (gain-gbw-pm, noise, offset-mc, cmrr, cmrr-mc, gain-gbw-pm-mc, psrr,
 # psrr-mc, slew-swing-power, input-common-mode, step-response,
-# ibias-cl-sensitivity),
+# overdrive-recovery, ibias-cl-sensitivity),
 # and requires that experiment's unit suite to FAIL for each (after a control
 # run of the unmutated suite). Issue #131 adds the shared modules whose suites
 # are wired into selftest.sh: sim/harness.py (test_harness.py) and
@@ -188,6 +188,20 @@ expect_fail step-response test_step_response.py gain-gbw-pm/run_gain_gbw_pm.py \
 expect_fail step-response test_step_response.py step-response/run_step_response.py \
   "extraction: overshoot offset by 1 % of the step" \
   'overshoot = max(0.0, float(yw.max()) - 1.0)' 'overshoot = max(0.0, float(yw.max()) - 0.99)'
+
+# overdrive-recovery (issue #183) reuses the gain driver's testbench and DUT
+# guards, so the guard mutations land in gain-gbw-pm/run_gain_gbw_pm.py, and
+# the step driver's window/settling helpers.
+control overdrive-recovery test_overdrive_recovery.py
+expect_fail overdrive-recovery test_overdrive_recovery.py gain-gbw-pm/run_gain_gbw_pm.py \
+  "guard: shared gain-driver DUT-include check removed" \
+  'if DUT_INCLUDE_NAME not in targets:' 'if False:'
+expect_fail overdrive-recovery test_overdrive_recovery.py gain-gbw-pm/run_gain_gbw_pm.py \
+  "guard: stale/altered DUT line no longer rejected" \
+  'errs.append(f"export line missing or altered in the DUT: {ln[:70]}")' 'pass'
+expect_fail overdrive-recovery test_overdrive_recovery.py overdrive-recovery/run_overdrive_recovery.py \
+  "extraction: recovery band halved" \
+  'band_v = BAND_FRAC * abs(v_ref)' 'band_v = 0.5 * BAND_FRAC * abs(v_ref)'
 
 # ibias-cl-sensitivity (issue #131): the substitution helpers' exactly-one-match
 # guard and the control-vs-committed-record comparison.
