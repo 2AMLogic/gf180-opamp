@@ -482,6 +482,39 @@ class PassiveCornerTests(unittest.TestCase):
         self.assertIn("res_ss", md)
         self.assertIn("**FAIL**", md)  # PM 57 at RZ best misses the unchanged 60 deg bound
 
+    def test_full_scope_request_and_record(self):
+        """Issue #150: --passive-scope full is the whole 45-point x 9 matrix (405 cells)."""
+        pts = r.scope_points("full")
+        req = r.passive_ac_request(Path("/x/tb.spice"), types.SimpleNamespace(variant="gf180mcuD"), pts)
+        self.assertEqual(len(req["corners"]["process"]), 45)
+        self.assertNotIn("exclude", req)
+        self.assertEqual(len(r.passive_expected_keys(pts)), 405)
+        self.assertEqual(len(r.passive_expected_keys()), 27)  # limited default untouched
+        results = {k: r.Metrics(valid=True, dc_gain_db=90.0, gbw_hz=12e6, pm_deg=65.0)
+                   for k in r.passive_expected_keys(pts)}
+        worst = (r.passive_name("sf", "worst", "best"), -40.0, 3.63)
+        results[worst] = r.Metrics(valid=True, dc_gain_db=90.0, gbw_hz=9e6, pm_deg=58.0)
+        from datetime import datetime, timezone
+        md = r.build_passive_record(
+            record="X", stamp=datetime.now(timezone.utc), pdk=types.SimpleNamespace(path="/p", version="v"),
+            ngspice="n", klt_version="k", backend_desc="b", report={}, results=results, dut_sha="0",
+            base_record="B", scope="full")
+        self.assertIn("**Scope**: `full`", md)
+        self.assertIn("= 405 cells", md)
+        self.assertIn("passes at 404/405 study cells (fails at 1/405)", md)
+        self.assertIn("worst 58.00 deg at sf / -40 C / 3.63 V, RZ worst, CC best", md)
+        self.assertEqual(md.count("\n### "), 45)
+        lim = r.build_passive_record(
+            record="X", stamp=datetime.now(timezone.utc), pdk=types.SimpleNamespace(path="/p", version="v"),
+            ngspice="n", klt_version="k", backend_desc="b", report={},
+            results={k: results[k] for k in r.passive_expected_keys()}, dut_sha="0", base_record="B")
+        self.assertIn("**Scope**: `limited`", lim)
+        self.assertIn("= 27 cells", lim)
+
+    def test_passive_scope_flag(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            r.main(["--passive-scope", "full"])  # requires --passive-corners
+
     def test_verdict_counts_are_pass_counts_labelled_as_such(self):
         """Issue #70 review: the header printed the PASS count after FAIL."""
         keys = r.passive_expected_keys()

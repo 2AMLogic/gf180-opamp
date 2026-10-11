@@ -1083,9 +1083,10 @@ def passive_request(fig: str, netlist: Path, pdk: Pdk, points=pc.PASSIVE_POINTS)
 
 
 def analyse_passive_report(fig: str, report: dict, want: list[Key]):
-    """`analyse_report` plus a check that every cell's generated deck loads the
-    PDK sections its name encodes. Returns (results, arts, problems)."""
+    """`analyse_report` plus an exact-key-set check and a check that every cell's
+    generated deck loads the PDK sections its name encodes. Returns (results, arts, problems)."""
     results, arts, problems = analyse_report(fig, report, want)
+    problems += [f"{fig}: {p}" for p in pc.key_set_problems([g.point_key(c) for c in report.get("corners", [])], want)]
     for k, a in arts.items():
         deck = a.get("deck")
         if not deck or not Path(deck).is_file():
@@ -1095,7 +1096,7 @@ def analyse_passive_report(fig: str, report: dict, want: list[Key]):
     return results, arts, problems
 
 
-def passive_summary(results: dict[Key, Metrics], fig: str, points=pc.PASSIVE_POINTS) -> dict:
+def passive_summary(results: dict[Key, Metrics], fig: str, points=pc.PASSIVE_POINTS) -> dict:  # noqa: E501
     """Per study point: {(res, mim): (metrics, relative change vs both-typical in %, passes)}."""
     _, attr, _, _, _ = ROWS[fig]
     out: dict = {}
@@ -1126,16 +1127,19 @@ def _val(m: Metrics, fig: str) -> str:
 
 def build_passive_record(
     *, record, stamp, pdk, ngspice, klt_version, backend_descs, all_results, verdicts, ctrls, ctrl_bad,
-    dut_sha, not_run, figs=FIGURES, base_records: str = "",
+    dut_sha, not_run, figs=FIGURES, base_records: str = "", scope: str = "limited",
 ) -> str:
     L: list[str] = []
     add = L.append
     ran = [f for f in FIGURES if all_results.get(f) is not None]
-    ncell = len(pc.passive_expected_keys())
+    points = pc.scope_points(scope)
+    ncell = len(pc.passive_expected_keys(points))
     add(f"{PASSIVE_TITLE} (RZ x CC) -- record {record}")
     add("")
     add(f"- **Date (UTC)**: {stamp:%Y-%m-%d %H:%M:%S}")
-    add("- **Issue**: #97 (DR-3 section (d) obligation; replaces the analytic slew scaling of the gain/GBW/PM passive study with a measurement)")
+    add("- **Issue**: #97 (DR-3 section (d) obligation; replaces the analytic slew scaling of the gain/GBW/PM passive study with a measurement)"
+        + ("; #150 (full 405-cell envelope)" if scope == "full" else ""))
+    add(f"- **Scope**: `{scope}` -- {pc.scope_description(scope)}")
     add("- **Record kind**: SIDE STUDY. It does not judge, replace or supersede any aggregate-report row; "
         f"the default 45-point grid records (typical passives) stay authoritative{(': ' + base_records) if base_records else ''}. "
         "No spec row or bound is edited here.")
@@ -1163,7 +1167,7 @@ def build_passive_record(
     for f in ran:
         add(f"  - {f}: {backend_descs.get(f, '')}")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (normalised sha256 `{dut_sha}`); snapshot `netlist-snapshots/{record}.spice`")
-    add("- **Points**: " + "; ".join(f"{m} / {t:g} C / {v:.2f} V" for m, t, v in pc.PASSIVE_POINTS)
+    add("- **Points**: " + "; ".join(f"{m} / {t:g} C / {v:.2f} V" for m, t, v in points)
         + f", each x 3 RZ levels x 3 CC levels = {ncell} cells; ibias = 10 uA, same benches and extraction as the 45-point grid.")
     add("- **Passive-section policy (swept)**: RZ (`ppolyf_u_1k`) uses `res_typical` / `res_ff` (best, 0.8x) / `res_ss` (worst, 1.2x); "
         "CC (`cap_mim_2f0_m4m5_noshield`) uses `mimcap_typical` / `mimcap_ff` (best, 0.9x) / `mimcap_ss` (worst, 1.1x). "
@@ -1174,7 +1178,7 @@ def build_passive_record(
     for f in ran:
         label, _, bound, unit, direction = ROWS[f]
         cmp_ = ">=" if direction == "min" else "<="
-        summ = passive_summary(all_results[f], f)
+        summ = passive_summary(all_results[f], f, points)
         for (m, t, v), rows in summ.items():
             add("")
             add(f"### {label} -- {m} / {t:g} C / {v:.2f} V (bound {cmp_} {bound:g} {unit})")
@@ -1221,12 +1225,15 @@ def build_passive_record(
 
 
 def run_passive(pdk: Pdk, args, figs) -> int:
-    want = pc.passive_expected_keys()
+    scope = getattr(args, "passive_scope", "limited")
+    points = pc.scope_points(scope)
+    want = pc.passive_expected_keys(points)
+    assert len(want) == pc.SCOPE_CELLS[scope], (scope, len(want))
     record, stamp = allocate_record_id(REPO_ROOT)
     paths = claim_record_paths(HERE, record, plots=False)
     ngspice = ngspice_version()
     kver = klt_version()
-    print(f"record {record}: passive-corner study, {len(want)} cells x {len(figs)} figures ({', '.join(figs)}), PDK={pdk.path}, klt {kver}")
+    print(f"record {record}: passive-corner study ({scope}), {len(want)} cells x {len(figs)} figures ({', '.join(figs)}), PDK={pdk.path}, klt {kver}")
     all_results: dict[str, dict[Key, Metrics] | None] = {}
     all_arts: dict[str, dict] = {}
     reports: dict[str, dict] = {}
@@ -1237,7 +1244,7 @@ def run_passive(pdk: Pdk, args, figs) -> int:
         work = Path(scratch)
         for fig in figs:
             tb = materialise(fig, work / fig, pdk)
-            req = passive_request(fig, tb, pdk)
+            req = passive_request(fig, tb, pdk, points)
             req["batch"] = batch_block(args)
             reqs[fig] = req
             try:
@@ -1316,7 +1323,7 @@ def run_passive(pdk: Pdk, args, figs) -> int:
         md = build_passive_record(
             record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, klt_version=kver,
             backend_descs=backend_descs, all_results=all_results, verdicts=verdicts, ctrls=ctrls,
-            ctrl_bad=ctrl_bad, dut_sha=dut_sha, not_run=not_run, figs=figs, base_records=base_records,
+            ctrl_bad=ctrl_bad, dut_sha=dut_sha, not_run=not_run, figs=figs, base_records=base_records, scope=scope,
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
@@ -1369,6 +1376,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="opt-in side study (issue #97): RZ x CC passive corners (3x3 independent res/mimcap sections) "
                          "at fs/125C/2.97V, ss/125C/2.97V and nominal, one klt corner-matrix request per figure; mints a "
                          "side-study record the aggregate report never selects")
+    ap.add_argument("--passive-scope", choices=["limited", "full"], default="limited",
+                    help="with --passive-corners: 'limited' (default, issue #97) = 3 screening points x 9 RZ/CC = 27 cells "
+                         "per figure; 'full' (issue #150) = all 5 MOS x 3 T x 3 VDD x 9 RZ/CC = 405 cells per figure")
     ap.add_argument("--backend", help="klt execution backend for the 45-point grids (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--strict", action="store_true", help="exit 1 when a ratified row misses")
     ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
@@ -1389,6 +1399,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.smoke:
         return smoke(pdk)
 
+    if args.passive_scope != "limited" and not args.passive_corners:
+        ap.error("--passive-scope requires --passive-corners")
     if args.passive_corners:
         return run_passive(pdk, args, figs)
 

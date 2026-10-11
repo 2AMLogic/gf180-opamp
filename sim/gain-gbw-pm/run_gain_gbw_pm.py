@@ -137,6 +137,11 @@ from passive_corners import (  # noqa: E402,F401
     MIM_FACTOR,
     PASSIVE_LEVELS,
     PASSIVE_POINTS,
+    SCOPE_CELLS,
+    key_set_problems,
+    scope_description,
+    scope_points,
+    deck_section_problems,
     RES_FACTOR,
     apply_passive_matrix,
     passive_combos,
@@ -1331,7 +1336,7 @@ def passive_verdict_lines(results: dict[Key, Metrics]) -> list[str]:
 
 def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_desc, report,
                          results, dut_sha, base_record, supersedes: str | None = None,
-                         supersede_note: str = "", findings: str = "") -> str:
+                         supersede_note: str = "", findings: str = "", scope: str = "limited") -> str:
     """Markdown for a passive-corner record.
 
     `supersedes` (with `supersede_note`) marks a record regenerated from an
@@ -1342,7 +1347,8 @@ def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_de
     L: list[str] = []
     add = L.append
     remote = (report.get("environment") or {}).get("remote") or {}
-    summ = passive_summary(results)
+    points = scope_points(scope)
+    summ = passive_summary(results, points)
     pm_ok = all(m.valid and m.pm_deg >= PM_MIN_DEG for m in results.values())
     gbw_ok = all(m.valid and m.gbw_hz >= GBW_MIN_HZ for m in results.values())
     data_id = supersedes or record
@@ -1352,7 +1358,9 @@ def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_de
     add(f"- **Date (UTC)**: {stamp:%Y-%m-%d %H:%M:%S}")
     if supersedes:
         add(f"- **Supersedes**: `{supersedes}` -- {supersede_note}")
-    add("- **Issue**: #70 (DR-3 section (d) RZ PVT-tracking quantification; tracker #7 item 5)")
+    add("- **Issue**: #70 (DR-3 section (d) RZ PVT-tracking quantification; tracker #7 item 5)"
+        + ("; #150 (full 405-cell envelope)" if scope == "full" else ""))
+    add(f"- **Scope**: `{scope}` -- {scope_description(scope)}")
     add(f"- **Measured against**: the committed sized schematic; the default 45-point grid record is `{base_record}` (unchanged, typical passives)")
     add("- **Verdict (spec bounds NOT edited here)**:")
     L.extend(passive_verdict_lines(results))
@@ -1372,7 +1380,7 @@ def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_de
     if remote:
         add(f"  - environment.remote: `{json.dumps(remote, sort_keys=True)}`")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (normalised sha256 `{dut_sha}`); snapshot `netlist-snapshots/{data_id}.spice`")
-    add("- **Points**: " + "; ".join(f"{m} / {t:g} C / {v:.2f} V" for m, t, v in PASSIVE_POINTS)
+    add("- **Points**: " + "; ".join(f"{m} / {t:g} C / {v:.2f} V" for m, t, v in points)
         + f", each x 3 RZ levels x 3 CC levels = {len(results)} cells; ibias = 10 uA, CL = 2 pF, same `.ac` and extraction as the 45-point grid.")
     add("- **Passive-section policy (swept)**: RZ (`ppolyf_u_1k`) uses `res_typical` / `res_ff` (best, 1000-200 ohm = 0.8x) / "
         "`res_ss` (worst, 1000+200 ohm = 1.2x); CC (`cap_mim_2f0_m4m5_noshield`) uses `mimcap_typical` / `mimcap_ff` "
@@ -1422,16 +1430,19 @@ def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_de
 
 
 def run_passive(pdk: Pdk, args) -> int:
-    want = passive_expected_keys()
+    scope = getattr(args, "passive_scope", "limited")
+    points = scope_points(scope)
+    want = passive_expected_keys(points)
+    assert len(want) == SCOPE_CELLS[scope], (scope, len(want))
     record, stamp = allocate_record_id(REPO_ROOT)
     paths = claim_record_paths(HERE, record, plots=False)
     ngspice = ngspice_version()
     kver = klt_version()
-    print(f"record {record}: passive-corner study, {len(want)} cells, PDK={pdk.path}, klt {kver}")
+    print(f"record {record}: passive-corner study ({scope}), {len(want)} cells, PDK={pdk.path}, klt {kver}")
     with tempfile.TemporaryDirectory(prefix="gainpm-pas-") as scratch:
         work = Path(scratch)
         tb = materialise(work / "grid", pdk)
-        req = passive_ac_request(tb, pdk)
+        req = passive_ac_request(tb, pdk, points)
         req["batch"] = batch_block(args)
         try:
             report = run_klt_retrying(
@@ -1442,6 +1453,13 @@ def run_passive(pdk: Pdk, args) -> int:
             print(f"ERROR: the passive-corner request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
             return 2
         results, arts, problems = analyse_ac_report(report, want)
+        problems += key_set_problems([point_key(c) for c in report.get("corners", [])], want)
+        for k, a in arts.items():
+            deck = a.get("deck")
+            if not deck or not Path(deck).is_file():
+                problems.append(f"no generated deck retained for {fmt_key(k)}; cannot verify its sections")
+            else:
+                problems += deck_section_problems(k, Path(deck).read_text())
         if problems:
             print("ERROR: passive-corner study did not complete cleanly; NO RECORD WRITTEN:", file=sys.stderr)
             for p in problems:
@@ -1483,7 +1501,7 @@ def run_passive(pdk: Pdk, args) -> int:
         md = build_passive_record(
             record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, klt_version=kver,
             backend_desc=backend_desc, report=report, results=results, dut_sha=dut_sha,
-            base_record=base.removesuffix(".md"),
+            base_record=base.removesuffix(".md"), scope=scope,
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
@@ -2070,6 +2088,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="opt-in: RZ x CC passive-corner study (3x3 independent poly-resistor / "
                     "MIM-cap sections at fs/125C/2.97V, ss/125C/2.97V and nominal) as ONE klt sim "
                     "request; the default 45-point grid is unchanged")
+    ap.add_argument("--passive-scope", choices=["limited", "full"], default="limited",
+                    help="with --passive-corners: 'limited' (default, issue #70) = the 3 screening points x 9 RZ/CC = 27 "
+                         "cells; 'full' (issue #150) = all 5 MOS x 3 T x 3 VDD x 9 RZ/CC = 405 cells in one klt request")
     ap.add_argument("--recompute-passive", metavar="RECORD",
                     help="no simulator: write a new record superseding passive-corner RECORD, "
                     "regenerated from its committed corners/RECORD/ data")
@@ -2103,6 +2124,8 @@ def main(argv: list[str] | None = None) -> int:
         except VcmRequestError as exc:
             ap.error(str(exc))
 
+    if args.passive_scope != "limited" and not args.passive_corners:
+        ap.error("--passive-scope requires --passive-corners")
     if args.recompute_passive:
         return run_recompute_passive(args.recompute_passive)
     if args.recompute_fixed_vcm:
