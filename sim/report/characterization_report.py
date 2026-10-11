@@ -241,8 +241,25 @@ def extract_gain(text: str, label: str) -> dict:
             raise ReportError(
                 f"{label}: {key} verdict table ({r['pass']}/{r['total']}, worst {r['worst_value']}) "
                 f"disagrees with its own per-point table ({n_pass}/{len(data)}, worst {worst})")
+        derived = "PASS" if n_pass == len(data) else "FAIL"
+        if r["verdict"] != derived:
+            raise ReportError(
+                f"{label}: {key} verdict token {r['verdict']} disagrees with its own per-point table "
+                f"({n_pass}/{len(data)} points pass; the token must be {derived})")
+        worst_pts = {fmt_point(d[0], d[1], d[2]) for d in data if d[idx] <= worst + tol}
+        if r["worst_corner"] not in worst_pts:
+            raise ReportError(
+                f"{label}: {key} binding corner '{r['worst_corner']}' is not a worst point of its own "
+                f"per-point table (worst {worst} at {', '.join(sorted(worst_pts))})")
         rows[key]["bound_value"] = bound
     stretch = re.search(r"open-loop DC gain >= 70 dB holds at (\d+)/(\d+)", text)
+    if stretch:
+        s_pass, s_total = int(stretch.group(1)), int(stretch.group(2))
+        s_derived = sum(1 for d in data if d[3] >= 70.0)
+        if s_total != len(data) or s_pass != s_derived:
+            raise ReportError(
+                f"{label}: stretch count ({s_pass}/{s_total}) disagrees with its own per-point table "
+                f"({s_derived}/{len(data)} gain points >= 70 dB)")
     cov = coverage_of(pts)
     lim = common_limitations(text, prov, cov)
     lim.append("provisional gain/GBW/PM records are superseded by this one and are not used as evidence")
