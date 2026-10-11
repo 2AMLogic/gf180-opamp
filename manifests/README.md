@@ -41,7 +41,8 @@ runs it before grading.
 
 **What `pass` means:** the aggregated report was produced and verified against
 its selected committed records. It does **not** assert that every spec row
-passes — the report still shows its failed row (currently one), the
+passes — the report may still show failed rows (see
+`sim/reports/characterization-report.md` for the current count), the
 open-bound rows, the unmeasured rows, coverage and provenance limitations.
 
 Items 1–7 and 9–11 remain `unmet`/`no_evidence`, so `tier` is `null` and the
