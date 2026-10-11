@@ -695,15 +695,19 @@ def point_stem(k: Key) -> str:
 def latest_gain_dir() -> Path | None:
     """Newest gain-bench corner directory holding a full 45-point dataset.
 
-    Counts only per-point data files (`<process>_<T>c_<vdd>v.dat`), so an
-    auxiliary `.dat` in a record directory cannot masquerade as a point
-    (issue #68: one copy, shared by the noise/CMRR/PSRR cross-checks).
+    Requires every default-grid per-point data file (`<process>_<T>c_<vdd>v.dat`)
+    to be present, so an auxiliary `.dat` in a record directory cannot
+    masquerade as a point (issue #68) and a passive-study directory — whose
+    `<process>__r-*__c-*_<T>c_<vdd>v.dat` files match the old glob but never
+    the default stems — cannot displace the default grid (issue #161). One
+    copy, shared by the noise/CMRR/PSRR cross-checks.
     """
     base = HERE / "corners"
     if not base.is_dir():
         return None
+    stems = {f"{point_stem(k)}.dat" for k in expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)}
     for d in sorted((p for p in base.iterdir() if p.is_dir()), reverse=True):
-        if len(list(d.glob("*_*c_*v.dat"))) >= 45:
+        if stems <= {p.name for p in d.glob("*.dat")}:
             return d
     return None
 

@@ -834,5 +834,67 @@ class FixedVcmTests(unittest.TestCase):
         self.assertEqual(len(r.fixed_vcm_misses(res, want)), len(r.ROWS))
 
 
+class GainDirSelectionTests(unittest.TestCase):
+    """latest_gain_dir selects the newest full default grid, never a study
+    directory whose .dat files merely reach the 45-file glob count (#161)."""
+
+    def setUp(self):
+        self._here = r.HERE
+
+    def tearDown(self):
+        r.HERE = self._here
+
+    def _make_grid_dir(self, base: Path, name: str, drop: int = 0, extra: bool = False) -> Path:
+        d = base / "corners" / name
+        d.mkdir(parents=True)
+        for i, k in enumerate(r.expected_keys(r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)):
+            if i < drop:
+                continue
+            (d / f"{r.point_stem(k)}.dat").write_text("")
+        if extra:
+            (d / "aux_-40c_3.30v.dat").write_text("")  # issue #68 auxiliary file
+        return d
+
+    def _make_passive_dir(self, base: Path, name: str) -> Path:
+        d = base / "corners" / name
+        d.mkdir(parents=True)
+        n = 0
+        for k in r.expected_keys(r.CORNERS, r.TEMPS_C, r.SUPPLIES_V):
+            for res in ("worst", "typ", "best"):
+                for cap in ("worst", "typ", "best"):
+                    (d / f"{k[0]}__r-{res}__c-{cap}_{k[1]:g}c_{k[2]:.2f}v.dat").write_text("")
+                    n += 1
+        self.assertEqual(n, 405)
+        return d
+
+    def test_newest_full_default_grid_beats_newer_passive_study(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = Path(d)
+            full = self._make_grid_dir(base, "20261010-161514-0127eb7", extra=True)
+            self._make_passive_dir(base, "20261011-042113-c635487")
+            r.HERE = base
+            self.assertEqual(r.latest_gain_dir(), full)
+
+    def test_passive_study_alone_is_never_selected(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = Path(d)
+            self._make_passive_dir(base, "20261011-042113-c635487")
+            r.HERE = base
+            self.assertIsNone(r.latest_gain_dir())
+
+    def test_incomplete_grid_is_skipped_for_an_older_full_one(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = Path(d)
+            full = self._make_grid_dir(base, "20261009-055759-2524b3e")
+            self._make_grid_dir(base, "20261010-020141-1e51d1c", drop=1)
+            r.HERE = base
+            self.assertEqual(r.latest_gain_dir(), full)
+
+    def test_missing_corners_dir_returns_none(self):
+        with tempfile.TemporaryDirectory() as d:
+            r.HERE = Path(d)
+            self.assertIsNone(r.latest_gain_dir())
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
