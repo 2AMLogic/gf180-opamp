@@ -59,6 +59,8 @@ def make_root(tmp: Path) -> Path:
     net = tmp / "design" / "netlist"
     net.mkdir(parents=True, exist_ok=True)
     shutil.copy(REPO / "design" / "netlist" / "opamp_two_stage.spice", net / "opamp_two_stage.spice")
+    # psrr/measurement_config.py loads the shared passive helpers (issue #155)
+    shutil.copy(REPO / "sim" / "passive_corners.py", tmp / "sim" / "passive_corners.py")
     for exp in ("gain-gbw-pm", "noise", "offset-mc", "cmrr", "psrr", "slew-swing-power"):
         mc = tmp / "sim" / exp
         (mc / "testbench").mkdir(parents=True, exist_ok=True)
@@ -655,6 +657,15 @@ class Mutations(unittest.TestCase):
         rec.write_text("# gain/GBW/PM passive-corner study (RZ x CC) -- record 29991231-235959-0000000\n")
         self.assertEqual(cr.latest_selection(self.root)["gain-gbw-pm"],
                          "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md")
+
+    def test_latest_selection_ignores_the_psrr_passive_study(self):
+        # issue #155: the standalone PSRR RZ x CC study lives beside the PSRR grid records but is
+        # never selected as one, and it is NOT a supplementary study (no report integration)
+        want = json.loads(MANIFEST.read_text())["experiments"]["psrr"]
+        rec = self.root / "sim/psrr/records/29991231-235959-0000000.md"
+        rec.write_text("# PSRR passive-corner study (RZ x CC) -- record 29991231-235959-0000000\n")
+        self.assertEqual(cr.latest_selection(self.root)["psrr"], want)
+        self.assertFalse(any(v["experiment"] == "psrr" for v in cr.SUPPLEMENTARY.values()))
 
     def test_latest_selection_picks_the_offset_pvt_grid_record(self):
         # issue #120: the full-grid offset record is read by the offset extractor, not a side study
