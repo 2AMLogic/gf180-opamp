@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.1047",
-  "loom_commit": "b801ec198a3113b88fa9292ccd75f934ab0c1679",
+  "loom_version": "0.19.1048",
+  "loom_commit": "bbdb3aa17fb7edd9739b7942398196f59fe618f9",
   "install_date": "2026-09-05",
   "loom_source_remote": "git@github.com:rjwalters/loom.git",
   "installed_files": [
@@ -542,7 +542,8 @@
     ".loom/scripts/tests/test-champion-pr-merge-negation-guard.sh",
     ".loom/docs/native-sweep.md",
     ".loom/docs/premise-gate.md",
-    ".loom/scripts/tests/test-premise-check.sh"
+    ".loom/scripts/tests/test-premise-check.sh",
+    ".loom/runtimes/gemini.json"
   ],
   "last_resync": "2026-10-11",
   "requires_daemon": "0.19.772"
