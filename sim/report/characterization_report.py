@@ -45,6 +45,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 SCHEMA = 1
@@ -2699,6 +2700,33 @@ def generate(root: Path, manifest_path: Path, spec_rel: str = "spec/target-spec.
     return render_md(rep), render_json(rep)
 
 
+def publish(files: dict) -> None:
+    """Replace each destination with its candidate content, staging first.
+
+    Every file is written to a temporary sibling before any destination is
+    touched, so a staging failure leaves all published files unchanged.  The
+    final renames are individually atomic but not a crash-atomic transaction.
+    """
+    staged = []
+    try:
+        for dest, content in files.items():
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            fd, tmp = tempfile.mkstemp(prefix=f".{dest.name}.", suffix=".tmp", dir=dest.parent)
+            staged.append((Path(tmp), dest))
+            with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+                fh.write(content)
+            if dest.exists():
+                os.chmod(tmp, dest.stat().st_mode & 0o7777)
+            else:
+                os.chmod(tmp, 0o644)
+        for tmp, dest in staged:
+            os.replace(tmp, dest)
+        staged = []
+    finally:
+        for tmp, _ in staged:
+            tmp.unlink(missing_ok=True)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST, help="selection manifest (default: sim/report/selection.json)")
@@ -2706,7 +2734,7 @@ def main(argv=None) -> int:
     ap.add_argument("--out-dir", type=Path, default=None, help=f"output directory (default: <root>/{OUT_DIR_REL})")
     ap.add_argument("--check", action="store_true", help="regenerate in memory and compare with the committed output; write nothing")
     ap.add_argument("--latest", action="store_true", help="select the newest record of every experiment (used by characterize.sh)")
-    ap.add_argument("--update-manifest", action="store_true", help="with --latest: write the selection to --manifest first")
+    ap.add_argument("--update-manifest", action="store_true", help="with --latest: publish the selection to --manifest, only after the candidate report validated and rendered")
     ap.add_argument("--stdout", action="store_true", help="print the Markdown report instead of writing files")
     ap.add_argument("--archival", action="store_true",
                     help="historical report: skip the current-DUT gate. Needs --stdout or an explicit --out-dir, "
@@ -2723,6 +2751,9 @@ def main(argv=None) -> int:
             print(f"characterization_report: error: --archival must not write to {OUT_DIR_REL}", file=sys.stderr)
             return 2
     out_dir = (a.out_dir or root / OUT_DIR_REL)
+    # Everything is validated and rendered in memory first; nothing is published
+    # (selection manifest included) until the whole candidate bundle exists.
+    manifest_text = None
     try:
         if a.latest:
             m = {"experiments": latest_selection(root)}
@@ -2731,21 +2762,26 @@ def main(argv=None) -> int:
                 sup = load_manifest(a.manifest).get("supplementary")
                 if sup:
                     m["supplementary"] = sup
-            if a.update_manifest:
-                a.manifest.write_text(json.dumps(m, indent=2, sort_keys=True) + "\n")
             rep = build(root, m)
             md, js = render_md(rep), render_json(rep)
+            if a.update_manifest and not a.check:
+                manifest_text = json.dumps(m, indent=2, sort_keys=True) + "\n"
         else:
             md, js = generate(root, a.manifest, archival=a.archival)
+        evidence = None if a.archival else render_evidence(js)
     except ReportError as e:
         print(f"characterization_report: error: {e}", file=sys.stderr)
         return 2
+    files = {}
+    if manifest_text is not None:
+        files[a.manifest] = manifest_text
     if a.stdout:
+        publish(files)
         sys.stdout.write(md)
         return 0
     targets = {out_dir / f"{OUT_NAME}.md": md, out_dir / f"{OUT_NAME}.json": js}
-    if not a.archival:
-        targets[out_dir / f"{OUT_NAME}.evidence.json"] = render_evidence(js)
+    if evidence is not None:
+        targets[out_dir / f"{OUT_NAME}.evidence.json"] = evidence
     if a.check:
         bad = [str(p) for p, c in targets.items() if not p.is_file() or p.read_bytes() != c.encode("utf-8")]
         if bad:
@@ -2754,9 +2790,9 @@ def main(argv=None) -> int:
             return 1
         print("characterization_report: --check: committed report is up to date")
         return 0
-    out_dir.mkdir(parents=True, exist_ok=True)
-    for p, c in targets.items():
-        p.write_text(c)
+    files.update(targets)
+    publish(files)
+    for p in targets:
         print(f"wrote {p}")
     return 0
 

@@ -1963,5 +1963,96 @@ class SupplementaryPassiveStudies(unittest.TestCase):
         self.assertEqual(json.loads(mp.read_text()), json.loads(MANIFEST.read_text()))
 
 
+class AtomicPublication(unittest.TestCase):
+    """Issue #147: a failed candidate leaves the published bundle byte-identical."""
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+        self.mp = self.root / "sel.json"
+        self.mp.write_text(MANIFEST.read_text())
+        self.out = self.root / "o"
+        self.args = ["--root", str(self.root), "--manifest", str(self.mp), "--out-dir", str(self.out)]
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def run_main(self, extra):
+        import contextlib
+        import io
+        err = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            return cr.main(self.args + extra), err.getvalue()
+
+    def snapshot(self):
+        return {str(p.relative_to(self.root)): p.read_bytes() for p in sorted(self.root.rglob("*"))
+                if p.is_file() and ("o" in p.relative_to(self.root).parts[:1] or p == self.mp)}
+
+    def seed(self):
+        self.assertEqual(self.run_main([])[0], 0)
+        self.assertEqual(len(list(self.out.iterdir())), 3)
+
+    def test_report_error_leaves_bundle_unchanged(self):
+        self.seed()
+        self.mp.write_text(json.dumps({"experiments": {}, "stale": True}))  # distinct pre-state
+        before = self.snapshot()
+        # a newer malformed record makes --latest select something that cannot build
+        (self.root / "sim/gain-gbw-pm/records/99999999-000000-feedbee.md").write_text("not a record\n")
+        rc, err = self.run_main(["--latest", "--update-manifest"])
+        self.assertEqual(rc, 2, err)
+        self.assertEqual(self.snapshot(), before)
+
+    def test_missing_output_case_stays_missing(self):
+        # no committed bundle yet: a failed refresh must not create any output
+        before = self.snapshot()
+        (self.root / "sim/gain-gbw-pm/records/99999999-000000-feedbee.md").write_text("not a record\n")
+        rc, _ = self.run_main(["--latest", "--update-manifest"])
+        self.assertEqual(rc, 2)
+        self.assertFalse(self.out.exists())
+        self.assertEqual(self.snapshot(), before)
+
+    def test_render_failure_publishes_nothing(self):
+        self.seed()
+        before = self.snapshot()
+        orig = cr.render_json
+        cr.render_json = lambda rep: (_ for _ in ()).throw(RuntimeError("render boom"))
+        try:
+            with self.assertRaises(RuntimeError):
+                self.run_main(["--latest", "--update-manifest"])
+        finally:
+            cr.render_json = orig
+        self.assertEqual(self.snapshot(), before)
+
+    def test_staging_failure_publishes_nothing(self):
+        self.seed()
+        before = self.snapshot()
+        orig = os.replace
+        os.replace = lambda *a, **k: (_ for _ in ()).throw(OSError("replace boom"))
+        try:
+            with self.assertRaises(OSError):
+                self.run_main(["--latest", "--update-manifest"])
+        finally:
+            os.replace = orig
+        self.assertEqual(self.snapshot(), before)
+        self.assertEqual([p for p in self.root.rglob("*.tmp")], [])
+
+    def test_success_publishes_selection_and_matching_bundle(self):
+        old = json.loads(MANIFEST.read_text())
+        old["experiments"] = {"cmrr": old["experiments"]["cmrr"]}  # stale partial selection, supplementary kept
+        self.mp.write_text(json.dumps(old))
+        rc, err = self.run_main(["--latest", "--update-manifest"])
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(json.loads(self.mp.read_text()), json.loads(MANIFEST.read_text()))
+        self.assertEqual(self.run_main(["--check"])[0], 0)  # bundle built from exactly the published selection
+        self.assertEqual([p for p in self.root.rglob("*.tmp")], [])
+
+    def test_check_with_update_manifest_writes_nothing(self):
+        self.seed()
+        self.mp.write_text(json.dumps({"experiments": {}}))
+        before = self.snapshot()
+        self.run_main(["--latest", "--update-manifest", "--check"])
+        self.assertEqual(self.snapshot(), before)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
