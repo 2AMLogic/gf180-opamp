@@ -9,7 +9,9 @@
     "input-common-mode: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
     "coverage differs between sources (see each row's coverage; e.g. the CMRR mismatch Monte Carlo record is 5 corner points at 27 C / 3.30 V while the AC rows are full 45-point grids)",
     "supplementary gain-gbw-pm-passive-corners: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
-    "supplementary slew-swing-power-passive-corners: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not"
+    "supplementary gain-gbw-pm-passive-corners-full: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "supplementary slew-swing-power-passive-corners: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "supplementary slew-swing-power-passive-corners-full: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not"
   ],
   "manifest_selection": {
     "cmrr": "sim/cmrr/records/20261010-163601-0127eb7.md",
@@ -56,7 +58,8 @@
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "provisional gain/GBW/PM records are superseded by this one and are not used as evidence",
-        "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product): the study measures PM and GBW only (no DC-gain column): no gain observation"
+        "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product): the study measures PM and GBW only (no DC-gain column): no gain observation",
+        "supplementary side study `sim/gain-gbw-pm/records/20261011-042113-c635487.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product): the study measures PM and GBW only (no DC-gain column): no gain observation"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -101,7 +104,8 @@
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "provisional gain/GBW/PM records are superseded by this one and are not used as evidence",
-        "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures GBW >= 10 MHz: 27/27 cells pass, 0 fail; range 10.726 .. 19.095 MHz; worst 10.726 MHz at ss / 125 C / 2.97 V, RZ best, CC worst"
+        "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures GBW >= 10 MHz: 27/27 cells pass, 0 fail; range 10.726 .. 19.095 MHz; worst 10.726 MHz at ss / 125 C / 2.97 V, RZ best, CC worst",
+        "supplementary side study `sim/gain-gbw-pm/records/20261011-042113-c635487.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures GBW >= 10 MHz: 405/405 cells pass, 0 fail; range 10.726 .. 30.351 MHz; worst 10.726 MHz at ss / 125 C / 2.97 V, RZ best, CC worst"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -146,7 +150,8 @@
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
         "provisional gain/GBW/PM records are superseded by this one and are not used as evidence",
-        "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Phase margin >= 60 deg: 27/27 cells pass, 0 fail; range 64.47 .. 84.93 deg; worst 64.47 deg at fs / 125 C / 2.97 V, RZ best, CC best"
+        "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Phase margin >= 60 deg: 27/27 cells pass, 0 fail; range 64.47 .. 84.93 deg; worst 64.47 deg at fs / 125 C / 2.97 V, RZ best, CC best",
+        "supplementary side study `sim/gain-gbw-pm/records/20261011-042113-c635487.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures Phase margin >= 60 deg: 405/405 cells pass, 0 fail; range 64.47 .. 86.41 deg; worst 64.47 deg at fs / 125 C / 2.97 V, RZ best, CC best"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -190,7 +195,8 @@
       "limitations": [
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "supplementary side study `sim/slew-swing-power/records/20261010-162823-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Slew rate (slower of rise/fall, CL = 2 pF) >= 10 V/us: 27/27 cells pass, 0 fail; range 14.25 .. 17.82 V/us; worst 14.25 V/us at ss / 125 C / 2.97 V, RZ best, CC worst"
+        "supplementary side study `sim/slew-swing-power/records/20261010-162823-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Slew rate (slower of rise/fall, CL = 2 pF) >= 10 V/us: 27/27 cells pass, 0 fail; range 14.25 .. 17.82 V/us; worst 14.25 V/us at ss / 125 C / 2.97 V, RZ best, CC worst",
+        "supplementary side study `sim/slew-swing-power/records/20261011-052206-c635487.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures Slew rate (slower of rise/fall, CL = 2 pF) >= 10 V/us: 405/405 cells pass, 0 fail; range 14.25 .. 18.61 V/us; worst 14.25 V/us at ss / 125 C / 2.97 V, RZ best, CC worst"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -1762,7 +1768,8 @@
       "limitations": [
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "supplementary side study `sim/slew-swing-power/records/20261010-162823-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Output swing >= 2.3 Vpp: 27/27 cells pass, 0 fail; range 2.465 .. 2.893 Vpp; worst 2.465 Vpp at ss / 125 C / 2.97 V, RZ best, CC typical"
+        "supplementary side study `sim/slew-swing-power/records/20261010-162823-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Output swing >= 2.3 Vpp: 27/27 cells pass, 0 fail; range 2.465 .. 2.893 Vpp; worst 2.465 Vpp at ss / 125 C / 2.97 V, RZ best, CC typical",
+        "supplementary side study `sim/slew-swing-power/records/20261011-052206-c635487.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures Output swing >= 2.3 Vpp: 405/405 cells pass, 0 fail; range 2.465 .. 3.291 Vpp; worst 2.465 Vpp at ss / 125 C / 2.97 V, RZ best, CC typical"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -1806,7 +1813,8 @@
       "limitations": [
         "passives at typical only in this record: it does not sweep RZ/CC passive corners",
         "fleet runner klt version differs from the client's (compatibility mismatch)",
-        "supplementary side study `sim/slew-swing-power/records/20261010-162823-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Quiescent power <= 350 uW: 27/27 cells pass, 0 fail; range 239.2 .. 273.7 uW; worst 273.7 uW at typical / 27 C / 3.30 V, RZ typical, CC typical"
+        "supplementary side study `sim/slew-swing-power/records/20261010-162823-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Quiescent power <= 350 uW: 27/27 cells pass, 0 fail; range 239.2 .. 273.7 uW; worst 273.7 uW at typical / 27 C / 3.30 V, RZ typical, CC typical",
+        "supplementary side study `sim/slew-swing-power/records/20261011-052206-c635487.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures Quiescent power <= 350 uW: 405/405 cells pass, 0 fail; range 239.2 .. 311.0 uW; worst 311.0 uW at ff / -40 C / 3.63 V, RZ best, CC typical"
       ],
       "points_pass": 45,
       "points_total": 45,
@@ -2126,6 +2134,149 @@
       },
       "sha256": "fa2e7d93d7e9d567da20e03927bfc9ab0d7bff0e5df52cf287ec049ffdbf679d"
     },
+    "gain-gbw-pm-passive-corners-full": {
+      "backend": "aws-batch-fleet",
+      "dut_check": {
+        "matches_current_netlist": true,
+        "matches_selected_records": true
+      },
+      "dut_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
+      "experiment": "gain-gbw-pm",
+      "figures": {
+        "gbw": {
+          "bound_text": ">= 10 MHz",
+          "bound_value": 10.0,
+          "fail": 0,
+          "failing_cells": [],
+          "label": "GBW",
+          "pass": 405,
+          "range": [
+            "10.726",
+            "30.351"
+          ],
+          "sense": ">=",
+          "total": 405,
+          "unit": "MHz",
+          "verdict_in_record": "PASS",
+          "worst": {
+            "cc": "worst",
+            "point": "ss / 125 C / 2.97 V",
+            "rz": "best",
+            "value": "10.726"
+          }
+        },
+        "pm": {
+          "bound_text": ">= 60 deg",
+          "bound_value": 60.0,
+          "fail": 0,
+          "failing_cells": [],
+          "label": "Phase margin",
+          "pass": 405,
+          "range": [
+            "64.47",
+            "86.41"
+          ],
+          "sense": ">=",
+          "total": 405,
+          "unit": "deg",
+          "verdict_in_record": "PASS",
+          "worst": {
+            "cc": "best",
+            "point": "fs / 125 C / 2.97 V",
+            "rz": "best",
+            "value": "64.47"
+          }
+        }
+      },
+      "fleet_runner_mismatch": true,
+      "graded": false,
+      "klt_client": "0.7.0+g0d0312b30708",
+      "limitations": [
+        "side study: not a selected verdict record; its cells are not counted in any row's points or verdict nor in the ratified-row summary",
+        "fleet runner klt version differs from the client's (compatibility mismatch)",
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
+      ],
+      "measurement_config": {
+        "detail": "this record predates measurement fingerprinting",
+        "status": "unknown"
+      },
+      "ngspice_engine": null,
+      "ngspice_local": "42",
+      "not_measured": {
+        "gain": "the study measures PM and GBW only (no DC-gain column): no gain observation"
+      },
+      "path": "sim/gain-gbw-pm/records/20261011-042113-c635487.md",
+      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "record_id": "20261011-042113-c635487",
+      "rows": [
+        "gain",
+        "gbw",
+        "pm"
+      ],
+      "scope": {
+        "cc_levels": [
+          "typical",
+          "best",
+          "worst"
+        ],
+        "cells": 405,
+        "full_pvt_cross_product": true,
+        "points": [
+          "typical / -40 C / 2.97 V",
+          "typical / -40 C / 3.30 V",
+          "typical / -40 C / 3.63 V",
+          "typical / 27 C / 2.97 V",
+          "typical / 27 C / 3.30 V",
+          "typical / 27 C / 3.63 V",
+          "typical / 125 C / 2.97 V",
+          "typical / 125 C / 3.30 V",
+          "typical / 125 C / 3.63 V",
+          "ff / -40 C / 2.97 V",
+          "ff / -40 C / 3.30 V",
+          "ff / -40 C / 3.63 V",
+          "ff / 27 C / 2.97 V",
+          "ff / 27 C / 3.30 V",
+          "ff / 27 C / 3.63 V",
+          "ff / 125 C / 2.97 V",
+          "ff / 125 C / 3.30 V",
+          "ff / 125 C / 3.63 V",
+          "ss / -40 C / 2.97 V",
+          "ss / -40 C / 3.30 V",
+          "ss / -40 C / 3.63 V",
+          "ss / 27 C / 2.97 V",
+          "ss / 27 C / 3.30 V",
+          "ss / 27 C / 3.63 V",
+          "ss / 125 C / 2.97 V",
+          "ss / 125 C / 3.30 V",
+          "ss / 125 C / 3.63 V",
+          "fs / -40 C / 2.97 V",
+          "fs / -40 C / 3.30 V",
+          "fs / -40 C / 3.63 V",
+          "fs / 27 C / 2.97 V",
+          "fs / 27 C / 3.30 V",
+          "fs / 27 C / 3.63 V",
+          "fs / 125 C / 2.97 V",
+          "fs / 125 C / 3.30 V",
+          "fs / 125 C / 3.63 V",
+          "sf / -40 C / 2.97 V",
+          "sf / -40 C / 3.30 V",
+          "sf / -40 C / 3.63 V",
+          "sf / 27 C / 2.97 V",
+          "sf / 27 C / 3.30 V",
+          "sf / 27 C / 3.63 V",
+          "sf / 125 C / 2.97 V",
+          "sf / 125 C / 3.30 V",
+          "sf / 125 C / 3.63 V"
+        ],
+        "rz_levels": [
+          "typical",
+          "best",
+          "worst"
+        ],
+        "text": "FULL passive-by-PVT cross product: 5 MOS corners x 3 temperatures x 3 supplies (45 MOS/T/VDD points) x 3 RZ levels x 3 CC levels (typical, best, worst) = 405 cells"
+      },
+      "sha256": "8c049e8a42d8dd754f5d111b8e86ece11e6afe3d0bf48af735c46f3dd7cddf60"
+    },
     "slew-swing-power-passive-corners": {
       "backend": "aws-batch-fleet",
       "dut_check": {
@@ -2246,6 +2397,169 @@
         "text": "3 selected MOS/T/VDD points (fs / 125 C / 2.97 V; ss / 125 C / 2.97 V; typical / 27 C / 3.30 V) x 3 RZ levels x 3 CC levels (typical, best, worst) = 27 cells; not a full passive-by-PVT cross product"
       },
       "sha256": "a78e325795de32850ddc89d15ab9dbcc130dfa442c8ba8da73b3e9a49768432c"
+    },
+    "slew-swing-power-passive-corners-full": {
+      "backend": "aws-batch-fleet",
+      "dut_check": {
+        "matches_current_netlist": true,
+        "matches_selected_records": true
+      },
+      "dut_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
+      "experiment": "slew-swing-power",
+      "figures": {
+        "power": {
+          "bound_text": "<= 350 uW",
+          "bound_value": 350.0,
+          "fail": 0,
+          "failing_cells": [],
+          "label": "Quiescent power",
+          "pass": 405,
+          "range": [
+            "239.2",
+            "311.0"
+          ],
+          "sense": "<=",
+          "total": 405,
+          "unit": "uW",
+          "verdict_in_record": "PASS",
+          "worst": {
+            "cc": "typical",
+            "point": "ff / -40 C / 3.63 V",
+            "rz": "best",
+            "value": "311.0"
+          }
+        },
+        "slew": {
+          "bound_text": ">= 10 V/us",
+          "bound_value": 10.0,
+          "fail": 0,
+          "failing_cells": [],
+          "label": "Slew rate (slower of rise/fall, CL = 2 pF)",
+          "pass": 405,
+          "range": [
+            "14.25",
+            "18.61"
+          ],
+          "sense": ">=",
+          "total": 405,
+          "unit": "V/us",
+          "verdict_in_record": "PASS",
+          "worst": {
+            "cc": "worst",
+            "point": "ss / 125 C / 2.97 V",
+            "rz": "best",
+            "value": "14.25"
+          }
+        },
+        "swing": {
+          "bound_text": ">= 2.3 Vpp",
+          "bound_value": 2.3,
+          "fail": 0,
+          "failing_cells": [],
+          "label": "Output swing",
+          "pass": 405,
+          "range": [
+            "2.465",
+            "3.291"
+          ],
+          "sense": ">=",
+          "total": 405,
+          "unit": "Vpp",
+          "verdict_in_record": "PASS",
+          "worst": {
+            "cc": "typical",
+            "point": "ss / 125 C / 2.97 V",
+            "rz": "best",
+            "value": "2.465"
+          }
+        }
+      },
+      "fleet_runner_mismatch": true,
+      "graded": false,
+      "klt_client": "0.7.0+g0d0312b30708",
+      "limitations": [
+        "side study: not a selected verdict record; its cells are not counted in any row's points or verdict nor in the ratified-row summary",
+        "fleet runner klt version differs from the client's (compatibility mismatch)",
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
+      ],
+      "measurement_config": {
+        "detail": "this record predates measurement fingerprinting",
+        "status": "unknown"
+      },
+      "ngspice_engine": null,
+      "ngspice_local": "42",
+      "not_measured": {},
+      "path": "sim/slew-swing-power/records/20261011-052206-c635487.md",
+      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "record_id": "20261011-052206-c635487",
+      "rows": [
+        "power",
+        "slew",
+        "swing"
+      ],
+      "scope": {
+        "cc_levels": [
+          "typical",
+          "best",
+          "worst"
+        ],
+        "cells": 405,
+        "full_pvt_cross_product": true,
+        "points": [
+          "typical / -40 C / 2.97 V",
+          "typical / -40 C / 3.30 V",
+          "typical / -40 C / 3.63 V",
+          "typical / 27 C / 2.97 V",
+          "typical / 27 C / 3.30 V",
+          "typical / 27 C / 3.63 V",
+          "typical / 125 C / 2.97 V",
+          "typical / 125 C / 3.30 V",
+          "typical / 125 C / 3.63 V",
+          "ff / -40 C / 2.97 V",
+          "ff / -40 C / 3.30 V",
+          "ff / -40 C / 3.63 V",
+          "ff / 27 C / 2.97 V",
+          "ff / 27 C / 3.30 V",
+          "ff / 27 C / 3.63 V",
+          "ff / 125 C / 2.97 V",
+          "ff / 125 C / 3.30 V",
+          "ff / 125 C / 3.63 V",
+          "ss / -40 C / 2.97 V",
+          "ss / -40 C / 3.30 V",
+          "ss / -40 C / 3.63 V",
+          "ss / 27 C / 2.97 V",
+          "ss / 27 C / 3.30 V",
+          "ss / 27 C / 3.63 V",
+          "ss / 125 C / 2.97 V",
+          "ss / 125 C / 3.30 V",
+          "ss / 125 C / 3.63 V",
+          "fs / -40 C / 2.97 V",
+          "fs / -40 C / 3.30 V",
+          "fs / -40 C / 3.63 V",
+          "fs / 27 C / 2.97 V",
+          "fs / 27 C / 3.30 V",
+          "fs / 27 C / 3.63 V",
+          "fs / 125 C / 2.97 V",
+          "fs / 125 C / 3.30 V",
+          "fs / 125 C / 3.63 V",
+          "sf / -40 C / 2.97 V",
+          "sf / -40 C / 3.30 V",
+          "sf / -40 C / 3.63 V",
+          "sf / 27 C / 2.97 V",
+          "sf / 27 C / 3.30 V",
+          "sf / 27 C / 3.63 V",
+          "sf / 125 C / 2.97 V",
+          "sf / 125 C / 3.30 V",
+          "sf / 125 C / 3.63 V"
+        ],
+        "rz_levels": [
+          "typical",
+          "best",
+          "worst"
+        ],
+        "text": "FULL passive-by-PVT cross product: 5 MOS corners x 3 temperatures x 3 supplies (45 MOS/T/VDD points) x 3 RZ levels x 3 CC levels (typical, best, worst) = 405 cells"
+      },
+      "sha256": "240834c796aa2ebac968e4042fd18e1e874d2b5d46faeeb36ba039272f36cfda"
     }
   },
   "title": "gf180-opamp characterization report (generated; not evidence)",

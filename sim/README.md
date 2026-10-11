@@ -234,8 +234,12 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   header. The derived observations appear in a separate "Supplementary
   passive-corner studies" section and as row-detail notes of the rows they
   inform; they never change a row's verdict, points or the ratified-row
-  summary, and the stated scope (3 MOS/T/VDD points x 3 RZ x 3 CC = 27
-  cells) is not a full passive-by-PVT cross product. Measurement-configuration
+  summary, and the stated scope is part of every observation: the limited
+  keys (3 MOS/T/VDD points x 3 RZ x 3 CC = 27 cells) are not a full
+  passive-by-PVT cross product, while the `-full` keys (issue #150,
+  `gain-gbw-pm-passive-corners-full`, `slew-swing-power-passive-corners-full`;
+  `--passive-scope full`) are the 5 x 3 x 3 x 9 = 405-cell envelope. A record
+  selected under a key of the other scope is an error. Measurement-configuration
   freshness follows the same policy as selected records (stale: error unless
   `--archival`; unknown: disclosed).
 - Regenerate: `python3 sim/report/characterization_report.py` (after editing
@@ -376,7 +380,7 @@ spec's predicted SS / -40 C / low VDD and FF / 125 C / 3.63 V (see
 `slew-swing-power/README.md`). Common
 limitations: each selected record is at typical passives (RZ/CC); gain/GBW/PM and
 slew/swing/power have separate 27-cell passive-corner studies at three PVT
-points only
+points and 405-cell full-envelope studies (issue #150: all PASS) as well
 ([`gain-gbw-pm/records/20261010-161720-0127eb7.md`](gain-gbw-pm/records/20261010-161720-0127eb7.md):
 PM 27/27 pass, worst 64.47 deg; GBW 27/27 pass, worst 10.726 MHz;
 [`slew-swing-power/records/20261010-162823-0127eb7.md`](slew-swing-power/records/20261010-162823-0127eb7.md):

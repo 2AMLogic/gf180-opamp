@@ -25,6 +25,16 @@ are superseded as evidence by the newest record here.
 - **Grid (45 points)**: MOS process `typical, ff, ss, fs, sf` × temperature
   −40, 27, 125 °C × supply 2.97, 3.30, 3.63 V (±10 %). One small-signal
   `.ac` sweep per point, `0.1 Hz – 1 GHz`, 20 points/decade.
+- **Full-envelope passive mode** (`--passive-corners --passive-scope full`,
+  issue #150): the same independent RZ x CC sections at ALL 45 MOS/T/VDD points
+  = 405 cells in ONE `klt sim` request (default `--passive-scope limited` is the
+  27-cell mode below, unchanged). The runner requires exactly the 405 expected
+  keys (missing/duplicate/unexpected cells are errors), checks each generated
+  deck against its encoded MOS/resistor/capacitor sections, and writes no record
+  unless complete. Deterministic; not partitioned. Use
+  `--batch-runner-version-check warn` while the fleet runner is older than the
+  client. Records carry a `**Scope**: full` line. First full record:
+  `20261011-042113-c635487` (PM and GBW PASS 405/405; fleet job `klt-sim-aea648e8d3bc`).
 - **Passive-section policy**: every MOS corner is paired with the same
   `res_typical` and `mimcap_typical` sections (what the nominal DC check
   uses). The grid varies MOS corner, temperature and supply. It does **not**

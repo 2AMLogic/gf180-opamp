@@ -50,18 +50,25 @@ below:
   open).
 
 The selected 45-point records use typical passives; they do not sweep RZ/CC.
-Two 27-cell passive-corner studies on the retuned design (RZ and CC each at
-the PDK typical/ff/ss sections, at FS / 125 C / 2.97 V, SS / 125 C / 2.97 V
-and typical / 27 C / 3.30 V) cover only those three points, not the full 45:
+Two 27-cell passive-corner screening studies on the retuned design (RZ and CC
+each at the PDK typical/ff/ss sections, at FS / 125 C / 2.97 V, SS / 125 C /
+2.97 V and typical / 27 C / 3.30 V) cover only those three points:
 gain/GBW/PM
 ([`20261010-161720-0127eb7`](sim/gain-gbw-pm/records/20261010-161720-0127eb7.md))
-shows PM >= 60 degrees at 27/27 cells (worst 64.47 degrees) and GBW >= 10 MHz
-at 27/27 cells (worst 10.726 MHz, SS / 125 C / 2.97 V, RZ ff, CC ss); slew,
-swing and power
-([`20261010-162823-0127eb7`](sim/slew-swing-power/records/20261010-162823-0127eb7.md))
-pass 27/27 per row (slew worst 14.25 V/us). No independent passive-corner
-pass is claimed for the full grid, and the other figures remain at typical
-passives only. The `klt signoff` verdict of
+and slew, swing and power
+([`20261010-162823-0127eb7`](sim/slew-swing-power/records/20261010-162823-0127eb7.md)).
+Issue #150 adds the FULL-envelope studies (`--passive-scope full`): all 5 MOS
+corners x 3 temperatures x 3 supplies x 9 independent RZ x CC combinations =
+405 cells per figure, on the same design. Gain/GBW/PM
+([`20261011-042113-c635487`](sim/gain-gbw-pm/records/20261011-042113-c635487.md))
+shows PM >= 60 degrees at 405/405 cells (worst 64.47 degrees, FS / 125 C /
+2.97 V, RZ ff, CC ff) and GBW >= 10 MHz at 405/405 cells (worst 10.726 MHz,
+SS / 125 C / 2.97 V, RZ ff, CC ss); slew, swing and power
+([`20261011-052206-c635487`](sim/slew-swing-power/records/20261011-052206-c635487.md))
+pass 405/405 per row (worst slew 14.25 V/us, swing 2.465 Vpp, power 311 uW).
+The full studies are supplementary evidence (not graded rows); DC gain is not
+measured by the passive study, and the other figures (noise, offset, CMRR,
+PSRR, input common mode) remain at typical passives only. The `klt signoff` verdict of
 record ([`manifests/`](manifests/README.md)) is still below T1; no T1 claim
 is made. The 5 V device flavors remain surveyed but not characterized, and
 the 5 V stretch row stays unopened.
