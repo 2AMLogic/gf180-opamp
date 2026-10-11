@@ -507,10 +507,13 @@ def offset_grid_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
     need = ("corner", "temperature_c", "vdd_v", "vcm_v", "sample_index", "offset_v")
     by: dict = {}
     seen = set()
+    seeds: dict = {}  # (process, VDD, sample index) -> {T: mismatch_seed}, for the drift view's independence note
+    seeds_known = True
     with p.open(newline="") as fh:
         rd = csv.DictReader(fh)
         if not rd.fieldnames or any(f not in rd.fieldnames for f in need):
             raise ReportError(f"{label}: {rel} lacks the columns {list(need)}")
+        seeds_known = "mismatch_seed" in rd.fieldnames
         for r in rd:
             try:
                 k = _okey(r["corner"], r["temperature_c"], r["vdd_v"])
@@ -519,6 +522,8 @@ def offset_grid_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
                 raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
             if k not in ex["stats"]:
                 raise ReportError(f"{label}: {rel}: sample at unexpected grid point {fmt_point(*k)}")
+            if seeds_known:
+                seeds.setdefault((k[0], k[2], idx), {})[k[1]] = r["mismatch_seed"]
             if (k, idx) in seen:
                 raise ReportError(f"{label}: {rel}: duplicate sample index {idx} at {fmt_point(*k)}")
             if not math.isfinite(off) or abs(vcm - ex["vcm_of"][k[2]]) > 1e-6:
@@ -544,7 +549,117 @@ def offset_grid_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
     if w != ex["worst"]:
         raise ReportError(f"{label}: the record's worst points ({fmt_point(*ex['worst']['abs3'])} by |mean| + 3 sigma, "
                           f"{fmt_point(*ex['worst']['sigma'])} by sigma) disagree with the retained evidence {rel}")
+    # derived-view inputs (issue #184): the unrounded per-point statistics re-derived above, and whether any
+    # sample index reuses its mismatch seed across temperatures (then the per-temperature means are paired)
+    ex["sample_stats"] = stats
+    ex["seed_independence"] = ("unknown" if not seeds_known else
+                               "shared" if any(len(set(d.values())) < len(d) for d in seeds.values())
+                               else "independent")
     return {"path": rel, "sha256": sha256_file(p), "samples": len(seen), "points": len(stats)}
+
+
+# --------------------------------------------------------------------------
+# derived offset temperature drift and systematic-vs-statistical split (issue #184)
+# --------------------------------------------------------------------------
+#: A drift is called resolved only if |drift| exceeds this many of its own standard errors.
+DRIFT_RESOLVE_K = 2.0
+
+
+def _fin(x: float) -> float:
+    """JSON-safe, byte-stable number: finite, rounded, no negative zero."""
+    import math
+    if not math.isfinite(x):
+        raise ReportError("derived offset drift: non-finite value")
+    r = round(x, 6)
+    return 0.0 if r == 0 else r
+
+
+def _slope(ts: list, ms: list, ses: list) -> tuple:
+    """Least-squares slope (uV/C) of mean offset vs T and its standard error propagated from the
+    per-mean standard errors (independent points): slope = sum(w_i m_i), w_i = (T_i - Tbar) / Sxx,
+    variance = sum(w_i^2 se_i^2)."""
+    import math
+    tb = sum(ts) / len(ts)
+    sxx = sum((t - tb) ** 2 for t in ts)
+    w = [(t - tb) / sxx for t in ts]
+    return (sum(wi * m for wi, m in zip(w, ms)), math.sqrt(sum((wi * se) ** 2 for wi, se in zip(w, ses))))
+
+
+def _drift_entry(d: float, se: float) -> dict:
+    return {"uv_per_c": _fin(d), "se_uv_per_c": _fin(se), "resolved": bool(abs(d) > DRIFT_RESOLVE_K * se)}
+
+
+def offset_drift_view(ex: dict, record: dict) -> dict:
+    """Offset temperature drift and systematic / statistical split, derived offline from the
+    per-sample statistics already cross-checked against the record (no simulation, no verdict, no
+    bound). `record` is the selected record's source entry (path, sha256)."""
+    import math
+    if not ex.get("grid") or "sample_stats" not in ex:
+        return {"available": False,
+                "reason": "the selected offset record is not a full PVT grid (single temperature): "
+                          "no temperature drift can be derived"}
+    st, n = ex["sample_stats"], ex["n_per_point"]
+    temps = sorted({float(k[1]) for k in ex["order"]})
+    procs = []
+    for k in ex["order"]:
+        if k[0] not in procs:
+            procs.append(k[0])
+    keys = sorted({(k[0], k[2]) for k in ex["order"]}, key=lambda q: (procs.index(q[0]), float(q[1])))
+    groups = []
+    for proc, vdd in keys:
+        raw = []
+        for t in temps:
+            s = st[(proc, f"{t:g}", vdd)]
+            mean, sig = s["mean"] * 1e3, s["sigma"] * 1e3  # mV -> uV
+            raw.append((t, mean, sig, sig / math.sqrt(s["n"]), s["n"]))
+        pts = []
+        for t, mean, sig, se, nn in raw:
+            a3 = abs(mean) + 3 * sig
+            pts.append({"temp_c": _fin(t), "n": nn, "mean_uv": _fin(mean), "sigma_uv": _fin(sig),
+                        "se_mean_uv": _fin(se), "abs_mean_uv": _fin(abs(mean)), "three_sigma_uv": _fin(3 * sig),
+                        "abs3_uv": _fin(a3), "systematic_fraction": _fin(abs(mean) / a3) if a3 > 0 else None})
+        g = {"process": proc, "vdd_v": vdd, "points": pts}
+        if len(raw) >= 2:
+            ts, ms, ses = [r[0] for r in raw], [r[1] for r in raw], [r[3] for r in raw]
+            span = ts[-1] - ts[0]
+            g["drift_end_to_end"] = {"from_c": _fin(ts[0]), "to_c": _fin(ts[-1]),
+                                     **_drift_entry((ms[-1] - ms[0]) / span, math.hypot(ses[0], ses[-1]) / span)}
+            g["drift_fit"] = {"points": len(ts), **_drift_entry(*_slope(ts, ms, ses))}
+            g["segments"] = [{"from_c": _fin(ts[i]), "to_c": _fin(ts[i + 1]),
+                              **_drift_entry((ms[i + 1] - ms[i]) / (ts[i + 1] - ts[i]),
+                                             math.hypot(ses[i], ses[i + 1]) / (ts[i + 1] - ts[i]))}
+                             for i in range(len(ts) - 1)]
+        else:
+            g["drift_end_to_end"] = g["drift_fit"] = None
+            g["segments"] = []
+        sg = [p_["sigma_uv"] for p_ in pts]
+        g["sigma_vs_t"] = {"min_uv": min(sg), "max_uv": max(sg),
+                           "max_over_min": _fin(max(sg) / min(sg)) if min(sg) > 0 else None}
+        g["worst_point"] = dict(max(pts, key=lambda p_: p_["abs3_uv"]))
+        groups.append(g)
+    allw = max(groups, key=lambda g: g["worst_point"]["abs3_uv"])
+    lim = [f"{len(temps)} temperatures ({', '.join(f'{t:g}' for t in temps)} C) only: the drift is a "
+           f"{'two-segment' if len(temps) == 3 else 'piecewise'} description of the measured points, not a fitted "
+           "law; nothing is extrapolated below the lowest or above the highest temperature, and curvature inside "
+           "a segment is not resolved",
+           f"each mean has standard error sigma/sqrt(N) with N={n}; a drift is called resolved only when "
+           f"|drift| > {DRIFT_RESOLVE_K:g} of its own standard errors (points treated as independent), "
+           "otherwise it is unresolved and its value is a noisy estimate, not a measurement",
+           f"{len(groups)} corner/supply groups are examined at the {DRIFT_RESOLVE_K:g}-standard-error threshold, so a "
+           "few chance 'resolved' flags are expected even for zero true drift; one flag is not by itself a trend",
+           "the systematic part |mean| of a point still contains its own sampling error (standard error "
+           "sigma/sqrt(N)); it is not a pure process-systematic offset",
+           "evidence only: no verdict, no bound proposed; the offset bound is the spec issue #62 decision"]
+    if ex.get("seed_independence") != "independent":
+        lim.append(f"mismatch-seed independence across temperatures is {ex.get('seed_independence')}: if samples are "
+                   "paired across temperatures the drift standard errors are conservative (too large)")
+    return {"available": True, "record": record["path"], "record_sha256": record["sha256"],
+            "input": ex["retained"]["path"], "input_sha256": ex["retained"]["sha256"],
+            "units": "uV for offsets, uV/C for drifts", "temps_c": [_fin(t) for t in temps], "n_per_point": n,
+            "resolution_threshold_se": DRIFT_RESOLVE_K, "seed_independence": ex.get("seed_independence"),
+            "groups": groups,
+            "worst_overall": {"process": allw["process"], "vdd_v": allw["vdd_v"], **allw["worst_point"]},
+            "limitations": lim}
 
 
 def extract_offset_nominal(text: str, label: str) -> dict:
@@ -3626,6 +3741,8 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
 
     verdicts = [r["verdict"] for r in out_rows if r["verdict"]]
     extra = {"archival": True} if archival else {}  # key absent in current-design reports (bytes unchanged)
+    if "offset-mc" in extracted:  # issue #184: derived, hashed, never graded
+        extra["offset_drift"] = offset_drift_view(extracted["offset-mc"], sources["offset-mc"])
     return {**extra,
         "schema": SCHEMA,
         "title": ("gf180-opamp characterization report (ARCHIVAL: not current-design signoff evidence)"
@@ -3694,6 +3811,66 @@ def render_psrr_study(a, st: dict) -> None:
         a("- Typical-passive worst values agree with the selected 45-point PSRR record: "
           + "; ".join(f"{f['label']} {f['typical_passive_worst']['value']} dB vs "
                       f"{f['typical_passive_worst']['primary_record_worst']} dB" for f in prim))
+
+
+def render_offset_drift(a, od: dict) -> None:
+    """Issue #184: derived offset temperature drift and systematic / statistical split."""
+    a("")
+    a("## Offset temperature drift and systematic-vs-statistical split (derived; not graded)")
+    a("")
+    if not od["available"]:
+        a(f"Not available: {od['reason']}.")
+        return
+    a(f"Derived offline from the retained per-sample offsets of the selected offset Monte Carlo record "
+      f"([`{od['record']}`]({link_from_reports(od['record'])}), sha256 `{od['record_sha256']}`; samples "
+      f"[`{od['input']}`]({link_from_reports(od['input'])}), sha256 `{od['input_sha256']}`). No simulation was run, "
+      f"no verdict is given and no bound is proposed. Offsets in uV, drifts in uV/C; N={od['n_per_point']} per point; "
+      f"every mean carries its standard error sigma/sqrt(N). A drift is *resolved* only if |drift| > "
+      f"{od['resolution_threshold_se']:g} standard errors, otherwise *unresolved* (noise, not a measured drift).")
+    temps = od["temps_c"]
+    a("")
+    a("### Mean offset and drift per process corner and supply")
+    a("")
+    a("| Process | VDD (V) | " + " | ".join(f"mean at {t:g} C (uV)" for t in temps)
+      + " | End-to-end drift (uV/C) | Best-fit drift (uV/C) | Segment drifts (uV/C) |")
+    a("|---|---|" + "---|" * len(temps) + "---|---|---|")
+
+    def dcell(d):
+        if d is None:
+            return "n/a"
+        return f"{d['uv_per_c']:+.3f} +/- {d['se_uv_per_c']:.3f} ({'resolved' if d['resolved'] else 'unresolved'})"
+    for g in od["groups"]:
+        a(f"| {g['process']} | {g['vdd_v']} | "
+          + " | ".join(f"{p['mean_uv']:+.1f} +/- {p['se_mean_uv']:.1f}" for p in g["points"])
+          + f" | {dcell(g['drift_end_to_end'])} | {dcell(g['drift_fit'])} | "
+          + ("; ".join(f"{s_['from_c']:g}..{s_['to_c']:g} C: {dcell(s_)}" for s_ in g["segments"]) or "n/a") + " |")
+    a("")
+    a("### Sigma versus temperature")
+    a("")
+    a("| Process | VDD (V) | " + " | ".join(f"sigma at {t:g} C (uV)" for t in temps) + " | max/min |")
+    a("|---|---|" + "---|" * len(temps) + "---|")
+    for g in od["groups"]:
+        r = g["sigma_vs_t"]["max_over_min"]
+        a(f"| {g['process']} | {g['vdd_v']} | " + " | ".join(f"{p['sigma_uv']:.1f}" for p in g["points"])
+          + f" | {'n/a' if r is None else f'{r:.3f}'} |")
+    a("")
+    a("### Worst |mean| + 3 sigma per process corner and supply, split")
+    a("")
+    a("| Process | VDD (V) | Temperature (C) | \\|mean\\| systematic (uV) | 3 sigma statistical (uV) | \\|mean\\| + 3 sigma (uV) | Systematic share |")
+    a("|---|---|---|---|---|---|---|")
+    for g in od["groups"]:
+        w = g["worst_point"]
+        sh = w["systematic_fraction"]
+        a(f"| {g['process']} | {g['vdd_v']} | {w['temp_c']:g} | {w['abs_mean_uv']:.1f} | {w['three_sigma_uv']:.1f} | "
+          f"{w['abs3_uv']:.1f} | {'n/a' if sh is None else f'{sh * 100:.1f} %'} |")
+    w = od["worst_overall"]
+    a("")
+    a(f"Worst point of the grid: {w['process']} / {w['temp_c']:g} C / {w['vdd_v']} V, |mean| + 3 sigma = "
+      f"{w['abs3_uv']:.1f} uV = {w['abs_mean_uv']:.1f} uV systematic (|mean|) + {w['three_sigma_uv']:.1f} uV statistical "
+      f"(3 sigma); mismatch-seed independence across temperatures: {od['seed_independence']}.")
+    a("")
+    for l in od["limitations"]:
+        a(f"- Limitation: {l}")
 
 
 def render_md(rep: dict) -> str:
@@ -3767,6 +3944,8 @@ def render_md(rep: dict) -> str:
             for st in rep.get("supplementary", {}).values():
                 l = l.replace(f"`{st['path']}`", f"[`{st['path']}`]({link_from_reports(st['path'])})")
             a(f"- Limitation: {l}")
+    if rep.get("offset_drift"):
+        render_offset_drift(a, rep["offset_drift"])
     if rep.get("supplementary"):
         a("")
         a("## Supplementary passive-corner studies (measured side evidence; not graded)")
@@ -3859,6 +4038,12 @@ def render_evidence(report_json: str) -> str:
                     "worst_db": {f["label"]: f["worst"]["value"] for f in st["figures"].values()}}
                    if st.get("bound_free") else {})}
             for k, st in rep.get("supplementary", {}).items()},
+        # issue #184: derived (not simulated) view of committed evidence; never graded
+        **({"report_derived": {"offset_temperature_drift": {
+            "graded": False, "verdict": None, "available": rep["offset_drift"]["available"],
+            **({"record_sha256": rep["offset_drift"]["record_sha256"], "input": rep["offset_drift"]["input"],
+                "input_sha256": rep["offset_drift"]["input_sha256"]} if rep["offset_drift"]["available"] else {})}}}
+           if rep.get("offset_drift") else {}),
         "provenance": {"input": {"path": f"{OUT_DIR_REL}/{OUT_NAME}.json",
                                  "content_hash": report_hash(report_json)}},
     }

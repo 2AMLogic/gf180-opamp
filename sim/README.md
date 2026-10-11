@@ -202,6 +202,20 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   as unknown). If DR-5 is ratified (the in-row tag removed) while an
   ICMR record is selected, generation fails until the report learns to grade
   the row.
+- Derived offset temperature drift (issue #184): the report section
+  "Offset temperature drift and systematic-vs-statistical split" is computed
+  offline from the selected offset-MC record's retained per-sample CSV (the
+  samples already cross-checked against the record), with no simulation, no
+  verdict and no proposed bound. Per process corner and supply it lists the
+  mean offset at each temperature with its standard error sigma/sqrt(N), the
+  end-to-end, least-squares and per-segment drift in uV/C with standard errors
+  (a drift within 2 standard errors is labelled *unresolved*, not a number to
+  quote), sigma versus temperature, and the worst |mean| + 3 sigma split into
+  its systematic (|mean|) and statistical (3 sigma) parts. The grid has only
+  three temperatures (-40/27/125 C), so the drift is a two-segment description
+  of the measured points: it is never extrapolated, and curvature inside a
+  segment is not resolved. The input CSV and record hashes are in the report
+  JSON and the evidence sidecar, and `--check` covers the section.
 - Measurement-configuration freshness (issue #85), additive to the DUT gate:
   a record may carry a versioned `**Measurement fingerprint**` header line
   plus the canonical inputs it hashes (`## Measurement fingerprint inputs`).
