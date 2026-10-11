@@ -1725,6 +1725,12 @@ class GainGbwPmMismatchRecord(unittest.TestCase):
         p.write_text("".join(ln for ln in lines if not ln.startswith("| sf / 27 C / 3.30 V | gain ")))
         self.rejects(r"statistics table is missing 1 of 15 rows \(first: gain at sf / 27 C / 3\.30 V\)")
 
+    def test_missing_entire_corner_rejected(self):
+        p = self.root / GMC_MD
+        lines = p.read_text().splitlines(keepends=True)
+        p.write_text("".join(ln for ln in lines if not ln.startswith("| sf / 27 C / 3.30 V |")))
+        self.rejects(r"statistics table is missing 3 of 15 rows \(first: gain at sf / 27 C / 3\.30 V\)")
+
     def test_duplicate_row_rejected(self):
         self.edit(GMC_MD, self.TYP_GAIN + "\n", self.TYP_GAIN + "\n" + self.TYP_GAIN + "\n")
         self.rejects(r"duplicate gain row at typical / 27 C / 3\.30 V")

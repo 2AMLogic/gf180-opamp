@@ -950,7 +950,7 @@ def extract_gain_gbw_pm_mc(text: str, label: str) -> dict:
                         "mean_text": mean_s, "sigma_text": sigma_s, "mean3_text": m3_s,
                         "below": below, "invalid": invalid, "fraction": frac, "fraction_text": c[8],
                         "bound": f">= {rm.group(2)} {bunit}", "bound_value": bval}
-    missing = [(k, rk) for k in order for rk, _, _, _ in GAIN_MC_ROWS if rk not in stats[k]]
+    missing = [(k, rk) for k in order for rk, _, _, _ in GAIN_MC_ROWS if rk not in stats.get(k, {})]
     if missing:
         k, rk = missing[0]
         raise ReportError(f"{label}: statistics table is missing {len(missing)} of {len(order) * 3} rows "
