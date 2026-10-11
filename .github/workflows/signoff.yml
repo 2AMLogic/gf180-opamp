@@ -33,6 +33,14 @@ jobs:
           python3 manifests/check_integrator.py
           python3 manifests/test_check_integrator.py
 
+      # T1 items 1/9/10: artifact-anchored attestations (issue #160). Re-derives
+      # the inventories and envelopes from the tree and requires the committed
+      # copies and the manifest pins to match.
+      - name: Check T1 attestations (items 1, 9, 10) are current
+        run: |
+          python3 manifests/t1_attest.py --check
+          python3 manifests/test_t1_attest.py
+
       - name: Install the pinned klt
         run: pipx install "klayout-tools==0.7.0"
 
