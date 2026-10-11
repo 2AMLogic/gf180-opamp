@@ -48,6 +48,24 @@ jobs:
     steps:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
+        with:
+          # Full history so the evidence append-only guard can resolve the PR
+          # base / push "before" revision (issue #159).
+          fetch-depth: 0
+
+      - name: Guard committed sim/ evidence is append-only (issue #159)
+        # Stdlib only; fails on any modified/deleted file under sim/**/{records,
+        # corners,netlist-snapshots,probes}/ unless allow-listed with an issue.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          PUSH_BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            python3 sim/ci_evidence_append_only.py --base "origin/$BASE_REF"
+          else
+            python3 sim/ci_evidence_append_only.py --before "$PUSH_BEFORE"
+          fi
 
       - name: Install ngspice, Python deps and xschem build dependencies
         # xschem itself is deliberately NOT installed from apt (see XSCHEM_COMMIT).

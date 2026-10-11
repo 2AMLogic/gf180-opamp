@@ -222,3 +222,41 @@ expect_fail report spec_citation_check.py ../spec/target-spec.md \
   "data: gain row cites the older gain-gbw-pm record again" \
   '[record `20261010-161514-0127eb7`](../sim/gain-gbw-pm/records/20261010-161514-0127eb7.md)' \
   '[record `20261010-020141-1e51d1c`](../sim/gain-gbw-pm/records/20261010-020141-1e51d1c.md)'
+
+# Committed-evidence append-only guard (issue #159): in a throwaway git repo, a
+# modified and a deleted record must make the guard fail (exit 1), and an
+# add-only change must pass (control). Stdlib + git only, no simulator.
+guard="$repo/sim/ci_evidence_append_only.py"
+ev="$work/evidence-repo"
+mkdir -p "$ev/sim/noise/records"
+git -C "$ev" init -q -b main
+git -C "$ev" config user.email ci@example.invalid
+git -C "$ev" config user.name ci
+echo original > "$ev/sim/noise/records/r1.md"
+git -C "$ev" add -A && git -C "$ev" commit -q -m base
+git -C "$ev" branch base
+: > "$work/empty-allowlist.txt"
+run_guard() { python3 "$guard" --repo "$ev" --allowlist "$work/empty-allowlist.txt" --base base; }
+# each case runs on its own branch off base
+guard_case() {  # NAME EXPECT(pass|fail) MUTATION-COMMANDS...
+  local name="$1" expect="$2"; shift 2
+  git -C "$ev" checkout -q -B "case-$name" base
+  "$@"
+  git -C "$ev" add -A && git -C "$ev" commit -q -m "$name"
+  if run_guard >"$work/g.txt" 2>&1; then rc=0; else rc=1; fi
+  if [ "$expect" = pass ] && [ "$rc" -ne 0 ]; then
+    echo "FAIL: [evidence guard] $name was rejected" >&2; cat "$work/g.txt" >&2; exit 1
+  fi
+  if [ "$expect" = fail ]; then
+    [ "$rc" -ne 0 ] || { echo "FAIL: [evidence guard] $name not caught" >&2; exit 1; }
+    grep -q 'sim/noise/records/r1.md' "$work/g.txt" \
+      || { echo "FAIL: [evidence guard] $name: message does not name the file" >&2; exit 1; }
+  fi
+  echo "ok: [evidence guard] $name -> $expect"
+}
+add_record()    { echo added > "$ev/sim/noise/records/r2.md"; }
+modify_record() { echo changed > "$ev/sim/noise/records/r1.md"; }
+delete_record() { rm "$ev/sim/noise/records/r1.md"; }
+guard_case add-only-control pass add_record
+guard_case modified-record fail modify_record
+guard_case deleted-record fail delete_record

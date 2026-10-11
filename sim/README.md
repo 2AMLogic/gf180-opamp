@@ -104,6 +104,20 @@ sim/ci_regression_check.sh
 git status --porcelain   # must be empty
 ```
 
+## Evidence append-only guard
+
+`CLAUDE.md` says `sim/` results are append-only. `harness.py` enforces that at
+write time; `sim/ci_evidence_append_only.py` (stdlib only, issue #159) enforces
+it on committed history. Any file under `sim/<exp>/` with a directory component
+`records`, `corners`, `netlist-snapshots` or `probes` (any depth, so
+`gain-gbw-pm/fixed-vcm/*` is covered) may only appear with git status `A`; `M`,
+`D`, `T`, `U` (and renames, via `--no-renames`) fail naming the file. PRs diff
+`origin/<base>...HEAD` (`--base`); pushes diff `<before>..HEAD` (`--before`,
+all-zero falls back to `HEAD~1`). Unresolvable history exits 2, never passes.
+A legitimate correction needs one line in `sim/evidence_append_only_allowlist.txt`:
+`<exact path>  #<authorizing issue>` (malformed or issue-less entries fail).
+Run locally: `python3 sim/ci_evidence_append_only.py --base origin/main`.
+
 ## Shared harness module
 
 `harness.py` is the one master copy of the cross-experiment sim-harness
