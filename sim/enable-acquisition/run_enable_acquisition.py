@@ -924,7 +924,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_descs, case_re
         add("Committed follow-up evidence (decks, logs, `.dat.gz` traces, sanitised klt reports, and the follow-up "
             "requests in the netlist snapshot): "
             + ", ".join(f"`sim/enable-acquisition/corners/{record}/long_{scenario}_{ramp}/`"
-                        for (scenario, _ramp) in long_results)
+                        for (scenario, ramp) in long_results)
             + ". The re-derivation count above includes these files.")
     add("")
     add("## Controls (single local units at the nominal point, simultaneous / fast; separate from the grid evidence)")

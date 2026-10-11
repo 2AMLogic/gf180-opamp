@@ -770,7 +770,7 @@ class FingerprintTests(unittest.TestCase):
 
 
 class RecordTests(unittest.TestCase):
-    def _record(self, censor: bool, ctrls=None):
+    def _record(self, censor: bool, ctrls=None, censor_cases=(("supply-first", "slow"),)):
         from datetime import datetime, timezone
 
         keys = r.g.expected_keys(r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
@@ -779,7 +779,7 @@ class RecordTests(unittest.TestCase):
             sched, vec = enable_vec(case)
             base = r.extract_enable(vec, sched, VDD, VCM)
             res = {k: base for k in keys}
-            if censor and case == ("supply-first", "slow"):
+            if censor and case in censor_cases:
                 s2, v2 = enable_vec(case)
                 stuck(s2, v2, 0.5)
                 res[keys[6]] = r.extract_enable(v2, s2, VDD, VCM)
@@ -812,6 +812,15 @@ class RecordTests(unittest.TestCase):
         self.assertIn("not acquired", md)
         self.assertIn("Long-window follow-up", md)
         self.assertIn("still not acquired after", md)
+
+    def test_followup_directories_follow_each_ramp(self):
+        cases = (("supply-first", "fast"), ("supply-first", "slow"))
+        self.assertTrue(all(c in r.mc.cases() for c in cases))
+        md = self._record(True, censor_cases=cases)
+        evidence = next(ln for ln in md.splitlines() if ln.startswith("Committed follow-up evidence"))
+        for scenario, ramp in cases:
+            self.assertIn(f"`sim/enable-acquisition/corners/rid/long_{scenario}_{ramp}/`", evidence)
+        self.assertEqual(evidence.count("/long_"), 2)
 
 
 class AppendOnlyTests(unittest.TestCase):
