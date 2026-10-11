@@ -26,6 +26,10 @@ echo "== sim/report: spec/target-spec.md Sec. 2 record citations vs selection.js
 python3 report/test_spec_citation_check.py
 python3 report/spec_citation_check.py
 
+echo "== sim/report: spec/README verdict prose vs the characterization report (no simulator; issue #156) =="
+python3 report/test_spec_verdict_prose_check.py
+python3 report/spec_verdict_prose_check.py
+
 echo "== sim: per-experiment measurement-configuration fingerprint modules (no simulator) =="
 python3 test_measurement_config.py
 
