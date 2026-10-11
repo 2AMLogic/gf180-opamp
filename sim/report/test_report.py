@@ -1585,6 +1585,7 @@ class GainGbwPmMismatchRecord(unittest.TestCase):
     TYP_GBW = "| typical / 27 C / 3.30 V | gbw (>= 10.000 MHz) | 300 / 300 | 16.417 MHz | 0.239 MHz | 15.700 MHz | 0 | 0 | 0/300 = 0.0000 |"
     TYP_PM = "| typical / 27 C / 3.30 V | pm (>= 60.00 deg) | 300 / 300 | 77.60 deg | 0.21 deg | 76.98 deg | 0 | 0 | 0/300 = 0.0000 |"
     SS_GBW = "| ss / 27 C / 3.30 V | gbw (>= 10.000 MHz) | 300 / 300 | 15.451 MHz | 0.225 MHz | 14.776 MHz | 0 | 0 | 0/300 = 0.0000 |"
+    FF_GAIN = "| ff / 27 C / 3.30 V | gain (>= 60.00 dB) | 300 / 300 | 96.09 dB | 0.05 dB | 95.93 dB | 0 | 0 | 0/300 = 0.0000 |"
     SAMPLE0 = "typical,27,3.30,0,1240223581,1073930998,250201949,pass,1,,96.01688145891897"
     SAMPLE1 = "typical,27,3.30,1,1176304945,1947764510,250201949,pass,1,,95.98895491623537"
 
@@ -1745,6 +1746,20 @@ class GainGbwPmMismatchRecord(unittest.TestCase):
         self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("95.98 dB", "95.98 deg"))
         self.rejects(r"gain row at typical / 27 C / 3\.30 V carries unit 'deg', but its bound is 'dB'")
 
+    def test_non_finite_mean_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("95.98 dB", "nan dB", 1))
+        self.rejects(r"non-finite mean at typical / 27 C / 3\.30 V \(gain\): the published statistics must be finite")
+
+    def test_non_finite_sigma_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("0.05 dB", "nan dB", 1))
+        self.rejects(r"non-finite sigma at typical / 27 C / 3\.30 V \(gain\): the published statistics "
+                     r"must be finite")
+
+    def test_non_finite_mean3sigma_rejected(self):
+        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("95.83 dB", "nan dB", 1))
+        self.rejects(r"non-finite mean-3sigma at typical / 27 C / 3\.30 V \(gain\): the published statistics "
+                     r"must be finite")
+
     # ---- population ----
 
     def test_n_below_basis_rejected(self):
@@ -1770,13 +1785,24 @@ class GainGbwPmMismatchRecord(unittest.TestCase):
     # ---- bounds ----
 
     def test_bound_must_match_the_ratified_bound(self):
-        self.edit(GMC_MD, self.TYP_GAIN, self.TYP_GAIN.replace("gain (>= 60.00 dB)", "gain (>= 70.00 dB)"))
+        # every corner carries the (uniformly wrong) 70 dB bound: the cross-corner agreement gate
+        # passes and the shared bound itself is rejected against the ratified spec bound
+        self.edit(GMC_MD, "gain (>= 60.00 dB)", "gain (>= 70.00 dB)", 5)
         self.rejects(r"gain-gbw-pm-mc:20261011-072005-9c9b0f1: record bound '>= 70\.00 dB' for Open-loop DC gain "
                      r"is not the current ratified bound \('>= 60 dB'\)")
 
     def test_stale_bound_unit_rejected(self):
         self.edit(GMC_MD, self.SS_GBW, self.SS_GBW.replace("gbw (>= 10.000 MHz)", "gbw (>= 10.000 dB)"))
         self.rejects(r"gbw row at ss / 27 C / 3\.30 V carries unit 'MHz', but its bound is 'dB'")
+
+    def test_non_first_corner_bound_mismatch_rejected(self):
+        # the shared bounds were previously taken from the first corner only: a bound retuned on a
+        # later corner escaped both the ratified-bound comparison (which sees only the shared bound)
+        # and the retained-sample crosscheck (whose below-bound count moved with the altered bound)
+        self.edit(GMC_MD, self.FF_GAIN, self.FF_GAIN.replace("gain (>= 60.00 dB)", "gain (>= 70.00 dB)"))
+        self.rejects(r"gain bound at ff / 27 C / 3\.30 V is '>= 70\.00 dB', but the shared bound at "
+                     r"typical / 27 C / 3\.30 V is '>= 60\.00 dB': the ratified bound must be identical "
+                     r"at every corner")
 
     # ---- the retained samples ----
 

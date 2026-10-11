@@ -934,6 +934,10 @@ def extract_gain_gbw_pm_mc(text: str, label: str) -> dict:
         if valid + invalid != n or not (0 <= below <= valid) or invalid < 0:
             raise ReportError(f"{label}: inconsistent population at {fmt_point(*k)} ({rk}): valid {valid} + "
                               f"invalid {invalid} != N {n}, or below-bound {below} exceeds the valid count")
+        for fname, fval in (("mean", mean), ("sigma", sigma), ("mean-3sigma", m3)):
+            if not math.isfinite(fval):
+                raise ReportError(f"{label}: non-finite {fname} at {fmt_point(*k)} ({rk}): the published "
+                                  "statistics must be finite")
         if sigma <= 0:
             raise ReportError(f"{label}: non-positive sigma at {fmt_point(*k)} ({rk})")
         if abs(m3 - (mean - 3 * sigma)) > _GAIN_MC_DERIVE_TOL:
@@ -957,9 +961,15 @@ def extract_gain_gbw_pm_mc(text: str, label: str) -> dict:
         if len(vs) > 1 or len(iv) > 1:
             raise ReportError(f"{label}: the three rows disagree on the shared population at {fmt_point(*k)} "
                               f"(valid {sorted(vs)}, invalid {sorted(iv)})")
-    bounds = {rk: {"text": stats[order[0]][rk]["bound"], "value": stats[order[0]][rk]["bound_value"],
-                   "unit": units[rk]}
-              for rk, _, _, _ in GAIN_MC_ROWS}
+    bounds = {}
+    for rk, _, _, _ in GAIN_MC_ROWS:
+        ref = stats[order[0]][rk]
+        for k in order:
+            if stats[k][rk]["bound"] != ref["bound"]:
+                raise ReportError(f"{label}: {rk} bound at {fmt_point(*k)} is '{stats[k][rk]['bound']}', but the "
+                                  f"shared bound at {fmt_point(*order[0])} is '{ref['bound']}': the ratified "
+                                  "bound must be identical at every corner")
+        bounds[rk] = {"text": ref["bound"], "value": ref["bound_value"], "unit": units[rk]}
     cov = coverage_of(set(order))
     cov["mc_samples_per_corner"] = n_want
     n_invalid = sum(next(iter({stats[k][rk]["invalid"] for rk, _, _, _ in GAIN_MC_ROWS})) for k in order)
@@ -1053,6 +1063,10 @@ def gain_gbw_pm_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dic
             below = sum(1 for x in col if x < rec["bound_value"])
             mean, sigma = statistics.fmean(col), statistics.stdev(col)
             tol = _GAIN_MC_TOL[unit]
+            for f, fname in (("mean", "mean"), ("sigma", "sigma"), ("mean3", "mean-3sigma")):
+                if not math.isfinite(rec[f]):
+                    raise ReportError(f"{label}: non-finite {fname} at {fmt_point(*k)} ({rk}): the published "
+                                      "statistics must be finite")
             bad = []
             if len(valids) != rec["valid"]:
                 bad.append("valid count")
