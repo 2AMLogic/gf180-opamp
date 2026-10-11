@@ -76,6 +76,34 @@ Prerequisites, execution policy (fleet only for the grid, no local fallback)
 and environment notes (`~/.spiceinit`, `models.pdk_root`, klt's client-side
 PDK provenance, `python3 -s`) are the same as in `sim/cmrr/README.md`.
 
+## Full RZ x CC x PVT passive study (standalone, issue #155)
+
+```bash
+python3 sim/psrr/run_psrr.py --passive-corners --passive-scope full \
+        --batch-runner-version-check warn          # 15 fleet requests + study record
+```
+
+Opt-in; the default run above is unchanged. It sweeps 5 MOS x 3 T x 3 VDD x
+3 RZ x 3 CC = 405 cells, each with the `dm`, `vdd` and `vss` excitations
+(1,215 AC responses, paired by complete cell identity), reusing
+`sim/passive_corners.py` and the gain runner's physical RZ/CC materialisation.
+It runs as 15 `klt sim` corner-matrix requests (one per excitation and MOS
+corner, 81 cells each); `--partition-split auto` measures one request first and
+falls back to 27-cell per-temperature requests if it reaches 900 s. Nothing runs
+locally except the typical-passive single-unit studies and controls. Missing,
+duplicate, unexpected, mismatched or nonfinite responses, a partition union
+other than exactly 405 cells per excitation, or a disagreement with the default
+record's typical-passive cells prevent any record from being written.
+
+The study record (`# PSRR passive-corner study`, same append-only layout) reports
+both rails at 1 kHz and 10 kHz with the worst and best cell identities and the
+difference versus typical passives at matching PVT, plus job ids, timings and
+partition membership. **Standalone**: it is not selected by `--latest`, has no
+`selection.json` key and is not parsed by the report. The PSRR bound is still
+proposed (DR-6), so the result is evidence only, not a verdict. Limitations are
+unchanged: systematic (matched-device) figures, and the ideal 10 uA bias source
+excludes bias-generator supply sensitivity.
+
 ## Evidence layout (append-only)
 
 ```
