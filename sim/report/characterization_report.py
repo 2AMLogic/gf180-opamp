@@ -3660,7 +3660,7 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                                        "value": f"{w['db3']['value']:.2f} dB", "corner": fmt_point(*w["db3"]["at"])})
             wm = ex["worst"][_pm_key(sname, "dc")]["min"]
             row["figures"].append({"label": f"mismatch {sname} sample minimum over all samples, DC plateau "
-                                            f"(empirical, N={ex['n_per_point']} per point; information only)",
+                                            f"(empirical, N={ex['n_per_point']} per {'point' if ex.get('grid') else 'corner'}; information only)",
                                    "value": f"{wm['value']:.2f} dB", "corner": fmt_point(*wm["at"])})
         row["figures"].append({"label": "mismatch controls: switch-off max deviation from the systematic record "
                                         "(DC..1 MHz / at f_u; information only)",

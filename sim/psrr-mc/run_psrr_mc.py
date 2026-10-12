@@ -1540,6 +1540,16 @@ def run_grid(pdk: Pdk, args) -> int:
         reports, reqs, walls = {}, {}, {}
         try:
             tb = materialise(work / "grid", pdk)
+            # the small controls go first: a saturated fleet then costs minutes, not the ~1 h grid result
+            tb0 = materialise(work / "switch-off", pdk, mismatch=0)
+            reports["switch-off"], reqs["switch-off"], walls["switch-off"] = submit(
+                "switch-off", tb0, pdk, CORNERS, TEMPS, SUPPLIES, CONTROL_OFF_N, args, work)
+            tbp = materialise(work / "process-only", pdk)
+            reports["process-only"], reqs["process-only"], walls["process-only"] = submit(
+                "process-only", tbp, pdk, ["typical"], TEMPS, SUPPLIES, CONTROL_PROC_N, args, work, vary="process")
+            tbi = materialise(work / "imbalance", pdk, dut_text=ctl_dut, allow_missing=(CONTROL_MIRROR[0].lower(),))
+            reports["imbalance"], reqs["imbalance"], walls["imbalance"] = submit(
+                "imbalance", tbi, pdk, ["typical"], TEMPS, SUPPLIES, CONTROL_IMB_N, args, work)
             req = grid_request(tb, pdk, "full", n=MC_N, hosts=hosts)
             req["batch"] = batch_block(args)
             print(f"  submitting `grid` ({n_units} units over {hosts} shard(s))...", flush=True)
@@ -1567,15 +1577,6 @@ def run_grid(pdk: Pdk, args) -> int:
                       f"shard launches after {args.batch_submit_retries + 1} attempt(s); NO RECORD WRITTEN "
                       f"(result NOT RUN). Not falling back to a local grid.", file=sys.stderr)
                 return 2
-            tb0 = materialise(work / "switch-off", pdk, mismatch=0)
-            reports["switch-off"], reqs["switch-off"], walls["switch-off"] = submit(
-                "switch-off", tb0, pdk, CORNERS, TEMPS, SUPPLIES, CONTROL_OFF_N, args, work)
-            tbp = materialise(work / "process-only", pdk)
-            reports["process-only"], reqs["process-only"], walls["process-only"] = submit(
-                "process-only", tbp, pdk, ["typical"], TEMPS, SUPPLIES, CONTROL_PROC_N, args, work, vary="process")
-            tbi = materialise(work / "imbalance", pdk, dut_text=ctl_dut, allow_missing=(CONTROL_MIRROR[0].lower(),))
-            reports["imbalance"], reqs["imbalance"], walls["imbalance"] = submit(
-                "imbalance", tbi, pdk, ["typical"], TEMPS, SUPPLIES, CONTROL_IMB_N, args, work)
         except KltError as exc:
             print(f"ERROR: a Monte Carlo request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
             return 2
