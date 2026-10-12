@@ -1990,6 +1990,21 @@ class PsrrMismatchRecord(unittest.TestCase):
         p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
         self.rejects(r"stale DUT.*Experiments needing a rerun: [^.]*psrr-mc", manifest(psrr_mc=PMC_MD))
 
+    def test_record_edit_changes_sha_and_check_fails(self):
+        out = self.root / cr.OUT_DIR_REL
+        out.mkdir(parents=True, exist_ok=True)
+        for n in ("md", "json", "evidence.json"):
+            shutil.copy(REPO / cr.OUT_DIR_REL / f"{cr.OUT_NAME}.{n}", out / f"{cr.OUT_NAME}.{n}")
+        m = manifest(psrr_mc=PMC_MD)
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(m))
+        base = ["--root", str(self.root), "--manifest", str(mp), "--check"]
+        self.assertEqual(cr.main(base), 0)
+        before = self.build(m)["sources"]["psrr-mc"]["sha256"]
+        self.edit(PMC_MD, "N = 300 cannot resolve", "N = 301 cannot resolve")
+        self.assertNotEqual(self.build(m)["sources"]["psrr-mc"]["sha256"], before)
+        self.assertEqual(cr.main(base), 1)
+
 
 class GainGbwPmMismatchRecord(unittest.TestCase):
     """Issue #172: the committed gain/GBW/PM mismatch Monte Carlo record (issue #129) is selected,
