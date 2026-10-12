@@ -4,6 +4,7 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-11
 
+- **Issue #189** (closed): Auditor guard telemetry: force-op detached prompt during evidence guard test authoring
 - **PR #193**: sim: supply and external-bias enable acquisition across PVT (bench, extraction, tests; evidence pending)
 - **PR #188**: sim: input-overdrive and output-saturation recovery across the PVT grid
 - **PR #187**: report: derive offset temperature drift and systematic-vs-statistical split (#184)
