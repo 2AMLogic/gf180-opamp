@@ -16,6 +16,14 @@ the figure definitions (DC band, spot indices), the control settings and the
 model library/sections. NOT fingerprinted: record IDs, workspace paths,
 backend/retry options, validation tolerances and the statistics code. The
 DUT has its own hash (#75).
+
+Two grids (issue #190). `nominal` is the issue #99 population (27 C / 3.30 V
+/ VCM = VDD/2) and its inputs are byte-identical to the pre-#190 ones, so the
+committed nominal record keeps its fingerprint. `full` takes the T and VDD
+axes from the CMRR configuration module (which takes them from the gain
+bench: one source for every 45-point bench) with VCM = VDD/2 paired by index,
+and adds `"grid": "full"` to the inputs; a record's retained inputs select
+the grid it was measured on.
 """
 
 from __future__ import annotations
@@ -70,6 +78,21 @@ CONTROL_IMB_N = 300
 CONTROL_MIRROR = ("XM3", "W", "6u", "5.4u")
 
 RAILS = ("vdd", "vss")
+
+
+def grid_axes(grid: str = "nominal") -> tuple[list[float], list[float], list[float]]:
+    """(temperatures, supplies, VCMs) of a grid; VCM pairs with VDD by index."""
+    if grid == "nominal":
+        return [float(TEMP_C)], [float(VDD_V)], [round(float(VDD_V) / 2, 6)]
+    if grid == "full":
+        sup = [float(v) for v in _CMRR.SUPPLIES_V]
+        return [float(t) for t in _CMRR.TEMPS_C], sup, [round(v / 2, 6) for v in sup]
+    raise ValueError(f"unknown grid {grid!r}")
+
+
+def grid_of(retained: dict | None) -> str:
+    """The grid a record measured (`nominal` when its inputs name none)."""
+    return (retained or {}).get("grid", "nominal")
 
 
 def ac_args() -> str:
@@ -182,8 +205,22 @@ def analysis_tail(args: str | None = None) -> str:
 
 
 def inputs(texts: dict, retained: dict | None = None) -> dict:
-    """The effective measurement inputs, as a JSON-serialisable dict."""
-    return {
+    """The effective measurement inputs, as a JSON-serialisable dict.
+
+    `retained` is a record's stored inputs (or `{"grid": "full"}` from the
+    runner); it selects the grid only."""
+    grid = grid_of(retained)
+    temps, supplies, vcms = grid_axes(grid)
+    corners = {
+        "process": list(CORNERS),
+        "passive_sections": list(PASSIVE_SECTIONS),
+        "temperature_c": temps,
+        "supply_v": supplies,
+    }
+    if grid != "nominal":
+        corners["vcm_v"] = vcms
+    corners["vcm_rule"] = "vdd/2"
+    out = {
         "experiment": EXPERIMENT,
         "fingerprint_version": FINGERPRINT_VERSION,
         "bench": harness.canonical_bench_lines(texts["bench"]),
@@ -194,15 +231,12 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
         "monte_carlo": {"n": MC_N, "seed": MC_SEED, "vary": MC_VARY, "model_switch": "sw_stat_mismatch"},
         "controls": {"switch_off_n": CONTROL_OFF_N, "process_only_n": CONTROL_PROC_N,
                      "imbalance_n": CONTROL_IMB_N, "mirror": list(CONTROL_MIRROR)},
-        "corners": {
-            "process": list(CORNERS),
-            "passive_sections": list(PASSIVE_SECTIONS),
-            "temperature_c": [float(TEMP_C)],
-            "supply_v": [float(VDD_V)],
-            "vcm_rule": "vdd/2",
-        },
+        "corners": corners,
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},
     }
+    if grid != "nominal":
+        out["grid"] = grid
+    return out
 
 
 def fingerprint(texts: dict, retained: dict | None = None) -> str:

@@ -1873,6 +1873,8 @@ class PsrrMismatchRecord(unittest.TestCase):
             self.build(m)
 
     def test_committed_selection_and_row(self):
+        # no 45-point grid record is committed yet (issue #190 fleet campaign outstanding), so the
+        # nominal record is still the selected one
         sel = json.loads(MANIFEST.read_text())["experiments"]
         self.assertEqual(sel["psrr-mc"], PMC_MD)
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
@@ -1909,7 +1911,7 @@ class PsrrMismatchRecord(unittest.TestCase):
         self.assertIn("no numeric bound proposed or judged", lim)
 
     def test_markdown_shows_both_blocks(self):
-        md = cr.render_md(cr.build(REPO, cr.load_manifest(MANIFEST)))
+        md = cr.render_md(self.build(manifest(psrr_mc=PMC_MD)))
         self.assertIn("mismatch PSRR+ DC plateau (0.1-1 Hz), linear 3-sigma lowest", md)
         self.assertIn("mismatch PSRR- 10 kHz, dB 3-sigma lowest", md)
         self.assertIn("| psrr-mc |", md)
@@ -1929,41 +1931,41 @@ class PsrrMismatchRecord(unittest.TestCase):
 
     def test_altered_lin3s_cell_rejected(self):
         self.edit(PMC_MD, self.P_DC_TYP, self.P_DC_TYP.replace("**94.78**", "**95.78**"))
-        self.rejects(r"inconsistent summary at typical / 27 C / 3\.30 V under '### PSRR\+ DC plateau")
+        self.rejects(r"inconsistent summary at typical / 27 C / 3\.30 V under '### PSRR\+ DC plateau", manifest(psrr_mc=PMC_MD))
 
     def test_altered_worst_table_rejected(self):
         self.edit(PMC_MD, "| PSRR+ 10 kHz | **63.59** |", "| PSRR+ 10 kHz | **62.59** |")
-        self.rejects(r"worst-point table \(PSRR\+ 10 kHz, lin3: 62\.59\) disagrees")
+        self.rejects(r"worst-point table \(PSRR\+ 10 kHz, lin3: 62\.59\) disagrees", manifest(psrr_mc=PMC_MD))
 
     def test_summary_consistent_with_itself_but_not_with_samples_rejected(self):
         self.edit(PMC_MD, "| typical / 27 C / 3.30 V | 300 | 101.09 | 3.35 | +1.80 | 94.79 | 95.43 | 97.11 | **94.78** | 91.04 |",
                   "| typical / 27 C / 3.30 V | 300 | 101.59 | 3.35 | +1.80 | 94.79 | 95.43 | 97.11 | **94.78** | 91.54 |")
-        self.rejects(r"disagree\(s\) with the retained evidence .*samples\.csv")
+        self.rejects(r"disagree\(s\) with the retained evidence .*samples\.csv", manifest(psrr_mc=PMC_MD))
 
     def test_malformed_sample_count_rejected(self):
         self.edit(PMC_MD, "| typical / 27 C / 3.30 V | 300 | 101.09 |", "| typical / 27 C / 3.30 V | 299 | 101.09 |")
-        self.rejects(r"insufficient samples at typical / 27 C / 3\.30 V under '### PSRR\+ DC plateau.*N=299")
+        self.rejects(r"insufficient samples at typical / 27 C / 3\.30 V under '### PSRR\+ DC plateau.*N=299", manifest(psrr_mc=PMC_MD))
 
     def test_missing_point_rejected(self):
         p = self.root / PMC_MD
         p.write_text("\n".join(l for l in p.read_text().split("\n") if not l.startswith(self.P_DC_FF)))
-        self.rejects(r"missing 1 of 5 grid points \(first: ff / 27 C / 3\.30 V\)")
+        self.rejects(r"missing 1 of 5 grid points \(first: ff / 27 C / 3\.30 V\)", manifest(psrr_mc=PMC_MD))
 
     def test_n_below_basis_and_non_mismatch_rejected(self):
         self.edit(PMC_MD, "n: 300, seed: 45", "n: 200, seed: 45")
-        self.rejects(r"insufficient samples: the record's Monte Carlo request is N=200")
+        self.rejects(r"insufficient samples: the record's Monte Carlo request is N=200", manifest(psrr_mc=PMC_MD))
 
     def test_failed_control_rejected(self):
         self.edit(PMC_MD, "Result: **PASS**", "Result: **FAIL**", count=2)
-        self.rejects(r"controls section lacks a passing")
+        self.rejects(r"controls section lacks a passing", manifest(psrr_mc=PMC_MD))
 
     def test_knee_accounting_must_agree(self):
         self.edit(PMC_MD, "### Near-cancellation knees (4 sample rails)", "### Near-cancellation knees (5 sample rails)")
-        self.rejects(r"do not sum to the 5 knee rails")
+        self.rejects(r"do not sum to the 5 knee rails", manifest(psrr_mc=PMC_MD))
 
     def test_missing_samples_csv_rejected(self):
         (self.root / PMC_CSV).unlink()
-        self.rejects(r"retained per-sample evidence is missing: .*samples\.csv")
+        self.rejects(r"retained per-sample evidence is missing: .*samples\.csv", manifest(psrr_mc=PMC_MD))
 
     def test_tampered_samples_csv_rejected(self):
         t = (self.root / PMC_CSV).read_text().split("\n")
@@ -1972,7 +1974,7 @@ class PsrrMismatchRecord(unittest.TestCase):
         r[i] = str(float(r[i]) + 100.0)
         t[1] = ",".join(r)
         (self.root / PMC_CSV).write_text("\n".join(t))
-        self.rejects(r"disagree\(s\) with the retained evidence")
+        self.rejects(r"disagree\(s\) with the retained evidence", manifest(psrr_mc=PMC_MD))
 
     def test_knee_flags_in_samples_csv_must_agree(self):
         t = (self.root / PMC_CSV).read_text().split("\n")
@@ -1981,25 +1983,26 @@ class PsrrMismatchRecord(unittest.TestCase):
         r[i] = "vdd"
         t[1] = ",".join(r)
         (self.root / PMC_CSV).write_text("\n".join(t))
-        self.rejects(r"knee rail|disagree\(s\) with the retained evidence")
+        self.rejects(r"knee rail|disagree\(s\) with the retained evidence", manifest(psrr_mc=PMC_MD))
 
     def test_stale_dut_names_psrr_mc(self):
         p = self.root / "design/netlist/opamp_two_stage.spice"
         p.write_text(p.read_text().replace("W=72u", "W=73u", 1))
-        self.rejects(r"stale DUT.*Experiments needing a rerun: [^.]*psrr-mc")
+        self.rejects(r"stale DUT.*Experiments needing a rerun: [^.]*psrr-mc", manifest(psrr_mc=PMC_MD))
 
     def test_record_edit_changes_sha_and_check_fails(self):
         out = self.root / cr.OUT_DIR_REL
         out.mkdir(parents=True, exist_ok=True)
         for n in ("md", "json", "evidence.json"):
             shutil.copy(REPO / cr.OUT_DIR_REL / f"{cr.OUT_NAME}.{n}", out / f"{cr.OUT_NAME}.{n}")
+        m = manifest(psrr_mc=PMC_MD)
         mp = self.root / "m.json"
-        mp.write_text(json.dumps(manifest()))
+        mp.write_text(json.dumps(m))
         base = ["--root", str(self.root), "--manifest", str(mp), "--check"]
         self.assertEqual(cr.main(base), 0)
-        before = self.build()["sources"]["psrr-mc"]["sha256"]
+        before = self.build(m)["sources"]["psrr-mc"]["sha256"]
         self.edit(PMC_MD, "N = 300 cannot resolve", "N = 301 cannot resolve")
-        self.assertNotEqual(self.build()["sources"]["psrr-mc"]["sha256"], before)
+        self.assertNotEqual(self.build(m)["sources"]["psrr-mc"]["sha256"], before)
         self.assertEqual(cr.main(base), 1)
 
 
