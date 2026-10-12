@@ -1872,12 +1872,12 @@ class PsrrMismatchRecord(unittest.TestCase):
         with self.assertRaisesRegex(cr.ReportError, rx):
             self.build(m)
 
-    def test_nominal_format_still_supported(self):
-        # the committed grid record is selected (below); the committed NOMINAL record stays parseable
-        # and cross-checked when explicitly selected
+    def test_committed_selection_and_row(self):
+        # no 45-point grid record is committed yet (issue #190 fleet campaign outstanding), so the
+        # nominal record is still the selected one
         sel = json.loads(MANIFEST.read_text())["experiments"]
-        self.assertNotEqual(sel["psrr-mc"], PMC_MD)
-        rep = self.build(manifest(psrr_mc=PMC_MD))
+        self.assertEqual(sel["psrr-mc"], PMC_MD)
+        rep = cr.build(REPO, cr.load_manifest(MANIFEST))
         r = rows_by_key(rep)["psrr"]
         self.assertEqual((r["status"], r["verdict"], r["worst"], r["worst_corner"], r["points_pass"]),
                          ("proposed-not-graded", None, None, None, None))

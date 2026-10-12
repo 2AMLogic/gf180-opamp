@@ -135,6 +135,19 @@ sharding changes no sample's value. A shard whose launch the fleet refuses
 re-submits the whole request through `klt sim` (never locally), up to
 `--batch-submit-retries` times.
 
+**Status: no grid record is committed yet.** Two full-campaign attempts
+(2026-10-12) left no record, as designed. The first completed the grid
+request (about 1 h) but the fleet then refused the 300-unit imbalance control
+for 11 consecutive retries (`8 instance(s) already running + 1 requested
+exceeds BATCH_MAX_CONCURRENT_INSTANCES=8`, the cap being shared with other
+sweeps), so the driver stopped with `NO RECORD WRITTEN` and the completed
+grid result, held only in the temporary work dir, was discarded. The driver
+now runs the three small controls first (so a saturated fleet costs minutes,
+not the grid). The second attempt passed all controls, then only 2 of the 8
+grid shards returned in 3 h; the other six never completed and the run was
+stopped by hand. Re-run `--grid full` when the shared fleet has 8 free
+slots; use `--keep-work DIR` to keep the raw reports.
+
 Every point must contribute exactly N = 300 distinct valid samples, and the
 record's floor/knee accounting must agree with its samples, or nothing is
 written. The grid record (title `# PSRR Monte Carlo PVT grid record`) is a

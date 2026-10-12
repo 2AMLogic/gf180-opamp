@@ -3942,6 +3942,7 @@
           "samples": 1500,
           "sha256": "c0f3ec852f87226b91224b5cc00cddee1dc5dbd3ae2556236b5fe451ac4e86b4"
         },
+        "scope": "27 C / 3.30 V only",
         "source": {
           "experiment": "psrr-mc",
           "path": "sim/psrr-mc/records/20261011-145434-286b06c.md",
