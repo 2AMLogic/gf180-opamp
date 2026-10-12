@@ -29,13 +29,24 @@ sampled offset) must agree to 1 uV.
 
 What it runs
 ------------
-ONE `klt sim` request: the five MOS corners at 27 C / 3.30 V with
-`monte_carlo = {n: 300, seed: 45, vary: "mismatch"}` -- the population of
-`sim/offset-mc/` and `sim/cmrr-mc/`. Which backend executes it is klt's
-decision (`--backend`, `$KLT_SIM_BACKEND`); on a dispatch worker that is the
-Spot batch fleet. This script never launches ngspice itself, never loops
-ngspice over a grid and never falls back to a local grid when a batch submit
-fails: it stops with the error and writes no record.
+TWO grids (`--grid`, issue #190):
+
+* `nominal` (the default, issue #99): ONE `klt sim` request -- the five MOS
+  corners at 27 C / 3.30 V with
+  `monte_carlo = {n: 300, seed: 45, vary: "mismatch"}` -- the population of
+  `sim/offset-mc/` and `sim/cmrr-mc/`.
+* `full` (opt-in, issue #190): the same Monte Carlo over the 45-point
+  MOS x T x VDD grid (T -40 / 27 / 125 C, VDD 2.97 / 3.30 / 3.63 V -- the
+  gain bench's axes, VCM = VDD/2 paired by index), N = 300 per point
+  = 13 500 units, sharded over several fleet jobs (one job is capped at
+  3600 s and a timed-out job returns no per-unit results,
+  2AMLogic/klayout-tools#2833).
+
+Which backend executes a request is klt's decision (`--backend`,
+`$KLT_SIM_BACKEND`); on a dispatch worker that is the Spot batch fleet. This
+script never launches ngspice itself, never loops ngspice over a grid and
+never falls back to a local grid when a batch submit fails: it stops with the
+error and writes no record.
 
 Controls (small requests, same deck):
   * switch-off: `sw_stat_mismatch = 0`, every corner, a few samples: the
@@ -50,7 +61,8 @@ Controls (small requests, same deck):
 
     python3 sim/psrr-mc/run_psrr_mc.py --smoke     # one local unit, no record
     python3 sim/psrr-mc/run_psrr_mc.py --probe     # N=3 AC+MC capability probe (batch)
-    python3 sim/psrr-mc/run_psrr_mc.py             # full run + record
+    python3 sim/psrr-mc/run_psrr_mc.py             # full run + record (nominal grid)
+    python3 sim/psrr-mc/run_psrr_mc.py --grid full # 45-point PVT grid + record
 
 No bound is judged here: the DR-6 bounds are compared, not graded.
 """
@@ -172,6 +184,41 @@ CONTROL_SE_MULT = 3.0
 IMBALANCE_RAILS = ("vdd", "vss")
 
 # --------------------------------------------------------------------------
+# PVT grid (issue #190)
+# --------------------------------------------------------------------------
+
+#: Grids: `nominal` is the issue #99 population; `full` is the 45-point
+#: MOS x T x VDD grid (axes from the gain bench via the CMRR configuration,
+#: VCM = VDD/2 paired by index; `measurement_config.grid_axes`).
+GRIDS = ("nominal", "full")
+#: The committed 27 C / 3.30 V mismatch record the full-grid record is set
+#: next to (issue #99; recomputed from its committed per-sample CSV).
+NOMINAL_RECORD = "20261011-145434-286b06c"
+NOMINAL_CSV = HERE / "corners" / NOMINAL_RECORD / "samples.csv"
+#: Batch shards (`request.remote.hosts`, one fleet job each) for the full
+#: grid. The fleet caps ONE job at 3600 s and a timed-out job returns no
+#: per-unit results (2AMLogic/klayout-tools#2833). Measured three-sweep-deck
+#: rate on the fleet: 0.749 s/unit (issue #190 pilot, 300 units in 225 s; the
+#: issue #99 nominal record's 1500 units in 1716 s gives 1.14 s/unit on a
+#: slower instance), so the unsharded 13 500-unit request would run 2.8-4.3 h
+#: and be lost. A first 6-shard (2250 units each) attempt timed out at
+#: 3600 s on all but one shard (the grid's hot/cold points and a loaded fleet
+#: run ~1.6-2 s/unit, imbalance control: 300 units in 549 s), so the default
+#: is 8 shards of 1688 units (~3000 s at 1.8 s/unit) -- the most the
+#: shared fleet (BATCH_MAX_CONCURRENT_INSTANCES = 8) allows at once. klt
+#: derives every seed in the client from (seed, corner index, sample index)
+#: over the WHOLE request, so sharding changes no sample's value. Sized from
+#: the measured per-unit time (the offset deck's ~0.30 s/unit does NOT
+#: transfer: it is one DC op, not three 201-point AC sweeps).
+GRID_HOSTS = 8
+#: A shard whose launch the fleet refused (shared concurrency cap or Spot
+#: capacity) comes back as `lost_shard` units, not a submit error, and
+#: `batch.capacity_wait_s` does not wait out the concurrency cap
+#: (2AMLogic/klayout-tools#2917). Such a run is re-submitted whole (still
+#: through `klt sim`, never locally), up to `--batch-submit-retries` times.
+_LOST_SHARD_TRANSIENT = ("already running", "BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity")
+
+# --------------------------------------------------------------------------
 # Testbench guard and materialisation
 # --------------------------------------------------------------------------
 
@@ -250,6 +297,47 @@ def request(netlist: Path, pdk: Pdk, corners, temps, supplies, *, n: int | None,
     if local:
         req["models"]["pdk_root"] = str(pdk.path.parent)
     return req
+
+
+def grid_request(netlist: Path, pdk: Pdk, grid: str, *, n: int, seed: int = MC_SEED, vary: str = MC_VARY,
+                 hosts: int | None = None) -> dict:
+    """`request()` over a grid's T and VDD axes; vdd and vcm sweep together by
+    index (VCM = VDD/2), as in the gain bench's request. `hosts` > 1 shards
+    the expanded unit list into that many fleet jobs (klt merges the shard
+    reports back into one, in unsharded unit order)."""
+    temps, supplies, _ = mc.grid_axes(grid)
+    req = request(netlist, pdk, CORNERS, temps, supplies, n=n, seed=seed, vary=vary)
+    if hosts and hosts > 1:
+        req["remote"] = {"hosts": int(hosts)}
+    return req
+
+
+def grid_keys(grid: str) -> list[tuple]:
+    """Every (process, T, VDD) point of a grid, in record order."""
+    temps, supplies, _ = mc.grid_axes(grid)
+    return [(c, float(t), float(v)) for c in CORNERS for t in temps for v in supplies]
+
+
+def lost_shard_refusals(report: dict) -> int:
+    """Units lost because a shard's fleet launch was refused for capacity or
+    the shared concurrency cap (nothing ran for them; re-submittable)."""
+    n = 0
+    for c in report.get("corners", []):
+        for d in c.get("diagnostics", []) or []:
+            msg = str(d.get("message", ""))
+            if (d.get("code") == "lost_shard" or "shard lost" in msg) and any(t in msg for t in _LOST_SHARD_TRANSIENT):
+                n += 1
+                break
+    return n
+
+
+def remote_jobs(report: dict) -> list[dict]:
+    """The fleet job block(s) of a report: one `environment.remote` block, or
+    its `fleet[]` entries for a sharded run (`None` for a lost shard)."""
+    r = remote_of(report)
+    if "fleet" in r:
+        return [e or {} for e in r.get("fleet") or []]
+    return [r] if r else []
 
 
 # --------------------------------------------------------------------------
@@ -504,6 +592,41 @@ def dr6_rows(stats: dict) -> list[dict]:
     return rows
 
 
+def accounting_problems(samples: dict, stats: dict) -> list[str]:
+    """Blocking gate: every point's per-figure lower-bound and knee counts
+    must equal the counts its own samples carry (a bad floor accounting
+    detector: the record's tables are built from `stats`, its floor/knee
+    narrative from `samples`)."""
+    probs = []
+    for k, st in stats.items():
+        for r in RAILS:
+            for f in FIGS:
+                s = st[r][f]
+                lb = sum(r in x.lower_bound for x in samples[k] if x.valid)
+                kn = sum(r in x.knee_rails() for x in samples[k] if x.valid) if f == "dc" else 0
+                if s.lower_bounds != lb or s.knees != kn:
+                    probs.append(f"{G.fmt_key(k)} {LABEL[r]} {FIG_LABEL[f]}: floor/knee accounting disagrees with "
+                                 f"the samples (lower bounds {s.lower_bounds} vs {lb}, knees {s.knees} vs {kn})")
+    return probs
+
+
+def nominal_reference(path: Path = NOMINAL_CSV) -> dict:
+    """Per-point statistics of the committed 27 C / 3.30 V mismatch record,
+    recomputed from its committed per-sample CSV (empty when the CSV is
+    absent). The historical figure the grid record is set beside."""
+    if not path.is_file():
+        return {}
+    by: dict[tuple, list[Sample]] = {}
+    with path.open(newline="") as fh:
+        for r in csv.DictReader(fh):
+            k = (r["process"], float(r["temperature_c"]), float(r["vdd_v"]))
+            vals = {c: float(r[c]) for c in SCALARS if c in r and r[c] not in ("", None)}
+            s = Sample(k, int(r["sample_index"]), {}, vals)
+            s.lower_bound = {x for x in (r.get("lower_bound_rails") or "").split("+") if x}
+            by.setdefault(k, []).append(s)
+    return point_stats(by)
+
+
 # --------------------------------------------------------------------------
 # Controls (pure checks; unit-tested offline)
 # --------------------------------------------------------------------------
@@ -675,18 +798,28 @@ def exec_line(tag: str, rep: dict, wall: float) -> str:
             f"(compatibility `{r.get('runner_compatibility')}`); engine `{eng_s}`; wall {wall:.0f} s")
 
 
-def write_csv(path: Path, samples: dict[tuple, list[Sample]]) -> None:
-    cols = ["process", "temperature_c", "vdd_v", "sample_index", "rndseed", "mismatch_seed", "process_seed",
-            "valid", "lower_bound_rails", "knee_rails"] + [s for s in SCALARS if not re.match(r"pmc_f\d+$", s)]
+def write_csv(path: Path, samples: dict[tuple, list[Sample]], keys: list | None = None,
+              vcm_of: dict | None = None) -> None:
+    """Per-sample CSV. `keys` fixes the point order (grid records); `vcm_of`
+    (VDD -> commanded VCM) adds a `vcm_v` column so the report can re-verify
+    VCM = VDD/2 per retained sample (grid records)."""
+    cols = ["process", "temperature_c", "vdd_v"]
+    if vcm_of:
+        cols += ["vcm_v"]
+    cols += ["sample_index", "rndseed", "mismatch_seed", "process_seed",
+             "valid", "lower_bound_rails", "knee_rails"] + [s for s in SCALARS if not re.match(r"pmc_f\d+$", s)]
     with path.open("w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(cols)
-        for k, ss in samples.items():
-            for s in sorted(ss, key=lambda s: (s.index is None, s.index)):
-                row = [k[0], f"{k[1]:g}", f"{k[2]:.2f}", s.index, s.seeds.get("seed"), s.seeds.get("mismatch_seed"),
-                       s.seeds.get("process_seed"), int(s.valid), "+".join(sorted(s.lower_bound)),
-                       "+".join(sorted(s.knee_rails()))]
-                row += [repr(s.vals.get(c)) if c in s.vals else "" for c in cols[10:]]
+        for k in (keys if keys is not None else list(samples)):
+            for s in sorted(samples.get(k, []), key=lambda s: (s.index is None, s.index)):
+                row = [k[0], f"{k[1]:g}", f"{k[2]:.2f}"]
+                if vcm_of:
+                    row += [f"{vcm_of[k[2]]:g}"]
+                row += [s.index, s.seeds.get("seed"), s.seeds.get("mismatch_seed"),
+                        s.seeds.get("process_seed"), int(s.valid), "+".join(sorted(s.lower_bound)),
+                        "+".join(sorted(s.knee_rails()))]
+                row += [repr(s.vals.get(c)) if c in s.vals else "" for c in cols[len(row):]]
                 w.writerow(row)
 
 
@@ -982,6 +1115,350 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, samples, 
     return "\n".join(L) + "\n"
 
 
+def grid_exec_line(tag: str, rep: dict, wall: float) -> str:
+    """Execution line of the (possibly sharded) grid request: one fleet job,
+    or the `fleet[]` job list with the shard count."""
+    jobs = remote_jobs(rep)
+    if not jobs:
+        return exec_line(tag, rep, wall)
+    j0 = jobs[0]
+    env = rep.get("environment") or {}
+    eng_s = f"{env.get('engine', 'ngspice')} {env.get('engine_version', '')}".strip()
+    return (f"  - `{tag}`: {len(jobs)} fleet job(s) (`remote.hosts = {len(jobs)}`, contiguous shards of the unit "
+            "list merged by klt): " + ", ".join(f"`{j.get('job_id', j.get('job', '?'))}`" for j in jobs)
+            + f"; {'Spot ' if j0.get('spot') else ''}{j0.get('instance_type', '')}, state `{j0.get('state')}`; "
+            f"runner klt `{j0.get('runner_klt_version')}` vs client `{j0.get('client_klt_version')}`; "
+            f"engine `{eng_s}`; wall {wall:.0f} s")
+
+
+def build_grid_record(*, record, stamp, pdk, ngspice, kver, reports, walls, samples, stats, off_rows, off_probs,
+                      proc_stats, imb_info, imb_probs, link, mc_env, dut_sha, nominal_ref, resubmits) -> str:
+    """The issue #190 record: per-point PSRR mismatch statistics over the
+    45-point MOS x T x VDD grid, the worst point per figure, the T x VDD
+    summary and every figure set beside the committed 27 C / 3.30 V record's
+    (recomputed from its committed samples). Measures; grades nothing: DR-6
+    and `spec/target-spec.md` are not edited here."""
+    L: list[str] = []
+    add = L.append
+    temps, supplies, vcms = mc.grid_axes("full")
+    keys = grid_keys("full")
+    npts = len(stats)
+    add(f"# PSRR Monte Carlo PVT grid record `{record}`")
+    add("")
+    add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; issue #190 (extends the issue #99 record `{NOMINAL_RECORD}` to "
+        "the T/VDD grid; that record is unchanged)")
+    add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include "
+        f"`{dut_sha[:16]}`), unchanged; snapshot `netlist-snapshots/{record}.spice`")
+    retained = {"grid": "full"}
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}, retained):
+        add(ln)
+    add(f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (harness `find_pdk`, via {pdk.source}). "
+        "klt's `provenance.pdk` describes the submitting client, not the fleet runner; the fleet library is tied "
+        "to the pinned revision through the switch-off control below, which reproduces the committed systematic "
+        f"record `{SYSTEMATIC_RECORD}`.")
+    add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`")
+    add("- **Execution**: `klt sim` Monte Carlo requests (one ngspice process per sample, all three excitations in it):")
+    for tag in reports:
+        if tag == "grid":
+            add(grid_exec_line(tag, reports[tag], walls[tag]))
+        else:
+            add(exec_line(tag, reports[tag], walls[tag]))
+    add(f"- **Grid**: full PVT -- process {', '.join(CORNERS)}; T {', '.join(f'{t:g}' for t in temps)} C; "
+        f"VDD {', '.join(f'{v:.2f}' for v in supplies)} V (VCM = VDD/2: {', '.join(f'{v:g}' for v in vcms)} V) = "
+        f"{len(keys)} points, `monte_carlo = {{n: {MC_N}, seed: {MC_SEED}, vary: \"{MC_VARY}\"}}` per point -> "
+        f"{len(keys)} x {MC_N} = {len(keys) * MC_N} samples")
+    add("- **Passives**: `res_typical` and `mimcap_typical` at EVERY point (the grid is MOS-mismatch x PVT with "
+        "typical RZ/CC passives; no passive corner, no passive mismatch). MOS mismatch only (`sw_stat_mismatch=1`; "
+        "`sw_stat_global` untouched, global spread is the five corners). The same corners, N and seed as "
+        "`sim/offset-mc/` and `sim/cmrr-mc/`.")
+    if resubmits:
+        add(f"- **Resubmits**: the request was re-submitted whole {resubmits} time(s) after refused shard "
+            "launches (capacity/concurrency; nothing ran for the lost units).")
+    add(f"- **environment.monte_carlo** (grid report): `{json.dumps(mc_env, sort_keys=True)[:400]}`")
+    add("")
+    add("## Claim")
+    add("")
+    add("**Measured, no pass or fail verdict.** This record carries the mismatch-inclusive PSRR+ and PSRR- "
+        "statistics over the full T/VDD grid and sets them beside the DR-6 proposed bounds and beside the "
+        "committed 27 C / 3.30 V mismatch record; it neither grades nor alters DR-6 or `spec/target-spec.md`, "
+        "and it proposes no bound at any new PVT point. Bound ratification is an operator's, through a `spec/` "
+        "decision record.")
+    add("")
+    add("**Definitions** (as the nominal record): input-referred PSRR+/- = 20 log10 |Ad / Asupply|, "
+        "Asupply = vout / v(rail) with one rail driven (1 V AC), the other rail and both inputs AC-quiet; "
+        "VCM tracks VDD/2 at every supply; the ideal 10 uA bias source carries no small-signal current, so "
+        "**bias-generator supply rejection is excluded**.")
+    add("")
+    add("## Comparison with the DR-6 proposed bounds (full grid)")
+    add("")
+    add("DR-6 (`spec/decision-records/0006-cmrr-psrr-bounds.md`, proposed, not ratified) proposes PSRR+ and PSRR- "
+        ">= 60 dB at the DC plateau and 1 kHz and >= 50 dB at 10 kHz on systematic evidence. Worst grid point of "
+        "each mismatch statistic, beside the committed 27 C / 3.30 V record's worst corner (recomputed from its "
+        "committed per-sample samples.csv):")
+    add("")
+    add("| figure | frequency | DR-6 bound (dB) | **grid lin 3s** worst (dB) | at | nominal-only lin 3s (dB) | at | "
+        "grid dB 3s worst (dB) | at | grid sample min (dB) | at | statistics below the bound |")
+    add("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    grid_rows = []
+    for r in RAILS:
+        for f, bound in DR6_BOUNDS.items():
+            lin, kl = worst(stats, r, f, "lin_3s")
+            dbs, kd = worst(stats, r, f, "db_3s")
+            mn, km = worst(stats, r, f, "min_db")
+            nom_lin, nom_kl = (max(((v[r][f].lin_3s, k) for k, v in nominal_ref.items()))
+                               if nominal_ref else (float("nan"), None))
+            below = [n for n, v in (("lin 3s", lin), ("dB 3s", dbs), ("min", mn)) if v < bound]
+            grid_rows.append({"rail": r, "fig": f, "lin": lin, "lin_at": kl, "db": dbs, "db_at": kd,
+                              "min": mn, "min_at": km, "below": below})
+            add(f"| {LABEL[r]} | {FIG_LABEL[f]} | {bound:g} | **{fmt(lin)}** | {G.fmt_key(kl)} | {fmt(nom_lin)} | "
+                f"{G.fmt_key(nom_kl) if nom_kl else 'n/a'} | {fmt(dbs)} | {G.fmt_key(kd)} | {fmt(mn)} | "
+                f"{G.fmt_key(km)} | {', '.join(below) if below else 'none'} |")
+    add("")
+    below = [r for r in grid_rows if r["below"]]
+    if below:
+        add("- **Below a DR-6 bound**: " + "; ".join(
+            f"{LABEL[r['rail']]} {FIG_LABEL[r['fig']]} ({', '.join(r['below'])} < "
+            f"{DR6_BOUNDS[r['fig']]:g} dB)" for r in below)
+            + ". Reported, not graded; DR-6 is not edited here and no bound is proposed for any new PVT point.")
+    else:
+        add("- Every reported statistic is at or above the DR-6 proposed bound at every grid point. Reported, "
+            "not graded; the bound remains proposed and covers no mismatch-inclusive point outside 27 C / 3.30 V "
+            "until a `spec/` decision record says so.")
+    add("- The binding PVT points of the mismatch envelope are named in the table above and in \"Worst point per "
+        f"figure\"; they are NOT graded. The committed 27 C / 3.30 V record (`{NOMINAL_RECORD}`) is unchanged and "
+        "remains the only mismatch-inclusive evidence its spec row cites.")
+    add("")
+    add("## Linear 3-sigma by temperature and supply (worst MOS corner)")
+    add("")
+    add("The worst corner's linear 3-sigma figure at each (T, VDD) point, in dB. Measured, not graded.")
+    add("")
+    for r in RAILS:
+        for f in DR6_BOUNDS:
+            add(f"### {LABEL[r]} {FIG_LABEL[f]}")
+            add("")
+            add("| T \\ VDD | " + " | ".join(f"{v:.2f} V" for v in supplies) + " |")
+            add("|---|" + "---|" * len(supplies))
+            for t in temps:
+                cells = []
+                for v in supplies:
+                    pts = {k: stats[k][r][f].lin_3s for k in keys if k[1] == t and k[2] == v and k in stats}
+                    if pts:
+                        kk = min(pts, key=pts.get)
+                        cells.append(f"{pts[kk]:.2f} ({kk[0]})")
+                    else:
+                        cells.append("-")
+                add(f"| {t:g} C | " + " | ".join(cells) + " |")
+            add("")
+    add("## Statistics per grid point")
+    add("")
+    add("PSRR = 20 log10 |Ad / Asupply| per sample (dB); the definitions of the two 3-sigma statistics, the DC "
+        "plateau rule and the percentiles are the nominal record's (issue #99).")
+    add("")
+    for r in RAILS:
+        for f in FIGS:
+            add(f"### {LABEL[r]} {FIG_LABEL[f]}")
+            add("")
+            kn_head = " | knee DCs" if f == "dc" else ""
+            add(f"| point | N | mean (dB) | sigma (dB) | skew | min | p1 | p5 | **lin 3s** | dB 3s | "
+                f"mean \\|{ALABEL[r]}\\| (V/V) | sigma \\|{ALABEL[r]}\\| | mean Ad (dB) |{kn_head} |")
+            add("|---|---|---|---|---|---|---|---|---|---|---|---|---|" + ("---|" if f == "dc" else ""))
+            for k in keys:
+                st = stats.get(k)
+                if st is None:
+                    continue
+                s = st[r][f]
+                lb = " (>=)" if s.lower_bounds else ""
+                kn = f" | {s.knees}" if f == "dc" else ""
+                add(f"| {G.fmt_key(k)} | {s.n} | {fmt(s.mean_db)} | {fmt(s.sigma_db)} | {s.skew_db:+.2f} | "
+                    f"{fmt(s.min_db)} | {fmt(s.p1_db)} | {fmt(s.p5_db)} | **{fmt(s.lin_3s)}**{lb} | {fmt(s.db_3s)} | "
+                    f"{s.a_mean:.4g} | {s.a_sigma:.4g} | {fmt(s.ad_mean_db)} |{kn} |")
+            if f == "dc" and any(st[r][f].knees for st in stats.values() if st):
+                add("")
+                add(f"knee DCs: samples of this point whose {LABEL[r]} DC band is a near-cancellation knee "
+                    "(non-flat but monotonically rising; their DC figure is the 0.1 Hz asymptote, listed in "
+                    "\"Numerical floor and near-cancellation\").")
+            add("")
+    add("## Worst point per figure")
+    add("")
+    add("| figure | lin 3s worst (dB) | at | dB 3s worst (dB) | at | sample min (dB) | at | p5 worst (dB) |")
+    add("|---|---|---|---|---|---|---|---|")
+    for r in RAILS:
+        for f in FIGS:
+            a, ka = worst(stats, r, f, "lin_3s")
+            b, kb = worst(stats, r, f, "db_3s")
+            m, km = worst(stats, r, f, "min_db")
+            p, _ = worst(stats, r, f, "p5_db")
+            add(f"| {LABEL[r]} {FIG_LABEL[f]} | **{fmt(a)}** | {G.fmt_key(ka)} | {fmt(b)} | {G.fmt_key(kb)} | "
+                f"{fmt(m)} | {G.fmt_key(km)} | {fmt(p)} |")
+    add("")
+    fus = [s.vals["pmc_fu_hz"] for ss in samples.values() for s in ss if s.valid]
+    add(f"- f_u over all samples: {min(fus) / 1e6:.3f} .. {max(fus) / 1e6:.3f} MHz.")
+    add("")
+    add("## Numerical floor and near-cancellation")
+    add("")
+    for r in RAILS:
+        nlb = sum(r in s.lower_bound for ss in samples.values() for s in ss)
+        amin = min(s.vals[f"pmc_{r}_amin"] for ss in samples.values() for s in ss if s.valid)
+        add(f"- {LABEL[r]}: samples with |{ALABEL[r]}| below the numerical floor ({FLOOR:.3g} V/V, clamped, figure a "
+            f"lower bound): **{nlb}**; smallest |{ALABEL[r]}| anywhere in any sweep {amin:.3g} V/V.")
+    add("")
+    knees = [(k, s, r) for k, ss in samples.items() for s in ss if s.valid for r in sorted(s.knee_rails())]
+    if knees:
+        add(f"### Near-cancellation knees ({len(knees)} sample rails)")
+        add("")
+        add("A draw whose supply term cancels the systematic one leaves the residual to the reactive path "
+            "through the DUT's dominant pole (the nominal record's diagnosis, issue #99): the DC band is a "
+            "**near-cancellation knee** -- non-flat but monotonically non-decreasing -- and the knee sample's DC "
+            "figure is its 0.1 Hz asymptote.")
+        add("")
+        add("| point | sample | rail | band spread (dB) | \\|Asupply\\| at 0.1 Hz (V/V) | PSRR at 0.1 Hz (dB) |")
+        add("|---|---|---|---|---|---|")
+        for k, s, r in knees:
+            a0 = s.vals[f"pmc_{r}_aband{BAND[0]}"]
+            add(f"| {G.fmt_key(k)} | {s.index} | {LABEL[r]} | {s.vals[f'pmc_{r}_aspread']:.3f} | {a0:.4g} | "
+                f"{s.vals['pmc_ad_b0'] - 20 * math.log10(a0):.2f} |")
+        add("")
+    else:
+        add(f"- Near-cancellation knees: none (every sample's DC band is flat within {PLATEAU_TOL_DB} dB).")
+        add("")
+    sysref = {k: row["re0"] for row in off_rows for k in [row["key"]]}
+    add("| point | Avdd > 0 at 0.1 Hz | matched-device sign | Avss > 0 at 0.1 Hz | matched-device sign | samples with Avss sign opposite to matched |")
+    add("|---|---|---|---|---|---|")
+    for k in keys:
+        ss = samples.get(k, [])
+        if not ss:
+            continue
+        pv, nv = sign_counts(ss, "vdd")
+        ps, ns = sign_counts(ss, "vss")
+        ref = sysref.get(k, {})
+        sv = ref.get("vdd", float("nan"))
+        sn = ref.get("vss", float("nan"))
+        opp = (ns - ps) if sn > 0 else ps if sn < 0 else 0
+        add(f"| {G.fmt_key(k)} | {pv}/{nv} | {'+' if sv > 0 else '-'} | {ps}/{ns} | {'+' if sn > 0 else '-'} | {opp} |")
+    add("")
+    add("- A sample whose Asupply plateau sign is opposite to the matched device's has its mismatch term larger "
+        "than, and cancelling through, the systematic term; near that crossing the dB figure is high and not "
+        "margin. The linear 3-sigma statistic is the conservative one for exactly this reason (the dB image is "
+        "skewed toward high PSRR).")
+    add("")
+    add("## Offset (the DC operating point of the same samples)")
+    add("")
+    add("| point | offset mean (mV) | offset sigma (mV) |")
+    add("|---|---|---|")
+    for k in keys:
+        ss = samples.get(k, [])
+        if not ss:
+            continue
+        xs = [s.vals["pmc_offset"] for s in ss if s.valid]
+        add(f"| {G.fmt_key(k)} | {statistics.fmean(xs) * 1e3:+.3f} | {statistics.stdev(xs) * 1e3:.3f} |")
+    add("")
+    if link.get("available"):
+        add(f"- Link to `sim/cmrr-mc/` record `{CMRR_MC_RECORD}` (same DUT, corners, N and seed, 27 C / 3.30 V "
+            f"slice): {link['n']} samples compared; {link['same_seed']} carry the same klt per-sample seed; of "
+            f"those, {link['within_1uv']} reproduce its DC offset within 1 uV (max |dev| "
+            f"{link['max_dev_v'] * 1e6:.3f} uV). Information only, not a criterion.")
+        add("")
+    add("## Method")
+    add("")
+    add(f"- ONE `klt sim` request over the whole grid ({len(keys)} points x N = {MC_N}, `remote.hosts = "
+        f"{GRID_HOSTS}` shards): one ngspice process per sample, the nominal record's three-sweep deck and "
+        "per-sample validation, with `vinp` checked against the point's own commanded VCM = VDD/2 (which also "
+        "proves the supply/VCM alters were applied). klt derives every per-sample seed from the one base seed "
+        "over the whole request, so sharding changes no sample's value.")
+    add("- Ad = v(vout) / (v(vinp) - v(vinn)) of the dm sweep and Asupply = v(vout) / v(rail) of each supply "
+        "sweep, from the actual phasors, per frequency; |Asupply| below "
+        f"{FLOOR:.3g} V/V is clamped elementwise in the deck. The scalars are printed into each sample's log and "
+        "read from it. Spot values are exact grid samples; **f_u** = first falling 0 dB crossing of |Ad| by "
+        "ngspice `meas`.")
+    add(f"- **Per-sample validity (blocking)**: every scalar present and finite; sweep grid as expected; dm "
+        f"excitation vd = 1, vc = 0 and rails quiet to {EXC_TOL:g} V; each supply sweep: driven rail = 1 V and the "
+        f"other rail quiet to {EXC_TOL:g} V, both inputs quiet to {INPUT_QUIET_V:g} V, input-leak term below "
+        f"{INPUT_LEAK_FRAC:g} of the output; **dm/vdd/vss parity**: the DC output after each supply sweep agrees "
+        f"with the one after the dm sweep to {PARITY_TOL_V * 1e6:g} uV (the three sweeps saw the same device "
+        f"draw); vinp = the point's VDD/2; |vout - VCM| <= {OP_VOUT_TOL_V} V; each rail's DC band flat over "
+        "0.1-1 Hz to "
+        f"{PLATEAU_TOL_DB} dB or a near-cancellation knee (monotonically non-decreasing band profile); f_u inside "
+        "the sweep.")
+    add(f"- **Population validity (blocking)**: every one of the {len(keys)} points contributes exactly N = "
+        f"{MC_N} distinct sample indices, all valid; offset sigma > {MIN_OFFSET_SIGMA_V * 1e3:g} mV at every "
+        "point (mismatch visibly acts); floor/knee accounting of every point agrees with its samples.")
+    add("")
+    add("## Controls")
+    add("")
+    add(f"**Switch-off** (`sw_stat_mismatch=0`, {CONTROL_OFF_N} samples per corner, 27 C / 3.30 V): spread must be "
+        f"exactly zero, and PSRR+ and PSRR- must reproduce the committed systematic record `{SYSTEMATIC_RECORD}` "
+        f"(DC/spots within {TOL_SYS_DB} dB on identical grid samples; f_u within {TOL_SYS_FU_REL * 100:g} % and PSRR at "
+        f"f_u within {TOL_SYS_FU_DB} dB, the interpolation difference). Result: "
+        f"{'**PASS**' if not off_probs else '**FAIL**: ' + '; '.join(off_probs)}")
+    add("")
+    add("| point | figure | DC | 1 kHz | 10 kHz | 100 kHz | 1 MHz | at f_u | systematic DC / at f_u | max dev DC..1M (dB) | dev at f_u (dB) | f_u (MHz) |")
+    add("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for row in off_rows:
+        ref = row["ref"] or {}
+        for r in RAILS:
+            v, dv, rr = row["vals"][r], row["dev"][r], ref.get(r, {})
+            mx = max((dv.get(f, float("nan")) for f in FIGS[:-1]), default=float("nan"))
+            add(f"| {G.fmt_key(row['key'])} | {LABEL[r]} | " + " | ".join(fmt(v[f], 3) for f in FIGS)
+                + f" | {fmt(rr.get('dc', float('nan')))} / {fmt(rr.get('fu', float('nan')))} | {mx:.4f} | "
+                f"{dv.get('fu', float('nan')):.3f} | {row['fu'] / 1e6:.3f} |")
+    add("")
+    if proc_stats is not None:
+        st, osig = proc_stats
+        add(f"**Process-only** (`vary: \"process\"`, typical, {CONTROL_PROC_N} samples, mismatch switch on): "
+            + ", ".join(f"{LABEL[r]} DC sigma {st[r].sigma_db:.3f} dB" for r in RAILS)
+            + f", offset sigma {osig * 1e3:.3f} mV. Recorded as measured, not a criterion: klt feeds ngspice one "
+            "combined seed that changes with the process seed, so the RNG-drawn mismatch still varies "
+            "(2AMLogic/klayout-tools#2937).")
+        add("")
+    if imb_info:
+        inst, prm, old, new = CONTROL_MIRROR
+        add(f"**Negative control: mirror imbalance** ({inst} {prm} {old} -> {new} in a DUT copy, same mismatch Monte "
+            f"Carlo, typical / 27 C / 3.30 V, N = {CONTROL_IMB_N}). Criterion on "
+            f"{', '.join(LABEL[r] for r in IMBALANCE_RAILS)}: mean |Asupply| at DC rises by more than "
+            f"{CONTROL_SE_MULT:g} standard errors and the linear 3-sigma PSRR falls (README: why this direction). "
+            f"Result: {'**PASS**' if not imb_probs else '**FAIL**: ' + '; '.join(imb_probs)}")
+        add("")
+        add("| figure | DUT | N | mean \\|Asupply\\| (V/V) | sigma \\|Asupply\\| | PSRR mean (dB) | lin 3s (dB) | dB 3s (dB) | min (dB) | shift of mean \\|Asupply\\| / SE |")
+        add("|---|---|---|---|---|---|---|---|---|---|")
+        for r in RAILS:
+            i = imb_info[r]
+            for name, s in (("committed (grid, typical)", i["base"]), (f"{inst} {prm} {new}", i["ctl"])):
+                extra = f"{i['shift']:+.4g} / {i['se']:.3g}" if s is i["ctl"] else ""
+                add(f"| {LABEL[r]} DC | {name} | {s.n} | {s.a_mean:.4g} | {s.a_sigma:.4g} | {fmt(s.mean_db)} | "
+                    f"{fmt(s.lin_3s)} | {fmt(s.db_3s)} | {fmt(s.min_db)} | {extra} |")
+        add("")
+    add("The controls run at typical / 27 C / 3.30 V (the nominal point); the grid itself is the 45-point request "
+        "above.")
+    add("")
+    add("## Extraction validation")
+    add("")
+    add(f"Every sample of every point carried the nominal record's blocking checks (above), with `vinp` required "
+        f"to equal that point's commanded VCM = VDD/2. Every one of the {len(keys)} points had to contribute "
+        f"exactly N = {MC_N} distinct valid samples.")
+    add("")
+    add(f"Result: all {len(keys) * MC_N} samples valid; no grid point was dropped, duplicated or mis-keyed.")
+    add("")
+    add("## Validation summary")
+    add("")
+    add("- All blocking checks passed: yes.")
+    add("")
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}, retained))
+    add("## Reproduce / evidence")
+    add("")
+    add("```")
+    add("python3 sim/psrr-mc/run_psrr_mc.py --grid full --batch-runner-version-check warn "
+        "--batch-submit-retries 10 --batch-capacity-wait-s 1800")
+    add("```")
+    add("")
+    add(f"- Per-sample scalars of all 45 points (all three klt seeds, offset, parities, every figure): "
+        f"`corners/{record}/samples.csv`; controls: `corners/{record}/controls/*.csv`; sanitised klt reports "
+        f"`corners/{record}/klt-report.*.json`.")
+    add("- Testbench `sim/psrr-mc/testbench/tb_psrr_mc.spice`; driver `sim/psrr-mc/run_psrr_mc.py`; configuration "
+        "`sim/psrr-mc/measurement_config.py`; tests `sim/psrr-mc/test_psrr_mc.py`.")
+    add(f"- Timestamp / author: {stamp:%Y-%m-%dT%H:%M:%SZ}, agent-builder (issue #190)")
+    return "\n".join(L) + "\n"
+
+
 # --------------------------------------------------------------------------
 # Modes
 # --------------------------------------------------------------------------
@@ -990,6 +1467,10 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, samples, 
 def add_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--smoke", action="store_true", help="one local unit at the nominal point (mismatch on, no MC)")
     ap.add_argument("--probe", action="store_true", help=f"N={PROBE_N} AC+monte_carlo capability probe at typical")
+    ap.add_argument("--grid", choices=GRIDS, default="nominal",
+                    help="nominal: 5 corners at 27 C / 3.30 V (issue #99); full: the 45-point T/VDD grid (issue #190)")
+    ap.add_argument("--hosts", type=int, default=None,
+                    help=f"--grid full only: fleet jobs to shard the units over (default {GRID_HOSTS})")
     ap.add_argument("--backend", default=None, help="klt backend (default: klt's own, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
     ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
@@ -1031,6 +1512,138 @@ def smoke(pdk: Pdk) -> int:
               f"{s.vals[f'pmc_{r}_im0']:+.3g}j")
     print("smoke test OK")
     return 0
+
+
+def run_grid(pdk: Pdk, args) -> int:
+    """`--grid full` (issue #190): one 45-point `monte_carlo` request through
+    `klt sim` (sharded over fleet jobs), the same controls as the nominal run
+    at typical / 27 C / 3.30 V, and a new append-only record. A failed submit
+    is reported and NOTHING is written; there is no local fallback."""
+    keys = grid_keys("full")
+    want = G.expected_keys(CORNERS, TEMPS, SUPPLIES)
+    n_units = len(keys) * MC_N
+    record, stamp = allocate_record_id(REPO_ROOT)
+    paths = claim_record_paths(HERE, record, plots=False)
+    ngspice, kver = ngspice_version(), klt_version()
+    dut = load_dut_text()
+    ctl_dut = imbalance_dut()
+    hosts = GRID_HOSTS if args.hosts is None else args.hosts
+    print(f"record {record}: {len(keys)} points x N={MC_N} = {n_units} units, seed {MC_SEED}, {hosts} shard(s), "
+          f"PDK {pdk.path} (open_pdks {pdk.version}), klt {kver}")
+    if args.keep_work:
+        args.keep_work.mkdir(parents=True, exist_ok=False)
+        ctx = contextlib.nullcontext(str(args.keep_work.resolve()))
+    else:
+        ctx = tempfile.TemporaryDirectory(prefix="psrr-mc-grid-")
+    with ctx as scratch:
+        work = Path(scratch)
+        reports, reqs, walls = {}, {}, {}
+        try:
+            tb = materialise(work / "grid", pdk)
+            req = grid_request(tb, pdk, "full", n=MC_N, hosts=hosts)
+            req["batch"] = batch_block(args)
+            print(f"  submitting `grid` ({n_units} units over {hosts} shard(s))...", flush=True)
+            t0 = time.time()
+            for attempt in range(args.batch_submit_retries + 1):
+                try:
+                    reports["grid"] = run_klt_retrying(req, work / "grid" / f"out{attempt}", args.backend,
+                                                       work / "grid", retries=args.batch_submit_retries,
+                                                       wait_s=args.batch_retry_wait_s)
+                except KltError as exc:
+                    print(f"ERROR: the grid Monte Carlo request could not be run; NO RECORD WRITTEN "
+                          f"(result NOT RUN).\n{exc}", file=sys.stderr)
+                    return 2
+                lost = lost_shard_refusals(reports["grid"])
+                if not lost or attempt == args.batch_submit_retries:
+                    break
+                print(f"  {lost} units lost to a refused shard launch (attempt {attempt + 1}/"
+                      f"{args.batch_submit_retries + 1}); re-submitting the request in "
+                      f"{args.batch_retry_wait_s:g}s", flush=True)
+                time.sleep(args.batch_retry_wait_s)
+            walls["grid"] = time.time() - t0
+            reqs["grid"] = req
+            if lost_shard_refusals(reports["grid"]):
+                print(f"ERROR: the grid request still lost {lost_shard_refusals(reports['grid'])} units to refused "
+                      f"shard launches after {args.batch_submit_retries + 1} attempt(s); NO RECORD WRITTEN "
+                      f"(result NOT RUN). Not falling back to a local grid.", file=sys.stderr)
+                return 2
+            tb0 = materialise(work / "switch-off", pdk, mismatch=0)
+            reports["switch-off"], reqs["switch-off"], walls["switch-off"] = submit(
+                "switch-off", tb0, pdk, CORNERS, TEMPS, SUPPLIES, CONTROL_OFF_N, args, work)
+            tbp = materialise(work / "process-only", pdk)
+            reports["process-only"], reqs["process-only"], walls["process-only"] = submit(
+                "process-only", tbp, pdk, ["typical"], TEMPS, SUPPLIES, CONTROL_PROC_N, args, work, vary="process")
+            tbi = materialise(work / "imbalance", pdk, dut_text=ctl_dut, allow_missing=(CONTROL_MIRROR[0].lower(),))
+            reports["imbalance"], reqs["imbalance"], walls["imbalance"] = submit(
+                "imbalance", tbi, pdk, ["typical"], TEMPS, SUPPLIES, CONTROL_IMB_N, args, work)
+        except KltError as exc:
+            print(f"ERROR: a Monte Carlo request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
+            return 2
+        problems: list[str] = []
+        samples, p = extract(reports["grid"], keys, MC_N)
+        problems += p
+        problems += check_offset_sigma(samples)
+        off_s, p = extract(reports["switch-off"], want, CONTROL_OFF_N)
+        problems += [f"[switch-off] {x}" for x in p]
+        off_probs, off_rows = check_switch_off(off_s, systematic_reference(want))
+        problems += off_probs
+        proc_s, p = extract(reports["process-only"], [NOMINAL], CONTROL_PROC_N)
+        problems += [f"[process-only] {x}" for x in p]
+        imb_s, p = extract(reports["imbalance"], [NOMINAL], CONTROL_IMB_N)
+        problems += [f"[imbalance] {x}" for x in p]
+        if problems:
+            print("VALIDATION FAILED; NO RECORD WRITTEN:\n  " + "\n  ".join(problems[:60]), file=sys.stderr)
+            if len(problems) > 60:
+                print(f"  ... {len(problems) - 60} more", file=sys.stderr)
+            return 2
+        stats = point_stats(samples)
+        problems += accounting_problems(samples, stats)
+        imb_probs, imb_info = check_imbalance(samples[NOMINAL], imb_s[NOMINAL])
+        if imb_probs:
+            print("NEGATIVE CONTROL FAILED; NO RECORD WRITTEN:\n  " + "\n  ".join(imb_probs), file=sys.stderr)
+            return 2
+        if problems:
+            print("ACCOUNTING CHECK FAILED; NO RECORD WRITTEN:\n  " + "\n  ".join(problems[:60]), file=sys.stderr)
+            return 2
+        ps = proc_s[NOMINAL]
+        proc_stats = ({r: fig_stats(ps, r, "dc") for r in RAILS}, offset_sigma(ps))
+        link = cmrr_mc_link({NOMINAL: samples[NOMINAL]})
+        mc_env = (reports["grid"].get("environment") or {}).get("monte_carlo")
+
+        cdir = paths["corners"]
+        (cdir / "controls").mkdir(parents=True)
+        _, supplies, vcms = mc.grid_axes("full")
+        write_csv(cdir / "samples.csv", samples, keys=keys, vcm_of=dict(zip(supplies, vcms)))
+        write_csv(cdir / "controls" / "switch-off.csv", off_s)
+        write_csv(cdir / "controls" / "process-only.csv", proc_s)
+        write_csv(cdir / "controls" / "imbalance.csv", imb_s)
+        for tag, rep in reports.items():
+            (cdir / f"klt-report.{tag}.json").write_text(json.dumps(sanitise_report(rep), indent=1, sort_keys=True) + "\n")
+        paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
+        write_snapshot(paths["snapshot"], record, reqs, TESTBENCH.read_text(), dut, ctl_dut)
+        paths["record"].parent.mkdir(parents=True, exist_ok=True)
+        paths["record"].write_text(build_grid_record(
+            record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, kver=kver, reports=reports, walls=walls,
+            samples=samples, stats=stats, off_rows=off_rows, off_probs=off_probs, proc_stats=proc_stats,
+            imb_info=imb_info, imb_probs=imb_probs, link=link, mc_env=mc_env, dut_sha=_sha(dut),
+            nominal_ref=nominal_reference(), resubmits=attempt))
+    print(f"record written: {paths['record'].relative_to(REPO_ROOT)}")
+    for r in grid_rows_of(stats):
+        print(f"  {LABEL[r['rail']]} {r['fig']}: lin 3s {r['lin']:.2f} dB ({G.fmt_key(r['lin_at'])}), "
+              f"min {r['min']:.2f} dB; DR-6 bound {DR6_BOUNDS[r['fig']]:g} dB; below: {', '.join(r['below']) or 'none'}")
+    return 0
+
+
+def grid_rows_of(stats: dict) -> list[dict]:
+    """The per-rail/per-DR-6-figure worst rows of a grid (the console summary)."""
+    rows = []
+    for r in RAILS:
+        for f in DR6_BOUNDS:
+            lin, kl = worst(stats, r, f, "lin_3s")
+            mn, _ = worst(stats, r, f, "min_db")
+            rows.append({"rail": r, "fig": f, "lin": lin, "lin_at": kl, "min": mn,
+                         "below": [n for n, v in (("lin 3s", lin), ("min", mn)) if v < DR6_BOUNDS[f]]})
+    return rows
 
 
 def probe(pdk: Pdk, args) -> int:
@@ -1103,6 +1716,8 @@ def main(argv: list[str] | None = None) -> int:
         return smoke(pdk)
     if args.probe:
         return probe(pdk, args)
+    if args.grid == "full":
+        return run_grid(pdk, args)
     want = G.expected_keys(CORNERS, TEMPS, SUPPLIES)
     record, stamp = allocate_record_id(REPO_ROOT)
     paths = claim_record_paths(HERE, record, plots=False)

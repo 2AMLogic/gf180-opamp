@@ -13,6 +13,10 @@ This experiment adds the mismatch-inclusive statistic: a `klt sim`
 `monte_carlo` request over the five MOS process corners, N = 300 per corner,
 seed 45, at 27 °C / 3.30 V / VCM = VDD/2 — the population of `sim/offset-mc/`
 and `sim/cmrr-mc/`, so all three statistics describe the same device draws.
+`--grid full` (issue #190) extends the same Monte Carlo to the 45-point
+MOS × T × VDD grid (T −40 / 27 / 125 °C, VDD 2.97 / 3.30 / 3.63 V, VCM =
+VDD/2 paired by index), N = 300 per point; the default stays the nominal
+issue #99 run, unchanged.
 
 It measures; it judges nothing. The record compares each figure with the DR-6
 proposed bounds in a table and states any figure below a bound; it neither
@@ -94,11 +98,52 @@ design, wrote no record: the 900-draw diagnostic (batch job
 |Avdd| = 1.9e-3 V/V, 1.3e7× the floor, with parity, Ad plateau and the other
 rail perfectly flat.
 
-Temperature and supply are NOT sampled under mismatch (the stated population);
-the systematic 45-point grid covers them for matched devices, and the four
-Avss sign-flip points are all at 125 °C. A T/VDD mismatch grid is out of scope
-here (file separately if the 27 °C result is marginal; #98 is the CMRR
-counterpart).
+Temperature and supply are NOT sampled under mismatch in the nominal record
+(the stated issue #99 population); the systematic 45-point grid covers them
+for matched devices, and the four Avss sign-flip points are all at 125 °C.
+The `--grid full` record (below) measures the mismatch envelope over that
+same T/VDD grid.
+
+## PVT grid (`--grid full`, issue #190)
+
+`run_psrr_mc.py --grid full` submits ONE `klt sim` request over the 45-point
+MOS × T × VDD grid (the gain bench's axes, VCM = VDD/2 paired by index) with
+the same `monte_carlo = {n: 300, seed: 45, vary: "mismatch"}` per point:
+45 × 300 = 13 500 units, each sample the same three-excitation deck with the
+same per-sample validation as the nominal run, `vinp` checked against that
+point's own VDD/2 (which also proves the supply/VCM alters were applied).
+Passives stay **typical at every point** (`res_typical`, `mimcap_typical`;
+no passive corner, no passive mismatch): the grid is MOS-mismatch × PVT.
+The same controls run at typical / 27 °C / 3.30 V.
+
+The request is sharded over `request.remote.hosts = 6` fleet jobs: one job is
+capped at 3600 s and a timed-out job returns no per-unit results
+(2AMLogic/klayout-tools#2833). The shard count is sized from a measured
+per-unit time, not assumed: the three-sweep deck (three 201-point AC sweeps
+per sample) measured **0.749 s/unit** on the fleet (issue #190 pilot: 300
+units in 225 s, all valid; the nominal record's 1500 units in 1716 s gives
+1.14 s/unit on a slower Spot instance), so the unsharded 13 500-unit request
+would run 2.8–4.3 h and be lost. A first attempt with 6 shards of 2250
+units timed out at 3600 s on five of six shards (the grid's hot/cold points
+on a loaded fleet run ~1.6–2 s/unit; the imbalance control ran 300 units in
+549 s), so the default is 8 shards of 1688 units (~3000 s at 1.8 s/unit),
+the most the shared fleet's concurrency cap (8) allows at once; the
+offset deck's ~0.30 s/unit does not transfer (it is one DC op, not three AC
+sweeps). klt derives every per-sample seed over the whole request, so
+sharding changes no sample's value. A shard whose launch the fleet refuses
+(shared concurrency cap, klayout-tools#2917) is lost; the driver then
+re-submits the whole request through `klt sim` (never locally), up to
+`--batch-submit-retries` times.
+
+Every point must contribute exactly N = 300 distinct valid samples, and the
+record's floor/knee accounting must agree with its samples, or nothing is
+written. The grid record (title `# PSRR Monte Carlo PVT grid record`) is a
+separate append-only record: per-point linear and dB 3-sigma statistics and
+cancellation/floor counts per rail, the worst point per figure, a T × VDD
+summary of the worst corner, and every DR-6 figure set beside the committed
+27 °C / 3.30 V record's (recomputed from its committed per-sample CSV). It
+proposes and judges no bound at any point: DR-6 stays proposed, and the spec
+row can only change through a `spec/` decision record.
 
 ## Controls (all in the record, blocking)
 
@@ -154,7 +199,9 @@ python3 sim/psrr-mc/run_psrr_mc.py --smoke         # one local unit, no record
 python3 sim/psrr-mc/run_psrr_mc.py --probe \
         --batch-runner-version-check warn          # N=3 AC+MC probe (batch)
 python3 sim/psrr-mc/run_psrr_mc.py --batch-runner-version-check warn \
-        --batch-submit-retries 10                  # full run + record (append-only)
+        --batch-submit-retries 10                  # nominal run + record (append-only)
+python3 sim/psrr-mc/run_psrr_mc.py --grid full --batch-runner-version-check warn \
+        --batch-submit-retries 10                  # 45-point PVT grid + record (append-only)
 ```
 
 On a dispatch worker the Monte Carlo requests go to the Spot batch fleet
@@ -178,9 +225,11 @@ dm drive, the figure definitions and floor, the Monte Carlo request, the
 control settings and the corner/model axes. `sim/test_measurement_config.py`
 fails when a configuration constant does not move the fingerprint.
 
-The characterization report selects the record for the PSRR row (issue #182):
-`sim/report/characterization_report.py` re-derives every per-point linear and dB
-3-sigma figure, the worst points and the knee accounting from the record's
-tables, cross-checks them against `corners/<record>/samples.csv`, and lists them
-beside (never merged with) the systematic PVT figures. Temperature and supply
-are not sampled under mismatch, and the row stays proposed, not graded.
+The characterization report accepts either record for the PSRR row (issue
+#182 nominal, #190 full grid): `sim/report/characterization_report.py`
+re-derives every per-point linear and dB 3-sigma figure, the worst points and
+the knee accounting from the record's tables, cross-checks them against
+`corners/<record>/samples.csv`, and lists them beside (never merged with) the
+systematic PVT figures. A nominal record covers mismatch at 27 °C / 3.30 V
+only; the grid record covers the T/VDD envelope with typical passives. Either
+way the row stays proposed, not graded.

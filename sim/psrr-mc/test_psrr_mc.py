@@ -544,6 +544,191 @@ class RecordTests(unittest.TestCase):
             self.assertIn("knee_rails", lines[0])
 
 
+class GridTests(unittest.TestCase):
+    """The `--grid full` paths (issue #190): axes, keys, request shape,
+    extraction over the 45-point population, shard-refusal accounting, the
+    floor/knee accounting gate, and the grid record writer. No simulator."""
+
+    def test_grid_axes(self):
+        self.assertEqual(m.mc.grid_axes("nominal"), ([27.0], [3.30], [1.65]))
+        temps, sups, vcms = m.mc.grid_axes("full")
+        self.assertEqual((temps, sups), ([-40.0, 27.0, 125.0], [2.97, 3.30, 3.63]))
+        self.assertEqual(vcms, [round(v / 2, 6) for v in sups])
+        with self.assertRaises(ValueError):
+            m.mc.grid_axes("hot")
+
+    def test_grid_keys_are_the_45_points(self):
+        keys = m.grid_keys("full")
+        self.assertEqual(len(keys), 45)
+        self.assertEqual(len(set(keys)), 45)
+        self.assertEqual(keys[0], ("typical", -40.0, 2.97))
+        self.assertEqual({k[0] for k in keys}, set(m.CORNERS))
+        self.assertEqual({k[1] for k in keys}, {-40.0, 27.0, 125.0})
+        self.assertEqual({k[2] for k in keys}, {2.97, 3.30, 3.63})
+
+    def test_nominal_inputs_unchanged_full_inputs_name_the_grid(self):
+        inp = m.mc.inputs({"bench": self.TB})
+        self.assertNotIn("grid", inp)
+        self.assertEqual(inp["corners"]["temperature_c"], [27.0])
+        self.assertEqual(inp["corners"]["supply_v"], [3.30])
+        self.assertNotIn("vcm_v", inp["corners"])
+        full = m.mc.inputs({"bench": self.TB}, {"grid": "full"})
+        self.assertEqual(full["grid"], "full")
+        self.assertEqual(full["corners"]["temperature_c"], [-40.0, 27.0, 125.0])
+        self.assertEqual(full["corners"]["supply_v"], [2.97, 3.30, 3.63])
+        self.assertEqual(full["corners"]["vcm_v"], [1.485, 1.65, 1.815])
+        self.assertEqual(m.mc.grid_of({"grid": "full"}), "full")
+        self.assertEqual(m.mc.grid_of(None), "nominal")
+        base = m.mc.fingerprint({"bench": self.TB})
+        self.assertNotEqual(m.mc.fingerprint({"bench": self.TB}, {"grid": "full"}), base)
+
+    TB = m.TESTBENCH.read_text()
+
+    def test_grid_request_shape(self):
+        req = m.grid_request(Path("/w/tb.spice"), P(), "full", n=m.MC_N, hosts=8)
+        self.assertEqual(req["corners"]["temperature_c"], [-40.0, 27.0, 125.0])
+        self.assertEqual(req["corners"]["supply_v"], {"vdd": [2.97, 3.30, 3.63], "vcm": [1.485, 1.65, 1.815]})
+        self.assertEqual(req["remote"], {"hosts": 8})
+        self.assertEqual(req["monte_carlo"], {"n": m.MC_N, "seed": m.MC_SEED, "vary": m.MC_VARY})
+        self.assertEqual(req["analysis"]["args"], m.AC_ARGS + "\n" + m.mc.analysis_tail())
+        one = m.grid_request(Path("/w/tb.spice"), P(), "nominal", n=m.MC_N)
+        self.assertNotIn("remote", one, "the nominal request must stay byte-identical (no remote block)")
+        self.assertEqual(one["corners"]["temperature_c"], [27.0])
+
+    def test_lost_shard_refusals_and_remote_jobs(self):
+        rep = {"environment": {"remote": {"fleet": [{"job_id": "j1"}, None, {"job_id": "j3"}]}},
+               "corners": [
+                   {"corner_id": "a", "diagnostics": [{"code": "lost_shard",
+                                                       "message": "shard lost: BATCH_MAX_CONCURRENT_INSTANCES"}]},
+                   {"corner_id": "b", "diagnostics": [{"code": "lost_shard", "message": "shard lost: expired"}]},
+               ]}
+        self.assertEqual(m.remote_jobs(rep), [{"job_id": "j1"}, {}, {"job_id": "j3"}])
+        self.assertEqual(m.lost_shard_refusals(rep), 1)
+        self.assertEqual(m.lost_shard_refusals({"corners": []}), 0)
+        self.assertEqual(m.remote_jobs({"environment": {"remote": {"job_id": "j"}}}), [{"job_id": "j"}])
+        self.assertEqual(m.remote_jobs({}), [])
+
+    def grid_population(self, n=4):
+        keys = m.grid_keys("full")
+        pts = {}
+        for k in keys:
+            pts[k] = [good_vals(100.0 + (i % 5) * 0.3, vcm=k[2] / 2) for i in range(n)]
+        return pts
+
+    def test_extract_full_grid(self):
+        rep, logs = report(self.grid_population())
+        keys = m.grid_keys("full")
+        out, probs = m.extract(rep, keys, 4, read_log=logs.__getitem__)
+        self.assertEqual(probs, [])
+        self.assertEqual(sorted(out), sorted(keys))
+        self.assertTrue(all(len(out[k]) == 4 for k in keys))
+        self.assertEqual({s.index for k in keys for s in out[k]}, set(range(4)))
+
+    def test_incomplete_grid_point_blocks(self):
+        pts = self.grid_population()
+        k0 = m.grid_keys("full")[7]
+        pts[k0] = pts[k0][:3]
+        rep, logs = report(pts)
+        _, probs = m.extract(rep, m.grid_keys("full"), 4, read_log=logs.__getitem__)
+        self.assertTrue(any(m.G.fmt_key(k0) in p and "sample indices [0, 1, 2]" in p for p in probs), probs)
+
+    def test_miskeyed_grid_point_blocks(self):
+        rep, logs = report(self.grid_population())
+        bad = dict(rep["corners"][0])
+        bad["temperature_c"] = 85.0
+        rep["corners"].append(bad)
+        _, probs = m.extract(rep, m.grid_keys("full"), 4, read_log=logs.__getitem__)
+        self.assertTrue(any("unexpected grid point" in p for p in probs), probs)
+
+    def test_parity_failure_blocks_its_sample(self):
+        pts = self.grid_population()
+        k = ("ss", 125.0, 3.63)
+        pts[k][1]["pmc_par_vss"] = 5e-6
+        rep, logs = report(pts)
+        _, probs = m.extract(rep, m.grid_keys("full"), 4, read_log=logs.__getitem__)
+        self.assertTrue(any("same devices" in p for p in probs), probs)
+
+    def test_accounting_gate_catches_bad_floor_accounting(self):
+        pts = self.grid_population()
+        k = ("fs", -40.0, 2.97)
+        pts[k][0]["pmc_vss_amin"] = 0.0
+        pts[k][0]["pmc_asup_vss_dc"] = 0.0
+        rep, logs = report(pts)
+        samples, probs = m.extract(rep, m.grid_keys("full"), 4, read_log=logs.__getitem__)
+        self.assertEqual(probs, [])
+        stats = m.point_stats(samples)
+        self.assertEqual(m.accounting_problems(samples, stats), [])
+        stats[k]["vss"]["dc"].lower_bounds += 1  # tamper: the record would over-count the floor
+        probs = m.accounting_problems(samples, stats)
+        self.assertEqual(len(probs), 1, probs)
+        self.assertIn("floor/knee accounting", probs[0])
+
+    def test_nominal_reference_rederives_the_committed_record(self):
+        ref = m.nominal_reference()
+        self.assertEqual(len(ref), 5)
+        self.assertAlmostEqual(ref[NOM]["vdd"]["dc"].lin_3s, 94.78, delta=0.005)
+        self.assertAlmostEqual(ref[("ss", 27.0, 3.30)]["vdd"]["dc"].lin_3s, 93.71, delta=0.005)
+        self.assertAlmostEqual(ref[("sf", 27.0, 3.30)]["vss"]["dc"].lin_3s, 82.59, delta=0.005)
+        self.assertEqual(m.nominal_reference(Path("/nonexistent.csv")), {})
+
+    def test_grid_record_content(self):
+        import datetime as _dt
+        keys = m.grid_keys("full")
+        samples = {k: [sample(good_vals(100 + (i % 5) * 0.4, 70 + 2 * (i % 6), offset=1e-3 * (i % 9 - 4),
+                                               vcm=k[2] / 2), i, key=k) for i in range(6)] for k in keys}
+        knee_k = ("ss", 125.0, 2.97)
+        samples[knee_k][2] = sample(knee_profile(good_vals(147.9, avdd=1.9e-3, vcm=knee_k[2] / 2), "vdd", 7.7),
+                                    2, key=knee_k)
+        stats = m.point_stats(samples)
+        self.assertEqual(m.accounting_problems(samples, stats), [])
+        off = {k: [sample(good_vals(100.0, vcm=k[2] / 2), i, key=k) for i in range(2)] for k in keys}
+        off_probs, off_rows = m.check_switch_off({NOM: off[NOM]}, self._ref())
+        base = samples[NOM]
+        ctl = [sample(good_vals(95 - (i % 5), avdd=1.2 + 0.1 * (i % 5), avss=2.0 + 0.2 * (i % 7)), i) for i in range(6)]
+        imb_probs, imb_info = m.check_imbalance(base, ctl)
+
+        class Pk:
+            variant, version, source = "gf180mcuD", "c6d73a3", "PDK_ROOT"
+
+        rep = {"corners": [], "environment": {"remote": {"fleet": [{"job_id": "j1"}, {"job_id": "j2"}]}}}
+        md = m.build_grid_record(
+            record="20990101-000000-abcdef0", stamp=_dt.datetime(2099, 1, 1, tzinfo=_dt.timezone.utc), pdk=Pk(),
+            ngspice="ngspice-46", kver="klt x", reports={"grid": rep}, walls={"grid": 1.0}, samples=samples,
+            stats=stats, off_rows=off_rows, off_probs=off_probs,
+            proc_stats=({r: m.fig_stats(base, r, "dc") for r in m.RAILS}, 1e-3), imb_info=imb_info,
+            imb_probs=imb_probs, link={"available": False}, mc_env=None, dut_sha="0" * 64,
+            nominal_ref=m.nominal_reference(), resubmits=0)
+        self.assertIn("# PSRR Monte Carlo PVT grid record", md)
+        self.assertIn("- **Grid**: full PVT -- process typical, ff, ss, fs, sf; T -40, 27, 125 C; "
+                      "VDD 2.97, 3.30, 3.63 V (VCM = VDD/2: 1.485, 1.65, 1.815 V) = 45 points, "
+                      '`monte_carlo = {n: 300, seed: 45, vary: "mismatch"}` per point -> 45 x 300 = 13500 samples', md)
+        self.assertIn(m.mc.fingerprint({"bench": m.TESTBENCH.read_text()}, {"grid": "full"}), md)
+        self.assertIn('"grid":"full"', md)
+        self.assertIn("2 fleet job(s)", md)
+        self.assertIn("## Comparison with the DR-6 proposed bounds (full grid)", md)
+        self.assertIn("## Linear 3-sigma by temperature and supply (worst MOS corner)", md)
+        for h in (f"{m.LABEL[r]} {m.FIG_LABEL[f]}" for r in m.RAILS for f in m.FIGS):
+            self.assertIn(f"### {h}", md)
+            self.assertEqual(md.count(f"| {m.G.fmt_key(k)} |" for k in [keys[0]]), 0) if False else None
+        self.assertEqual(md.count(f"| {m.G.fmt_key(keys[0])} | 6 |"), 12, "every figure's table carries every point")
+        self.assertIn("| typical / -40 C / 2.97 V |", md)
+        self.assertIn(f"### Near-cancellation knees (1 sample rails)", md)
+        self.assertIn(f"| {m.G.fmt_key(knee_k)} | 2 | PSRR+ |", md)
+        self.assertIn("Result: all 13500 samples valid", md)
+        self.assertIn("- All blocking checks passed: yes.", md)
+        self.assertIn("it neither grades nor alters DR-6", md)
+        self.assertNotIn("PASS verdict", md)
+        # nominal-only figure beside the grid's
+        self.assertIn("nominal-only lin 3s", md)
+        self.assertIn(m.G.fmt_key(("ss", 27.0, 3.30)), md)
+
+    def _ref(self, pp=100.0):
+        v = good_vals(pp)
+        pm = v["pmc_psrr_vss_dc"]
+        return {NOM: {"vdd": {**{f: pp for f in m.FIGS[:-1]}, "fu": 0.8},
+                      "vss": {**{f: pm for f in m.FIGS[:-1]}, "fu": 37.0}, "fu_hz": 1.6e7}}
+
+
 class SimTests(unittest.TestCase):
     """Local single units at the nominal point (never a grid, never MC)."""
 
