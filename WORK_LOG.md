@@ -2,6 +2,17 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-13
+
+- **PR #200**: report: integrate ungraded follower step-response evidence
+- **PR #199**: sim: configuration freshness for CMRR-MC and gain/GBW/PM-MC (#197)
+- **Issue #198** (closed): report: integrate ungraded follower step-response evidence
+- **Issue #197** (closed): sim: add configuration freshness for CMRR and gain/GBW/PM mismatch evidence
+
+### 2026-10-12
+
+- **PR #196**: sim(psrr-mc): full T/VDD grid mismatch characterization tooling (#190)
+
 ### 2026-10-11
 
 - **Issue #189** (closed): Auditor guard telemetry: force-op detached prompt during evidence guard test authoring
