@@ -3577,9 +3577,11 @@ def bound_in_spec(record_bound: str, spec_target: str) -> bool:
 #: Every other experiment is reported as freshness-unknown until migrated.
 MEASUREMENT_CONFIG = {
     "gain-gbw-pm": "sim/gain-gbw-pm/measurement_config.py",
+    "gain-gbw-pm-mc": "sim/gain-gbw-pm-mc/measurement_config.py",
     "noise": "sim/noise/measurement_config.py",
     "offset-mc": "sim/offset-mc/measurement_config.py",
     "cmrr": "sim/cmrr/measurement_config.py",
+    "cmrr-mc": "sim/cmrr-mc/measurement_config.py",
     "psrr": "sim/psrr/measurement_config.py",
     "psrr-mc": "sim/psrr-mc/measurement_config.py",
     "slew-swing-power": "sim/slew-swing-power/measurement_config.py",

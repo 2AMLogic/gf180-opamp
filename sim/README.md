@@ -260,6 +260,16 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   `fingerprint_inputs_section`), and register it in `MEASUREMENT_CONFIG`.
   Historical
   records are never edited and no historical fingerprint is fabricated.
+- CMRR-MC and gain/GBW/PM-MC (issue #197) are registered in `MEASUREMENT_CONFIG`
+  with `sim/cmrr-mc/measurement_config.py` and
+  `sim/gain-gbw-pm-mc/measurement_config.py`, which their runners import
+  (conditions, Monte Carlo count/seed/`vary`, the mismatch switch, the
+  control-language tail, figures and floor, inherited bench/sweep/corner/model
+  inputs). New records of either carry the versioned fingerprint; the
+  committed records predate it, are not edited, and stay reported as
+  freshness unknown (no fingerprint is back-filled). Tolerances, probe sizes
+  and backend/retry options stay outside. Rerunning the campaigns to obtain
+  fingerprinted records is a separate decision.
 - Supplementary passive-corner studies (issue #121): the RZ x CC side
   studies (`run_gain_gbw_pm.py --passive-corners`,
   `run_slew_swing_power.py --passive-corners`) are selected explicitly under
