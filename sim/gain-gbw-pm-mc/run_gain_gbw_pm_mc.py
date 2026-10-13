@@ -92,6 +92,8 @@ from harness import (  # noqa: E402
 # The deterministic gain driver owns the bench, its guards, the request shape,
 # the extraction and the ratified bounds; one shared module copy.
 G = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
+# One source for everything the fingerprint covers (issue #197).
+mc = load_sibling("gain_gbw_pm_mc_measurement_config", "sim/gain-gbw-pm-mc/measurement_config.py")
 
 Key = tuple  # (process, temperature_c, supply_v)
 
@@ -100,11 +102,9 @@ Key = tuple  # (process, temperature_c, supply_v)
 # --------------------------------------------------------------------------
 
 CORNERS = list(G.CORNERS)  # typical, ff, ss, fs, sf
-TEMPS_C = [27.0]
-SUPPLIES_V = [3.30]
-MC_N = 300
-MC_SEED = 45
-MC_VARY = "mismatch"
+TEMPS_C = list(mc.TEMPS_C)
+SUPPLIES_V = list(mc.SUPPLIES_V)
+MC_N, MC_SEED, MC_VARY = mc.MC_N, mc.MC_SEED, mc.MC_VARY
 PROBE_N = 3
 PROBE_POINT: Key = ("typical", 27.0, 3.30)
 #: Bias and load the population is defined at; the guard checks the bench
@@ -174,19 +174,10 @@ def campaign_gate(pin: str | None, det_record: str | None, *, current_sha: str,
 # Testbench: the gain bench + the mismatch switch
 # --------------------------------------------------------------------------
 
-_DESIGN_INC_RE = re.compile(r"^\.include\s+['\"]?[^'\"\n]*design\.ngspice['\"]?[ \t]*$", re.M | re.I)
 _SWITCH_RE = re.compile(r"^\.param\s+sw_stat_mismatch\s*=\s*(\S+)[ \t]*$", re.I)
 
 
-def inject_mismatch(tb_text: str, mismatch: int) -> str:
-    """The bench with `.param sw_stat_mismatch=<0|1>` right after the
-    `design.ngspice` include (after it, so it overrides the PDK default 0)."""
-    if mismatch not in (0, 1):
-        raise ValueError(f"mismatch switch must be 0 or 1, got {mismatch!r}")
-    out, n = _DESIGN_INC_RE.subn(lambda m: m.group(0) + f"\n.param sw_stat_mismatch={mismatch}", tb_text, count=0)
-    if n != 1:
-        raise RuntimeError(f"expected exactly one design.ngspice include in the bench, found {n}")
-    return out
+inject_mismatch = mc.inject_mismatch
 
 
 def _code(text: str) -> list[str]:
@@ -250,30 +241,14 @@ def materialise(work: Path, pdk: Pdk, *, mismatch: int = 1) -> Path:
 # Request: the gain driver's AC request + monte_carlo + the vector-print tail
 # --------------------------------------------------------------------------
 
-VEC_COLS = ("gmc_fr", "gmc_vo_re", "gmc_vo_im", "gmc_vp_re", "gmc_vp_im", "gmc_vn_re", "gmc_vn_im")
-BEGIN, END = "GMC_VECTORS_BEGIN", "GMC_VECTORS_END"
+VEC_COLS = tuple(mc.VEC_COLS)
+BEGIN, END = mc.BEGIN, mc.END
 N_FREQ = int(round(G.AC_PPD * math.log10(G.AC_FSTOP / G.AC_FSTART))) + 1
 
 
 def analysis_tail() -> str:
-    """Control commands klt places verbatim after its `ac <args>` line: print
-    the real/imag parts of the three node phasors, 15 significant digits, one
-    table without page breaks, between two markers."""
-    return "\n".join([
-        "set width=4000",
-        "set nobreak",
-        "set numdgt=15",
-        "let gmc_fr = real(frequency)",
-        "let gmc_vo_re = real(v(vout))",
-        "let gmc_vo_im = imag(v(vout))",
-        "let gmc_vp_re = real(v(vinp))",
-        "let gmc_vp_im = imag(v(vinp))",
-        "let gmc_vn_re = real(v(vinn))",
-        "let gmc_vn_im = imag(v(vinn))",
-        f"echo {BEGIN}",
-        "print " + " ".join(VEC_COLS),
-        f"echo {END}",
-    ])
+    """The vector-print tail (defined in `measurement_config.analysis_tail`)."""
+    return mc.analysis_tail()
 
 
 def mc_request(netlist: Path, pdk: Pdk, corners, temps, supplies, *, n: int | None,
@@ -668,6 +643,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, rep, wall, stats, samples
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (normalised sha256 `{dut_sha}`, the #42 revised-DUT "
         f"pin); deterministic evidence for the same DUT: `sim/gain-gbw-pm/records/{det_record}.md`; snapshot "
         f"`netlist-snapshots/{record}.spice`")
+    for ln in mc.fingerprint_lines({"bench": G.TESTBENCH.read_text()}):
+        add(ln)
     add(f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (harness `find_pdk`, via {pdk.source})")
     add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`")
     add(f"- **Execution**: one `klt sim` Monte Carlo request: {exec_line(rep, wall)}")
@@ -702,6 +679,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, rep, wall, stats, samples
     add(f"- Identity: exactly the indices 0..{MC_N - 1} per corner, each once, each with klt's seed, "
         "mismatch_seed and process_seed retained.")
     add("")
+    L.extend(mc.inputs_section({"bench": G.TESTBENCH.read_text()}))
     add("## Reproduce / evidence")
     add("")
     add("```")

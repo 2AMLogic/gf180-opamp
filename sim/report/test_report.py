@@ -73,7 +73,8 @@ def make_root(tmp: Path) -> Path:
     shutil.copy(REPO / "design" / "netlist" / "opamp_two_stage.spice", net / "opamp_two_stage.spice")
     # psrr/measurement_config.py loads the shared passive helpers (issue #155)
     shutil.copy(REPO / "sim" / "passive_corners.py", tmp / "sim" / "passive_corners.py")
-    for exp in ("gain-gbw-pm", "noise", "offset-mc", "cmrr", "psrr", "psrr-mc", "slew-swing-power", "input-common-mode"):
+    for exp in ("gain-gbw-pm", "gain-gbw-pm-mc", "noise", "offset-mc", "cmrr", "cmrr-mc", "psrr", "psrr-mc", "slew-swing-power",
+                "input-common-mode"):
         mc = tmp / "sim" / exp
         (mc / "testbench").mkdir(parents=True, exist_ok=True)
         shutil.copy(REPO / "sim" / exp / "measurement_config.py", mc / "measurement_config.py")
@@ -803,11 +804,9 @@ class MeasurementConfigFreshness(unittest.TestCase):
         rep = cr.build(self.root, manifest())
         sel = json.loads(MANIFEST.read_text())["experiments"]
         for e, s in rep["sources"].items():
-            if e in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # uninstrumented by policy: disclosed, never "current"
-                self.assertEqual(s["measurement_config"]["status"], "unknown", e)
-                self.assertIn("not instrumented", s["measurement_config"]["detail"], e)
-                continue
-            if e == cr.ICMR_EXP:  # committed record predates its experiment's fingerprint (issue #180)
+            if e in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP, cr.ICMR_EXP):
+                # registered (issue #197 / #180) but the committed records predate their fingerprint:
+                # disclosed as unknown, never "current", and never given a back-filled fingerprint
                 self.assertEqual(s["measurement_config"]["status"], "unknown", e)
                 self.assertIn("predates measurement fingerprinting", s["measurement_config"]["detail"], e)
                 continue
@@ -925,6 +924,8 @@ EXP_BENCH = {
     "noise": "sim/noise/testbench/tb_noise.spice",
     "offset-mc": "sim/offset-mc/testbench/tb_offset_mc.spice",
     "cmrr": "sim/cmrr/testbench/tb_cmrr.spice",
+    "cmrr-mc": "sim/cmrr-mc/testbench/tb_cmrr_mc.spice",
+    "gain-gbw-pm-mc": "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice",
     "psrr": "sim/psrr/testbench/tb_psrr.spice",
     "input-common-mode": "sim/input-common-mode/testbench/tb_input_common_mode.spice",
 }
@@ -944,6 +945,29 @@ STALE_CASES = [
     ("cmrr", "sim/cmrr/measurement_config.py", '"cm": {"acp": 1.0, "acn": 1.0},', '"cm": {"acp": 1.0, "acn": 0.5},', "excitation"),
     ("cmrr", "sim/cmrr/measurement_config.py", 'SERVO_NOMINAL = {"rsv": 1e9, "csv": 1e9}', 'SERVO_NOMINAL = {"rsv": 1e8, "csv": 1e9}', "excitation"),
     ("cmrr", "sim/gain-gbw-pm/measurement_config.py", "AC_FSTOP, AC_PPD = 0.1, 1e9, 20", "AC_FSTOP, AC_PPD = 0.1, 1e9, 10", "analysis"),
+    # cmrr-mc (issue #197): bench, mismatch population, stimulus, analysis, figures, models
+    ("cmrr-mc", EXP_BENCH["cmrr-mc"], "CL vout 0 2p", "CL vout 0 3p", "bench"),
+    ("cmrr-mc", "sim/cmrr-mc/measurement_config.py", "MC_N = 300", "MC_N = 200", "monte_carlo"),
+    ("cmrr-mc", "sim/cmrr-mc/measurement_config.py", "MC_SEED = 45", "MC_SEED = 46", "monte_carlo"),
+    ("cmrr-mc", "sim/cmrr-mc/measurement_config.py", 'MC_VARY = "mismatch"', 'MC_VARY = "process"', "monte_carlo"),
+    ("cmrr-mc", "sim/cmrr-mc/measurement_config.py", 'DM_PARAMS = {"acp": 0.5, "acn": -0.5,', 'DM_PARAMS = {"acp": 0.4, "acn": -0.5,', "excitation"),
+    ("cmrr-mc", "sim/cmrr/measurement_config.py", 'SERVO_NOMINAL = {"rsv": 1e9, "csv": 1e9}', 'SERVO_NOMINAL = {"rsv": 1e8, "csv": 1e9}', "excitation"),
+    ("cmrr-mc", "sim/gain-gbw-pm/measurement_config.py", "AC_FSTOP, AC_PPD = 0.1, 1e9, 20", "AC_FSTOP, AC_PPD = 0.1, 1e9, 10", "analysis"),
+    ("cmrr-mc", "sim/cmrr-mc/measurement_config.py", "FLOOR = 2.62e-10", "FLOOR = 2.0e-10", "figures"),
+    ("cmrr-mc", "sim/cmrr-mc/measurement_config.py", "CONTROL_IMB_N = 300", "CONTROL_IMB_N = 200", "controls"),
+    ("cmrr-mc", "sim/cmrr-mc/measurement_config.py", "TEMP_C = 27.0", "TEMP_C = 30.0", "corners"),
+    ("cmrr-mc", "sim/gain-gbw-pm/measurement_config.py", 'MODEL_LIB = "libs.tech/ngspice/sm141064.ngspice"',
+     'MODEL_LIB = "libs.tech/ngspice/sm141064.other.ngspice"', "models"),
+    # gain-gbw-pm-mc (issue #197): bench (the gain bench plus the switch), population, MC request, analysis, transport
+    ("gain-gbw-pm-mc", EXP_BENCH["gain-gbw-pm-mc"], "CL vout 0 2p", "CL vout 0 3p", "bench"),
+    ("gain-gbw-pm-mc", "sim/gain-gbw-pm-mc/measurement_config.py", "MC_N = 300", "MC_N = 200", "monte_carlo"),
+    ("gain-gbw-pm-mc", "sim/gain-gbw-pm-mc/measurement_config.py", "MC_SEED = 45", "MC_SEED = 46", "monte_carlo"),
+    ("gain-gbw-pm-mc", "sim/gain-gbw-pm-mc/measurement_config.py", 'MC_VARY = "mismatch"', 'MC_VARY = "process"', "monte_carlo"),
+    ("gain-gbw-pm-mc", "sim/gain-gbw-pm-mc/measurement_config.py", "TEMPS_C = [27.0]", "TEMPS_C = [27.0, 125.0]", "corners"),
+    ("gain-gbw-pm-mc", "sim/gain-gbw-pm-mc/measurement_config.py", '"set numdgt=15",', '"set numdgt=12",', "analysis"),
+    ("gain-gbw-pm-mc", "sim/gain-gbw-pm/measurement_config.py", "AC_FSTOP, AC_PPD = 0.1, 1e9, 20", "AC_FSTOP, AC_PPD = 0.1, 1e9, 10", "analysis"),
+    ("gain-gbw-pm-mc", "sim/gain-gbw-pm/measurement_config.py", 'PASSIVE_SECTIONS = ("res_typical", "mimcap_typical")',
+     'PASSIVE_SECTIONS = ("res_typical", "mimcap_slow")', "corners"),
     ("psrr", EXP_BENCH["psrr"], "CL vout 0 2p", "CL vout 0 3p", "bench"),
     ("psrr", "sim/psrr/measurement_config.py", '"vss": {**QUIET, "acss": 1.0},', '"vss": {**QUIET, "acss": 2.0},', "excitation"),
     ("psrr", "sim/psrr/measurement_config.py", "FEEDTHROUGH_R = 100e3", "FEEDTHROUGH_R = 50e3", "controls"),
@@ -964,6 +988,8 @@ CLEAN_CASES = [
     # (experiment, replacement producing an equivalent bench)
     ("noise", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl   vout  0   2p ; load")),
     ("offset-mc", lambda t: "* extra comment\n\n" + t.replace("Ibias vdd ibias dc 10u", "ibias  vdd ibias   dc 10u $ bias")),
+    ("cmrr-mc", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
+    ("gain-gbw-pm-mc", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
     ("cmrr", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
     ("psrr", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
     ("input-common-mode", lambda t: "* extra comment\n\n" + t.replace("CL vout 0 2p", "cl  vout 0   2p ; load")),
@@ -1005,28 +1031,26 @@ class MigratedExperimentFreshness(unittest.TestCase):
         # fingerprint and are disclosed as unknown. The mismatch MC campaigns (cmrr-mc #124,
         # gain-gbw-pm-mc #172) are uninstrumented by policy: no measurement fingerprint exists,
         # freshness is disclosed as unknown.
-        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG),
-                         sorted(e for e in self.sel if e not in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP)))
+        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG), sorted(self.sel))
         mc = cr.build(REPO, manifest())["sources"][cr.ICMR_EXP]["measurement_config"]
         self.assertEqual(mc["status"], "unknown")
         self.assertIn("predates measurement fingerprinting", mc["detail"])
 
     def test_committed_legacy_records_stay_unknown(self):
         # the selected (revised-design) records are all fingerprinted and current, except the
-        # ICMR record: it predates its experiment's instrumentation (issue #180).
+        # ICMR, CMRR-MC and gain/GBW/PM-MC records: they predate their experiments' instrumentation
+        # (issues #180, #197).
         rep = cr.build(REPO, manifest())
         for e, src in rep["sources"].items():
-            if e in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # mismatch MC: not instrumented
+            if e in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP, cr.ICMR_EXP):  # committed records predate the fingerprint
                 self.assertEqual(src["measurement_config"]["status"], "unknown", e)
-                continue
-            if e == cr.ICMR_EXP:
-                self.assertEqual(src["measurement_config"]["status"], "unknown", e)
-                self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"])
+                self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"], e)
                 continue
             self.assertEqual(src["measurement_config"]["status"], "current", e)
         gmc = rep["sources"][cr.GAIN_MC_EXP]["measurement_config"]
         self.assertEqual(gmc["status"], "unknown")
-        self.assertIn("not instrumented", gmc["detail"])
+        self.assertIn("predates measurement fingerprinting", gmc["detail"])
+        self.assertNotIn("fingerprint", gmc)  # no fabricated historical fingerprint
         joined = " ".join(rep["limitations"])
         for e in ("noise", "cmrr", "psrr", "offset-mc", "gain-gbw-pm"):
             self.assertNotIn(f"{e}: measurement-configuration freshness unknown", joined)
@@ -1050,9 +1074,7 @@ class MigratedExperimentFreshness(unittest.TestCase):
                 for e, src in rep["sources"].items():
                     if e == exp:
                         continue
-                    if e in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP):  # uninstrumented by policy
-                        self.assertEqual(src["measurement_config"]["status"], "unknown", e)
-                    elif e == cr.ICMR_EXP:  # committed record predates fingerprinting (issue #180)
+                    if e in (cr.CMRR_MC_EXP, cr.GAIN_MC_EXP, cr.ICMR_EXP):  # committed record predates fingerprinting
                         self.assertEqual(src["measurement_config"]["status"], "unknown", e)
                         self.assertIn("predates measurement fingerprinting", src["measurement_config"]["detail"])
                     else:  # every other selected record is fingerprinted

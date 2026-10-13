@@ -88,6 +88,7 @@ from harness import (  # noqa: E402
     find_pdk,
     klt_version,
     load_dut_text,
+    load_sibling,
     ngspice_version,
     percentile,
     remote_of,
@@ -107,6 +108,8 @@ else:
     sys.modules["cmrr_driver"] = C
     _spec.loader.exec_module(C)
 G = C.G
+# One source for everything the fingerprint covers (issue #197).
+mc = load_sibling("cmrr_mc_measurement_config", "sim/cmrr-mc/measurement_config.py")
 
 TESTBENCH = HERE / "testbench" / "tb_cmrr_mc.spice"
 SYSTEMATIC_TB = REPO_ROOT / "sim" / "cmrr" / "testbench" / "tb_cmrr.spice"
@@ -121,29 +124,22 @@ OFFSET_MC_CSV = REPO_ROOT / "sim" / "offset-mc" / "corners" / OFFSET_MC_RECORD /
 # Conditions
 # --------------------------------------------------------------------------
 
-CORNERS = list(C.CORNERS)
+CORNERS = list(mc.CORNERS)
 #: Issue #61 population: nominal temperature and supply, like sim/offset-mc/.
 #: `--grid full` adds the ratified T and VDD axes (45 points).
-GRIDS = {
-    "nominal": ([27.0], [3.30]),
-    "full": (list(C.TEMPS_C), list(C.SUPPLIES_V)),
-}
-MC_N = 300
-MC_SEED = 45
-MC_VARY = "mismatch"
+GRIDS = {g: tuple(mc.grid_axes(g)) for g in ("nominal", "full")}
+MC_N, MC_SEED, MC_VARY = mc.MC_N, mc.MC_SEED, mc.MC_VARY
 PROBE_N = 3
-CONTROL_OFF_N = 4
-CONTROL_PROC_N = 20
-CONTROL_IMB_N = 300
+CONTROL_OFF_N, CONTROL_PROC_N, CONTROL_IMB_N = mc.CONTROL_OFF_N, mc.CONTROL_PROC_N, mc.CONTROL_IMB_N
 
 #: Sweep: the systematic bench's `.ac dec 20 0.1 1e9` (201 points). The DC
 #: band is indices 0..20 (0.1-1 Hz) and the spot frequencies sit exactly on
 #: the grid (index = 20 log10(f / 0.1)); `cmc_f*` prints prove it per sample.
-AC_ARGS = f"dec {C.AC_PPD:g} {C.AC_FSTART:g} {C.AC_FSTOP:g}"
+AC_ARGS = mc.ac_args()
 N_FREQ = C.N_FREQ
-BAND = (0, 20)
-SPOTS = {"1k": (1e3, 80), "10k": (1e4, 100), "100k": (1e5, 120), "1m": (1e6, 140)}
-FIGS = ("dc", "1k", "10k", "100k", "1m", "fu")
+BAND = tuple(mc.BAND)
+SPOTS = dict(mc.SPOTS)
+FIGS = tuple(mc.FIGS)
 FIG_LABEL = {"dc": "DC plateau (0.1-1 Hz)", "1k": "1 kHz", "10k": "10 kHz", "100k": "100 kHz",
              "1m": "1 MHz", "fu": "at f_u (differential unity gain)"}
 
@@ -158,7 +154,7 @@ PARITY_TOL_V = 1e-6
 PLATEAU_TOL_DB = C.PLATEAU_TOL_DB
 #: |Acm| below this is clamped and the figure is a lower bound (the systematic
 #: record's demonstrated superposition floor, 10 x 2.62e-11 V/V).
-FLOOR = 2.62e-10
+FLOOR = mc.FLOOR
 #: Mismatch must visibly act: per-corner offset sigma above this (the
 #: switch-off control gives exactly 0; offset-mc measured 4.3-5.0 mV).
 MIN_OFFSET_SIGMA_V = 1e-3
@@ -169,7 +165,7 @@ TOL_SYS_FU_DB = 0.1  # CMRR at f_u, same reason
 #: Negative control: the imbalance must raise mean |Acm| at DC by more than
 #: this many standard errors of the difference, and lower the statistic.
 CONTROL_SE_MULT = 3.0
-CONTROL_MIRROR = C.CONTROL_MIRROR  # ("XM3", "W", "6u", "5.4u")
+CONTROL_MIRROR = tuple(mc.CONTROL_MIRROR)  # ("XM3", "W", "6u", "5.4u")
 
 # --------------------------------------------------------------------------
 # The control-language tail appended to the `.ac` analysis line
@@ -177,85 +173,12 @@ CONTROL_MIRROR = C.CONTROL_MIRROR  # ("XM3", "W", "6u", "5.4u")
 
 #: Every scalar the tail prints (`print <name>` -> `<name> = <value>` in the
 #: log). Order is the print order.
-SCALARS: list[str] = (
-    ["cmc_op1_vout", "cmc_op1_vinp", "cmc_offset", "cmc_op_parity", "cmc_npts", "cmc_f0", "cmc_f20"]
-    + [f"cmc_f{i}" for _, i in SPOTS.values()]
-    + ["cmc_dm_vderr", "cmc_dm_vcerr", "cmc_cm_vcerr", "cmc_cm_leak", "cmc_det_min", "cmc_acm_min",
-       "cmc_cmrr_spread", "cmc_acm_spread", "cmc_ad_spread", "cmc_acm_re0", "cmc_acm_im0"]
-    + [f"cmc_{k}_{f}" for f in FIGS for k in ("cmrr", "ad", "acm")]
-    + ["cmc_fu_hz"]
-)
+SCALARS: list[str] = mc.scalars()
 
 
 def analysis_tail(ac_args: str = AC_ARGS) -> str:
-    """Control commands klt places verbatim after its `ac <args>` line.
-
-    Plot ac1 is the differential sweep (the testbench's own .param values,
-    acp = +0.5, acn = -0.5); the two `alter`s set the common-mode drive
-    (acp = acn = 1) for plot ac2. `op1`/`op2` are the operating points after
-    each sweep. Everything is evaluated in plot ac2, which stays current, so
-    klt's own `expr` lines (if any) see the same vectors.
-    """
-    lo, hi = BAND
-    L = [
-        "op",
-        "let cmc_op1_vout = v(vout)",
-        "let cmc_op1_vinp = v(vinp)",
-        "let cmc_offset = v(vout) - v(vinp)",
-        "alter vcm acmag=1",
-        "alter vnac acmag=1",
-        f"ac {ac_args}",
-        "op",
-        "let cmc_op_parity = v(vout) - op1.v(vout)",
-        "setplot ac2",
-        "let cmc_op1_vout = op1.cmc_op1_vout",
-        "let cmc_op1_vinp = op1.cmc_op1_vinp",
-        "let cmc_offset = op1.cmc_offset",
-        "let cmc_op_parity = op2.cmc_op_parity",
-        "let cmc_npts = length(frequency)",
-        "let cmc_f0 = real(frequency[0])",
-        f"let cmc_f20 = real(frequency[{hi}])",
-        *[f"let cmc_f{i} = real(frequency[{i}])" for _, i in SPOTS.values()],
-        # actual input phasors of both sweeps
-        "let cmc_vd1 = ac1.v(vinp) - ac1.v(vinn)",
-        "let cmc_vc1 = (ac1.v(vinp) + ac1.v(vinn)) / 2",
-        "let cmc_vd2 = v(vinp) - v(vinn)",
-        "let cmc_vc2 = (v(vinp) + v(vinn)) / 2",
-        "let cmc_dm_vderr = vecmax(mag(cmc_vd1 - 1))",
-        "let cmc_dm_vcerr = vecmax(mag(cmc_vc1))",
-        "let cmc_cm_vcerr = vecmax(mag(cmc_vc2 - 1))",
-        "let cmc_cm_leak = vecmax(mag(cmc_vd2 / cmc_vc2))",
-        # exact per-frequency solve of vout = Ad vd + Acm vc (run_cmrr.solve_ad_acm)
-        "let cmc_det = cmc_vd1 * cmc_vc2 - cmc_vc1 * cmc_vd2",
-        "let cmc_det_min = vecmin(mag(cmc_det))",
-        "let cmc_adv = (ac1.v(vout) * cmc_vc2 - v(vout) * cmc_vc1) / cmc_det",
-        "let cmc_acmv = (cmc_vd1 * v(vout) - cmc_vd2 * ac1.v(vout)) / cmc_det",
-        "let cmc_acmmag = mag(cmc_acmv)",
-        "let cmc_acm_min = vecmin(cmc_acmmag)",
-        "let cmc_addb = db(cmc_adv)",
-        "let cmc_acmdb = db(cmc_acmv)",
-        "let cmc_cmrrdb = cmc_addb - cmc_acmdb",
-        f"let cmc_cmrr_spread = vecmax(cmc_cmrrdb[{lo},{hi}]) - vecmin(cmc_cmrrdb[{lo},{hi}])",
-        f"let cmc_acm_spread = vecmax(cmc_acmdb[{lo},{hi}]) - vecmin(cmc_acmdb[{lo},{hi}])",
-        f"let cmc_ad_spread = vecmax(cmc_addb[{lo},{hi}]) - vecmin(cmc_addb[{lo},{hi}])",
-        "let cmc_acm_re0 = real(cmc_acmv[0])",
-        "let cmc_acm_im0 = imag(cmc_acmv[0])",
-        f"let cmc_cmrr_dc = mean(cmc_cmrrdb[{lo},{hi}])",
-        f"let cmc_ad_dc = mean(cmc_addb[{lo},{hi}])",
-        f"let cmc_acm_dc = mean(cmc_acmmag[{lo},{hi}])",
-    ]
-    for name, (_, i) in SPOTS.items():
-        L += [f"let cmc_cmrr_{name} = cmc_cmrrdb[{i}]", f"let cmc_ad_{name} = cmc_addb[{i}]",
-              f"let cmc_acm_{name} = cmc_acmmag[{i}]"]
-    # f_u: first falling 0 dB crossing of |Ad| (ngspice `meas`, linear in f)
-    L += [
-        "meas ac cmc_fu_hz when cmc_addb=0 fall=1",
-        "meas ac cmc_cmrr_fu find cmc_cmrrdb when cmc_addb=0 fall=1",
-        "meas ac cmc_acm_fu find cmc_acmmag when cmc_addb=0 fall=1",
-        "let cmc_ad_fu = 0",
-    ]
-    L += [f"print {s}" for s in SCALARS]
-    return "\n".join(L)
+    """The two-sweep control tail (defined in `measurement_config.analysis_tail`)."""
+    return mc.analysis_tail(ac_args)
 
 
 # --------------------------------------------------------------------------
@@ -263,7 +186,7 @@ def analysis_tail(ac_args: str = AC_ARGS) -> str:
 # --------------------------------------------------------------------------
 
 PARAM_KEYS = ["acp", "acn", "rsv", "csv", "sw_stat_mismatch"]
-DM_PARAMS = {"acp": 0.5, "acn": -0.5, **C.SERVO_NOMINAL}
+DM_PARAMS = dict(mc.DM_PARAMS)
 
 
 def _circuit_lines(text: str) -> list[str]:
@@ -688,6 +611,9 @@ def build_record(*, record, stamp, pdk, ngspice, kver, grid, reports, walls, sam
     add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; issue #61")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include "
         f"`{dut_sha[:16]}`), unchanged; snapshot `netlist-snapshots/{record}.spice`")
+    retained = {"grid": grid} if grid != "nominal" else {}
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}, retained):
+        add(ln)
     add(f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (harness `find_pdk`, via {pdk.source}). "
         "klt's `provenance.pdk` describes the submitting client, not the fleet runner; the fleet library is tied "
         "to the pinned revision through the switch-off control below, which reproduces the committed systematic "
@@ -835,6 +761,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, grid, reports, walls, sam
     add("")
     add(f"- All blocking checks passed: {problems_none}.")
     add("")
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}, retained))
     add("## Reproduce / evidence")
     add("")
     add("```")

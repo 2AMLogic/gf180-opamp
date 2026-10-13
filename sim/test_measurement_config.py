@@ -20,7 +20,8 @@ sys.path.insert(0, str(HERE))
 
 import harness  # noqa: E402
 
-EXPERIMENTS = ("noise", "offset-mc", "cmrr", "psrr", "psrr-mc", "slew-swing-power", "input-common-mode")
+EXPERIMENTS = ("noise", "offset-mc", "cmrr", "cmrr-mc", "psrr", "psrr-mc", "gain-gbw-pm-mc", "slew-swing-power",
+               "input-common-mode")
 
 #: Public constants that deliberately do NOT enter the fingerprint (identity
 #: or cosmetic). Anything else a config module defines must move its inputs.
@@ -146,7 +147,42 @@ class Completeness(unittest.TestCase):
                     self.assertNotEqual(psrr_mc.fingerprint(tm), base)
                 finally:
                     setattr(cmrr2, n, old)
+        # cmrr-mc (issue #197): sweep, servo, corner axes and the control mirror come from cmrr
+        cmrr_mc = load("cmrr-mc")
+        tc = texts("cmrr-mc", cmrr_mc)
+        for n in ("SERVO_NOMINAL", "AC_PPD", "AC_FSTART", "AC_FSTOP"):
+            base = cmrr_mc.fingerprint(tc)
+            with self.subTest(f"cmrr-mc<-cmrr.{n}"):
+                old = getattr(cmrr_mc._CMRR, n)
+                setattr(cmrr_mc._CMRR, n, perturb(old))
+                try:
+                    self.assertNotEqual(cmrr_mc.fingerprint(tc), base)
+                finally:
+                    setattr(cmrr_mc._CMRR, n, old)
+        for n in ("TEMPS_C", "SUPPLIES_V"):  # the full grid's axes
+            base = cmrr_mc.fingerprint(tc, {"grid": "full"})
+            old = getattr(cmrr_mc._CMRR, n)
+            setattr(cmrr_mc._CMRR, n, perturb(old))
+            try:
+                self.assertNotEqual(cmrr_mc.fingerprint(tc, {"grid": "full"}), base, n)
+                self.assertEqual(cmrr_mc.fingerprint(tc), cmrr_mc.fingerprint(tc), n)
+            finally:
+                setattr(cmrr_mc._CMRR, n, old)
+        base = cmrr_mc.fingerprint(tc)
+        old = cmrr_mc._CMRR.MODES
+        cmrr_mc._CMRR.MODES = {**old, "cm": {"acp": 1.0, "acn": 0.5}}  # the common-mode drive the tail alters to
+        try:
+            self.assertNotEqual(cmrr_mc.fingerprint(tc), base)
+        finally:
+            cmrr_mc._CMRR.MODES = old
+        self.assertIs(cmrr_mc.CONTROL_MIRROR, load("cmrr").CONTROL_MIRROR)
         gain = harness.load_config_module(HERE / "gain-gbw-pm" / "measurement_config.py")
+        # gain-gbw-pm-mc (issue #197): bench, sweep, corners and models come from the gain configuration
+        gmc = load("gain-gbw-pm-mc")
+        tg = texts("gain-gbw-pm-mc", gmc)
+        self.assertEqual(tg["bench"], (REPO / "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice").read_text())
+        for n in ("CORNERS", "PASSIVE_SECTIONS", "MODEL_LIB", "AC_FSTART", "AC_FSTOP", "AC_PPD"):
+            self.assertIs(getattr(gmc, n), getattr(gain, n), n)  # one source; a gain edit reaches this fingerprint
         for exp in ("noise", "cmrr", "slew-swing-power", "input-common-mode"):
             m = load(exp)
             for n in ("CORNERS", "TEMPS_C", "SUPPLIES_V", "PASSIVE_SECTIONS", "MODEL_LIB"):
@@ -176,6 +212,8 @@ class BenchNormalisation(unittest.TestCase):
             "cmrr": ("Rsv vsb vsv {rsv}", "Rsv vsb vsv {rsv}\nRx vsv 0 1e12"),
             "psrr": ("Vss vss 0 dc 0 ac {acss}", "Vss vss 0 dc 0.1 ac {acss}"),
             "psrr-mc": ("Vss vss 0 dc 0 ac {acss}", "Vss vss 0 dc 0.1 ac {acss}"),
+            "cmrr-mc": ("CL vout 0 2p", "CL vout 0 3p"),
+            "gain-gbw-pm-mc": ("CL vout 0 2p", "CL vout 0 3p"),
             "input-common-mode": ("CL vout 0 2p", "CL vout 0 3p"),
         }
         for exp, (old, new) in edits.items():
@@ -196,6 +234,8 @@ class BenchNormalisation(unittest.TestCase):
             "cmrr": ("MODES", lambda m: {**m.MODES, "cm": {"acp": 1.0, "acn": 0.5}}),
             "psrr": ("MODES", lambda m: {**m.MODES, "vss": {**m.MODES["vss"], "acss": 2.0}}),
             "psrr-mc": ("MC_SEED", lambda m: m.MC_SEED + 1),
+            "cmrr-mc": ("MC_SEED", lambda m: m.MC_SEED + 1),
+            "gain-gbw-pm-mc": ("MC_SEED", lambda m: m.MC_SEED + 1),
             "input-common-mode": ("SCAN_STEP_MV", lambda m: m.SCAN_STEP_MV // 2),
         }
         for exp, (name, f) in cases.items():
@@ -317,6 +357,124 @@ class SlewSwingPower(unittest.TestCase):
             self.assertNotEqual(self.m.fingerprint(t), base)
         finally:
             self.m.CONTROLS = old
+
+
+def _runner(name: str, rel: str):
+    """A runner module (they need numpy; the stdlib-only checks above do not)."""
+    try:
+        return harness.load_sibling(name, rel)
+    except ModuleNotFoundError as e:  # pragma: no cover - numpy missing
+        raise unittest.SkipTest(f"{rel}: {e}")
+
+
+class _FakePdk:
+    variant = harness.DEFAULT_VARIANT
+    path = Path("/pdk/" + harness.DEFAULT_VARIANT)
+
+
+class MismatchRunnerParity(unittest.TestCase):
+    """Issue #197: what the CMRR-MC and gain/GBW/PM-MC runners send to klt is what their
+    fingerprints name (request/config parity, inherited bench inputs and mismatch population)."""
+
+    def check_request(self, req, inp, temps, supplies, bench_ok=True):
+        self.assertEqual(req["analysis"]["kind"], inp["analysis"]["kind"])
+        self.assertEqual(req["analysis"]["args"], inp["analysis"]["args"])
+        mc = inp["monte_carlo"]
+        self.assertEqual(req["monte_carlo"], {k: mc[k] for k in ("n", "seed", "vary")})
+        c = inp["corners"]
+        self.assertEqual([x["name"] for x in req["corners"]["process"]], c["process"])
+        for x in req["corners"]["process"]:
+            self.assertEqual(x["sections"][1:], c["passive_sections"])
+        self.assertEqual(req["corners"]["temperature_c"], c["temperature_c"])
+        self.assertEqual(req["corners"]["supply_v"]["vdd"], c["supply_v"])
+        self.assertEqual(c["vcm_rule"], "vdd/2")
+        self.assertEqual(req["corners"]["supply_v"]["vcm"], [round(v / 2, 6) for v in c["supply_v"]])
+        self.assertEqual(req["models"], {"pdk": inp["models"]["pdk_variant"], "lib": inp["models"]["lib"]})
+
+    def test_cmrr_mc_request_matches_fingerprinted_inputs(self):
+        r = _runner("cmrr_mc_parity", "sim/cmrr-mc/run_cmrr_mc.py")
+        cfg = load("cmrr-mc")
+        t = texts("cmrr-mc", cfg)
+        self.assertEqual(r.TESTBENCH.read_text(), t["bench"])
+        for grid in ("nominal", "full"):
+            with self.subTest(grid):
+                temps, supplies = r.GRIDS[grid]
+                req = r.request(Path("/w/tb.spice"), _FakePdk(), r.CORNERS, temps, supplies, n=r.MC_N)
+                inp = cfg.inputs(t, {"grid": grid})
+                self.check_request(req, inp, temps, supplies)
+                self.assertEqual(("grid" in inp), grid != "nominal")
+        # runner conditions and settings come from the configuration module
+        inp = cfg.inputs(t)
+        self.assertEqual(r.DM_PARAMS, inp["excitation"]["dm"] | inp["excitation"]["servo"])
+        self.assertEqual(r.FLOOR, inp["figures"]["floor"])
+        self.assertEqual([r.BAND[0], r.BAND[1]], inp["figures"]["band"])
+        self.assertEqual({k: list(v) for k, v in r.SPOTS.items()}, inp["figures"]["spots"])
+        self.assertEqual((r.CONTROL_OFF_N, r.CONTROL_PROC_N, r.CONTROL_IMB_N),
+                         (inp["controls"]["switch_off_n"], inp["controls"]["process_only_n"],
+                          inp["controls"]["imbalance_n"]))
+        self.assertEqual(list(r.CONTROL_MIRROR), inp["controls"]["mirror"])
+        self.assertEqual(r.SCALARS, cfg.scalars())
+        self.assertEqual(inp["models"]["lib"], r.G.MODEL_LIB)
+        # the controls' mismatch population: the bench carries the switch the inputs name
+        self.assertIn("sw_stat_mismatch", t["bench"])
+        self.assertEqual(inp["monte_carlo"]["model_switch"], "sw_stat_mismatch")
+
+    def test_cmrr_mc_record_carries_its_fingerprint(self):
+        """The record builder embeds the header line and the retained inputs block for its grid."""
+        r = _runner("cmrr_mc_parity", "sim/cmrr-mc/run_cmrr_mc.py")
+        cfg = load("cmrr-mc")
+        t = texts("cmrr-mc", cfg)
+        src = Path(r.__file__).read_text()
+        self.assertIn("mc.fingerprint_lines(", src)
+        self.assertIn("mc.inputs_section(", src)
+        for grid in ("nominal", "full"):
+            blob = "\n".join(cfg.fingerprint_lines(t, {"grid": grid}) + cfg.inputs_section(t, {"grid": grid}))
+            body = blob.split("```json\n", 1)[1].split("\n```", 1)[0]
+            self.assertEqual(harness.measurement_fingerprint(json.loads(body)), cfg.fingerprint(t, {"grid": grid}))
+        self.assertNotEqual(cfg.fingerprint(t), cfg.fingerprint(t, {"grid": "full"}))
+
+    def test_gain_mc_request_matches_fingerprinted_inputs(self):
+        r = _runner("gain_mc_parity", "sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py")
+        cfg = load("gain-gbw-pm-mc")
+        t = texts("gain-gbw-pm-mc", cfg)
+        self.assertEqual(r.G.TESTBENCH.read_text(), t["bench"])
+        req = r.mc_request(Path("/w/tb.spice"), _FakePdk(), r.CORNERS, r.TEMPS_C, r.SUPPLIES_V, n=r.MC_N)
+        inp = cfg.inputs(t)
+        self.check_request(req, inp, r.TEMPS_C, r.SUPPLIES_V)
+        # the bench the runner materialises is the gain bench plus the mismatch switch the inputs hold
+        self.assertEqual(harness.canonical_bench_lines(r.inject_mismatch(r.G.TESTBENCH.read_text(), 1)), inp["bench"])
+        self.assertIn(".param sw_stat_mismatch=1", inp["bench"])
+        self.assertNotEqual(inp["bench"], harness.canonical_bench_lines(t["bench"]))
+        self.assertEqual(r.VEC_COLS, cfg.VEC_COLS)
+        self.assertEqual(r.analysis_tail(), cfg.analysis_tail())
+
+    def test_gain_mc_mismatch_switch_is_fingerprinted(self):
+        cfg = load("gain-gbw-pm-mc")
+        t = texts("gain-gbw-pm-mc", cfg)
+        off = harness.measurement_fingerprint({**cfg.inputs(t),
+                                               "bench": harness.canonical_bench_lines(cfg.inject_mismatch(t["bench"], 0))})
+        self.assertNotEqual(off, cfg.fingerprint(t))
+
+    def test_extraction_only_and_scheduling_options_are_outside(self):
+        """Tolerances, probe sizes and scheduling are not inputs: changing them keeps the fingerprint."""
+        for exp, rel, names in (
+                ("cmrr-mc", "sim/cmrr-mc/run_cmrr_mc.py", ("PARITY_TOL_V", "MIN_OFFSET_SIGMA_V", "TOL_SYS_DB", "PROBE_N")),
+                ("gain-gbw-pm-mc", "sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py", ("DIFF_EXC_TOL_V", "PROBE_N"))):
+            r = _runner({"cmrr-mc": "cmrr_mc_parity", "gain-gbw-pm-mc": "gain_mc_parity"}[exp], rel)
+            cfg = load(exp)
+            t = texts(exp, cfg)
+            base = cfg.fingerprint(t)
+            for n in names:
+                with self.subTest(f"{exp}.{n}"):
+                    old = getattr(r, n)
+                    setattr(r, n, perturb(old))
+                    try:
+                        self.assertEqual(cfg.fingerprint(t), base)
+                    finally:
+                        setattr(r, n, old)
+            blob = harness.fingerprint_json(cfg.inputs(t)).lower()
+            for word in ("backend", "retr", "batch", "timeout", "keep_artifacts", "waveforms"):
+                self.assertNotIn(word, blob, (exp, word))
 
 
 if __name__ == "__main__":

@@ -5,8 +5,8 @@
     "normalised_sha256_prefix": "33b58dac62c747de"
   },
   "limitations": [
-    "cmrr-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
-    "gain-gbw-pm-mc: measurement-configuration freshness unknown (not instrumented: this experiment's records carry no measurement fingerprint); DUT freshness is checked, bench/analysis freshness is not",
+    "cmrr-mc: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
+    "gain-gbw-pm-mc: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "input-common-mode: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "ngspice versions differ: ngspice 42 <- gain-gbw-pm-mc (local), psrr-mc (local); ngspice 46 <- cmrr (local), cmrr (klt engine), cmrr-mc (local), cmrr-mc (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), gain-gbw-pm-mc (klt engine), input-common-mode (local), input-common-mode (klt engine), noise (local), offset-mc (local), psrr (local), psrr (klt engine), psrr-mc (klt engine), slew-swing-power (local), slew-swing-power (klt engine)",
     "coverage differs between sources (see each row's coverage; e.g. the CMRR mismatch Monte Carlo record is 5 corner points at 27 C / 3.30 V while the AC rows are full 45-point grids)",
@@ -1448,7 +1448,7 @@
           "pm": ">= 60.00 deg"
         },
         "measurement_config": {
-          "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+          "detail": "this record predates measurement fingerprinting",
           "status": "unknown"
         },
         "per_corner": {
@@ -1669,7 +1669,7 @@
         "mean - 3 sigma is a descriptive figure from N = 300 per corner (sample sigma, ddof = 1): not a tail estimate and not a yield claim",
         "N = 300 with zero observed failures does not establish yield: T1 signoff item 6 accepts only yield envelopes and stays unmet",
         "mismatch Monte Carlo of the three AC rows; the ratified bounds are graded by the deterministic record, and no bound is proposed or relaxed here",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's",
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's",
         "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product): the study measures PM and GBW only (no DC-gain column): no gain observation",
         "supplementary side study `sim/gain-gbw-pm/records/20261011-042113-c635487.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product): the study measures PM and GBW only (no DC-gain column): no gain observation"
       ],
@@ -1805,7 +1805,7 @@
           "pm": ">= 60.00 deg"
         },
         "measurement_config": {
-          "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+          "detail": "this record predates measurement fingerprinting",
           "status": "unknown"
         },
         "per_corner": {
@@ -2026,7 +2026,7 @@
         "mean - 3 sigma is a descriptive figure from N = 300 per corner (sample sigma, ddof = 1): not a tail estimate and not a yield claim",
         "N = 300 with zero observed failures does not establish yield: T1 signoff item 6 accepts only yield envelopes and stays unmet",
         "mismatch Monte Carlo of the three AC rows; the ratified bounds are graded by the deterministic record, and no bound is proposed or relaxed here",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's",
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's",
         "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures GBW >= 10 MHz: 27/27 cells pass, 0 fail; range 10.726 .. 19.095 MHz; worst 10.726 MHz at ss / 125 C / 2.97 V, RZ best, CC worst",
         "supplementary side study `sim/gain-gbw-pm/records/20261011-042113-c635487.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures GBW >= 10 MHz: 405/405 cells pass, 0 fail; range 10.726 .. 30.351 MHz; worst 10.726 MHz at ss / 125 C / 2.97 V, RZ best, CC worst"
       ],
@@ -2162,7 +2162,7 @@
           "pm": ">= 60.00 deg"
         },
         "measurement_config": {
-          "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+          "detail": "this record predates measurement fingerprinting",
           "status": "unknown"
         },
         "per_corner": {
@@ -2383,7 +2383,7 @@
         "mean - 3 sigma is a descriptive figure from N = 300 per corner (sample sigma, ddof = 1): not a tail estimate and not a yield claim",
         "N = 300 with zero observed failures does not establish yield: T1 signoff item 6 accepts only yield envelopes and stays unmet",
         "mismatch Monte Carlo of the three AC rows; the ratified bounds are graded by the deterministic record, and no bound is proposed or relaxed here",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's",
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's",
         "supplementary side study `sim/gain-gbw-pm/records/20261010-161720-0127eb7.md` (not a selected verdict record; outside this row's verdict and point count; 27 cells = 3 MOS/T/VDD points x RZ x CC, not a full passive-by-PVT cross product) measures Phase margin >= 60 deg: 27/27 cells pass, 0 fail; range 64.47 .. 84.93 deg; worst 64.47 deg at fs / 125 C / 2.97 V, RZ best, CC best",
         "supplementary side study `sim/gain-gbw-pm/records/20261011-042113-c635487.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures Phase margin >= 60 deg: 405/405 cells pass, 0 fail; range 64.47 .. 86.41 deg; worst 64.47 deg at fs / 125 C / 2.97 V, RZ best, CC best"
       ],
@@ -2647,7 +2647,7 @@
           "switch_off_max_dev_db_dc_to_1m": 0.0
         },
         "measurement_config": {
-          "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+          "detail": "this record predates measurement fingerprinting",
           "status": "unknown"
         },
         "per_point": {
@@ -3163,7 +3163,7 @@
         "MOS mismatch only; passives (RZ, CC) at typical with no passive mismatch, resistor and capacitor mismatch not modelled",
         "N=300 cannot resolve a 0.135 % tail: neither the linear nor the dB 3-sigma figure is a sample statistic; the empirical minimum and percentiles are the normality cross-check",
         "mismatch Monte Carlo of the CMRR; no numeric bound proposed or judged here (DR-6 is proposed, not ratified)",
-        "measurement-configuration freshness unknown: not instrumented: this experiment's records carry no measurement fingerprint; the bench/analysis settings it measured cannot be compared with today's"
+        "measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's"
       ],
       "points_pass": null,
       "points_total": null,
@@ -5021,7 +5021,7 @@
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g39f6da54ae4c",
       "measurement_config": {
-        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "detail": "this record predates measurement fingerprinting",
         "status": "unknown"
       },
       "ngspice_engine": "46",
@@ -5062,7 +5062,7 @@
       "fleet_runner_mismatch": true,
       "klt_client": "0.7.0+g0d0312b30708",
       "measurement_config": {
-        "detail": "not instrumented: this experiment's records carry no measurement fingerprint",
+        "detail": "this record predates measurement fingerprinting",
         "status": "unknown"
       },
       "ngspice_engine": "46",
