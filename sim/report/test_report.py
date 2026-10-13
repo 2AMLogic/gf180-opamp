@@ -3430,6 +3430,9 @@ class StepResponseFollowerStudy(unittest.TestCase):
         self.assertIn("| Overshoot (worse edge) | 0.90 % of the realised step (range 0.00 .. 0.90) | fs / 125 C / 2.97 V |", sec)
         self.assertIn("| Settling to 0.1 % (worse edge) | 72.2 ns from the input edge | sf / -40 C / 2.97 V |", sec)
         self.assertIn("| Monotonicity | 12/45 valid points non-monotonic | - |", sec)
+        st = with_s["supplementary"][self.KEY]["figures"]["Monotonicity"]
+        self.assertIn("| Monotonicity -- non-monotonic points | first 6 of 12 listed | "
+                      + "; ".join(st["points"]) + " |", sec)
         self.assertIn("no settling or overshoot row", sec)
         self.assertNotIn(STEP_REC, cr.render_md(without))
         self.assertTrue(any(l == f"no supplementary study selected for {self.KEY}: its ungraded observations "
@@ -3462,6 +3465,19 @@ class StepResponseFollowerStudy(unittest.TestCase):
     def test_unexpected_point_rejected(self):
         self.edit(STEP_MD, "| `typical` | 27 | 3.30 | 0.00 / 0.00", "| `typical` | 27 | 2.50 | 0.00 / 0.00")
         self.rejects(r"unexpected point typical / 27 C / 2\.50 V under 'All 45 points'")
+
+    # ---- header corner-matrix prose vs the fingerprinted population ----
+    def test_header_corner_matrix_disagreeing_rejected(self):
+        self.edit(STEP_MD, "  - Temperature: -40 C, 27 C, 125 C\n", "  - Temperature: -40 C, 27 C, 150 C\n")
+        self.rejects(r"the header's corner-matrix line disagrees with the retained fingerprint population")
+
+    def test_header_corner_matrix_vdd_disagreeing_rejected(self):
+        self.edit(STEP_MD, "  - Supply VDD: 2.97 V, 3.30 V, 3.63 V (", "  - Supply VDD: 2.97 V, 3.30 V (")
+        self.rejects(r"the header's corner-matrix line disagrees with the retained fingerprint population")
+
+    def test_header_corner_matrix_line_missing_rejected(self):
+        self.edit(STEP_MD, "  - Supply VDD: 2.97 V", "  - Supplies: 2.97 V")
+        self.rejects(r"corner-matrix line disagrees .* \(a Process / Temperature / Supply VDD line is missing\)")
 
     # ---- rounded claims vs the retained evidence ----
     def test_summary_worst_value_disagreeing_rejected(self):

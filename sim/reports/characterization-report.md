@@ -528,6 +528,7 @@ Selected explicitly under `supplementary` in `sim/report/selection.json`, separa
 | Settling to 1 % (worse edge) | 47.1 ns from the input edge | sf / -40 C / 2.97 V |
 | Settling to 0.1 % (worse edge) | 72.2 ns from the input edge | sf / -40 C / 2.97 V |
 | Monotonicity | 12/45 valid points non-monotonic | - |
+| Monotonicity -- non-monotonic points | first 6 of 12 listed | typical / 125 C / 2.97 V; typical / 125 C / 3.30 V; typical / 125 C / 3.63 V; ff / -40 C / 2.97 V; ff / -40 C / 3.30 V; ff / -40 C / 3.63 V |
 | Validity | 0/45 points invalid | - |
 
 - Limitation: side study: not a selected verdict record; its cells are not counted in any row's points or verdict nor in the ratified-row summary

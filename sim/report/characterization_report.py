@@ -3063,17 +3063,28 @@ def extract_step_response_study(text: str, label: str, root: Path, rid: str,
             raise ReportError(f"{label}: retained fingerprint params carry no '{key}'")
     p = {**p, "settle_bands": [float(b) for b in p["settle_bands"]]}
     # the header's Corner-matrix prose must agree with the fingerprinted population
-    hm = re.search(r"^- \*\*Corner matrix run\*\*:\n(?:  - .*\n)+", head)
-    if hm:
-        hprocs = re.search(r"  - Process \(MOS\): (.+)$", hm.group(0), re.M)
-        hts = re.search(r"  - Temperature: (.+?) C\n", hm.group(0), re.M)
-        hvdd = re.search(r"  - Supply VDD: (.+?) V\n", hm.group(0), re.M)
-        want_procs = ", ".join(cors["process"])
-        want_ts = ", ".join(f"{float(t):g}" for t in cors["temperature_c"])
-        want_vdd = ", ".join(f"{float(v):.2f}" for v in cors["supply_v"])
-        if not hm or hprocs.group(1) != want_procs or hts.group(1) != want_ts or hvdd.group(1) != want_vdd:
-            raise ReportError(f"{label}: the header's corner-matrix line disagrees with the retained fingerprint "
-                              f"population ({want_procs} x {want_ts} C x {want_vdd} V)")
+    hm = re.search(r"^- \*\*Corner matrix run\*\*:\n(?:  - .*\n)+", head, re.M)
+    want_procs = ", ".join(cors["process"])
+    want_ts = ", ".join(f"{float(t):g}" for t in cors["temperature_c"])
+    want_vdd = ", ".join(f"{float(v):.2f}" for v in cors["supply_v"])
+    hdr_err = (f"{label}: the header's corner-matrix line disagrees with the retained fingerprint "
+               f"population ({want_procs} x {want_ts} C x {want_vdd} V)")
+    if not hm:
+        raise ReportError(f"{label}: the record header carries no '- **Corner matrix run**:' block")
+    hprocs = re.search(r"^  - Process \(MOS\): (.+)$", hm.group(0), re.M)
+    hts = re.search(r"^  - Temperature: (.+)$", hm.group(0), re.M)
+    hvdd = re.search(r"^  - Supply VDD: ([^(\n]+?)\s*(?:\(.*\))?$", hm.group(0), re.M)
+    if not (hprocs and hts and hvdd):
+        raise ReportError(hdr_err + " (a Process / Temperature / Supply VDD line is missing)")
+
+    def _unit_list(txt: str, unit: str, fmt: str) -> str:
+        try:
+            return ", ".join(format(float(x.strip().removesuffix(unit).strip()), fmt) for x in txt.split(","))
+        except ValueError:
+            raise ReportError(hdr_err) from None
+    if (hprocs.group(1).strip() != want_procs or _unit_list(hts.group(1), "C", "g") != want_ts
+            or _unit_list(hvdd.group(1), "V", ".2f") != want_vdd):
+        raise ReportError(hdr_err)
     # ---- the record's per-point table: exactly the population ----
     where = f"All {len(pts)} points"
     body = section(text, where)
@@ -4538,6 +4549,10 @@ def render_step_study(a, st: dict) -> None:
             a(f"| {name} | {f['value']} {unit} (range {f['range'][0]} .. {f['range'][1]}) | {f['point']} |")
         elif name == "Monotonicity":
             a(f"| {name} | {f['non_monotonic']}/{f['of_valid']} valid points non-monotonic | - |")
+            if f["non_monotonic"]:  # name the points, as the not-settled row does (list may be truncated)
+                shown = ("all listed" if f["list_complete"]
+                         else f"first {len(f['points'])} of {f['non_monotonic']} listed")
+                a(f"| {name} -- non-monotonic points | {shown} | " + "; ".join(f["points"]) + " |")
         elif name == "Validity":
             a(f"| {name} | {f['invalid']}/{f['of']} points invalid | - |")
         else:
