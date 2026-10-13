@@ -156,8 +156,12 @@ corners/<rid>/<process>_<T>c_<vdd>v.{log,cir,dat}, klt-report.json
 corners/<rid>/controls/*
 ```
 
-The aggregate report (`sim/report`) does not select this experiment: there is
-no spec row for it to fill.
+The aggregate report (`sim/report`) does not select this experiment as a
+verdict source: there is no spec row for it to fill. Since issue #198 it
+selects the retuned record explicitly under `supplementary`
+(`step-response-follower`) and shows its observations, re-derived offline from
+the retained `corners/<rid>/*.dat` transients, in a separate ungraded section
+(no verdict, no change to the graded rows or counts).
 
 ## Records
 

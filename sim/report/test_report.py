@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -60,6 +61,12 @@ PSRR = "sim/psrr"
 PSRR_STUDY_REC = "20261011-102729-6612014"  # issue #155 full RZ x CC x PVT study (bound-free supplementary, #173)
 PSRR_STUDY_MD = f"{PSRR}/records/{PSRR_STUDY_REC}.md"
 PSRR_STUDY_DIR = f"{PSRR}/corners/{PSRR_STUDY_REC}"
+STEP = "sim/step-response"
+STEP_REC = "20261011-140956-cb03235"  # issue #113 retuned follower step record (ungraded supplementary, #198)
+STEP_PRE_RETUNE_REC = "20261010-082214-a2cc91f"  # issue #113 first record: pre-retune DUT
+STEP_MD = f"{STEP}/records/{STEP_REC}.md"
+STEP_DIR = f"{STEP}/corners/{STEP_REC}"
+STEP_FIX_DAT = f"{STEP_DIR}/typical_27c_3.30v.dat"  # not-settled fixture point
 
 
 def make_root(tmp: Path) -> Path:
@@ -74,7 +81,8 @@ def make_root(tmp: Path) -> Path:
     # psrr/measurement_config.py loads the shared passive helpers (issue #155)
     shutil.copy(REPO / "sim" / "passive_corners.py", tmp / "sim" / "passive_corners.py")
     for exp in ("gain-gbw-pm", "gain-gbw-pm-mc", "noise", "offset-mc", "cmrr", "cmrr-mc", "psrr", "psrr-mc", "slew-swing-power",
-                "input-common-mode"):
+                "input-common-mode",
+                "step-response"):  # step-response: the supplementary follower study's fingerprint source (issue #198)
         mc = tmp / "sim" / exp
         (mc / "testbench").mkdir(parents=True, exist_ok=True)
         shutil.copy(REPO / "sim" / exp / "measurement_config.py", mc / "measurement_config.py")
@@ -91,7 +99,9 @@ def make_root(tmp: Path) -> Path:
               # full PSRR passive study (issue #173): its retained per-cell curves and partition membership
               + [q for d in (REPO / PSRR).glob("corners/*/partitions.json")
                  for q in [d, *d.parent.glob("*.psrr.dat")]]
-              + list((REPO / GMC).glob("corners/*/samples.csv"))):  # gain/GBW/PM mismatch MC (issue #172)
+              + list((REPO / GMC).glob("corners/*/samples.csv"))  # gain/GBW/PM mismatch MC (issue #172)
+              # follower step-response study (issue #198): its retained per-point transients
+              + list((REPO / "sim/step-response").glob("corners/*/*.dat"))):
         dst = tmp / p.relative_to(REPO)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(p, dst)
@@ -1030,8 +1040,9 @@ class MigratedExperimentFreshness(unittest.TestCase):
         # input-common-mode registered since issue #180; its committed records predate the
         # fingerprint and are disclosed as unknown. The mismatch MC campaigns (cmrr-mc #124,
         # gain-gbw-pm-mc #172) are uninstrumented by policy: no measurement fingerprint exists,
-        # freshness is disclosed as unknown.
-        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG), sorted(self.sel))
+        # freshness is disclosed as unknown. step-response (issue #198) is registered for its
+        # SUPPLEMENTARY study; no experiment of that name is selected under "experiments".
+        self.assertEqual(sorted(cr.MEASUREMENT_CONFIG), sorted(["step-response"] + list(self.sel)))
         mc = cr.build(REPO, manifest())["sources"][cr.ICMR_EXP]["measurement_config"]
         self.assertEqual(mc["status"], "unknown")
         self.assertIn("predates measurement fingerprinting", mc["detail"])
@@ -2657,6 +2668,8 @@ class SupplementaryPassiveStudies(unittest.TestCase):
     GKEY, SKEY = "gain-gbw-pm-passive-corners", "slew-swing-power-passive-corners"
     GFULL, SFULL = "gain-gbw-pm-passive-corners-full", "slew-swing-power-passive-corners-full"  # issue #150
     PFULL = "psrr-passive-corners-full"  # issue #173 (bound-free)
+    STEP = "step-response-follower"  # issue #198 (bound-free, no rows; own test class below)
+    ALL_KEYS = {GKEY, SKEY, GFULL, SFULL, PFULL, STEP}
 
     def setUp(self):
         self._t = tempfile.TemporaryDirectory()
@@ -2692,7 +2705,7 @@ class SupplementaryPassiveStudies(unittest.TestCase):
         sel = json.loads(MANIFEST.read_text())
         sup = sel["supplementary"]
         self.assertEqual({k: sup[k] for k in (self.GKEY, self.SKEY)}, {self.GKEY: GAIN_STUDY_MD, self.SKEY: SSP_STUDY_MD})
-        self.assertEqual(set(sup), {self.GKEY, self.SKEY, self.GFULL, self.SFULL, self.PFULL})
+        self.assertEqual(set(sup), self.ALL_KEYS)
         for rel in sup.values():  # never also a verdict source
             self.assertNotIn(rel, json.dumps(sel["experiments"]))
 
@@ -2767,8 +2780,7 @@ class SupplementaryPassiveStudies(unittest.TestCase):
 
     def test_studies_never_change_verdicts_points_or_counts(self):
         with_s = self.build()
-        without = self.build(self.sup(**{self.GKEY: None, self.SKEY: None, self.GFULL: None, self.SFULL: None,
-                                         self.PFULL: None}))
+        without = self.build(self.sup(**{k: None for k in self.ALL_KEYS}))
         self.assertEqual(with_s["summary"], without["summary"])
         self.assertEqual(without["supplementary"], {})
         for a, b in zip(with_s["rows"], without["rows"]):
@@ -2776,6 +2788,8 @@ class SupplementaryPassiveStudies(unittest.TestCase):
                 self.assertEqual(a[k], b[k], (a["key"], k))
         self.assertTrue(any(l.startswith(f"no supplementary study selected for {self.GKEY}")
                             for l in without["limitations"]))
+        self.assertTrue(any(l == f"no supplementary study selected for {self.STEP}: its ungraded observations "
+                                "are not shown" for l in without["limitations"]))
         for k in ("gbw", "pm", "slew"):
             self.assertFalse(any("side study" in l for l in rows_by_key(without)[k]["limitations"]))
 
@@ -2783,7 +2797,7 @@ class SupplementaryPassiveStudies(unittest.TestCase):
         md1, js1 = cr.generate(self.root, MANIFEST)
         md2, js2 = cr.generate(self.root, MANIFEST)
         self.assertEqual((md1, js1), (md2, js2))
-        self.assertIn("## Supplementary passive-corner studies (measured side evidence; not graded)", md1)
+        self.assertIn("## Supplementary side studies (measured side evidence; not graded)", md1)
         for rel in (GAIN_STUDY_MD, SSP_STUDY_MD):
             self.assertIn(hashlib.sha256((REPO / rel).read_bytes()).hexdigest(), md1)
 
@@ -3198,6 +3212,422 @@ class PsrrFullPassiveStudy(unittest.TestCase):
 
     def test_historical_artifacts_untouched_by_generation(self):
         before = {p: p.read_bytes() for p in [self.root / PSRR_STUDY_MD, *(self.root / PSRR_STUDY_DIR).iterdir()]}
+        cr.render_md(self.build())
+        self.assertEqual(before, {p: p.read_bytes() for p in before})
+
+
+class StepExtractionHelpers(unittest.TestCase):
+    """Issue #198: the offline re-derivation helpers on synthetic waveforms (no record needed):
+    invalid paths return None (never a fast settle), not-settled stays `math.inf`, and the
+    drift rule hides nothing inside the reference window."""
+
+    TSTOP, RISE, FALL, SB, RW = 1.1e-6, 100e-9, 600e-9, 10e-9, 50e-9
+    P = {"step_v": 0.1, "rise_t": RISE, "fall_t": FALL, "tstop": TSTOP, "sample_before": SB,
+         "ref_window": RW, "settle_bands": [0.01, 0.001], "mono_tol": 0.001, "drift_frac": 0.1}
+
+    def wave(self, tau=15e-9, amp=0.1, fall_amp=None):
+        """Ideal first-order follower: vi steps `amp` about 1.6 V at RISE and back at FALL;
+        vo tracks it with time constant `tau` (`fall_amp` overrides the falling excursion)."""
+        fall_amp = -amp if fall_amp is None else fall_amp
+        r, f = self.RISE, self.FALL
+        t = [k * 1e-9 for k in range(1101)]
+
+        def vo(x):
+            if x < r:
+                return 1.6 - amp / 2
+            if x < f:
+                return 1.6 + amp / 2 - amp * math.exp(-(x - r) / tau)
+            return 1.6 + amp / 2 + fall_amp * (1 - math.exp(-(x - f) / tau))
+
+        def vi(x):
+            return 1.6 - amp / 2 if (x < r or x >= f) else 1.6 + amp / 2
+        return t, [vo(x) for x in t], [vi(x) for x in t]
+
+    def edge(self, t, vo, vi, name="fall"):
+        n, e0, e1, d = next(e for e in cr._STEP_EDGES if e[0] == name)
+        return cr._step_edge(t, vo, vi, self.P[e0], self.P[e1] if e1 else None, d, self.P)
+
+    def test_ideal_first_order_response_settles_monotonically(self):
+        e = self.edge(*self.wave())
+        self.assertTrue(e["monotonic"])
+        for b in self.P["settle_bands"]:
+            self.assertLess(e["ts"][b], math.inf)
+        self.assertAlmostEqual(e["overshoot_pct"], 0.0, places=9)
+
+    def test_output_not_at_the_input_before_the_edge_is_invalid(self):
+        t, vo, vi = self.wave()
+        e = self.edge(t, [v - 0.05 for v in vo], vi)  # dead amplifier: output 50 mV off pre-edge
+        self.assertIsNone(e)
+
+    def test_output_never_reaching_the_input_is_invalid(self):
+        t, vo, vi = self.wave(fall_amp=0.1)  # falling edge drives the output AWAY from the input
+        self.assertIsNone(self.edge(t, vo, vi))
+
+    def test_wrong_step_size_is_invalid(self):
+        t, vo, vi = self.wave(amp=0.05)  # 50 mV step: outside the required 100 mV +-20 %
+        self.assertIsNone(self.edge(t, vo, vi))
+
+    def test_still_outside_the_band_in_the_reference_window_is_not_settled(self):
+        t, vo, vi = self.wave(tau=200e-9)  # tau = 200 ns: far from settled inside the 500 ns window
+        e = self.edge(t, vo, vi)
+        self.assertEqual(e["ts"][0.001], math.inf)
+
+    def test_slow_tail_in_the_reference_window_is_not_settled(self):
+        # settles visually, then drifts by > DRIFT_FRAC * band across the reference window
+        t, vo, vi = self.wave()
+
+        def drift(tt):
+            return -3e-5 * max(0.0, (tt - 1.0e-6) / 1.0e-7)  # -30 uV across the last 100 ns
+        vo = [v + drift(x) for v, x in zip(vo, t)]
+        e = self.edge(t, vo, vi)
+        self.assertEqual(e["ts"][0.001], math.inf)  # 0.03 % drift > 0.1 x 0.1 % band
+        self.assertLess(e["ts"][0.01], math.inf)    # 1 % band tolerates the small drift
+
+    def test_ringing_beyond_the_monotonic_tolerance_flags_non_monotonic(self):
+        t, vo, vi = self.wave()
+
+        def ring(tt):
+            return 8e-3 * math.exp(-(tt - self.RISE) / 40e-9) * math.sin(2 * math.pi * (tt - self.RISE) / 60e-9) \
+                if tt >= self.RISE else 0.0
+        vo = [v + ring(x) for v, x in zip(vo, t)]
+        e = self.edge(t, vo, vi, "rise")
+        self.assertFalse(e["monotonic"])
+        self.assertGreater(e["overshoot_pct"], 0.0)
+
+
+class StepResponseFollowerStudy(unittest.TestCase):
+    """Issue #198: the follower step-response record is explicitly selected, hashed and
+    re-derived offline from its retained per-point transients as UNGRADED evidence with no
+    spec row at all: primary selection / ratified counts / verdicts unchanged, not-settled
+    results explicit, pre-retune DUT and changed configuration rejected."""
+
+    KEY = "step-response-follower"
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def build(self, m=None, **kw):
+        return cr.build(self.root, m or manifest(), **kw)
+
+    def edit(self, rel, old, new, count=1):
+        p = self.root / rel
+        t = p.read_text()
+        self.assertIn(old, t)
+        p.write_text(t.replace(old, new, count))
+
+    def rejects(self, rx, m=None, **kw):
+        with self.assertRaisesRegex(cr.ReportError, rx):
+            self.build(m, **kw)
+
+    def without(self):
+        m = manifest()
+        m["supplementary"].pop(self.KEY)
+        return m
+
+    def not_settled_root(self):
+        """A consistent record+evidence pair whose worst result is NOT SETTLED: +200 uV held on
+        vout inside the falling edge's reference window of one point, with the record's rounded
+        table, summary line and worst-points table repaired to what the mutated transient shows."""
+        p = self.root / STEP_FIX_DAT
+        lines = p.read_text().splitlines()
+        out = []
+        for ln in lines:
+            if not ln.startswith("#") and ln.strip():
+                c = ln.split()
+                if float(c[0]) >= 1.06e-6:
+                    c[1] = f"{float(c[1]) + 2.0e-4:.10e}"
+                    ln = " ".join(c)
+            out.append(ln)
+        p.write_text("\n".join(out) + "\n")
+        self.edit(STEP_MD,
+                  "| `typical` | 27 | 3.30 | 0.00 / 0.00 | 0.00 | 44.6 / 41.9 | 67.2 / 64.0 | yes | 17.1 / 15.4 | 77.60 | 16.403 | |",
+                  "| `typical` | 27 | 3.30 | 0.00 / 0.16 | 0.00 | 44.6 / not settled | 67.2 / not settled | no | 17.1 / 15.3 | 77.60 | 16.403 | |")
+        self.edit(STEP_MD,
+                  "worst 1 % settling **47.1 ns** at sf / -40 C / 2.97 V; worst 0.1 % settling **72.2 ns** at "
+                  "sf / -40 C / 2.97 V; monotonic at 33/45 valid points.",
+                  "worst 1 % settling **not settled** at typical / 27 C / 3.30 V; worst 0.1 % settling "
+                  "**not settled** at typical / 27 C / 3.30 V; monotonic at 32/45 valid points.")
+        self.edit(STEP_MD, "| Settling to 1 % (worse edge) | 47.1 ns | sf / -40 C / 2.97 V |",
+                  "| Settling to 1 % (worse edge) | not settled (1 point not settled) | typical / 27 C / 3.30 V |")
+        self.edit(STEP_MD, "| Settling to 0.1 % (worse edge) | 72.2 ns | sf / -40 C / 2.97 V |",
+                  "| Settling to 0.1 % (worse edge) | not settled (1 point not settled) | typical / 27 C / 3.30 V |")
+        self.edit(STEP_MD,
+                  "| Non-monotonic points | 12/45 | typical / 125 C / 2.97 V, typical / 125 C / 3.30 V, "
+                  "typical / 125 C / 3.63 V, ff / -40 C / 2.97 V, ff / -40 C / 3.30 V, ff / -40 C / 3.63 V ... |",
+                  "| Non-monotonic points | 13/45 | typical / 27 C / 3.30 V, typical / 125 C / 2.97 V, "
+                  "typical / 125 C / 3.30 V, typical / 125 C / 3.63 V, ff / -40 C / 2.97 V, ff / -40 C / 3.30 V ... |")
+
+    # ---- positive: selected, hashed, displayed ----
+    def test_explicitly_selected_beside_the_unchanged_primary_records(self):
+        sel = json.loads(MANIFEST.read_text())
+        self.assertEqual(sel["supplementary"][self.KEY], STEP_MD)
+        self.assertNotIn(STEP_MD, json.dumps(sel["experiments"]))
+        self.assertEqual(sel["experiments"]["gain-gbw-pm"], "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md")
+
+    def test_hashed_population_and_retained_evidence(self):
+        st = self.build()["supplementary"][self.KEY]
+        self.assertFalse(st["graded"])
+        self.assertTrue(st["bound_free"])
+        self.assertIsNone(st["verdict"])
+        self.assertEqual(st["rows"], [])
+        self.assertIn("no spec row", st["grading"])
+        self.assertEqual(st["sha256"], hashlib.sha256((REPO / STEP_MD).read_bytes()).hexdigest())
+        self.assertEqual(st["dut_check"], {"matches_selected_records": True, "matches_current_netlist": True})
+        self.assertEqual(st["measurement_config"]["status"], "current")
+        self.assertEqual((st["scope"]["cells"], len(st["scope"]["points"]), st["scope"]["full_pvt_cross_product"]),
+                         (45, 45, True))
+        self.assertEqual(st["population"], {"points": 45, "valid": 45, "invalid": 0, "monotonic": 33,
+                                            "not_settled": {"1 %": 0, "0.1 %": 0}, "edges_per_point": ["rise", "fall"]})
+        rv = st["retained_evidence"]
+        self.assertEqual((rv["path"], rv["dat_files"]), (STEP_DIR, 45))
+        names = [f"{m}_{t}c_{v}v.dat" for m in ("typical", "ff", "ss", "fs", "sf")
+                 for t in ("-40", "27", "125") for v in ("2.97", "3.30", "3.63")]
+        listing = "".join(f"{hashlib.sha256((REPO / STEP_DIR / n).read_bytes()).hexdigest()}  {n}\n" for n in names)
+        self.assertEqual(rv["sha256"], hashlib.sha256(listing.encode()).hexdigest())
+
+    def test_figures_match_the_record_and_the_evidence(self):
+        f = self.build()["supplementary"][self.KEY]["figures"]
+        self.assertEqual(list(f), ["Overshoot (worse edge)", "Overshoot rising edge", "Overshoot falling edge",
+                                   "Settling to 1 % (worse edge)", "Settling to 0.1 % (worse edge)",
+                                   "Monotonicity", "Validity"])
+        self.assertEqual((f["Overshoot (worse edge)"]["value"], f["Overshoot (worse edge)"]["point"]),
+                         ("0.90", "fs / 125 C / 2.97 V"))
+        self.assertEqual(f["Overshoot (worse edge)"]["range"], ["0.00", "0.90"])
+        self.assertEqual((f["Overshoot rising edge"]["value"], f["Overshoot rising edge"]["point"]),
+                         ("0.12", "ss / 125 C / 2.97 V"))
+        self.assertEqual((f["Overshoot falling edge"]["value"], f["Overshoot falling edge"]["point"]),
+                         ("0.90", "fs / 125 C / 2.97 V"))
+        s1 = f["Settling to 1 % (worse edge)"]
+        self.assertEqual((s1["value"], s1["point"]), ("47.1", "sf / -40 C / 2.97 V"))
+        self.assertEqual(s1["not_settled"]["count"], 0)
+        s2 = f["Settling to 0.1 % (worse edge)"]
+        self.assertEqual((s2["value"], s2["point"]), ("72.2", "sf / -40 C / 2.97 V"))
+        self.assertEqual(f["Monotonicity"], {"unit": "points", "non_monotonic": 12, "of_valid": 45,
+                                             "points": ["typical / 125 C / 2.97 V", "typical / 125 C / 3.30 V",
+                                                        "typical / 125 C / 3.63 V", "ff / -40 C / 2.97 V",
+                                                        "ff / -40 C / 3.30 V", "ff / -40 C / 3.63 V"],
+                                             "list_complete": False})
+        self.assertEqual(f["Validity"], {"unit": "points", "invalid": 0, "of": 45})
+        for k in ("bound_text", "verdict", "pass", "fail"):
+            for fig in f.values():
+                self.assertNotIn(k, fig)
+
+    def test_no_verdict_and_graded_counts_and_bounds_unchanged(self):
+        with_s, without = self.build(), self.build(self.without())
+        self.assertEqual(with_s["summary"], without["summary"])
+        for a, b in zip(with_s["rows"], without["rows"]):
+            for k in ("status", "verdict", "points_pass", "points_total", "worst", "worst_corner", "coverage",
+                      "spec_bound", "source", "figures"):
+                self.assertEqual(a[k], b[k], (a["key"], k))
+        self.assertEqual(with_s["rows"], without["rows"])
+        md = cr.render_md(with_s)
+        sec = md.split(f"### {self.KEY}", 1)[1].split("\n### ", 1)[0]
+        self.assertIsNone(re.search(r"\b(PASS|FAIL)\b", sec.replace("PASS/FAIL verdict", "")), sec)
+        self.assertIn("| Overshoot (worse edge) | 0.90 % of the realised step (range 0.00 .. 0.90) | fs / 125 C / 2.97 V |", sec)
+        self.assertIn("| Settling to 0.1 % (worse edge) | 72.2 ns from the input edge | sf / -40 C / 2.97 V |", sec)
+        self.assertIn("| Monotonicity | 12/45 valid points non-monotonic | - |", sec)
+        st = with_s["supplementary"][self.KEY]["figures"]["Monotonicity"]
+        self.assertIn("| Monotonicity -- non-monotonic points | first 6 of 12 listed | "
+                      + "; ".join(st["points"]) + " |", sec)
+        self.assertIn("no settling or overshoot row", sec)
+        self.assertNotIn(STEP_REC, cr.render_md(without))
+        self.assertTrue(any(l == f"no supplementary study selected for {self.KEY}: its ungraded observations "
+                                "are not shown" for l in without["limitations"]))
+
+    def test_evidence_sidecar_lists_the_study_ungraded(self):
+        ev = json.loads(cr.render_evidence(cr.render_json(self.build())))
+        s = ev["report_supplementary"][self.KEY]
+        st = self.build()["supplementary"][self.KEY]
+        self.assertEqual((s["graded"], s["bound_free"], s["verdict"], s["cells"], s["path"], s["rows"]),
+                         (False, True, None, 45, STEP_MD, []))
+        self.assertEqual(s["retained_evidence_sha256"], st["retained_evidence"]["sha256"])
+        self.assertEqual(s["worst"], {"Overshoot (worse edge)": "0.90", "Overshoot rising edge": "0.12",
+                                      "Overshoot falling edge": "0.90", "Settling to 1 % (worse edge)": "47.1",
+                                      "Settling to 0.1 % (worse edge)": "72.2"})
+        ev0 = json.loads(cr.render_evidence(cr.render_json(self.build(self.without()))))
+        self.assertEqual(ev["report_summary"], ev0["report_summary"])
+        self.assertNotIn(self.KEY, ev0["report_supplementary"])
+
+    # ---- population: missing / duplicate / unexpected points ----
+    def test_missing_point_rejected(self):
+        self.edit(STEP_MD, "| `typical` | 27 | 3.30 | 0.00 / 0.00 | 0.00 | 44.6 / 41.9 | 67.2 / 64.0 | yes | "
+                           "17.1 / 15.4 | 77.60 | 16.403 | |", "")
+        self.rejects(r"'All 45 points' is missing 1 of 45 points \(first: typical / 27 C / 3\.30 V\)")
+
+    def test_duplicate_point_rejected(self):
+        self.edit(STEP_MD, "| `typical` | 27 | 3.63 | 0.00 / 0.00", "| `typical` | 27 | 3.30 | 0.00 / 0.00")
+        self.rejects(r"duplicate point typical / 27 C / 3\.30 V under 'All 45 points'")
+
+    def test_unexpected_point_rejected(self):
+        self.edit(STEP_MD, "| `typical` | 27 | 3.30 | 0.00 / 0.00", "| `typical` | 27 | 2.50 | 0.00 / 0.00")
+        self.rejects(r"unexpected point typical / 27 C / 2\.50 V under 'All 45 points'")
+
+    # ---- header corner-matrix prose vs the fingerprinted population ----
+    def test_header_corner_matrix_disagreeing_rejected(self):
+        self.edit(STEP_MD, "  - Temperature: -40 C, 27 C, 125 C\n", "  - Temperature: -40 C, 27 C, 150 C\n")
+        self.rejects(r"the header's corner-matrix line disagrees with the retained fingerprint population")
+
+    def test_header_corner_matrix_vdd_disagreeing_rejected(self):
+        self.edit(STEP_MD, "  - Supply VDD: 2.97 V, 3.30 V, 3.63 V (", "  - Supply VDD: 2.97 V, 3.30 V (")
+        self.rejects(r"the header's corner-matrix line disagrees with the retained fingerprint population")
+
+    def test_header_corner_matrix_line_missing_rejected(self):
+        self.edit(STEP_MD, "  - Supply VDD: 2.97 V", "  - Supplies: 2.97 V")
+        self.rejects(r"corner-matrix line disagrees .* \(a Process / Temperature / Supply VDD line is missing\)")
+
+    # ---- rounded claims vs the retained evidence ----
+    def test_summary_worst_value_disagreeing_rejected(self):
+        self.edit(STEP_MD, "worst overshoot **0.90 %**", "worst overshoot **0.99 %**")
+        self.rejects(r"the summary's worst overshoot states 0\.99 but the retained transients give 0\.90249")
+
+    def test_summary_worst_settling_disagreeing_rejected(self):
+        self.edit(STEP_MD, "worst 1 % settling **47.1 ns** at sf / -40 C / 2.97 V",
+                  "worst 1 % settling **44.1 ns** at sf / -40 C / 2.97 V")
+        self.rejects(r"the summary's worst settling to 1 % states 44\.1 but the retained transients give 47\.05")
+
+    def test_summary_monotonic_count_disagreeing_rejected(self):
+        self.edit(STEP_MD, "monotonic at 33/45 valid points", "monotonic at 40/45 valid points")
+        self.rejects(r"Result summary states monotonic at 40/45 valid points but the retained transients give 33/45")
+
+    def test_table_cell_disagreeing_with_evidence_rejected(self):
+        self.edit(STEP_MD, "| `sf` | -40 | 2.97 | 0.00 / 0.00 | 0.00 | 47.1 / 45.1 | 72.2 / 70.5 | yes |",
+                  "| `sf` | -40 | 2.97 | 0.00 / 0.00 | 0.00 | 48.1 / 45.1 | 72.2 / 70.5 | yes |")
+        self.rejects(r"settling to 1\.0% of sf / -40 C / 2\.97 V states 48\.1 but the retained transients "
+                     r"give 47\.05")
+
+    def test_monotonic_flag_flip_rejected(self):
+        self.edit(STEP_MD, "| `typical` | -40 | 2.97 | 0.00 / 0.00 | 0.00 | 45.8 / 43.4 | 70.2 / 68.3 | yes |",
+                  "| `typical` | -40 | 2.97 | 0.00 / 0.00 | 0.00 | 45.8 / 43.4 | 70.2 / 68.3 | no |")
+        self.rejects(r"monotonic flag of typical / -40 C / 2\.97 V states 'no' but the retained transients give 'yes'")
+
+    def test_claiming_not_settled_when_the_evidence_settles_rejected(self):
+        self.edit(STEP_MD, "| `typical` | -40 | 2.97 | 0.00 / 0.00 | 0.00 | 45.8 / 43.4 | 70.2 / 68.3 | yes |",
+                  "| `typical` | -40 | 2.97 | 0.00 / 0.00 | 0.00 | 45.8 / 43.4 | not settled / 68.3 | yes |")
+        self.rejects(r"settling to 0\.1% of typical / -40 C / 2\.97 V states 'not settled' but the retained "
+                     r"transients give 70\.245")
+
+    def test_missing_retained_transient_rejected(self):
+        (self.root / f"{STEP_DIR}/fs_125c_2.97v.dat").unlink()
+        self.rejects(r"retained per-point transient is missing: .*fs_125c_2\.97v\.dat")
+
+    def test_tampered_retained_transient_rejected(self):
+        p = self.root / f"{STEP_DIR}/fs_125c_2.97v.dat"
+        lines = p.read_text().splitlines()
+        i = next(i for i, l in enumerate(lines) if l and not l.startswith("#") and float(l.split()[0]) > 3.0e-7)
+        c = lines[i].split()
+        c[1] = f"{float(c[1]) + 5e-3:.10e}"
+        lines[i] = " ".join(c)
+        p.write_text("\n".join(lines) + "\n")
+        self.rejects(r"rising overshoot of fs / 125 C / 2\.97 V states 0\.09 but the retained transients "
+                     r"give 5\.00")
+
+    # ---- a consistent not-settled record: explicit, never zero or omitted ----
+    def test_not_settled_result_stays_explicit(self):
+        self.not_settled_root()
+        st = self.build()["supplementary"][self.KEY]
+        self.assertEqual(st["population"]["monotonic"], 32)
+        for band, ts in (("Settling to 1 % (worse edge)", "47.1"), ("Settling to 0.1 % (worse edge)", "72.2")):
+            f = st["figures"][band]
+            self.assertEqual((f["value"], f["point"]), ("not settled", "typical / 27 C / 3.30 V"))
+            self.assertEqual((f["not_settled"]["count"], f["not_settled"]["points"]),
+                             (1, ["typical / 27 C / 3.30 V"]))
+            # the not-settled result is a named status, never zero or omitted
+            self.assertIn("not settled", f["value"])
+        md = cr.render_md(self.build())
+        self.assertIn("| Settling to 1 % (worse edge) | not settled (1 point not settled) | typical / 27 C / 3.30 V |", md)
+        self.assertIn("not settled within the edge window", md)
+        ev = json.loads(cr.render_evidence(cr.render_json(self.build())))
+        self.assertEqual(ev["report_supplementary"][self.KEY]["worst"]["Settling to 1 % (worse edge)"], "not settled")
+
+    # ---- freshness: --check covers the step section and its sidecar entry ----
+    def test_check_mode_covers_the_section_and_sidecar(self):
+        mp = self.root / "m.json"
+        mp.write_text(json.dumps(manifest()))
+        args = ["--root", str(self.root), "--manifest", str(mp), "--out-dir", str(self.root / "o")]
+        self.assertEqual(cr.main(args), 0)
+        self.assertEqual(cr.main(args + ["--check"]), 0)
+        out = self.root / "o"
+        md, ev = out / f"{cr.OUT_NAME}.md", out / f"{cr.OUT_NAME}.evidence.json"
+        self.assertIn(f"### {self.KEY}", md.read_text())
+        self.assertIn(self.KEY, json.loads(ev.read_text())["report_supplementary"])
+        good = {p: p.read_bytes() for p in (md, ev)}
+        # a hand-edited step section or sidecar entry is stale
+        md.write_text(md.read_text().replace("72.2 ns from the input edge", "70.0 ns from the input edge"))
+        self.assertEqual(cr.main(args + ["--check"]), 1)
+        md.write_bytes(good[md])
+        ev.write_text(ev.read_text().replace('"72.2"', '"70.0"'))
+        self.assertEqual(cr.main(args + ["--check"]), 1)
+        ev.write_bytes(good[ev])
+        self.assertEqual(cr.main(args + ["--check"]), 0)
+        # consistently changed retained evidence (record + transient) makes the committed bundle stale
+        self.not_settled_root()
+        self.assertEqual(cr.main(args + ["--check"]), 1)
+        self.assertEqual(cr.main(args), 0)
+        self.assertEqual(cr.main(args + ["--check"]), 0)
+        # deselecting the study makes the committed bundle stale too
+        mp.write_text(json.dumps(self.without()))
+        self.assertEqual(cr.main(args + ["--check"]), 1)
+
+    # ---- invalid points: counted and excluded, never a value or a fast settle ----
+    def truncate_fixture(self):
+        """Cut the fixture point's retained transient short of TSTOP (the runner's INVALID rule)."""
+        p = self.root / STEP_FIX_DAT
+        p.write_text("\n".join(ln for ln in p.read_text().splitlines()
+                               if ln.startswith("#") or not ln.strip() or float(ln.split()[0]) < 1.0e-6) + "\n")
+
+    def test_invalid_point_counted_and_excluded(self):
+        self.truncate_fixture()
+        self.edit(STEP_MD,
+                  "| `typical` | 27 | 3.30 | 0.00 / 0.00 | 0.00 | 44.6 / 41.9 | 67.2 / 64.0 | yes | 17.1 / 15.4 | 77.60 | 16.403 | |",
+                  "| `typical` | 27 | 3.30 | n/a | n/a | n/a | n/a | n/a | n/a | 77.60 | 16.403 | INVALID: transient ends "
+                  "early |")
+        self.edit(STEP_MD, "45/45 points measured validly (0 invalid)", "44/45 points measured validly (1 invalid)")
+        self.edit(STEP_MD, "monotonic at 33/45 valid points", "monotonic at 32/44 valid points")
+        self.edit(STEP_MD, "| Non-monotonic points | 12/45 |", "| Non-monotonic points | 12/44 |")
+        st = self.build()["supplementary"][self.KEY]
+        self.assertEqual(st["population"], {"points": 45, "valid": 44, "invalid": 1, "monotonic": 32,
+                                            "not_settled": {"1 %": 0, "0.1 %": 0}, "edges_per_point": ["rise", "fall"]})
+        self.assertEqual(st["figures"]["Validity"], {"unit": "points", "invalid": 1, "of": 45})
+        self.assertEqual(st["figures"]["Settling to 0.1 % (worse edge)"]["value"], "72.2")  # worst unchanged
+        self.assertIn("| Validity | 1/45 points invalid | - |", cr.render_md(self.build()))
+
+    def test_invalid_evidence_behind_a_valid_row_rejected(self):
+        self.truncate_fixture()
+        self.rejects(r"typical / 27 C / 3\.30 V is INVALID in the retained transients \(transient ends at .* before "
+                     r"1\.1e-06 s\) but the table reports values")
+
+    # ---- DUT identity and measurement-configuration freshness ----
+    def test_pre_retune_selection_fails_dut_validation(self):
+        rel = f"{STEP}/records/{STEP_PRE_RETUNE_REC}.md"
+        self.rejects(r"supplementary step-response-follower:20261010-082214-a2cc91f: the side study measures DUT "
+                     r"81fbd914f8254a49, the selected records 33b58dac62c747de",
+                     {**manifest(), "supplementary": {self.KEY: rel}})
+        self.rejects(r"stale DUT: supplementary step-response-follower",
+                     {"experiments": {}, "supplementary": {self.KEY: rel}})
+
+    def test_changed_step_configuration_fails_fingerprint_validation(self):
+        self.edit(f"{STEP}/testbench/tb_step.spice", "CL vout 0 2p", "CL vout 0 3p")
+        self.rejects(r"stale measurement configuration: supplementary step-response-follower:20261011-140956-cb03235 "
+                     r"was measured with a different bench/analysis configuration than the current one "
+                     r"\(changed bench\)")
+        rep = self.build(archival=True)
+        self.assertEqual(rep["supplementary"][self.KEY]["measurement_config"]["status"], "stale")
+        self.assertTrue(any(l.startswith(f"supplementary {self.KEY}: measurement configuration differs")
+                            for l in rep["limitations"]))
+        self.assertEqual(rep["sources"]["gain-gbw-pm"]["measurement_config"]["status"], "current")  # primary unaffected
+
+    def test_tampered_fingerprint_inputs_rejected(self):
+        self.edit(STEP_MD, '"settle_bands":[0.01,0.001]', '"settle_bands":[0.01,0.002]')
+        self.rejects(r"retained measurement-fingerprint inputs hash to .* \(record altered or corrupt\)")
+
+    # ---- generation never touches the historical evidence ----
+    def test_historical_artifacts_untouched_by_generation(self):
+        paths = [self.root / STEP_MD, self.root / STEP_FIX_DAT] + list((self.root / STEP_DIR).glob("*.dat"))
+        before = {p: p.read_bytes() for p in paths}
         cr.render_md(self.build())
         self.assertEqual(before, {p: p.read_bytes() for p in before})
 

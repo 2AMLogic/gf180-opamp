@@ -6041,6 +6041,175 @@
         "text": "FULL passive-by-PVT cross product: 5 MOS corners x 3 temperatures x 3 supplies (45 MOS/T/VDD points) x 3 RZ levels x 3 CC levels (typical, best, worst) = 405 cells"
       },
       "sha256": "240834c796aa2ebac968e4042fd18e1e874d2b5d46faeeb36ba039272f36cfda"
+    },
+    "step-response-follower": {
+      "backend": "aws-batch-fleet",
+      "bound_free": true,
+      "dut_check": {
+        "matches_current_netlist": true,
+        "matches_selected_records": true
+      },
+      "dut_sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b",
+      "experiment": "step-response",
+      "figures": {
+        "Monotonicity": {
+          "list_complete": false,
+          "non_monotonic": 12,
+          "of_valid": 45,
+          "points": [
+            "typical / 125 C / 2.97 V",
+            "typical / 125 C / 3.30 V",
+            "typical / 125 C / 3.63 V",
+            "ff / -40 C / 2.97 V",
+            "ff / -40 C / 3.30 V",
+            "ff / -40 C / 3.63 V"
+          ],
+          "unit": "points"
+        },
+        "Overshoot (worse edge)": {
+          "point": "fs / 125 C / 2.97 V",
+          "range": [
+            "0.00",
+            "0.90"
+          ],
+          "unit": "% of the realised step",
+          "value": "0.90"
+        },
+        "Overshoot falling edge": {
+          "point": "fs / 125 C / 2.97 V",
+          "unit": "% of the realised step",
+          "value": "0.90"
+        },
+        "Overshoot rising edge": {
+          "point": "ss / 125 C / 2.97 V",
+          "unit": "% of the realised step",
+          "value": "0.12"
+        },
+        "Settling to 0.1 % (worse edge)": {
+          "band": "0.1 %",
+          "not_settled": {
+            "count": 0,
+            "points": [],
+            "status": "not settled within the edge window, or drifting across the reference window; reported as the named status, never zero"
+          },
+          "point": "sf / -40 C / 2.97 V",
+          "unit": "ns from the input edge",
+          "value": "72.2"
+        },
+        "Settling to 1 % (worse edge)": {
+          "band": "1 %",
+          "not_settled": {
+            "count": 0,
+            "points": [],
+            "status": "not settled within the edge window, or drifting across the reference window; reported as the named status, never zero"
+          },
+          "point": "sf / -40 C / 2.97 V",
+          "unit": "ns from the input edge",
+          "value": "47.1"
+        },
+        "Validity": {
+          "invalid": 0,
+          "of": 45,
+          "unit": "points"
+        }
+      },
+      "fleet_runner_mismatch": true,
+      "graded": false,
+      "grading": "none: evidence-only observations with no spec row to inform (settling and overshoot are deliberately unratified); no PASS/FAIL verdict is formed and no figure is compared with any bound",
+      "klt_client": "0.7.0+gc4c7dfe79365",
+      "limitations": [
+        "side study: not a selected verdict record; its cells are not counted in any row's points or verdict nor in the ratified-row summary",
+        "fleet runner klt version differs from the client's (compatibility mismatch)",
+        "evidence only: spec/target-spec.md has no settling or overshoot row and this study proposes no bound; a settling/overshoot bound would need a spec/ decision record",
+        "per point the reported overshoot and settling figures are the worse of the rising and falling edges; both edges are re-derived from the retained transients",
+        "per-point `.meas` cross-checks and control runs were the record's own gates; this adapter re-derives the extraction from the retained `.dat` transients only"
+      ],
+      "measurement_config": {
+        "fingerprint": "6dd55e800c9b22d38d5421e65679cbe13edce278777eb79e0143c0eff8e987c3",
+        "status": "current",
+        "version": 1
+      },
+      "ngspice_engine": "46",
+      "ngspice_local": "42",
+      "not_measured": {},
+      "path": "sim/step-response/records/20261011-140956-cb03235.md",
+      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+      "population": {
+        "edges_per_point": [
+          "rise",
+          "fall"
+        ],
+        "invalid": 0,
+        "monotonic": 33,
+        "not_settled": {
+          "0.1 %": 0,
+          "1 %": 0
+        },
+        "points": 45,
+        "valid": 45
+      },
+      "record_id": "20261011-140956-cb03235",
+      "retained_evidence": {
+        "dat_files": 45,
+        "path": "sim/step-response/corners/20261011-140956-cb03235",
+        "sha256": "7da7a3e6e955d0c7e6d8e775e6c8784f2e83f1dc526e74e8f816189250c4b033",
+        "sha256_method": "sha256 of the sha256sum-format listing (hex digest, two spaces, file name; one line per point, in study order) of every per-point .dat transient"
+      },
+      "rows": [],
+      "scope": {
+        "cells": 45,
+        "full_pvt_cross_product": true,
+        "points": [
+          "typical / -40 C / 2.97 V",
+          "typical / -40 C / 3.30 V",
+          "typical / -40 C / 3.63 V",
+          "typical / 27 C / 2.97 V",
+          "typical / 27 C / 3.30 V",
+          "typical / 27 C / 3.63 V",
+          "typical / 125 C / 2.97 V",
+          "typical / 125 C / 3.30 V",
+          "typical / 125 C / 3.63 V",
+          "ff / -40 C / 2.97 V",
+          "ff / -40 C / 3.30 V",
+          "ff / -40 C / 3.63 V",
+          "ff / 27 C / 2.97 V",
+          "ff / 27 C / 3.30 V",
+          "ff / 27 C / 3.63 V",
+          "ff / 125 C / 2.97 V",
+          "ff / 125 C / 3.30 V",
+          "ff / 125 C / 3.63 V",
+          "ss / -40 C / 2.97 V",
+          "ss / -40 C / 3.30 V",
+          "ss / -40 C / 3.63 V",
+          "ss / 27 C / 2.97 V",
+          "ss / 27 C / 3.30 V",
+          "ss / 27 C / 3.63 V",
+          "ss / 125 C / 2.97 V",
+          "ss / 125 C / 3.30 V",
+          "ss / 125 C / 3.63 V",
+          "fs / -40 C / 2.97 V",
+          "fs / -40 C / 3.30 V",
+          "fs / -40 C / 3.63 V",
+          "fs / 27 C / 2.97 V",
+          "fs / 27 C / 3.30 V",
+          "fs / 27 C / 3.63 V",
+          "fs / 125 C / 2.97 V",
+          "fs / 125 C / 3.30 V",
+          "fs / 125 C / 3.63 V",
+          "sf / -40 C / 2.97 V",
+          "sf / -40 C / 3.30 V",
+          "sf / -40 C / 3.63 V",
+          "sf / 27 C / 2.97 V",
+          "sf / 27 C / 3.30 V",
+          "sf / 27 C / 3.63 V",
+          "sf / 125 C / 2.97 V",
+          "sf / 125 C / 3.30 V",
+          "sf / 125 C / 3.63 V"
+        ],
+        "text": "FULL ratified PVT grid: 5 MOS corners x 3 temperatures x 3 supplies = 45 points, one follower step measurement (both edges) per point; no RZ/CC passive cross product (the passives sit at typical)"
+      },
+      "sha256": "31ef7cd885b1ae8b32ac7183fcc11419f793dfc2070b5ae2f2e8234ea430488d",
+      "verdict": null
     }
   },
   "title": "gf180-opamp characterization report (generated; not evidence)",

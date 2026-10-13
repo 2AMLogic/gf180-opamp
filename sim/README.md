@@ -316,6 +316,24 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   client-versus-fleet provenance); the evidence sidecar lists it under
   `report_supplementary` as ungraded. The primary PSRR selection and the
   graded counts are unchanged.
+- Ungraded follower step-response study (issue #198): the retuned follower
+  step record (`step-response/`, issue #113) is selected explicitly under
+  `step-response-follower` (optional; omitting it only adds a limitation).
+  Settling and overshoot have NO spec row, so the study informs no row and
+  carries no verdict; it is shown in its own ungraded section. The report
+  checks the record's DUT (the pre-retune record fails as a stale/mismatched
+  DUT) and its step measurement fingerprint (a changed bench, timing, band or
+  tolerance is stale). The population comes from the hash-verified
+  fingerprint corner axes; the per-point table must hold exactly those 45
+  points (missing, duplicate or unexpected points are errors). Rising and
+  falling overshoot, settling to the 1 % and 0.1 % bands, monotonicity and
+  validity are re-derived offline from the retained `corners/<rid>/*.dat`
+  transients (aggregate sha256 reported) with the runner's rules and checked
+  against the rounded per-point table, the result summary and the worst-points
+  table. A not-settled result stays the named status `not settled` (counted
+  and listed, never zero or omitted); invalid points are counted and excluded
+  from the worsts. The sidecar lists it under `report_supplementary` as
+  ungraded with no rows.
 - Regenerate: `python3 sim/report/characterization_report.py` (after editing
   `selection.json`); verify the committed copy: `... --check` (exit 1 if
   stale). `characterize.sh` ends with `--latest --update-manifest`, selecting
