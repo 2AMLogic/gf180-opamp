@@ -3,7 +3,7 @@
   "kind": "generic",
   "provenance": {
     "input": {
-      "content_hash": "sha256:8ef32d6510b1bf04237f229dd32e5452e556bf4fd6cd6ec467dda8aecc01ef7a",
+      "content_hash": "sha256:37887d978a1e90d040510c2f5265bd4676adc57bd19d62af2c84aecd9b0d8d0d",
       "path": "sim/reports/characterization-report.json"
     }
   },
@@ -95,6 +95,23 @@
         "swing"
       ],
       "sha256": "240834c796aa2ebac968e4042fd18e1e874d2b5d46faeeb36ba039272f36cfda"
+    },
+    "step-response-follower": {
+      "bound_free": true,
+      "cells": 45,
+      "graded": false,
+      "path": "sim/step-response/records/20261011-140956-cb03235.md",
+      "retained_evidence_sha256": "7da7a3e6e955d0c7e6d8e775e6c8784f2e83f1dc526e74e8f816189250c4b033",
+      "rows": [],
+      "sha256": "31ef7cd885b1ae8b32ac7183fcc11419f793dfc2070b5ae2f2e8234ea430488d",
+      "verdict": null,
+      "worst": {
+        "Overshoot (worse edge)": "0.90",
+        "Overshoot falling edge": "0.90",
+        "Overshoot rising edge": "0.12",
+        "Settling to 0.1 % (worse edge)": "72.2",
+        "Settling to 1 % (worse edge)": "47.1"
+      }
     }
   },
   "schema_version": 1,

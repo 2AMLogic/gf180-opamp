@@ -428,9 +428,9 @@ Worst point of the grid: typical / 27 C / 3.30 V, |mean| + 3 sigma = 15458.1 uV 
 - Limitation: the systematic part |mean| of a point still contains its own sampling error (standard error sigma/sqrt(N)); it is not a pure process-systematic offset
 - Limitation: evidence only: no verdict, no bound proposed; the offset bound is the spec issue #62 decision
 
-## Supplementary passive-corner studies (measured side evidence; not graded)
+## Supplementary side studies (measured side evidence; not graded)
 
-Selected explicitly under `supplementary` in `sim/report/selection.json`, separately from the records that grade the spec rows. Every figure below is re-derived from the study's own RZ x CC tables and checked against its verdict header (a bound-free study: re-derived from its retained per-cell curves and checked against its rounded tables, with no verdict at all); none is counted in a row's points or verdict or in the ratified-row summary above.
+Selected explicitly under `supplementary` in `sim/report/selection.json`, separately from the records that grade the spec rows. Every figure below is re-derived from the study's own RZ x CC tables and checked against its verdict header (a bound-free study: re-derived from its retained per-cell curves or per-point transients and checked against its rounded tables, with no verdict at all); none is counted in a row's points or verdict or in the ratified-row summary above.
 
 ### gain-gbw-pm-passive-corners
 
@@ -509,6 +509,32 @@ Selected explicitly under `supplementary` in `sim/report/selection.json`, separa
 - Limitation: side study: not a selected verdict record; its cells are not counted in any row's points or verdict nor in the ratified-row summary
 - Limitation: fleet runner klt version differs from the client's (compatibility mismatch)
 - Limitation: measurement-configuration freshness unknown: this record predates measurement fingerprinting; the bench/analysis settings it measured cannot be compared with today's
+
+### step-response-follower
+
+- **Source**: [`sim/step-response/records/20261011-140956-cb03235.md`](../step-response/records/20261011-140956-cb03235.md), sha256 `31ef7cd885b1ae8b32ac7183fcc11419f793dfc2070b5ae2f2e8234ea430488d`
+- **Scope**: FULL ratified PVT grid: 5 MOS corners x 3 temperatures x 3 supplies = 45 points, one follower step measurement (both edges) per point; no RZ/CC passive cross product (the passives sit at typical)
+- **Provenance**: DUT normalised sha256 `33b58dac62c747de` (matches the selected records; matches the current netlist); PDK open_pdks `c6d73a35f524`; ngspice local 42 / klt engine 46; klt client 0.7.0+gc4c7dfe79365; backend aws-batch-fleet; measurement-configuration freshness current (`6dd55e800c9b22d3`)
+- **Rows it informs (not graded)**: none -- settling and overshoot have no spec row (a bound would need a spec/ decision record); the observations stand alone as evidence
+- **Grading**: none: evidence-only observations with no spec row to inform (settling and overshoot are deliberately unratified); no PASS/FAIL verdict is formed and no figure is compared with any bound
+- **Retained evidence (figures re-derived from it)**: [`sim/step-response/corners/20261011-140956-cb03235`](../step-response/corners/20261011-140956-cb03235): 45 per-point `.dat` transients (rising and falling edge each), aggregate sha256 `7da7a3e6e955d0c7e6d8e775e6c8784f2e83f1dc526e74e8f816189250c4b033` (sha256 of the sha256sum-format listing (hex digest, two spaces, file name; one line per point, in study order) of every per-point .dat transient)
+- **Population**: 45 PVT points, 45 measured validly, 0 invalid; monotonic at 33/45 valid points; edges per point: rise, fall
+
+| figure (information only, no verdict) | worst | binding point (MOS / T / VDD) |
+|---|---|---|
+| Overshoot (worse edge) | 0.90 % of the realised step (range 0.00 .. 0.90) | fs / 125 C / 2.97 V |
+| Overshoot rising edge | 0.12 % of the realised step | ss / 125 C / 2.97 V |
+| Overshoot falling edge | 0.90 % of the realised step | fs / 125 C / 2.97 V |
+| Settling to 1 % (worse edge) | 47.1 ns from the input edge | sf / -40 C / 2.97 V |
+| Settling to 0.1 % (worse edge) | 72.2 ns from the input edge | sf / -40 C / 2.97 V |
+| Monotonicity | 12/45 valid points non-monotonic | - |
+| Validity | 0/45 points invalid | - |
+
+- Limitation: side study: not a selected verdict record; its cells are not counted in any row's points or verdict nor in the ratified-row summary
+- Limitation: fleet runner klt version differs from the client's (compatibility mismatch)
+- Limitation: evidence only: spec/target-spec.md has no settling or overshoot row and this study proposes no bound; a settling/overshoot bound would need a spec/ decision record
+- Limitation: per point the reported overshoot and settling figures are the worse of the rising and falling edges; both edges are re-derived from the retained transients
+- Limitation: per-point `.meas` cross-checks and control runs were the record's own gates; this adapter re-derives the extraction from the retained `.dat` transients only
 
 ## Sources
 

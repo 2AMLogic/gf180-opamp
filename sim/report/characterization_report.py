@@ -32,6 +32,9 @@ own tables; they are reported in a separate section and as row-detail notes,
 never as a verdict, point count or summary count. A bound-free study (issue
 #173: the full PSRR RZ x CC study) reads no bound at all while its row is
 proposed, not ratified, and is re-derived from its retained per-cell curves.
+The follower step-response study (issue #198) is bound-free with no row at
+all -- settling and overshoot have no spec row -- and is re-derived offline
+from its retained per-point transients into an ungraded section of its own.
 
 Existing records are Markdown only (no structured sidecars), so this module
 carries a narrow, tested extraction of the verdict / worst-case lines and
@@ -2260,6 +2263,13 @@ SUPPLEMENTARY = {
     # (it has no grader). Its figures are re-derived from the retained `<cell>.psrr.dat` curves.
     "psrr-passive-corners-full": {"experiment": "psrr", "title": STUDY_TITLES["psrr"][0],
                                   "rows": ("psrr",), "scope": "full", "bound_free": True},
+    # issue #198: the follower step-response record. BOUND-FREE with NO rows at all: settling and
+    # overshoot have no spec row (not even a proposed one), so there is nothing to attach the
+    # figures to -- they are shown as an ungraded section of their own. Every figure is re-derived
+    # offline from the retained per-point `.dat` transients and checked against the record's
+    # rounded tables; not-settled results stay explicit (a named status, never zero).
+    "step-response-follower": {"experiment": "step-response", "title": "# Record ", "rows": (),
+                               "bound_free": True},
 }
 PASSIVE_LEVELS = ("typical", "best", "worst")
 
@@ -2873,6 +2883,478 @@ SUPPLEMENTARY["slew-swing-power-passive-corners-full"]["extract"] = extract_ssp_
 SUPPLEMENTARY["psrr-passive-corners-full"]["extract"] = extract_psrr_passive_study  # issue #173: bound-free
 
 
+# --------------------------------------------------------------------------
+# supplementary follower step-response study (issue #198): measured, never graded
+# --------------------------------------------------------------------------
+#: Validity thresholds of the step extraction (NOT fingerprinted, per the step
+#: measurement_config docstring): the follower must actually follow. Mirrors
+#: `sim/step-response/run_step_response.py` exactly.
+_STEP_LEVEL_TOL_V = 0.02     # |vout - vinp| at the pre-edge instant and over the reference window
+_STEP_STEP_REL_TOL = 0.2     # realised step must be STEP_V within +-20 %
+_STEP_MIN_EDGE_SAMPLES = 50
+_STEP_EDGES = (("rise", "rise_t", "fall_t", +1), ("fall", "fall_t", None, -1))
+#: Aggregate retained-evidence hash method (same convention as the PSRR study).
+_STEP_DAT_METHOD = ("sha256 of the sha256sum-format listing (hex digest, two spaces, file name; one line "
+                    "per point, in study order) of every per-point .dat transient")
+_STEP_CACHE: dict = {}  # (rid, record sha256, evidence sha256) -> extract result (treat as read-only)
+
+
+def _step_read_dat(path: Path, label: str, rel: str) -> tuple:
+    """(time, vout, vinp) of one retained per-point `.dat`; 3 finite columns. Structural
+    validity (sample count, monotonic time, run length) is the runner's per-point INVALID
+    rule and is judged by the caller, so an INVALID point (even a header-only file) is
+    counted as invalid rather than rejected; a malformed or non-finite line is an error."""
+    if not path.is_file():
+        raise ReportError(f"{label}: retained per-point transient is missing: {rel}")
+    cols: list = [[], [], []]
+    for ln in path.read_text().splitlines():
+        if not ln.strip() or ln.lstrip().startswith("#"):
+            continue
+        c = ln.split()
+        if len(c) != 3:
+            raise ReportError(f"{label}: {rel}: expected 3 columns (time_s, vout_v, vinp_v), got {len(c)}")
+        try:
+            r = [float(x) for x in c]
+        except ValueError:
+            raise ReportError(f"{label}: {rel}: malformed line '{ln.strip()}'") from None
+        if not all(math.isfinite(x) for x in r):
+            raise ReportError(f"{label}: {rel}: nonfinite value at {r[0]:.3g} s")
+        for acc, x in zip(cols, r):
+            acc.append(x)
+    return cols
+
+
+def _step_interp(t: list, v: list, tt: float) -> float:
+    """Linear interpolation at `tt` (clamped at the ends), `np.interp`'s rule."""
+    if tt <= t[0]:
+        return v[0]
+    if tt >= t[-1]:
+        return v[-1]
+    lo, hi = 0, len(t) - 1
+    while hi - lo > 1:
+        mid = (lo + hi) // 2
+        if t[mid] <= tt:
+            lo = mid
+        else:
+            hi = mid
+    return v[lo] + (v[lo + 1] - v[lo]) * (tt - t[lo]) / (t[lo + 1] - t[lo])
+
+
+def _step_window_mean(t: list, v: list, t0: float, t1: float) -> float:
+    """Time average of the piecewise-linear waveform over [t0, t1] (trapezoid, end points
+    interpolated) -- the runner's `window_mean`, in plain Python."""
+    tt = [t0] + [x for x in t if t0 < x < t1] + [t1]
+    vv = [_step_interp(t, v, x) for x in tt]
+    return sum((vv[i + 1] + vv[i]) * (tt[i + 1] - tt[i]) for i in range(len(tt) - 1)) / 2 / (t1 - t0)
+
+
+def _step_settling(t: list, err: list, band: float, t_edge: float, ref_start: float) -> float:
+    """Time from `t_edge` to the last exit of |err| from `band`, interpolated; `math.inf`
+    ("not settled") when the output is still outside the band inside the reference window."""
+    last = -1
+    for i, e in enumerate(err):
+        if abs(e) > band:
+            last = i
+    if last < 0:
+        return 0.0
+    if t[last] >= ref_start or last + 1 >= len(t):
+        return math.inf
+    a, b = abs(err[last]), abs(err[last + 1])
+    f = (a - band) / (a - b) if a != b else 0.0
+    return t[last] + f * (t[last + 1] - t[last]) - t_edge
+
+
+def _step_edge(t: list, vo: list, vi: list, t_edge: float, t_next, direction: int,
+               p: dict) -> dict | None:
+    """One edge's figures re-derived from a retained transient, or None when the follower
+    did not follow (the point is INVALID, never a fast settle). `p` = fingerprint params."""
+    ref_end = (t_next - p["sample_before"]) if t_next is not None else float(t[-1])
+    ref_start = ref_end - p["ref_window"]
+    t_pre = t_edge - p["sample_before"]
+    v0 = _step_interp(t, vo, t_pre)
+    if abs(v0 - _step_interp(t, vi, t_pre)) > _STEP_LEVEL_TOL_V:
+        return None
+    if sum(1 for x in t if ref_start <= x <= ref_end) < 5:
+        return None
+    vfinal = _step_window_mean(t, vo, ref_start, ref_end)
+    vin_ref = _step_window_mean(t, vi, ref_start, ref_end)
+    if abs(vfinal - vin_ref) > _STEP_LEVEL_TOL_V:
+        return None
+    step = vfinal - v0
+    if direction * step < (1 - _STEP_STEP_REL_TOL) * p["step_v"] or \
+            direction * step > (1 + _STEP_STEP_REL_TOL) * p["step_v"]:
+        return None
+    inner = [i for i, x in enumerate(t) if t_edge < x < ref_end]
+    if len(inner) < _STEP_MIN_EDGE_SAMPLES:
+        return None
+    tw = [t_edge] + [t[i] for i in inner] + [ref_end]
+    yw = [(_step_interp(t, vo, x) - v0) / step for x in tw]
+    drift = abs(_step_interp(t, vo, ref_end) - _step_interp(t, vo, ref_start)) / abs(step)
+    run, reversal = yw[0], 0.0
+    for y in yw:
+        run = max(run, y)
+        reversal = max(reversal, run - y)
+    t10 = next((tw[i] + (0.1 - yw[i]) / (yw[i + 1] - yw[i]) * (tw[i + 1] - tw[i])
+                for i in range(len(yw) - 1) if yw[i] < 0.1 <= yw[i + 1]), None)
+    t90 = next((tw[i] + (0.9 - yw[i]) / (yw[i + 1] - yw[i]) * (tw[i + 1] - tw[i])
+                for i in range(len(yw) - 1) if yw[i] < 0.9 <= yw[i + 1]), None)
+    preshoot = max(0.0, -min(yw))
+    return {"overshoot_pct": 100 * max(0.0, max(yw) - 1.0), "preshoot_pct": 100 * preshoot,
+            "monotonic": reversal <= p["mono_tol"] and preshoot <= p["mono_tol"],
+            "ts": {b: (_step_settling(tw, [y - 1.0 for y in yw], b, t_edge, ref_start)
+                       if drift <= p["drift_frac"] * b else math.inf) for b in p["settle_bands"]},
+            "t10_90": (t90 - t10) if (t10 is not None and t90 is not None and t90 > t10) else float("nan")}
+
+
+def _step_extreme(label: str, what: str, vals: dict, claim_s: str, claim_pt: tuple | None,
+                  tol: float) -> float:
+    """Verify a rounded worst-value claim against the re-derived per-point values.
+
+    `vals` {point: float} (all finite), `claim_s` the displayed number, `claim_pt` the claimed
+    binding point. The claimed point must BE an extremum of the re-derived values to display
+    precision (ties accepted); the extreme must round to the claim. Returns the derived extreme."""
+    extreme = max(vals.values())
+    at = sorted((k for k, v in vals.items() if v == extreme),
+                key=lambda k: (corner_sort_key(k[0]), float(k[1]), float(k[2])))
+    if claim_pt is None or claim_pt not in vals or vals[claim_pt] < extreme - tol:
+        raise ReportError(f"{label}: {what} names {fmt_point(*claim_pt) if claim_pt else 'n/a'} but the retained "
+                          f"transients put the worst at {fmt_point(*at[0])} (contradictory extremum)")
+    if abs(float(claim_s) - extreme) > tol:
+        raise ReportError(f"{label}: {what} states {claim_s} but the retained transients give {extreme:.10g}")
+    return extreme
+
+
+def extract_step_response_study(text: str, label: str, root: Path, rid: str,
+                                primary: dict | None = None) -> dict:
+    """The follower step-response record (issue #113), ungraded (issue #198).
+
+    Population: the record's retained, hash-verified fingerprint inputs (`corners`: the full
+    5 x 3 x 3 = 45-point PVT grid); the record's per-point table must hold exactly those points
+    (missing, duplicate and unexpected points are errors). Every figure is re-derived offline
+    from the retained `corners/<rid>/<point>.dat` transients (whose aggregate sha256 is
+    reported) with the record's own fingerprinted timing/band parameters, checked against the
+    record's rounded per-point table and its summary / worst-point claims. Not-settled results
+    stay explicit (the named status, never zero); invalid points are counted and excluded from
+    the worsts. No bound is read and no verdict is formed.
+    """
+    prov = study_provenance(text, label)
+    head = header_of(text)
+    if not re.search(r"^- \*\*Claim \(evidence only, no verdict\)\*\*: closed-loop small-step response", head, re.M):
+        raise ReportError(f"{label}: the record header does not claim 'evidence only, no verdict' for the "
+                          "closed-loop small-step response (the ungraded adapter reads no verdict and must not "
+                          "attach one)")
+    fp = parse_fingerprint(text, label)
+    cors = (fp or {}).get("inputs", {}).get("corners") or {}
+    pts = []
+    for proc in cors.get("process", []):
+        for t in cors.get("temperature_c", []):
+            for v in cors.get("supply_v", []):
+                pt = (str(proc), f"{float(t):g}", f"{float(v):.2f}")
+                if pt in pts:
+                    raise ReportError(f"{label}: duplicate retained corner point {fmt_point(*pt)}")
+                pts.append(pt)
+    if len(pts) != FULL_STUDY_POINTS:
+        raise ReportError(f"{label}: the retained fingerprint population is {len(pts)} points, not the full "
+                          f"5 MOS x 3 T x 3 VDD = {FULL_STUDY_POINTS} grid (the adapter re-derives a full-grid record)")
+    order = sorted(pts, key=lambda k: (corner_sort_key(k[0]), float(k[1]), float(k[2])))
+    p = fp["inputs"]["params"]
+    for key in ("step_v", "rise_t", "fall_t", "tstop", "sample_before", "ref_window", "mono_tol", "drift_frac"):
+        if key not in p:
+            raise ReportError(f"{label}: retained fingerprint params carry no '{key}'")
+    p = {**p, "settle_bands": [float(b) for b in p["settle_bands"]]}
+    # the header's Corner-matrix prose must agree with the fingerprinted population
+    hm = re.search(r"^- \*\*Corner matrix run\*\*:\n(?:  - .*\n)+", head)
+    if hm:
+        hprocs = re.search(r"  - Process \(MOS\): (.+)$", hm.group(0), re.M)
+        hts = re.search(r"  - Temperature: (.+?) C\n", hm.group(0), re.M)
+        hvdd = re.search(r"  - Supply VDD: (.+?) V\n", hm.group(0), re.M)
+        want_procs = ", ".join(cors["process"])
+        want_ts = ", ".join(f"{float(t):g}" for t in cors["temperature_c"])
+        want_vdd = ", ".join(f"{float(v):.2f}" for v in cors["supply_v"])
+        if not hm or hprocs.group(1) != want_procs or hts.group(1) != want_ts or hvdd.group(1) != want_vdd:
+            raise ReportError(f"{label}: the header's corner-matrix line disagrees with the retained fingerprint "
+                              f"population ({want_procs} x {want_ts} C x {want_vdd} V)")
+    # ---- the record's per-point table: exactly the population ----
+    where = f"All {len(pts)} points"
+    body = section(text, where)
+    if not body:
+        raise ReportError(f"{label}: no '## {where}' table")
+    table = {}
+    for ln in body.splitlines():
+        if not ln.startswith("|"):
+            continue
+        c = [x.strip() for x in ln.strip().strip("|").split("|")]
+        if len(c) != 12 or c[0] in ("Process", "") or set(c[0]) <= {"-"}:
+            continue
+        k = (c[0].strip("`"), c[1], c[2])
+        if k not in pts:
+            raise ReportError(f"{label}: unexpected point {fmt_point(*k)} under '{where}' (not in the retained "
+                              "fingerprint population)")
+        if k in table:
+            raise ReportError(f"{label}: duplicate point {fmt_point(*k)} under '{where}'")
+        table[k] = c
+    missing = [k for k in order if k not in table]
+    if missing:
+        raise ReportError(f"{label}: '{where}' is missing {len(missing)} of {len(pts)} points "
+                          f"(first: {fmt_point(*missing[0])})")
+    # ---- retained transients: full-precision values, cross-checked against the rounded table ----
+    # Hash the retained evidence first (cheap): identical record + evidence content reuses the
+    # previously derived result (the suite re-builds the same study many times; the result is a
+    # pure function of this content). Treat the cached dict as read-only.
+    cdir_rel = f"sim/step-response/corners/{rid}"
+    digests = []
+    for k in order:
+        name = f"{k[0]}_{k[1]}c_{k[2]}v.dat"
+        path = root / cdir_rel / name
+        if not path.is_file():
+            raise ReportError(f"{label}: retained per-point transient is missing: {cdir_rel}/{name}")
+        digests.append(f"{sha256_file(path)}  {name}\n")
+    ck = (rid, hashlib.sha256(text.encode()).hexdigest(),
+          hashlib.sha256("".join(digests).encode()).hexdigest())
+    if ck in _STEP_CACHE:
+        return _STEP_CACHE[ck]
+    derived = {}
+    for k in order:
+        name = f"{k[0]}_{k[1]}c_{k[2]}v.dat"
+        t, vo, vi = _step_read_dat(root / cdir_rel / name, label, f"{cdir_rel}/{name}")
+        # the runner's whole-point validity rules (extract_step): a point failing them is
+        # INVALID (counted, excluded from the worsts), never an error and never a fast settle
+        if len(t) < 100 or any(b <= a for a, b in zip(t, t[1:])):
+            derived[k] = {"invalid": ["fewer than 100 samples or time not strictly increasing"], "edges": {}}
+            continue
+        if t[-1] < p["tstop"] * 0.999:
+            derived[k] = {"invalid": [f"transient ends at {t[-1]:.3g} s, before {p['tstop']:g} s"], "edges": {}}
+            continue
+        edges = {n: _step_edge(t, vo, vi, p[e0], p[e1] if e1 else None, d, p)
+                 for n, e0, e1, d in _STEP_EDGES}
+        derived[k] = {"invalid": [n for n, e in edges.items() if e is None], "edges": edges}
+
+    def claim(what: str, cell: str, value: float, unit_tol: float, scale: float = 1.0) -> None:
+        """The record's rounded display `cell` must agree with the re-derived `value`."""
+        value = value * scale
+        got = "n/a" if not math.isfinite(value) else format(value, ".10g")
+        if cell == "not settled":
+            raise ReportError(f"{label}: {what} states 'not settled' but the retained transients give {got}")
+        try:
+            v = float(cell)
+        except ValueError:
+            raise ReportError(f"{label}: malformed cell '{cell}' ({what}) under '{where}'") from None
+        if abs(v - value) > unit_tol + 1e-9:
+            raise ReportError(f"{label}: {what} states {cell} but the retained transients give {got}")
+
+    disp = lambda v, nd: "n/a" if not (isinstance(v, float) and math.isfinite(v)) else f"{v:.{nd}f}"
+    ns = lambda v: "not settled" if (isinstance(v, float) and math.isinf(v)) else disp(v * 1e9, 1)
+    os_pts, os_r_pts, os_f_pts = {}, {}, {}
+    ts_pts = {b: {} for b in p["settle_bands"]}
+    n_invalid, nonmono = 0, []
+    for k in order:
+        c, d = table[k], derived[k]
+        pt = fmt_point(*k)
+        if d["invalid"]:
+            n_invalid += 1
+            if not c[11].startswith("INVALID:"):
+                raise ReportError(f"{label}: {pt} is INVALID in the retained transients ({d['invalid'][0]}) but the "
+                                  f"table reports values (note: '{c[11][:60]}')")
+            for i in (3, 4, 5, 6, 7, 8):
+                if c[i] != "n/a":
+                    raise ReportError(f"{label}: invalid point {pt} carries a value in column {i} of '{where}'")
+            continue
+        if c[11].startswith("INVALID:"):
+            raise ReportError(f"{label}: {pt} is marked '{c[11][:60]}' but the retained transients measure it validly")
+        r, f = d["edges"]["rise"], d["edges"]["fall"]
+        os_pts[k] = max(r["overshoot_pct"], f["overshoot_pct"])
+        os_r_pts[k], os_f_pts[k] = r["overshoot_pct"], f["overshoot_pct"]
+        o_r, o_f = c[3].split(" / ")
+        claim(f"rising overshoot of {pt}", o_r, r["overshoot_pct"], _disp_tol(o_r))
+        claim(f"falling overshoot of {pt}", o_f, f["overshoot_pct"], _disp_tol(o_f))
+        ps = c[4]
+        try:
+            pv = float(ps)
+        except ValueError:
+            raise ReportError(f"{label}: malformed preshoot cell '{ps}' under '{where}'") from None
+        if abs(pv - max(r["preshoot_pct"], f["preshoot_pct"])) > _disp_tol(ps) + 1e-9:
+            raise ReportError(f"{label}: {where} preshoot of {pt} states {ps} but the retained transients give "
+                              f"{disp(max(r['preshoot_pct'], f['preshoot_pct']), 2)}")
+        for col, band in ((5, p["settle_bands"][0]), (6, p["settle_bands"][1])):
+            cells = c[col].split(" / ")
+            if len(cells) != 2:
+                raise ReportError(f"{label}: malformed settling cell '{c[col]}' under '{where}' ({pt})")
+            ts_pts[band][k] = max(r["ts"][band], f["ts"][band])
+            for edge, cell in zip((r, f), cells):
+                if math.isinf(edge["ts"][band]):
+                    if cell != "not settled":
+                        raise ReportError(f"{label}: {pt} does not settle to {band:.1%} of the step (retained "
+                                          f"transients) but the table states '{cell}' -- a not-settled result must "
+                                          "stay explicit, never a number or zero")
+                else:
+                    claim(f"settling to {band:.1%} of {pt}", cell, edge["ts"][band],
+                          _disp_tol(cell) + 1e-10, 1e9)
+        if c[7] != ("yes" if r["monotonic"] and f["monotonic"] else "no"):
+            raise ReportError(f"{label}: {where} monotonic flag of {pt} states '{c[7]}' but the retained transients "
+                              f"give '{'yes' if r['monotonic'] and f['monotonic'] else 'no'}'")
+        if not (r["monotonic"] and f["monotonic"]):
+            nonmono.append(k)
+        t109 = c[8].split(" / ")
+        claim(f"10-90 % rising time of {pt}", t109[0], r["t10_90"] * 1e9, _disp_tol(t109[0]))
+        claim(f"10-90 % falling time of {pt}", t109[1], f["t10_90"] * 1e9, _disp_tol(t109[1]))
+        for cell, unit in ((c[9], "deg"), (c[10], "MHz")):  # copied PM / GBW columns: displayable or n/a
+            if cell != "n/a" and not re.fullmatch(r"-?\d+(?:\.\d+)?", cell):
+                raise ReportError(f"{label}: malformed copied column value '{cell}' ({unit}) under '{where}' ({pt})")
+    n_valid = len(order) - n_invalid
+    # ---- the record's rounded summary claims: summary line and worst-points table ----
+    sm = re.search(r"^- \*\*Result summary\*\*: (\d+)/(\d+) points measured validly \((\d+) invalid\); "
+                   r"worst overshoot \*\*([^*]+) %\*\* at (.+?); worst (\S+(?: \S+)?) settling \*\*([^*]+)\*\* at "
+                   r"(.+?); worst (\S+(?: \S+)?) settling \*\*([^*]+)\*\* at (.+?); monotonic at (\d+)/(\d+) valid "
+                   r"points\.", head, re.M)
+    if not sm:
+        raise ReportError(f"{label}: no '- **Result summary**' line of the expected shape (valid/total/invalid, "
+                          "worst overshoot, worst settling to both bands, monotonic count)")
+    n_sm_valid, n_sm_total, n_sm_invalid = int(sm.group(1)), int(sm.group(2)), int(sm.group(3))
+    if (n_sm_valid, n_sm_total, n_sm_invalid) != (n_valid, len(order), n_invalid):
+        raise ReportError(f"{label}: Result summary states {n_sm_valid}/{n_sm_total} valid ({n_sm_invalid} invalid) "
+                          f"but the retained transients give {n_valid}/{len(order)} valid ({n_invalid} invalid)")
+
+    def _pt(s: str, what: str) -> tuple:
+        m = re.fullmatch(r"(\w+) / (-?[\d.]+) C / ([\d.]+) V", s.strip())
+        if not m or (m.group(1), m.group(2), m.group(3)) not in pts:
+            raise ReportError(f"{label}: {what} names '{s.strip()}', not a point of the retained population")
+        return (m.group(1), m.group(2), m.group(3))
+
+    worst_os = max(os_pts.values()) if os_pts else float("nan")
+    if os_pts:
+        _step_extreme(label, "the summary's worst overshoot", os_pts, sm.group(4),
+                      _pt(sm.group(5), "the summary's worst-overshoot point"), _disp_tol(sm.group(4)) + 1e-9)
+    not_settled = {b: [k for k in ts_pts[b] if math.isinf(ts_pts[b][k])] for b in p["settle_bands"]}
+    mono_n = n_valid - len(nonmono)
+    if int(sm.group(12)) != mono_n or int(sm.group(13)) != n_valid:
+        raise ReportError(f"{label}: Result summary states monotonic at {sm.group(12)}/{sm.group(13)} valid points "
+                          f"but the retained transients give {mono_n}/{n_valid}")
+    bands_txt = {b: f"{b * 100:g} %" for b in p["settle_bands"]}
+    for gi, b in ((6, p["settle_bands"][0]), (9, p["settle_bands"][1])):
+        raw, at = sm.group(gi + 1), sm.group(gi + 2)
+        val = raw[:-3] if raw.endswith(" ns") else raw  # the number, without its displayed unit
+        wk = _pt(at, f"the summary's worst settling-to-{bands_txt[b]} point")
+        finite = {k: v * 1e9 for k, v in ts_pts[b].items() if math.isfinite(v)}  # ns, as displayed
+        if val == "not settled":
+            if not not_settled[b] or wk not in not_settled[b]:
+                raise ReportError(f"{label}: Result summary states worst {bands_txt[b]} settling 'not settled' at "
+                                  f"{fmt_point(*wk)} but the retained transients give {len(not_settled[b])} "
+                                  "not-settled points")
+        else:
+            if not finite or not_settled[b]:
+                raise ReportError(f"{label}: Result summary states worst {bands_txt[b]} settling {val} ns but the "
+                                  f"retained transients give {len(not_settled[b])} not-settled points")
+            _step_extreme(label, f"the summary's worst settling to {bands_txt[b]}", finite, val, wk,
+                          _disp_tol(val) + 1e-10)
+    wp_body = section(text, "Worst points (evidence; no bound applies)")
+    wp = {}
+    for ln in (wp_body.splitlines() if wp_body else []):
+        if not ln.startswith("|"):
+            continue
+        c = [x.strip() for x in ln.strip().strip("|").split("|")]
+        if len(c) == 3 and c[0] not in ("Figure", "") and not set(c[0]) <= {"-"}:
+            wp[c[0]] = c
+    for b in p["settle_bands"]:
+        row = wp.get(f"Settling to {bands_txt[b]} (worse edge)")
+        if row is None:
+            raise ReportError(f"{label}: no 'Settling to {bands_txt[b]} (worse edge)' row under '## Worst points'")
+        m = re.fullmatch(r"(not settled|[\d.]+)(?: ns)?(?: \((\d+) points? not settled\))?", row[1])
+        if not m:
+            raise ReportError(f"{label}: malformed worst-settling cell '{row[1]}' under '## Worst points'")
+        wk = _pt(row[2], f"the Worst-points table's {bands_txt[b]} settling point")
+        if m.group(1) == "not settled":
+            if not not_settled[b] or wk not in not_settled[b]:
+                raise ReportError(f"{label}: '## Worst points' states {bands_txt[b]} settling 'not settled' at "
+                                  f"{fmt_point(*wk)} but the retained transients disagree")
+        else:
+            finite = {k: v * 1e9 for k, v in ts_pts[b].items() if math.isfinite(v)}  # ns, as displayed
+            if not finite or not_settled[b]:
+                raise ReportError(f"{label}: '## Worst points' states a {bands_txt[b]} settling time but the retained "
+                                  f"transients give {len(not_settled[b])} not-settled points")
+            _step_extreme(label, f"the Worst-points table's settling to {bands_txt[b]}", finite, m.group(1), wk,
+                          _disp_tol(m.group(1)) + 1e-10)
+        n_ns = int(m.group(2) or 0)
+        if n_ns != len(not_settled[b]):
+            raise ReportError(f"{label}: '## Worst points' states {n_ns} points not settled to {bands_txt[b]} but "
+                              f"the retained transients give {len(not_settled[b])}")
+    os_row = wp.get("Overshoot (worse edge)")
+    if os_row is None:
+        raise ReportError(f"{label}: no 'Overshoot (worse edge)' row under '## Worst points'")
+    if os_pts:
+        om = re.fullmatch(r"([\d.]+|n/a) %", os_row[1])
+        if not om or om.group(1) == "n/a":
+            raise ReportError(f"{label}: malformed worst-overshoot cell '{os_row[1]}' under '## Worst points'")
+        _step_extreme(label, "the Worst-points table's worst overshoot", os_pts, om.group(1),
+                      _pt(os_row[2], "the Worst-points table's overshoot point"),
+                      _disp_tol(om.group(1)))
+    nm_row = wp.get("Non-monotonic points")
+    if nm_row is None:
+        raise ReportError(f"{label}: no 'Non-monotonic points' row under '## Worst points'")
+    nm = re.fullmatch(r"(\d+)/(\d+)", nm_row[1])
+    if not nm or int(nm.group(1)) != len(nonmono) or int(nm.group(2)) != n_valid:
+        raise ReportError(f"{label}: '## Worst points' states {nm_row[1]} non-monotonic points but the retained "
+                          f"transients give {len(nonmono)}/{n_valid}")
+    listed = re.findall(r"(\w+) / (-?[\d.]+) C / ([\d.]+) V", nm_row[2])
+    for lp in listed:
+        if lp not in nonmono:
+            raise ReportError(f"{label}: '## Worst points' lists {fmt_point(*lp)} as non-monotonic but the retained "
+                              "transients disagree")
+    # ---- figures: deterministic descriptive observations (information only, no verdict) ----
+    def worst_of(vals: dict, inf_ok: bool = False) -> dict:
+        if not vals:
+            return {"value": "n/a", "point": None}
+        key = (lambda v: (math.isinf(v), v)) if inf_ok else (lambda v: v)
+        wk = max(vals, key=lambda k: key(vals[k]))
+        return {"value": ns(vals[wk]) if inf_ok else disp(vals[wk], 2), "point": fmt_point(*wk)}
+
+    ns_sorted = lambda ks: [fmt_point(*k) for k in sorted(ks, key=lambda q: (corner_sort_key(q[0]),
+                                                                             float(q[1]), float(q[2])))]
+    figures = {
+        "Overshoot (worse edge)": {"unit": "% of the realised step", **worst_of(os_pts),
+                                   "range": [disp(min(os_pts.values()), 2), disp(worst_os, 2)] if os_pts else []},
+        "Overshoot rising edge": {"unit": "% of the realised step", **worst_of(os_r_pts)},
+        "Overshoot falling edge": {"unit": "% of the realised step", **worst_of(os_f_pts)},
+        **{f"Settling to {bands_txt[b]} (worse edge)":
+               {"unit": "ns from the input edge", "band": bands_txt[b],
+                **worst_of(ts_pts[b], inf_ok=True),
+                "not_settled": {"count": len(not_settled[b]), "points": ns_sorted(not_settled[b]),
+                                "status": ("not settled within the edge window, or drifting across the reference "
+                                           "window; reported as the named status, never zero")}}
+           for b in p["settle_bands"]},
+        "Monotonicity": {"unit": "points", "non_monotonic": len(nonmono), "of_valid": n_valid,
+                         "points": ns_sorted(nonmono)[:6], "list_complete": len(nonmono) <= 6},
+        "Validity": {"unit": "points", "invalid": n_invalid, "of": len(order)},
+    }
+    retained = {"path": cdir_rel, "dat_files": len(digests),
+                "sha256": hashlib.sha256("".join(digests).encode()).hexdigest(),
+                "sha256_method": _STEP_DAT_METHOD}
+    out = {"prov": prov, "points": pts, "scope": {
+               "points": [fmt_point(*k) for k in order], "cells": len(order), "full_pvt_cross_product": True,
+               "text": (f"FULL ratified PVT grid: {len(cors['process'])} MOS corners x "
+                        f"{len(cors['temperature_c'])} temperatures x {len(cors['supply_v'])} supplies = "
+                        f"{len(order)} points, one follower step measurement (both edges) per point; no RZ/CC "
+                        "passive cross product (the passives sit at typical)")},
+           "figures": figures, "not_measured": {},
+           "limitations": [
+               "evidence only: spec/target-spec.md has no settling or overshoot row and this study proposes no "
+               "bound; a settling/overshoot bound would need a spec/ decision record",
+               "per point the reported overshoot and settling figures are the worse of the rising and falling "
+               "edges; both edges are re-derived from the retained transients",
+               "per-point `.meas` cross-checks and control runs were the record's own gates; this adapter "
+               "re-derives the extraction from the retained `.dat` transients only",
+           ],
+           "retained": retained,
+           "population": {"points": len(order), "valid": n_valid, "invalid": n_invalid,
+                          "monotonic": mono_n, "not_settled": {bands_txt[b]: len(not_settled[b])
+                                                               for b in p["settle_bands"]},
+                          "edges_per_point": ["rise", "fall"]}}
+    _STEP_CACHE[ck] = out
+    return out
+
+
+SUPPLEMENTARY["step-response-follower"]["extract"] = extract_step_response_study  # issue #198: ungraded
+
+
 FULL_STUDY_POINTS = 45  # 5 MOS corners x 3 temperatures x 3 supplies
 
 
@@ -3102,6 +3584,7 @@ MEASUREMENT_CONFIG = {
     "psrr-mc": "sim/psrr-mc/measurement_config.py",
     "slew-swing-power": "sim/slew-swing-power/measurement_config.py",
     "input-common-mode": "sim/input-common-mode/measurement_config.py",
+    "step-response": "sim/step-response/measurement_config.py",  # issue #198: supplementary step study
 }
 _FP_LINE = re.compile(r"^- \*\*Measurement fingerprint\*\*: version (\d+), sha256 `([0-9a-f]{64})`", re.M)
 _FP_BLOCK = re.compile(r"^## Measurement fingerprint inputs\n.*?^```json\n(.*?)\n```", re.M | re.S)
@@ -3275,7 +3758,7 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
         if cur is not None and not cur.startswith(prov["dut_prefix"]):
             raise ReportError(
                 f"stale DUT: {label} does not match the current {DUT_REL} (normalised sha256 {cur[:16]}); it measured "
-                f"{prov['dut_prefix']}. Rerun the side study (its runner's --passive-corners mode) to append a new record "
+                f"{prov['dut_prefix']}. Rerun the side study (its experiment's runner) to append a new record "
                 "and select it; existing records are append-only and are not edited. "
                 "For a historical (non-signoff) report use --archival with an explicit --out-dir.")
         if bound_free:
@@ -3324,7 +3807,7 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
             **{k_: prov[k_] for k_ in ("pdk_open_pdks", "ngspice_local", "ngspice_engine", "klt_client", "backend",
                                        "fleet_runner_mismatch")},
             "measurement_config": fresh,
-            "scope": study_scope(ex["points"], spec.get("scope", "limited")),
+            "scope": ex["scope"] if "scope" in ex else study_scope(ex["points"], spec.get("scope", "limited")),
             "rows": list(spec["rows"]),
             "figures": ex["figures"],
             "not_measured": ex["not_measured"],
@@ -3335,7 +3818,11 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
                             retained_evidence=ex["retained"],
                             grading=("none: measured information attached to the "
                                      f"{', '.join(spec['rows'])} row; its bound is proposed, not ratified, so no "
-                                     "PASS/FAIL verdict is formed and no figure is compared with a bound"))
+                                     "PASS/FAIL verdict is formed and no figure is compared with a bound"
+                                     if spec["rows"] else
+                                     "none: evidence-only observations with no spec row to inform (settling and "
+                                     "overshoot are deliberately unratified); no PASS/FAIL verdict is formed and no "
+                                     "figure is compared with any bound"))
     return out
 
 
@@ -3518,8 +4005,10 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                             "DUT freshness is checked, bench/analysis freshness is not")
     for k in sorted(SUPPLEMENTARY):
         if k not in supplementary:
-            glob_lim.append(f"no supplementary study selected for {k}: its rows ("
-                            f"{', '.join(SUPPLEMENTARY[k]['rows'])}) carry no passive-corner observation")
+            rows_txt = ", ".join(SUPPLEMENTARY[k]["rows"])
+            glob_lim.append(f"no supplementary study selected for {k}: " +
+                            (f"its rows ({rows_txt}) carry no passive-corner observation" if rows_txt else
+                             "its ungraded observations are not shown"))
     out_rows = []
 
     def base(sr, **kw):
@@ -4021,6 +4510,43 @@ def render_psrr_study(a, st: dict) -> None:
                       f"{f['typical_passive_worst']['primary_record_worst']} dB" for f in prim))
 
 
+def render_step_study(a, st: dict) -> None:
+    """Markdown body of the ungraded follower step-response study (issue #198): measured."""
+    rv, pop = st["retained_evidence"], st["population"]
+    a(f"- **Grading**: {st['grading']}")
+    a(f"- **Retained evidence (figures re-derived from it)**: [`{rv['path']}`]({link_from_reports(rv['path'])}): "
+      f"{rv['dat_files']} per-point `.dat` transients (rising and falling edge each), aggregate sha256 "
+      f"`{rv['sha256']}` ({rv['sha256_method']})")
+    a(f"- **Population**: {pop['points']} PVT points, {pop['valid']} measured validly, {pop['invalid']} invalid; "
+      f"monotonic at {pop['monotonic']}/{pop['valid']} valid points; edges per point: {', '.join(pop['edges_per_point'])}")
+    a("")
+    a("| figure (information only, no verdict) | worst | binding point (MOS / T / VDD) |")
+    a("|---|---|---|")
+    for name, f in st["figures"].items():
+        unit = f["unit"]
+        if "not_settled" in f:  # settling: the worst cell names not-settled explicitly when it applies
+            ns = f["not_settled"]
+            val = (f"not settled ({ns['count']} point{'s' if ns['count'] != 1 else ''} not settled)"
+                   if f["value"] == "not settled" else f"{f['value']} {unit}")
+            a(f"| {name} | {val} | {f['point'] or '-'} |")
+            if ns["count"]:
+                a(f"| {name} -- not settled (status, not a value) | {ns['status']} | "
+                  + "; ".join(ns["points"]) + " |")
+        elif name == "Overshoot (worse edge)":
+            a(f"| {name} | {f['value']} {unit} (range {f['range'][0]} .. {f['range'][1]}) | {f['point']} |")
+        elif name == "Monotonicity":
+            a(f"| {name} | {f['non_monotonic']}/{f['of_valid']} valid points non-monotonic | - |")
+        elif name == "Validity":
+            a(f"| {name} | {f['invalid']}/{f['of']} points invalid | - |")
+        else:
+            a(f"| {name} | {f['value']} {unit} | {f['point']} |")
+    a("")
+
+
+SUPPLEMENTARY["psrr-passive-corners-full"]["render"] = render_psrr_study  # issue #173: bound-free body
+SUPPLEMENTARY["step-response-follower"]["render"] = render_step_study  # issue #198: ungraded body
+
+
 def render_offset_drift(a, od: dict) -> None:
     """Issue #184: derived offset temperature drift and systematic / statistical split."""
     a("")
@@ -4156,13 +4682,13 @@ def render_md(rep: dict) -> str:
         render_offset_drift(a, rep["offset_drift"])
     if rep.get("supplementary"):
         a("")
-        a("## Supplementary passive-corner studies (measured side evidence; not graded)")
+        a("## Supplementary side studies (measured side evidence; not graded)")
         a("")
         a("Selected explicitly under `supplementary` in `sim/report/selection.json`, separately from the records "
           "that grade the spec rows. Every figure below is re-derived from the study's own RZ x CC tables and "
-          "checked against its verdict header (a bound-free study: re-derived from its retained per-cell curves and "
-          "checked against its rounded tables, with no verdict at all); none is counted in a row's points or verdict "
-          "or in the ratified-row summary above.")
+          "checked against its verdict header (a bound-free study: re-derived from its retained per-cell curves or "
+          "per-point transients and checked against its rounded tables, with no verdict at all); none is counted in "
+          "a row's points or verdict or in the ratified-row summary above.")
         for k, st in rep["supplementary"].items():
             a("")
             a(f"### {k}")
@@ -4177,9 +4703,12 @@ def render_md(rep: dict) -> str:
               + f"); PDK open_pdks `{(st['pdk_open_pdks'] or 'n/a')[:12]}`; ngspice local {st['ngspice_local'] or 'n/a'} / "
               f"klt engine {st['ngspice_engine'] or 'n/a'}; klt client {st['klt_client'] or 'n/a'}; backend "
               f"{st['backend'] or 'n/a'}; measurement-configuration freshness {mc_cell(st['measurement_config'])}")
-            a(f"- **Rows it informs (not graded)**: {', '.join(st['rows'])}")
-            if st.get("bound_free"):
-                render_psrr_study(a, st)
+            a("- **Rows it informs (not graded)**: " + (", ".join(st["rows"]) if st["rows"] else
+              "none -- settling and overshoot have no spec row (a bound would need a spec/ decision record); "
+              "the observations stand alone as evidence"))
+            render = SUPPLEMENTARY[k].get("render")
+            if render:
+                render(a, st)
             for fk, f in ([] if st.get("bound_free") else st["figures"].items()):
                 a(f"- {study_observation(f)} (record verdict {f['verdict_in_record']}; information only, not graded)")
             for fk, why in sorted(st["not_measured"].items()):
@@ -4237,13 +4766,15 @@ def render_evidence(report_json: str) -> str:
                  "records and verified; this is not a claim that every spec row passes.",
         "report": {"path": f"{OUT_DIR_REL}/{OUT_NAME}.json", "markdown": f"{OUT_DIR_REL}/{OUT_NAME}.md"},
         "report_summary": rep["summary"],
-        # issue #173: the hashed side evidence the report attaches to its rows; never graded, never
-        # part of report_summary (a bound-free study carries no verdict at all)
+        # issue #173/#198: the hashed side evidence the report attaches to its rows; never graded,
+        # never part of report_summary (a bound-free study carries no verdict at all)
         "report_supplementary": {
             k: {"graded": False, "bound_free": bool(st.get("bound_free")), "rows": st["rows"], "path": st["path"],
                 "sha256": st["sha256"], "cells": st["scope"]["cells"],
                 **({"verdict": None, "retained_evidence_sha256": st["retained_evidence"]["sha256"],
-                    "worst_db": {f["label"]: f["worst"]["value"] for f in st["figures"].values()}}
+                    **({"worst_db": {f["label"]: f["worst"]["value"] for f in st["figures"].values()}}
+                       if all("worst" in f for f in st["figures"].values()) else
+                       {"worst": {name: f["value"] for name, f in st["figures"].items() if "value" in f}})}
                    if st.get("bound_free") else {})}
             for k, st in rep.get("supplementary", {}).items()},
         # issue #184: derived (not simulated) view of committed evidence; never graded

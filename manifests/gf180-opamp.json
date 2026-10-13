@@ -10,7 +10,7 @@
       "file": "manifests/attest/item-10.evidence.json"
     },
     "8": {
-      "content_hash": "sha256:8ef32d6510b1bf04237f229dd32e5452e556bf4fd6cd6ec467dda8aecc01ef7a",
+      "content_hash": "sha256:37887d978a1e90d040510c2f5265bd4676adc57bd19d62af2c84aecd9b0d8d0d",
       "file": "sim/reports/characterization-report.evidence.json"
     },
     "9": {
