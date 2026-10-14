@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.1152",
-  "loom_commit": "6136698172e16b355f948076c177fc4e4a85cd1e",
+  "loom_version": "0.19.1153",
+  "loom_commit": "d8429a4fabdc955107af1cbc22c548e23eecf9b1",
   "install_date": "2026-09-05",
   "loom_source_remote": "https://github.com/rjwalters/loom.git",
   "installed_files": [
@@ -565,6 +565,6 @@
     ".loom/scripts/tests/test-resync-installed-stamp.sh",
     ".claude/commands/loom/sweep-arguments.md"
   ],
-  "last_resync": "2026-10-13",
+  "last_resync": "2026-10-14",
   "requires_daemon": "0.19.1081"
 }
