@@ -1,0 +1,47 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * klt sim -- generated corner deck, do not edit
+
+Doing analysis at TEMP = -40.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+vddset                                     3.3
+vcmset                                    1.65
+rs                                           0
+rb                                           0
+vdd                                          0
+vinp                                         0
+ibias                             3.55223e-132
+xdut.tail                          9.79291e-23
+xdut.n1                           -6.22774e-22
+vout                               7.65619e-18
+xdut.n2                            2.75308e-21
+xdut.nz                            7.65619e-18
+xdut.xrz.11                        7.65619e-18
+xdut.xrz.21                        7.65619e-18
+bvin#branch                                  0
+bvdd#branch                        -1.0273e-29
+vrb#branch                                   0
+vrs#branch                                   0
+vcm#branch                                   0
+vdd#branch                                   0
+
+
+No. of Data Rows : 1460
+
+  Measurements for Transient Analysis
+
+vfinal_v            =  1.64997e+00
+vdd_final_v         =  3.30000e+00
+vout_max_v          =  2.54685e+00 at=  3.14250e-06
+
+ASCII raw file "/var/tmp/eda-job-klt-sim-a38e427e0aca/outputs/artifacts/sf_vcm1p650_vdd3p300V_n40C/waveform.raw"
+ngspice-46 done

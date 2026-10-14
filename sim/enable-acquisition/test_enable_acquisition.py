@@ -382,6 +382,20 @@ class DataTests(unittest.TestCase):
             other = run(h=lambda s: np.exp(-np.clip(s, 0, None) / (2 * TAU)))[1]
             self.assertFalse(r.same_result(m2, other) and r.same_result(run()[1], other))
 
+    def test_ramp_completion_sample_is_post_ramp_despite_float_rounding(self):
+        """The sample at the ramp-completion instant counts as post-ramp whether its time is read
+        as float64 or re-read from the 10-digit committed text (it can sit ~1e-15 s below tc)."""
+        sched, vec = enable_vec()
+        tc = sched["events"][0][2]
+        i = int(np.argmin(np.abs(vec["time"] - tc)))
+        vec["v(vout)"] = vec["v(vout)"].copy()
+        vec["v(vout)"][i] = VCM + 0.3
+        vec["time"] = vec["time"].copy()
+        vec["time"][i] = tc - 1e-15
+        m = r.extract_enable(vec, sched, VDD, VCM)
+        self.assertTrue(m.valid, m.reason)
+        self.assertGreater(m.events[0].over_mv, 299.0)
+
     def test_internal_node_traces_are_retained(self):
         sched, vec = enable_vec()
         m = r.extract_enable(vec, sched, VDD, VCM)
