@@ -1,6 +1,6 @@
 {
   "loom_version": "0.19.1155",
-  "loom_commit": "f318a829e9386193357a8511e77de29f3cac5f5d",
+  "loom_commit": "4844d0404ab018a44c679f3da55b6ff8bf61dfc3",
   "install_date": "2026-09-05",
   "loom_source_remote": "https://github.com/rjwalters/loom.git",
   "installed_files": [
@@ -563,7 +563,9 @@
     ".loom/docs/runtime-model-trials.md",
     ".loom/scripts/tests/test-merge-pr-auto-blocked-settle.sh",
     ".loom/scripts/tests/test-resync-installed-stamp.sh",
-    ".claude/commands/loom/sweep-arguments.md"
+    ".claude/commands/loom/sweep-arguments.md",
+    ".loom/scripts/tests/fixtures/config_resolver/.loom-local/fleet-repo.json",
+    ".loom/scripts/tests/lib/assert.sh"
   ],
   "last_resync": "2026-10-14",
   "requires_daemon": "0.19.1081"
