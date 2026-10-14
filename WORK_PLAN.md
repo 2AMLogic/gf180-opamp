@@ -7,13 +7,19 @@ Current Loom label state. Tracking and blocked items do not constitute ready wor
 
 Judge-approved PRs stuck under a `loom:operator` merge-risk hold — implementation work is done, only a human merge decision is missing.
 
-- **#79**: feat(#77): GF180 layout device pilot (isolated cells, regen recipe, DRC/LVS evidence)
+_None._
 
-## Operator Priority
+## Very Important
 
-Issues the operator starred (`loom:operator-priority`); land these first.
+`loom:very-important` (one counts per workspace); every stage takes these first.
 
 _None._
+
+## Important
+
+`loom:important`; taken before unlabelled work.
+
+- **#77**: Prepare a reproducible GF180 layout device pilot before full op-amp placement
 
 ## Ready
 
@@ -25,7 +31,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#191**: sim: characterize supply and external-bias enable acquisition across PVT
 
 ## PRs Awaiting Review
 
@@ -61,12 +67,13 @@ _None._
 
 ## Backlog Balance
 
-| Tier | Count |
+| Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
-| Operator priority | 0 |
+| Operator merge-risk holds | 0 |
+| Very important | 0 |
+| Important | 1 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
 | Curated | 6 |
