@@ -288,7 +288,10 @@ def extract_event(t, vo, vd, ev: Event, v_ref: float, tstep: float) -> tuple[Eve
     drift = abs(float(np.interp(t1, t, vo) - np.interp(ref_start, t, vo))) / band
     out = np.nonzero(np.abs(err) > band)[0]
     v_final = float(np.interp(t1, t, vo))
-    post = tw >= tc
+    # The ramp-completion instant is a simulator breakpoint, so a sample lies at tc to within float
+    # rounding; the tolerance keeps that sample in the post-ramp set whether the trace is read from the
+    # rawfile (float64) or re-read from the committed 10-digit text.
+    post = tw >= tc - 1e-3 * tstep
     over = max(0.0, float(err[post].max())) * 1e3
     under = max(0.0, -float(err[post].min())) * 1e3
     rail = max(0.0, float(np.max(vw - np.interp(tw, t, vd)))) * 1e3  # 0 when vout never exceeds the rail
