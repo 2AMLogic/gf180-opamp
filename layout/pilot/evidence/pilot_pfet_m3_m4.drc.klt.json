@@ -300,7 +300,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:185f2da447cb7f47663b88b07678c1e2b63d66ed1566409aae678cf8de7bf048",
+      "content_hash": "sha256:87df6f86c46bb5b0ecae5524716c6a2fdcab8061dc00543d6f64db4e8e57bfcf",
       "role": "layout"
     },
     "klayout_version_mismatch": false

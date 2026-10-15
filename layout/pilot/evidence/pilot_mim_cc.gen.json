@@ -12,8 +12,8 @@
   "bbox_um": {
     "x0": 0.0,
     "y0": 0.0,
-    "x1": 19.52,
-    "y1": 20.48
+    "x1": 18.92,
+    "y1": 19.88
   },
   "device_count": 1,
   "ports": [
@@ -26,8 +26,8 @@
         "name": null
       },
       "x_um": 0.0,
-      "y_um": 9.76,
-      "width_um": 19.52,
+      "y_um": 9.46,
+      "width_um": 18.92,
       "direction_deg": 180
     },
     {
@@ -38,8 +38,8 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 9.76,
-      "y_um": 20.25,
+      "x_um": 9.46,
+      "y_um": 19.650000000000002,
       "width_um": 0.46,
       "direction_deg": 90
     }

@@ -5,9 +5,9 @@ device size in `design/netlist/opamp_two_stage.spice`, each generated alone,
 labelled, extracted and checked. This is a tool/PDK-path capability check.
 It is **not** a floorplan, **not** block layout, and **not** full-block DRC or
 LVS signoff, and the bounding boxes below are **not** a ratified or measured
-block area. No area budget is set or implied here. Final compensation
-dimensions (`XCC`, `XRZ`) await #42; the pilot uses the netlist's current
-values purely as probe sizes.
+block area. No area budget is set or implied here. `XCC`/`XRZ` are sized from
+the netlist after the #42 retune (16.8u MIM, 22u resistor); the pilot uses them
+purely as probe sizes, and `regen.sh` re-derives them from the schematic.
 
 ## Regenerate (one command, from a clean checkout)
 
@@ -49,8 +49,8 @@ passive dimensions are compared.
 | `pilot_nfet_m7` | XM7 | `nfet_03v3` L=2u W=36u nf=12 | `mos_array` w_um=3, l=2, fingers=12 | same |
 | `pilot_pfet_m3_m4` | XM3, XM4 | `pfet_03v3` L=1u W=6u nf=2 | `mos_array` w_um=3, l=1, fingers=2 | same |
 | `pilot_pfet_m6` | XM6 | `pfet_03v3` L=1u W=72u nf=24 | `mos_array` w_um=3, l=1, fingers=24 | same |
-| `pilot_mim_cc` | XCC | `cap_mim_2f0_m4m5_noshield` 17.4u x 17.4u | `cap_array` plate 17.4 x 17.4, num=1 | BOT = schematic `n2` (card pin 1), TOP = `nz` (pin 2) |
-| `pilot_rpoly_rz` | XRZ | `ppolyf_u_1k` r_width=2u r_length=4u | `res_array` flavor 1k, length 4, width 2, num=1, dummy=0 | A = `vout`, B = `nz`, bulk = `vss` (substrate) |
+| `pilot_mim_cc` | XCC | `cap_mim_2f0_m4m5_noshield` 16.8u x 16.8u | `cap_array` plate 16.8 x 16.8, num=1 | BOT = schematic `n2` (card pin 1), TOP = `nz` (pin 2) |
+| `pilot_rpoly_rz` | XRZ | `ppolyf_u_1k` r_width=2u r_length=22u | `res_array` flavor 1k, length 22, width 2, num=1, dummy=0 | A = `vout`, B = `nz`, bulk = `vss` (substrate) |
 
 Model and terminal facts verified here:
 
@@ -67,8 +67,8 @@ Model and terminal facts verified here:
   plate. The PDK model is symmetric in its two terminals, so this does not change
   simulation, but the netlist puts `n2` (the high-impedance first-stage output)
   on the bottom plate, the one with substrate parasitics that the PDK model
-  does not include. Plate orientation is a placement-time decision to take with
-  #42.
+  does not include. Plate orientation is a placement-time decision to take when
+  the cells are composed.
 - **Poly resistor**: geometry alone cannot distinguish `ppolyf_u_1k/2k/3k`; the
   flavour is selected at extraction by `--deck-option poly_res=1k` (matching the
   schematic) and recorded in each LVS request. The substrate is the third
@@ -83,8 +83,8 @@ Model and terminal facts verified here:
 | `pilot_nfet_m7` | 33.84 x 7.92 | **FAIL** (contact_OFFGRID) | clean | match | match |
 | `pilot_pfet_m3_m4` | 6.04 x 7.92 | **FAIL** (contact_OFFGRID) | clean | match | match |
 | `pilot_pfet_m6` | 40.8 x 7.92 | **FAIL** (contact_OFFGRID) | clean | match | match |
-| `pilot_mim_cc` | 19.52 x 20.48 | **PASS** | clean | match | not run (see below) |
-| `pilot_rpoly_rz` | 4.84 x 2.0 | **FAIL** (SB.4, SB.10) | clean | match | match |
+| `pilot_mim_cc` | 18.92 x 19.88 | **PASS** | clean | match | not run (see below) |
+| `pilot_rpoly_rz` | 22.84 x 2.0 | **FAIL** (SB.4, SB.10) | clean | match | match |
 
 - "DRC, PDK runset" is the GF180MCU `run_drc.py` main runset, flat, default
   table set. Antenna and density are not enabled, which is another reason
@@ -119,8 +119,8 @@ No cell was edited by hand to make it pass, and no spec value was changed.
 
 ## Next step for full placement (not done here)
 
-1. Wait for #42 to fix the final `XCC`/`XRZ` values, then regenerate those two
-   cells; rerun `regen.sh`.
+1. (#42 has landed; the cells above are regenerated from its values. Rerun
+   `regen.sh` if `XCC`/`XRZ` change again.)
 2. Resolve or work around #2999 and #3000 (or hand-fix the contact grid and
    SB geometry in a documented post step) until the PDK-runset DRC is clean on
    every pilot cell, before any of them is composed.

@@ -12,7 +12,7 @@
   "bbox_um": {
     "x0": 0.0,
     "y0": 0.0,
-    "x1": 4.84,
+    "x1": 22.84,
     "y1": 2.0
   },
   "device_count": 1,
@@ -38,7 +38,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 4.63,
+      "x_um": 22.63,
       "y_um": 1.0,
       "width_um": 2.0,
       "direction_deg": 0

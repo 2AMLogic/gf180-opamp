@@ -93,8 +93,8 @@
         "log_tail": [
           "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
           "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
-          "10-Oct-2026 00:17:33 | INFO    | Your Klayout version is: KLayout 0.28.16",
-          "10-Oct-2026 00:17:33 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_nfet_mb1_m5.gds on cell pilot_nfet_mb1_m5"
+          "15-Oct-2026 12:09:12 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "15-Oct-2026 12:09:12 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/pr-79/layout/pilot/gds/pilot_nfet_mb1_m5.gds on cell pilot_nfet_mb1_m5"
         ]
       }
     },
@@ -190,8 +190,8 @@
         "log_tail": [
           "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
           "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
-          "10-Oct-2026 00:17:45 | INFO    | Your Klayout version is: KLayout 0.28.16",
-          "10-Oct-2026 00:17:45 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_nfet_m1_m2.gds on cell pilot_nfet_m1_m2"
+          "15-Oct-2026 12:09:21 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "15-Oct-2026 12:09:21 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/pr-79/layout/pilot/gds/pilot_nfet_m1_m2.gds on cell pilot_nfet_m1_m2"
         ]
       }
     },
@@ -286,8 +286,8 @@
         "log_tail": [
           "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
           "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
-          "10-Oct-2026 00:17:58 | INFO    | Your Klayout version is: KLayout 0.28.16",
-          "10-Oct-2026 00:17:58 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_nfet_m7.gds on cell pilot_nfet_m7"
+          "15-Oct-2026 12:09:31 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "15-Oct-2026 12:09:31 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/pr-79/layout/pilot/gds/pilot_nfet_m7.gds on cell pilot_nfet_m7"
         ]
       }
     },
@@ -383,8 +383,8 @@
         "log_tail": [
           "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
           "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
-          "10-Oct-2026 00:18:10 | INFO    | Your Klayout version is: KLayout 0.28.16",
-          "10-Oct-2026 00:18:10 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_pfet_m3_m4.gds on cell pilot_pfet_m3_m4"
+          "15-Oct-2026 12:09:40 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "15-Oct-2026 12:09:40 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/pr-79/layout/pilot/gds/pilot_pfet_m3_m4.gds on cell pilot_pfet_m3_m4"
         ]
       }
     },
@@ -479,8 +479,8 @@
         "log_tail": [
           "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
           "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
-          "10-Oct-2026 00:18:22 | INFO    | Your Klayout version is: KLayout 0.28.16",
-          "10-Oct-2026 00:18:22 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_pfet_m6.gds on cell pilot_pfet_m6"
+          "15-Oct-2026 12:09:49 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "15-Oct-2026 12:09:49 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/pr-79/layout/pilot/gds/pilot_pfet_m6.gds on cell pilot_pfet_m6"
         ]
       }
     },
@@ -492,8 +492,8 @@
       ],
       "model": "cap_mim_2f0_m4m5_noshield",
       "gen_params": {
-        "plate_w_um": 17.4,
-        "plate_h_um": 17.4,
+        "plate_w_um": 16.8,
+        "plate_h_um": 16.8,
         "num": 1
       },
       "labels_added": 2,
@@ -502,8 +502,8 @@
         "TOP": "nz"
       },
       "bbox_um": [
-        19.52,
-        20.48
+        18.92,
+        19.88
       ],
       "drc_foundry": {
         "runset": "gf180mcu run_drc.py --variant=D (flat)",
@@ -568,7 +568,7 @@
       ],
       "model": "ppolyf_u_1k",
       "gen_params": {
-        "length_um": 4.0,
+        "length_um": 22.0,
         "width_um": 2.0,
         "num": 1,
         "dummy": 0,
@@ -581,7 +581,7 @@
         "VSUB": "vss"
       },
       "bbox_um": [
-        4.84,
+        22.84,
         2.0
       ],
       "drc_foundry": {
@@ -650,8 +650,8 @@
         "log_tail": [
           "/home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/run_lvs.py:413: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).",
           "  now_str = datetime.utcnow().strftime(\"lvs_run_%Y_%m_%d_%H_%M_%S\")",
-          "10-Oct-2026 00:18:43 | INFO    | Your Klayout version is: KLayout 0.28.16",
-          "10-Oct-2026 00:18:43 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-77/layout/pilot/gds/pilot_rpoly_rz.gds on cell pilot_rpoly_rz"
+          "15-Oct-2026 12:10:05 | INFO    | Your Klayout version is: KLayout 0.28.16",
+          "15-Oct-2026 12:10:05 | INFO    | Running Global Foundries 180nm MCU /home/ubuntu/.volare/gf180mcuD/libs.tech/klayout/lvs/gf180mcu.lvs checks on design /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/pr-79/layout/pilot/gds/pilot_rpoly_rz.gds on cell pilot_rpoly_rz"
         ]
       }
     }

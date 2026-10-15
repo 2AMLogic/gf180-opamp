@@ -94,7 +94,7 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "2366cfc5cb37d6c15a6dc80dae9e74c471827288b93f4c8d0a8b1bf176cdcb6b",
+    "layout_sha256": "cfe6040e40b0e23758cd4616d2bdf6af59487f9c3882b62cb59619dd2df86993",
     "reference_sha256": "d6a5a25dc790d79293ae429fb17d66f3e7512cdbace7b4869fb868e14a63551e",
     "extracted_netlist": null
   },
@@ -119,7 +119,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:2366cfc5cb37d6c15a6dc80dae9e74c471827288b93f4c8d0a8b1bf176cdcb6b",
+      "content_hash": "sha256:cfe6040e40b0e23758cd4616d2bdf6af59487f9c3882b62cb59619dd2df86993",
       "role": "layout"
     },
     "klayout_version_mismatch": false

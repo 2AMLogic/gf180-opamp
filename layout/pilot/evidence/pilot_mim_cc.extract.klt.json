@@ -5,7 +5,7 @@
   "top": "pilot_mim_cc",
   "dbu_um": 0.0005,
   "netlist_path": "extracted/pilot_mim_cc.klt.spice",
-  "netlist_sha256": "7af114700b557c5a4de312665bbd0e39b5551f44cccbfdc44ceaf425db6f5617",
+  "netlist_sha256": "fdfad9a724420ca607caaa86bfda320e6fda1a197ebd293f98cd73d899ac7da6",
   "status": "extracted",
   "device_count": 1,
   "net_count": 2,
@@ -50,9 +50,9 @@
         "b": "TOP"
       },
       "params": {
-        "c_f": 6.1907808e-13,
-        "area_um2": 302.76,
-        "perimeter_um": 69.6
+        "c_f": 5.7767136e-13,
+        "area_um2": 282.24,
+        "perimeter_um": 67.2
       },
       "instance_path": [
         {
@@ -73,7 +73,7 @@
         {
           "text": "BOT",
           "x_um": 0.0,
-          "y_um": 9.76
+          "y_um": 9.46
         }
       ]
     },
@@ -86,8 +86,8 @@
       "label_positions_um": [
         {
           "text": "TOP",
-          "x_um": 9.76,
-          "y_um": 20.25
+          "x_um": 9.46,
+          "y_um": 19.65
         }
       ]
     }
@@ -146,7 +146,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:626b602a15b3b0e26a7cca1342887fe701ca40cfc09c7eadefe2f380b4b6ce52",
+      "content_hash": "sha256:6f793d5572478ad667332760366c1348e9d9a3fa3056f9e8ef40010886fe865e",
       "role": "layout"
     }
   },

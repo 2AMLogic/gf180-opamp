@@ -5,7 +5,7 @@
   "top": "pilot_rpoly_rz",
   "dbu_um": 0.0005,
   "netlist_path": "extracted/pilot_rpoly_rz.klt.spice",
-  "netlist_sha256": "b5b373d7f61b65cf6afafc253ee5dcad83996c65309f1806268c763029fbdc09",
+  "netlist_sha256": "175a5c576d9da707b1ed22d1be257e01a8b32f5af462f3f582cf670afe838160",
   "status": "extracted",
   "device_count": 1,
   "net_count": 3,
@@ -51,11 +51,11 @@
         "w": "vsubs"
       },
       "params": {
-        "r_ohm": 2000.0,
-        "l_um": 4.0,
+        "r_ohm": 11000.0,
+        "l_um": 22.0,
         "w_um": 2.0,
-        "area_um2": 8.0,
-        "perimeter_um": 12.0
+        "area_um2": 44.0,
+        "perimeter_um": 48.0
       },
       "instance_path": [
         {
@@ -89,7 +89,7 @@
       "label_positions_um": [
         {
           "text": "B",
-          "x_um": 4.63,
+          "x_um": 22.63,
           "y_um": 1.0
         }
       ]
@@ -157,7 +157,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:c5b544592788fd3ec7b2bcc6172e3f99dbbdda809e0d7c37f5bd9ace951f843e",
+      "content_hash": "sha256:d781748b34eaa3e83588b88141aa5706a307eba419f3a7d5656db88af02f49e4",
       "role": "layout"
     }
   },
