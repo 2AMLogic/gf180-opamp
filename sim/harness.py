@@ -46,8 +46,15 @@ another backend) is fixed in one place.
 Work-dir staging (issue #94): `stage_workdir` / `DUT_INCLUDE_NAME` -- the
 guard / copy `design.ngspice` / write DUT / rewrite-includes skeleton that
 every runner's `materialise()` previously repeated (and on which the copies
-had begun to drift). The guards themselves and the bench-specific `.param`
-/ `Ibias` substitution stay per-experiment.
+had begun to drift).
+
+Generic source guards (issue #105, narrowing the #94 boundary by operator
+ruling): `logical_lines` (the one `+`-join / comment-drop line splitter),
+`guard_testbench_core` (DUT + `design.ngspice` includes, no hand-declared
+MOSFET / PDK device, exactly one `Xdut`, circuit body) and `guard_dut_core`
+(the DUT is the committed export). The bench-specific checks -- Xdut port
+wiring, `sw_stat_mismatch` ordering, servo / load / bias lines, and the
+`.param` / `Ibias` substitution -- stay per-experiment.
 """
 
 from __future__ import annotations
@@ -108,6 +115,21 @@ def load_sibling(module_name: str, relpath: str):
 FINGERPRINT_VERSION = 1
 
 
+def logical_lines(text: str) -> list[str]:
+    """SPICE logical lines of `text`: `+` continuations joined to their parent
+    (leading whitespace ignored), every line stripped, blank lines and
+    full-line `*` comments dropped. The one place a bench is split into
+    lines; every source guard and `canonical_bench_lines` build on it."""
+    logical: list[str] = []
+    for raw in text.splitlines():
+        ln = raw.strip()
+        if ln.startswith("+") and logical:
+            logical[-1] += " " + ln[1:].strip()
+        else:
+            logical.append(ln)
+    return [ln for ln in logical if ln and not ln.startswith("*")]
+
+
 def canonical_bench_lines(text: str) -> list[str]:
     """Canonical form of a SPICE bench body for freshness comparison.
 
@@ -119,17 +141,8 @@ def canonical_bench_lines(text: str) -> list[str]:
     must not change the fingerprint). Component values are NOT numerically
     re-parsed: `2p` and `2e-12` fingerprint differently, deliberately.
     """
-    logical: list[str] = []
-    for raw in text.splitlines():
-        ln = raw.strip()
-        if ln.startswith("+") and logical:
-            logical[-1] += " " + ln[1:].strip()
-        else:
-            logical.append(ln)
     out: list[str] = []
-    for ln in logical:
-        if not ln or ln.startswith("*"):
-            continue
+    for ln in logical_lines(text):
         ln = ln.split(";", 1)[0]
         ln = ln.split(" $", 1)[0]
         ln = " ".join(ln.split()).lower()
@@ -389,6 +402,92 @@ def load_dut_text() -> str:
 #: Name every committed testbench `.include`s the DUT under; `stage_workdir`
 #: writes the DUT to this file and rewrites the include to its absolute path.
 DUT_INCLUDE_NAME = "opamp_two_stage.dut.spice"
+
+
+# --------------------------------------------------------------------------
+# Generic source guards (issue #105): the bench must stay tied to the
+# committed design. Experiment-specific checks (Xdut port wiring, the
+# `sw_stat_mismatch` ordering, `.param` / `Ibias` substitution) stay in each
+# experiment; only the checks every bench shares live here.
+# --------------------------------------------------------------------------
+
+DEVICE_MODEL_RE = re.compile(
+    r"\b(nfet|pfet|nmos|pmos|cap_mim|ppolyf|npolyf|nplus|pplus|diode|bjt)\w*", re.I
+)
+
+
+def guard_testbench_core(tb_text: str) -> list[str]:
+    """Reasons the testbench no longer tests the committed design (empty = ok).
+
+    The bench must (1) include the design-derived DUT file and the PDK design
+    file, (2) declare no transistor or PDK device of its own, (3) instantiate
+    `opamp_two_stage` as `Xdut` exactly once, and (4) be a circuit body (no
+    `.lib` / `.temp` / `.control` / `.end`).
+    """
+    errs: list[str] = []
+    code = logical_lines(tb_text)
+    targets = []
+    for ln in code:
+        m = re.match(r"\.include\s+['\"]?([^'\"\s]+)", ln, re.I)
+        if m:
+            targets.append(m.group(1))
+    if DUT_INCLUDE_NAME not in targets:
+        errs.append(f"testbench does not `.include '{DUT_INCLUDE_NAME}'` (the design-derived DUT)")
+    if "design.ngspice" not in targets:
+        errs.append("testbench does not `.include 'design.ngspice'` (PDK global parameters)")
+    for ln in code:
+        low = ln.split(None, 1)[0].lower()
+        if low.startswith("m"):
+            errs.append(f"hand-declared MOSFET in the testbench: {ln[:60]}")
+        elif low.startswith("x") and low != "xdut":
+            errs.append(f"unexpected subcircuit/device instance in the testbench: {ln[:60]}")
+        elif low == "xdut":
+            if "opamp_two_stage" not in ln.split():
+                errs.append("Xdut does not instantiate opamp_two_stage")
+        elif DEVICE_MODEL_RE.search(ln) and not ln.startswith("."):
+            errs.append(f"PDK device declared in the testbench: {ln[:60]}")
+    n_dut = sum(1 for ln in code if ln.split(None, 1)[0].lower() == "xdut")
+    if n_dut != 1:
+        errs.append(f"expected exactly one Xdut instance, found {n_dut}")
+    for ln in code:
+        if re.match(r"\.(lib|temp|control|end)\b", ln, re.I):
+            errs.append(f"testbench must be a circuit body; found `{ln.split()[0]}`")
+    return errs
+
+
+def guard_dut_core(dut_text: str, *, allow: tuple[str, ...] = ()) -> list[str]:
+    """The materialised DUT must be the committed export, wrapper-normalised.
+
+    Every non-wrapper line of the export must appear, unchanged and in order,
+    in the DUT (a negative control may alter or drop devices named in
+    `allow`); no device may appear twice; exactly one `.subckt
+    opamp_two_stage`.
+    """
+    errs: list[str] = []
+    export = [ln.rstrip() for ln in DUT_EXPORT.read_text().splitlines()]
+    body = [
+        ln for ln in export
+        if not re.match(r"^\*\*\.(subckt|ends)\b", ln.strip(), re.I)
+        and not re.match(r"^\.end\s*$", ln.strip(), re.I)
+    ]
+    got = [ln.rstrip() for ln in dut_text.splitlines()]
+    pos = 0
+    for ln in body:
+        first = ln.split(None, 1)[0].lower() if ln.strip() else ""
+        try:
+            pos = got.index(ln, pos) + 1
+        except ValueError:
+            if first in allow:
+                continue
+            errs.append(f"export line missing or altered in the DUT: {ln[:70]}")
+    names = [ln.split(None, 1)[0].lower() for ln in got if ln and ln[0] in "xX"]
+    dups = sorted({n for n in names if names.count(n) > 1})
+    if dups:
+        errs.append(f"duplicate DUT devices: {', '.join(dups)}")
+    n_sub = len(re.findall(r"^\.subckt\s+opamp_two_stage\b", dut_text, re.I | re.M))
+    if n_sub != 1:
+        errs.append(f"expected exactly one `.subckt opamp_two_stage`, found {n_sub}")
+    return errs
 
 
 def stage_workdir(

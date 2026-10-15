@@ -86,5 +86,67 @@ class StageWorkdirTests(unittest.TestCase):
         self.assertFalse((self.work / harness.DUT_INCLUDE_NAME).exists())
 
 
+GOOD_TB = (
+    "* bench\n"
+    ".include 'design.ngspice'\n"
+    ".include 'opamp_two_stage.dut.spice'\n"
+    "Xdut vdd 0 vinp vout vout ibias opamp_two_stage\n"
+    "CL vout 0 2p\n"
+)
+# The same bench with every line that matters wrapped across `+` continuations.
+WRAPPED_TB = (
+    "* bench\n"
+    ".include\n+ 'design.ngspice'\n"
+    ".include 'opamp_two_stage.dut.spice'\n"
+    "Xdut vdd 0 vinp\n+ vout vout ibias\n  + opamp_two_stage\n"
+    "CL vout 0\n+ 2p\n"
+)
+
+
+class LogicalLinesTests(unittest.TestCase):
+    def test_joins_continuations_and_drops_comments_and_blanks(self):
+        text = "* c\n\nR1 a b\n+ 1k\n  + tc=1\n  C1 a 0 1p  \n"
+        self.assertEqual(harness.logical_lines(text), ["R1 a b 1k tc=1", "C1 a 0 1p"])
+
+    def test_canonical_bench_lines_is_unchanged_by_the_shared_splitter(self):
+        text = (
+            "* c\n.INCLUDE \"/x/design.ngspice\"\nR1 a b\n+ 1K $ tail\n\nC1 a 0 1p ; note\n"
+        )
+        self.assertEqual(
+            harness.canonical_bench_lines(text),
+            [".include 'design.ngspice'", "r1 a b 1k", "c1 a 0 1p"],
+        )
+
+    def test_continuation_after_a_dropped_comment_has_no_parent(self):
+        # a `+` line opens a new logical line only when nothing precedes it
+        self.assertEqual(harness.logical_lines("+ R1 a b 1k\n"), ["+ R1 a b 1k"])
+
+
+class GuardCoreContinuationTests(unittest.TestCase):
+    """A guard must see a wrapped bench exactly as it sees the unwrapped one."""
+
+    def test_core_guard_is_equivalent_on_wrapped_bench(self):
+        self.assertEqual(harness.guard_testbench_core(GOOD_TB), [])
+        self.assertEqual(harness.guard_testbench_core(WRAPPED_TB), [])
+
+    def test_core_guard_flags_a_wrapped_hand_declared_device(self):
+        for tb in (GOOD_TB, WRAPPED_TB):
+            bad = tb + "M1 a b\n+ c d nfet_03v3 W=1u L=1u\n"
+            self.assertTrue(harness.guard_testbench_core(bad), tb)
+
+    def test_core_guard_detects_missing_dut_and_second_xdut(self):
+        self.assertTrue(harness.guard_testbench_core(GOOD_TB.replace("opamp_two_stage.dut.spice", "x.spice")))
+        self.assertTrue(harness.guard_testbench_core(GOOD_TB + "Xdut vdd 0 vinp vout vout ibias opamp_two_stage\n"))
+        self.assertTrue(harness.guard_testbench_core(GOOD_TB + ".temp 27\n"))
+
+    def test_cmrr_code_lines_joins_continuations(self):
+        try:
+            cmrr = harness.load_sibling("cmrr_for_harness_test", "sim/cmrr/run_cmrr.py")
+        except ModuleNotFoundError as exc:  # the cmrr driver imports numpy; this file is stdlib-only
+            self.skipTest(str(exc))
+        self.assertEqual(cmrr.code_lines(WRAPPED_TB)[-2:], cmrr.code_lines(GOOD_TB)[-2:])
+        self.assertIn("CL vout 0 2p", cmrr.code_lines(WRAPPED_TB))
+
+
 if __name__ == "__main__":
     unittest.main()

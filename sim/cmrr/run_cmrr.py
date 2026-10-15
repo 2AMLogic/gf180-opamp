@@ -95,6 +95,7 @@ from harness import (  # noqa: E402
     find_pdk,
     klt_version,
     load_dut_text,
+    logical_lines,
     ngspice_version,
     remote_of,
     run_klt,
@@ -188,8 +189,7 @@ _SERVO_LINES = (
 )
 
 
-def code_lines(text: str) -> list[str]:
-    return [ln.strip() for ln in text.splitlines() if ln.strip() and not ln.strip().startswith("*")]
+code_lines = logical_lines
 
 
 def _require(code: list[str], pattern: str, what: str, errs: list[str]) -> None:
