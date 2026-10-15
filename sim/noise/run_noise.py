@@ -106,6 +106,7 @@ from harness import (  # noqa: E402
     find_pdk,
     klt_version,
     load_dut_text,
+    logical_lines,
     ngspice_version,
     remote_of,
     run_klt,
@@ -168,7 +169,7 @@ _PARAM_RE = re.compile(r"^\.param\s+lfb=\S+\s+cfb=\S+\s*$", re.M)
 
 def guard_testbench(text: str) -> list[str]:
     errs = G.guard_testbench(text)
-    code = [ln.strip() for ln in text.splitlines() if ln.strip() and not ln.strip().startswith("*")]
+    code = logical_lines(text)
     if not any(re.match(r"^Vcm\s+vinp\s+0\s+dc\s+\S+\s+ac\s+1\s*$", ln, re.I) for ln in code):
         errs.append("testbench must drive the differential input with `Vcm vinp 0 dc ... ac 1`")
     if not any(re.match(r"^Lfb\s+vout\s+vinn\s+\{lfb\}\s*$", ln, re.I) for ln in code):

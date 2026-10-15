@@ -87,16 +87,19 @@ sys.path.insert(0, str(REPO_ROOT / "sim"))
 sys.path.insert(0, str(REPO_ROOT / "design"))
 
 from harness import (  # noqa: E402
-    DUT_EXPORT,
-    DUT_INCLUDE_NAME,
+    DUT_EXPORT,  # noqa: F401  (re-exported: tests read these)
+    DUT_INCLUDE_NAME,  # noqa: F401
     KltError,
     Pdk,
     allocate_record_id,
     batch_block,
     claim_record_paths,
     find_pdk,
+    guard_dut_core,
+    guard_testbench_core,
     klt_version,
     load_dut_text,
+    logical_lines,
     ngspice_version,
     remote_of,
     run_klt,
@@ -201,69 +204,34 @@ def imbalance_dut(dut_text: str) -> str:
 # Source guards: the bench must stay tied to the committed design
 # --------------------------------------------------------------------------
 
-_DEVICE_MODEL_RE = re.compile(
-    r"\b(nfet|pfet|nmos|pmos|cap_mim|ppolyf|npolyf|nplus|pplus|diode|bjt)\w*", re.I
-)
 _SWITCH_RE = re.compile(r"^\.param\s+sw_stat_mismatch\s*=\s*([01])[ \t]*$", re.M)
-
-
-def _logical_lines(text: str) -> list[str]:
-    logical: list[str] = []
-    for raw in text.splitlines():
-        if raw.startswith("+") and logical:
-            logical[-1] += " " + raw[1:].strip()
-        else:
-            logical.append(raw.strip())
-    return [ln for ln in logical if ln and not ln.startswith("*")]
 
 
 def guard_testbench(tb_text: str) -> list[str]:
     """Reasons the testbench no longer tests the committed design (empty = ok).
 
-    It must (1) include the design-derived DUT and the PDK design file,
-    (2) declare no transistor/PDK device, (3) instantiate `opamp_two_stage`
-    exactly once as a unity follower (vinn and vout on the same net),
-    (4) carry exactly one `.param sw_stat_mismatch` line, AFTER the
-    design.ngspice include (otherwise the PDK default 0 would win), and
-    (5) be a circuit body.
+    The generic guards (`harness.guard_testbench_core`), plus: `Xdut` is a
+    unity follower (vinn and vout on the same net) with the six opamp ports
+    wired as committed, and exactly one `.param sw_stat_mismatch` line sits
+    AFTER the design.ngspice include (otherwise the PDK default 0 would win).
     """
-    errs: list[str] = []
-    code = _logical_lines(tb_text)
-    targets = []
+    errs = guard_testbench_core(tb_text)
+    code = logical_lines(tb_text)
     for ln in code:
-        m = re.match(r"\.include\s+['\"]?([^'\"\s]+)", ln, re.I)
-        if m:
-            targets.append(m.group(1))
-    if DUT_INCLUDE_NAME not in targets:
-        errs.append(f"testbench does not `.include '{DUT_INCLUDE_NAME}'` (the design-derived DUT)")
-    if "design.ngspice" not in targets:
-        errs.append("testbench does not `.include 'design.ngspice'` (PDK global parameters)")
-    for ln in code:
-        low = ln.split(None, 1)[0].lower()
-        if low.startswith("m"):
-            errs.append(f"hand-declared MOSFET in the testbench: {ln[:60]}")
-        elif low.startswith("x") and low != "xdut":
-            errs.append(f"unexpected subcircuit/device instance in the testbench: {ln[:60]}")
-        elif low == "xdut":
-            toks = ln.split()
-            if toks[-1] != "opamp_two_stage":
-                errs.append("Xdut does not instantiate opamp_two_stage")
-            elif len(toks) != 8:
-                errs.append(f"Xdut must have exactly the six opamp ports: {ln[:70]}")
-            else:
-                # Xdut vdd vss vinp vinn vout ibias opamp_two_stage
-                _, vdd, vss, vinp, vinn, vout, ibias, _sub = toks
-                if vinn != vout:
-                    errs.append("Xdut is not a unity follower (vinn is not tied to vout)")
-                if vinp != "vinp" or vss != "0" or vdd != "vdd" or ibias != "ibias":
-                    errs.append(f"Xdut port wiring changed: {ln[:70]}")
-        elif _DEVICE_MODEL_RE.search(ln) and not ln.startswith("."):
-            errs.append(f"PDK device declared in the testbench: {ln[:60]}")
-    if sum(1 for ln in code if ln.split(None, 1)[0].lower() == "xdut") != 1:
-        errs.append("expected exactly one Xdut instance")
-    for ln in code:
-        if re.match(r"\.(lib|temp|control|end)\b", ln, re.I):
-            errs.append(f"testbench must be a circuit body; found `{ln.split()[0]}`")
+        if ln.split(None, 1)[0].lower() != "xdut":
+            continue
+        toks = ln.split()
+        if toks[-1] != "opamp_two_stage":
+            errs.append("Xdut must end with the opamp_two_stage subcircuit name")
+        elif len(toks) != 8:
+            errs.append(f"Xdut must have exactly the six opamp ports: {ln[:70]}")
+        else:
+            # Xdut vdd vss vinp vinn vout ibias opamp_two_stage
+            _, vdd, vss, vinp, vinn, vout, ibias, _sub = toks
+            if vinn != vout:
+                errs.append("Xdut is not a unity follower (vinn is not tied to vout)")
+            if vinp != "vinp" or vss != "0" or vdd != "vdd" or ibias != "ibias":
+                errs.append(f"Xdut port wiring changed: {ln[:70]}")
     sw = [i for i, ln in enumerate(code) if re.match(r"\.param\s+sw_stat_mismatch\b", ln, re.I)]
     inc = [i for i, ln in enumerate(code) if re.match(r"\.include\s+['\"]?design\.ngspice", ln, re.I)]
     if len(sw) != 1:
@@ -276,36 +244,11 @@ def guard_testbench(tb_text: str) -> list[str]:
 
 
 def guard_dut(dut_text: str, *, allow_changed: tuple[str, ...] = ()) -> list[str]:
-    """The materialised DUT must be the committed export, wrapper-normalised.
-
-    Every non-wrapper line of the export must appear unchanged and in order,
-    except lines of devices named in `allow_changed` (a negative control that
-    deliberately perturbs a snapshot copy).
-    """
-    errs: list[str] = []
-    export = [ln.rstrip() for ln in DUT_EXPORT.read_text().splitlines()]
-    body = [
-        ln for ln in export
-        if not re.match(r"^\*\*\.(subckt|ends)\b", ln.strip(), re.I)
-        and not re.match(r"^\.end\s*$", ln.strip(), re.I)
-    ]
-    got = [ln.rstrip() for ln in dut_text.splitlines()]
-    pos = 0
-    for ln in body:
-        first = ln.split(None, 1)[0].lower() if ln.strip() else ""
-        try:
-            pos = got.index(ln, pos) + 1
-        except ValueError:
-            if first in allow_changed:
-                continue
-            errs.append(f"export line missing or altered in the DUT: {ln[:70]}")
-    names = [ln.split(None, 1)[0].lower() for ln in got if ln and ln[0] in "xX"]
-    dups = sorted({n for n in names if names.count(n) > 1})
-    if dups:
-        errs.append(f"duplicate DUT devices: {', '.join(dups)}")
-    if len(re.findall(r"^\.subckt\s+opamp_two_stage\b", dut_text, re.I | re.M)) != 1:
-        errs.append("expected exactly one `.subckt opamp_two_stage`")
-    return errs
+    """The materialised DUT must be the committed export, wrapper-normalised
+    (`harness.guard_dut_core`), except lines of devices named in
+    `allow_changed` (a negative control that deliberately perturbs a snapshot
+    copy)."""
+    return guard_dut_core(dut_text, allow=allow_changed)
 
 
 def materialise(

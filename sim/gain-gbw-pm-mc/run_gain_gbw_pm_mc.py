@@ -81,6 +81,7 @@ from harness import (  # noqa: E402
     find_pdk,
     klt_version,
     load_dut_text,
+    logical_lines,
     load_sibling,
     ngspice_version,
     remote_of,
@@ -181,13 +182,7 @@ inject_mismatch = mc.inject_mismatch
 
 
 def _code(text: str) -> list[str]:
-    logical: list[str] = []
-    for raw in text.splitlines():
-        if raw.startswith("+") and logical:
-            logical[-1] += " " + raw[1:].strip()
-        else:
-            logical.append(raw.strip())
-    return [" ".join(ln.split()) for ln in logical if ln and not ln.startswith("*")]
+    return [" ".join(ln.split()) for ln in logical_lines(text)]
 
 
 def guard_mc_testbench(text: str, gain_tb_text: str | None = None) -> list[str]:
