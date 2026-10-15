@@ -1,6 +1,6 @@
 {
   "loom_version": "0.19.1160",
-  "loom_commit": "f182448e77500bff663a159c58cf4e1b0d8c60ca",
+  "loom_commit": "53098e4bbeac05d403453c6f42e10e6aa74d2ff2",
   "install_date": "2026-09-05",
   "loom_source_remote": "https://github.com/rjwalters/loom.git",
   "installed_files": [
@@ -598,6 +598,6 @@
     ".loom/scripts/tests/test-loom-daemon-start-work-finder.sh",
     ".loom/scripts/tests/test-loom-daemon-update-relaunch-config.sh"
   ],
-  "last_resync": "2026-10-14",
+  "last_resync": "2026-10-15",
   "requires_daemon": "0.19.1081"
 }
