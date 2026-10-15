@@ -4,6 +4,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-15
 
+- **PR #207**: refactor(sim): share generic bench guards and logical_lines in harness
+- **Issue #105** (closed): Consolidate duplicated guard_dut and guard_testbench core into sim/harness.py
 - **PR #79**: feat(#77): GF180 layout device pilot (isolated cells, regen recipe, DRC/LVS evidence)
 - **Issue #77** (closed): Prepare a reproducible GF180 layout device pilot before full op-amp placement
 
