@@ -2,6 +2,11 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-14
+
+- **PR #203**: Record enable-acquisition evidence at all 45 PVT points (#191)
+- **Issue #191** (closed): sim: characterize supply and external-bias enable acquisition across PVT
+
 ### 2026-10-13
 
 - **PR #200**: report: integrate ungraded follower step-response evidence
