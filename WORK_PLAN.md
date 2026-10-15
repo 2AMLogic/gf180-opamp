@@ -37,13 +37,13 @@ _None._
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#79**: feat(#77): GF180 layout device pilot (isolated cells, regen recipe, DRC/LVS evidence)
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#79**: feat(#77): GF180 layout device pilot (isolated cells, regen recipe, DRC/LVS evidence)
+_None._
 
 ## Proposed
 
@@ -73,8 +73,8 @@ _None._
 | Important | 1 |
 | Ready (`loom:issue`) | 0 |
 | In Progress (`loom:building`) | 0 |
-| PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
+| PRs awaiting review | 1 |
+| Approved PRs awaiting merge | 0 |
 | Curated | 5 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
