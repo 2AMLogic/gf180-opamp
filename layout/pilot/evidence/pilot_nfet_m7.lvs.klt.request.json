@@ -1,0 +1,26 @@
+{
+  "schema": "klt.lvs.request/1",
+  "engine": "klayout",
+  "layout": {
+    "file": "../gds/pilot_nfet_m7.gds",
+    "deck": "gf180mcu",
+    "top": "pilot_nfet_m7",
+    "deck_options": {
+      "poly_res": "1k"
+    }
+  },
+  "reference": {
+    "netlist": "../ref/pilot_nfet_m7.klt.spice",
+    "top": "pilot_nfet_m7",
+    "form": "subckt-call"
+  },
+  "options": {
+    "combine_devices": true,
+    "compare_parameters": {
+      "nfet": [
+        "W",
+        "L"
+      ]
+    }
+  }
+}

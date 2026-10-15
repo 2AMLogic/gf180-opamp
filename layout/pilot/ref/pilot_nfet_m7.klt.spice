@@ -1,0 +1,4 @@
+* schematic-derived reference for pilot_nfet_m7 (dimensions from XM7; ad/as/pd/ps omitted)
+.subckt pilot_nfet_m7 D G S B
+XM1 D G S B nfet_03v3 L=2u W=36u nf=12 m=1
+.ends

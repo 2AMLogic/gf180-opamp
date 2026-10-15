@@ -1,0 +1,5 @@
+* Extracted by KLayout with GF180MCU LVS runset on : 15/10/2026 12:10
+
+.SUBCKT pilot_rpoly_rz A B gf180mcu_gnd
+R$1 A B gf180mcu_gnd 11000 ppolyf_u_1k L=22U W=2U
+.ENDS pilot_rpoly_rz

@@ -1,0 +1,57 @@
+* extracted by klt extract --deck gf180mcu
+
+* cell pilot_pfet_m6
+* pin B
+* pin D
+* pin G
+* pin S
+.SUBCKT pilot_pfet_m6 B D G S
+* device instance $1 r0 *1 1,2.32 pfet
+X$1 D G S B pfet_03v3 L=1U W=3U AS=1.5P AD=0.87P PS=7U PD=3.58U
+* device instance $2 r0 *1 2.58,2.32 pfet
+X$2 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $3 r0 *1 4.16,2.32 pfet
+X$3 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $4 r0 *1 5.74,2.32 pfet
+X$4 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $5 r0 *1 7.32,2.32 pfet
+X$5 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $6 r0 *1 8.9,2.32 pfet
+X$6 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $7 r0 *1 10.48,2.32 pfet
+X$7 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $8 r0 *1 12.06,2.32 pfet
+X$8 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $9 r0 *1 13.64,2.32 pfet
+X$9 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $10 r0 *1 15.22,2.32 pfet
+X$10 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $11 r0 *1 16.8,2.32 pfet
+X$11 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $12 r0 *1 18.38,2.32 pfet
+X$12 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $13 r0 *1 19.96,2.32 pfet
+X$13 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $14 r0 *1 21.54,2.32 pfet
+X$14 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $15 r0 *1 23.12,2.32 pfet
+X$15 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $16 r0 *1 24.7,2.32 pfet
+X$16 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $17 r0 *1 26.28,2.32 pfet
+X$17 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $18 r0 *1 27.86,2.32 pfet
+X$18 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $19 r0 *1 29.44,2.32 pfet
+X$19 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $20 r0 *1 31.02,2.32 pfet
+X$20 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $21 r0 *1 32.6,2.32 pfet
+X$21 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $22 r0 *1 34.18,2.32 pfet
+X$22 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $23 r0 *1 35.76,2.32 pfet
+X$23 D G S B pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $24 r0 *1 37.34,2.32 pfet
+X$24 S G D B pfet_03v3 L=1U W=3U AS=0.87P AD=1.5P PS=3.58U PD=7U
+.ENDS pilot_pfet_m6

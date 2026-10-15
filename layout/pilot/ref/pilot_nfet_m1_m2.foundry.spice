@@ -1,0 +1,4 @@
+* schematic-derived reference, foundry-runset form, for pilot_nfet_m1_m2
+.subckt pilot_nfet_m1_m2 D G S B
+M1 D G S B nfet_03v3 L=1u W=3.6u
+.ends

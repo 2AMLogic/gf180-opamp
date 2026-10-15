@@ -1,0 +1,13 @@
+* extracted by klt extract --deck gf180mcu
+
+* cell pilot_nfet_m1_m2
+* pin B
+* pin D
+* pin G
+* pin S
+.SUBCKT pilot_nfet_m1_m2 B D G S
+* device instance $1 r0 *1 1,1.72 nfet
+X$1 D G S B nfet_03v3 L=1U W=1.8U AS=0.9P AD=0.522P PS=4.6U PD=2.38U
+* device instance $2 r0 *1 2.58,1.72 nfet
+X$2 S G D B nfet_03v3 L=1U W=1.8U AS=0.522P AD=0.9P PS=2.38U PD=4.6U
+.ENDS pilot_nfet_m1_m2
