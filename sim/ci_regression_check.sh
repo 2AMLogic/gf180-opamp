@@ -57,7 +57,7 @@ control() {
 }
 
 control gain-gbw-pm test_gain_gbw_pm.py
-expect_fail gain-gbw-pm test_gain_gbw_pm.py gain-gbw-pm/run_gain_gbw_pm.py \
+expect_fail gain-gbw-pm test_gain_gbw_pm.py harness.py \
   "guard: DUT include no longer required" \
   'if DUT_INCLUDE_NAME not in targets:' 'if False:'
 expect_fail gain-gbw-pm test_gain_gbw_pm.py gain-gbw-pm/run_gain_gbw_pm.py \
@@ -73,7 +73,7 @@ expect_fail noise test_noise.py noise/run_noise.py \
   'band_uv={name: math.sqrt(integrate_power(f, di, lo, hi)) * 1e6' 'band_uv={name: 2 * math.sqrt(integrate_power(f, di, lo, hi)) * 1e6'
 
 control offset-mc test_offset_mc.py
-expect_fail offset-mc test_offset_mc.py offset-mc/run_offset_mc.py \
+expect_fail offset-mc test_offset_mc.py harness.py \
   "guard: DUT include no longer required" \
   'if DUT_INCLUDE_NAME not in targets:' 'if False:'
 expect_fail offset-mc test_offset_mc.py offset-mc/run_offset_mc.py \
@@ -154,8 +154,8 @@ expect_fail psrr-mc test_psrr_mc.py psrr-mc/run_psrr_mc.py \
 
 control slew-swing-power test_slew_swing_power.py
 # slew-swing-power reuses the gain driver's testbench guard (`g.guard_testbench`),
-# so the guard mutation lands in gain-gbw-pm/run_gain_gbw_pm.py.
-expect_fail slew-swing-power test_slew_swing_power.py gain-gbw-pm/run_gain_gbw_pm.py \
+# so the guard mutation lands in the shared harness.py (`guard_testbench_core`).
+expect_fail slew-swing-power test_slew_swing_power.py harness.py \
   "guard: shared gain-driver DUT-include check removed" \
   'if DUT_INCLUDE_NAME not in targets:' 'if False:'
 expect_fail slew-swing-power test_slew_swing_power.py slew-swing-power/run_slew_swing_power.py \
@@ -177,12 +177,12 @@ expect_fail input-common-mode test_input_common_mode.py input-common-mode/run_in
   'if worst > OP_AGREE_V:' 'if False:'
 
 # step-response (issue #113) reuses the gain driver's testbench and DUT guards,
-# so the guard mutations land in gain-gbw-pm/run_gain_gbw_pm.py.
+# so the guard mutations land in the shared harness.py (`guard_testbench_core`, `guard_dut_core`).
 control step-response test_step_response.py
-expect_fail step-response test_step_response.py gain-gbw-pm/run_gain_gbw_pm.py \
+expect_fail step-response test_step_response.py harness.py \
   "guard: shared gain-driver DUT-include check removed" \
   'if DUT_INCLUDE_NAME not in targets:' 'if False:'
-expect_fail step-response test_step_response.py gain-gbw-pm/run_gain_gbw_pm.py \
+expect_fail step-response test_step_response.py harness.py \
   "guard: stale/altered DUT line no longer rejected" \
   'errs.append(f"export line missing or altered in the DUT: {ln[:70]}")' 'pass'
 expect_fail step-response test_step_response.py step-response/run_step_response.py \
@@ -190,13 +190,13 @@ expect_fail step-response test_step_response.py step-response/run_step_response.
   'overshoot = max(0.0, float(yw.max()) - 1.0)' 'overshoot = max(0.0, float(yw.max()) - 0.99)'
 
 # overdrive-recovery (issue #183) reuses the gain driver's testbench and DUT
-# guards, so the guard mutations land in gain-gbw-pm/run_gain_gbw_pm.py, and
+# guards, so the guard mutations land in the shared harness.py, and
 # the step driver's window/settling helpers.
 control overdrive-recovery test_overdrive_recovery.py
-expect_fail overdrive-recovery test_overdrive_recovery.py gain-gbw-pm/run_gain_gbw_pm.py \
+expect_fail overdrive-recovery test_overdrive_recovery.py harness.py \
   "guard: shared gain-driver DUT-include check removed" \
   'if DUT_INCLUDE_NAME not in targets:' 'if False:'
-expect_fail overdrive-recovery test_overdrive_recovery.py gain-gbw-pm/run_gain_gbw_pm.py \
+expect_fail overdrive-recovery test_overdrive_recovery.py harness.py \
   "guard: stale/altered DUT line no longer rejected" \
   'errs.append(f"export line missing or altered in the DUT: {ln[:70]}")' 'pass'
 expect_fail overdrive-recovery test_overdrive_recovery.py overdrive-recovery/run_overdrive_recovery.py \
@@ -204,14 +204,14 @@ expect_fail overdrive-recovery test_overdrive_recovery.py overdrive-recovery/run
   'band_v = BAND_FRAC * abs(v_ref)' 'band_v = 0.5 * BAND_FRAC * abs(v_ref)'
 
 # enable-acquisition (issue #191) reuses the gain driver's testbench and DUT guards
-# (mutation lands in gain-gbw-pm/run_gain_gbw_pm.py) and has its own extraction rules:
+# (mutation lands in harness.py) and has its own extraction rules:
 # the initial-state (unpowered start) limit, the censoring of an unresolved window,
 # the single-crossing dwell rule and the diagnostic band.
 control enable-acquisition test_enable_acquisition.py
-expect_fail enable-acquisition test_enable_acquisition.py gain-gbw-pm/run_gain_gbw_pm.py \
+expect_fail enable-acquisition test_enable_acquisition.py harness.py \
   "guard: shared gain-driver DUT-include check removed" \
   'if DUT_INCLUDE_NAME not in targets:' 'if False:'
-expect_fail enable-acquisition test_enable_acquisition.py gain-gbw-pm/run_gain_gbw_pm.py \
+expect_fail enable-acquisition test_enable_acquisition.py harness.py \
   "guard: stale/altered DUT line no longer rejected" \
   'errs.append(f"export line missing or altered in the DUT: {ln[:70]}")' 'pass'
 expect_fail enable-acquisition test_enable_acquisition.py enable-acquisition/run_enable_acquisition.py \
