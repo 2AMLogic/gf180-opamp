@@ -5,7 +5,7 @@ Current Loom label state. Tracking and blocked items do not constitute ready wor
 <!-- guide:plan-body:start -->
 ## Operator Attention: Merge-Risk-Hold Pileup
 
-Judge-approved PRs stuck under a `loom:operator` merge-risk hold — implementation work is done, only a human merge decision is missing.
+Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
 _None._
 
@@ -31,7 +31,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#191**: sim: characterize supply and external-bias enable acquisition across PVT
+_None._
 
 ## PRs Awaiting Review
 
@@ -54,7 +54,6 @@ Issues carrying `loom:curated`.
 - **#98**: sim: CMRR mismatch Monte Carlo over the T/VDD grid (45 points x N=300) *(curated)*
 - **#140**: cmrr-mc: full grid as a single batch request exceeds the 3600 s fleet job limit *(curated)*
 - **#190**: sim: extend PSRR mismatch characterization to the full temperature and supply grid *(curated)*
-- **#191**: sim: characterize supply and external-bias enable acquisition across PVT *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -73,10 +72,10 @@ _None._
 | Very important | 0 |
 | Important | 1 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 6 |
+| Curated | 5 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
