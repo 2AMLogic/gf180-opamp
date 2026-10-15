@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.1162",
-  "loom_commit": "f1ee755eeca1954f35bf83d19f4b84ad51feb9f5",
+  "loom_version": "0.19.1163",
+  "loom_commit": "695290c117c5d456d46b434f9e2817200184f217",
   "install_date": "2026-09-05",
   "loom_source_remote": "https://github.com/rjwalters/loom.git",
   "installed_files": [
@@ -611,7 +611,18 @@
     ".loom/docs/dispatch-plan.md",
     ".loom/docs/promotion-throughput.md",
     ".loom/scripts/post-verdict.sh",
-    ".loom/scripts/tests/test-champion-terminal-verdicts.sh"
+    ".loom/scripts/tests/test-champion-terminal-verdicts.sh",
+    ".loom/scripts/tests/test-champion-post-claim-recheck.sh",
+    ".loom/scripts/tests/test-spawn-codex-model-effort.sh",
+    ".agents/skills/loom-hermit/SKILL.md",
+    ".loom/docs/merge-tree-checks.md",
+    ".loom/docs/role-prompt-authoring.md",
+    ".loom/docs/verification-recipes.md",
+    ".loom/scripts/lib/run-job-exec.sh",
+    ".loom/scripts/tests/test-judge-tdd-merge-base.sh",
+    ".loom/scripts/tests/test-merge-pr-stale-required-checks.sh",
+    ".loom/scripts/tests/test-run-job.sh",
+    ".loom/scripts/tests/test-worktree-refused-claim-no-lease.sh"
   ],
   "last_resync": "2026-10-15",
   "requires_daemon": "0.19.1081"
