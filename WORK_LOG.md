@@ -2,6 +2,11 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-15
+
+- **PR #79**: feat(#77): GF180 layout device pilot (isolated cells, regen recipe, DRC/LVS evidence)
+- **Issue #77** (closed): Prepare a reproducible GF180 layout device pilot before full op-amp placement
+
 ### 2026-10-14
 
 - **PR #203**: Record enable-acquisition evidence at all 45 PVT points (#191)
