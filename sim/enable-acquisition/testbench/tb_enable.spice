@@ -1,0 +1,77 @@
+* tb_enable.spice -- supply and external-bias enable acquisition of the unity-gain
+* follower (issue #191; evidence only, no spec row, no startup bound).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_enable_acquisition.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+*
+* CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`, `.control` or `.end`;
+* klt adds the corner's `.lib` cards, `.temp`, the supply alters and the
+* analysis. The swept quantities stay plain DC sources (Vdd, Vcm: the klt
+* runner alters them by name, VCM = VDD/2 by index, as in every experiment in
+* sim/); they are the FINAL (powered) levels. The ENABLE SEQUENCE is applied
+* by two dimensionless 0..1 envelope sources (Vrs, Vrb) that gate the final
+* levels through behavioural sources:
+*
+*   v(vdd)  = v(vddset) * v(rs)     the DUT rail, ramped from 0 V
+*   v(vinp) = v(vcmset) * v(rs)     the input tracks the ramped rail at VDD/2
+*                                   (no unexplained powered-off input drive)
+*   I(ibias) = 10 uA * v(rb)        the external bias current, ramped from 0 A,
+*                                   sourced from the DUT rail (as Ibias is in
+*                                   every other bench)
+*
+* INITIAL STATE: every source is at 0 at t = 0 (both envelopes start at 0), so
+* the transient starts with the rail at 0 V, the bias at 0 A, the input at
+* 0 V and the output at 0 V -- NOT at the final powered operating point. The
+* analysis is a plain `.tran` WITHOUT `uic`: ngspice solves the t = 0 point
+* with all sources at zero (the trivial unpowered state), then integrates the
+* ramps. The driver verifies this from the retained traces and rejects a
+* point whose first samples are not unpowered/unbiased.
+*
+* Unity-gain follower (vinn = vout), CL = 2 pF [DR-1] on vout, no other load
+* (the loading of tb_step.spice / tb_overdrive.spice).
+*
+* The enable schedule is set by the .param lines below. Their committed values
+* are the simultaneous-enable fast-ramp scenario; the driver substitutes the
+* scenario/ramp values (sim/enable-acquisition/measurement_config.py,
+* SCENARIOS and RAMPS) by an exactly-one-match rewrite and the values used
+* are recorded in every record. The ramp durations are DIAGNOSTIC experiment
+* conditions, NOT a consumer guarantee and NOT a supply/bias slew
+* requirement. Times beyond the run stop (1 s) mean "never happens".
+*
+*   t_vdd   rail ramp start        tr_s  rail ramp duration
+*   t_ib    bias enable start      tr_b  bias ramp duration (enable and re-enable)
+*   t_off   bias disable start     t_on2 bias re-enable start
+*
+* The pwl corner times must increase monotonically (t_ib + tr_b < t_off,
+* t_off + tr_b < t_on2); the driver asserts that for every schedule.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param t_vdd=1u
+.param tr_s=100n
+.param t_ib=1u
+.param tr_b=100n
+.param t_off=1
+.param t_on2=2
+
+Vdd vddset 0 dc 3.3
+Vcm vcmset 0 dc 1.65
+Vrs rs 0 pwl(0 0 {t_vdd} 0 {t_vdd+tr_s} 1)
+Vrb rb 0 pwl(0 0 {t_ib} 0 {t_ib+tr_b} 1 {t_off} 1 {t_off+tr_b} 0 {t_on2} 0 {t_on2+tr_b} 1)
+Bvdd vdd 0 V = v(vddset)*v(rs)
+Bvin vinp 0 V = v(vcmset)*v(rs)
+Bibias vdd ibias I = 10u*v(rb)
+Xdut vdd 0 vinp vout vout ibias opamp_two_stage
+CL vout 0 2p
+
+* Retained traces: supply, bias envelope and bias-mirror node, input, output
+* and the internal nodes of both stages (first-stage mirror, second-stage
+* gate, Miller node, tail). Only these are saved (fleet rawfile size; see
+* sim/slew-swing-power/README.md, "Batch-fleet timing").
+.save v(vdd) v(rs) v(rb) v(ibias) v(vinp) v(vout) v(xdut.n1) v(xdut.n2) v(xdut.nz) v(xdut.tail)

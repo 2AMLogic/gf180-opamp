@@ -1,0 +1,184 @@
+{
+ "schema_version": 3,
+ "netlist": {
+  "path": null,
+  "scope": "external"
+ },
+ "status": "pass",
+ "corner_count": 1,
+ "passed": 1,
+ "failed": 0,
+ "errored": 0,
+ "inconclusive": 0,
+ "diagnostic_counts": {
+  "by_code": {},
+  "by_severity": {},
+  "corners_with_diagnostics": 0
+ },
+ "metrics": {
+  "sim__corner__count": 1,
+  "sim__corner__passed_count": 1,
+  "sim__corner__failed_count": 0,
+  "sim__corner__errored_count": 0,
+  "sim__corner__inconclusive_count": 0
+ },
+ "environment": {
+  "engine": "ngspice",
+  "engine_version": "46",
+  "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+  "models_lib": {
+   "path": null,
+   "scope": "external"
+  },
+  "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+  "netlist_sha256": "1b6ed9a474e4e849e21ea3fb5d5b2a6d12306fb51a930d916b5fac938d26e1c7",
+  "netlist_closure": [
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "1b6ed9a474e4e849e21ea3fb5d5b2a6d12306fb51a930d916b5fac938d26e1c7"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "f403081b272b2c73514c1a93f4f61d32dd48eea770ca4e3d57eaf7a599056ab4"
+   }
+  ]
+ },
+ "coverage": {
+  "corners_simulated": 1,
+  "measurements_declared": 3,
+  "measurements_with_limits": 0,
+  "unrecognized_limit_keys": [],
+  "schema_version": 1,
+  "known": true,
+  "checked": [
+   "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vinp_v\"]/observation",
+   "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vos_v\"]/observation",
+   "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vout_v\"]/observation"
+  ],
+  "skipped": [],
+  "inapplicable": [
+   {
+    "id": "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vinp_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vos_v\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"vout_v\"]/limits",
+    "reason": "characterization_without_limits"
+   }
+  ],
+  "unknown": [],
+  "nothing_checked": false,
+  "nothing_checked_reasons": []
+ },
+ "provenance": {
+  "klt_version": "0.7.0+g5e5b55992a7f",
+  "klayout_version": "0.30.12",
+  "pdk": {
+   "name": "gf180mcuD",
+   "source": "search root: ~/.ciel",
+   "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
+   "ambiguous_sources": [
+    "search root: ~/.volare"
+   ]
+  },
+  "deck": {
+   "name": "sm141064.ngspice",
+   "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+   "released": false
+  },
+  "input": {
+   "content_hash": "sha256:1b6ed9a474e4e849e21ea3fb5d5b2a6d12306fb51a930d916b5fac938d26e1c7",
+   "role": "netlist"
+  }
+ },
+ "measurements": [
+  {
+   "name": "vout_v",
+   "unit": "V",
+   "limits": null,
+   "status": "pass",
+   "worst_case": {
+    "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+    "value": 1.64153,
+    "margin": null
+   }
+  },
+  {
+   "name": "vinp_v",
+   "unit": "V",
+   "limits": null,
+   "status": "pass",
+   "worst_case": {
+    "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+    "value": 1.65,
+    "margin": null
+   }
+  },
+  {
+   "name": "vos_v",
+   "unit": "V",
+   "limits": null,
+   "status": "pass",
+   "worst_case": {
+    "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+    "value": -0.00847202,
+    "margin": null
+   }
+  }
+ ],
+ "corners": [
+  {
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 0.066,
+   "measurements": [
+    {
+     "name": "vout_v",
+     "value": 1.64153,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vinp_v",
+     "value": 1.65,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "vos_v",
+     "value": -0.00847202,
+     "unit": "V",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null,
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  }
+ ]
+}

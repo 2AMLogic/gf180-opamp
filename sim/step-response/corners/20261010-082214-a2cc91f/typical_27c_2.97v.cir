@@ -1,0 +1,19 @@
+* klt sim -- generated corner deck, do not edit
+.lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice typical
+.lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_typical
+.lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice mimcap_typical
+.include /var/tmp/eda-job-klt-sim-aae64f5afc3d/inputs/netlist.cir
+.temp 27.0
+.meas tran vlo_v FIND v(vout) AT=9e-08
+.meas tran vhi_v FIND v(vout) AT=5.9e-07
+.meas tran vmax_rise_v MAX v(vout) FROM=1e-07 TO=5.9e-07
+.meas tran vmin_fall_v MIN v(vout) FROM=6e-07 TO=1.1e-06
+.control
+alter vcm=1.485
+alter vdd=2.97
+set filetype=ascii
+tran 1e-09 1.1e-06
+write /var/tmp/eda-job-klt-sim-aae64f5afc3d/outputs/artifacts/typical_vcm1p485_vdd2p970V_27C/waveform.raw
+quit
+.endc
+.end

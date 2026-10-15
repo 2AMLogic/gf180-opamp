@@ -3,7 +3,7 @@
   "kind": "generic",
   "provenance": {
     "input": {
-      "content_hash": "sha256:0c172c720b9dd6bdef7dd00a8bb11467912b6d4563b4a7f78423a738061eaf2d",
+      "content_hash": "sha256:1ef0e7d84323cd5e104b0c9f1d371f4779226f3d185186ddd82c80b78fe466a4",
       "path": "sim/reports/characterization-report.json"
     }
   },
@@ -11,13 +11,108 @@
     "markdown": "sim/reports/characterization-report.md",
     "path": "sim/reports/characterization-report.json"
   },
+  "report_derived": {
+    "offset_temperature_drift": {
+      "available": true,
+      "graded": false,
+      "input": "sim/offset-mc/corners/20261010-185141-e4be1ac/offset_samples.csv",
+      "input_sha256": "67932852d4984cf5c5ce5672b6ceb00d02f71f643852609fa546ccf5d4f72ea4",
+      "record_sha256": "6d7f3da43d4c3c7a363d95931c52bf4b46b63635c6eb64dc9792cf7dfebec817",
+      "verdict": null
+    }
+  },
   "report_summary": {
-    "fail": 1,
-    "measured_no_bound": 4,
+    "fail": 0,
+    "measured_no_bound": 2,
     "not_measured": 2,
-    "pass": 5,
-    "proposed_not_graded": 1,
+    "pass": 6,
+    "proposed_not_graded": 3,
     "ratified_rows_judged": 6
+  },
+  "report_supplementary": {
+    "gain-gbw-pm-passive-corners": {
+      "bound_free": false,
+      "cells": 27,
+      "graded": false,
+      "path": "sim/gain-gbw-pm/records/20261010-161720-0127eb7.md",
+      "rows": [
+        "gain",
+        "gbw",
+        "pm"
+      ],
+      "sha256": "fa2e7d93d7e9d567da20e03927bfc9ab0d7bff0e5df52cf287ec049ffdbf679d"
+    },
+    "gain-gbw-pm-passive-corners-full": {
+      "bound_free": false,
+      "cells": 405,
+      "graded": false,
+      "path": "sim/gain-gbw-pm/records/20261011-042113-c635487.md",
+      "rows": [
+        "gain",
+        "gbw",
+        "pm"
+      ],
+      "sha256": "8c049e8a42d8dd754f5d111b8e86ece11e6afe3d0bf48af735c46f3dd7cddf60"
+    },
+    "psrr-passive-corners-full": {
+      "bound_free": true,
+      "cells": 405,
+      "graded": false,
+      "path": "sim/psrr/records/20261011-102729-6612014.md",
+      "retained_evidence_sha256": "a55fc4104d983a7c024483d33e40357bed02be44845ea02ecb5e9be045907cbf",
+      "rows": [
+        "psrr"
+      ],
+      "sha256": "2ec6169c300e2e471b355a277383435675d62800aabcbc78b5fd2e4309ce6b8d",
+      "verdict": null,
+      "worst_db": {
+        "PSRR+ 1 kHz": "81.02",
+        "PSRR+ 10 kHz": "61.09",
+        "PSRR- 1 kHz": "101.01",
+        "PSRR- 10 kHz": "100.88"
+      }
+    },
+    "slew-swing-power-passive-corners": {
+      "bound_free": false,
+      "cells": 27,
+      "graded": false,
+      "path": "sim/slew-swing-power/records/20261010-162823-0127eb7.md",
+      "rows": [
+        "power",
+        "slew",
+        "swing"
+      ],
+      "sha256": "a78e325795de32850ddc89d15ab9dbcc130dfa442c8ba8da73b3e9a49768432c"
+    },
+    "slew-swing-power-passive-corners-full": {
+      "bound_free": false,
+      "cells": 405,
+      "graded": false,
+      "path": "sim/slew-swing-power/records/20261011-052206-c635487.md",
+      "rows": [
+        "power",
+        "slew",
+        "swing"
+      ],
+      "sha256": "240834c796aa2ebac968e4042fd18e1e874d2b5d46faeeb36ba039272f36cfda"
+    },
+    "step-response-follower": {
+      "bound_free": true,
+      "cells": 45,
+      "graded": false,
+      "path": "sim/step-response/records/20261011-140956-cb03235.md",
+      "retained_evidence_sha256": "7da7a3e6e955d0c7e6d8e775e6c8784f2e83f1dc526e74e8f816189250c4b033",
+      "rows": [],
+      "sha256": "31ef7cd885b1ae8b32ac7183fcc11419f793dfc2070b5ae2f2e8234ea430488d",
+      "verdict": null,
+      "worst": {
+        "Overshoot (worse edge)": "0.90",
+        "Overshoot falling edge": "0.90",
+        "Overshoot rising edge": "0.12",
+        "Settling to 0.1 % (worse edge)": "72.2",
+        "Settling to 1 % (worse edge)": "47.1"
+      }
+    }
   },
   "schema_version": 1,
   "status": "pass",

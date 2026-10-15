@@ -1,0 +1,46 @@
+{
+  "checks": [
+    "README opens with a block description and has Target specification, Reproducing the results and License sections",
+    "README links spec/target-spec.md and that file carries a table",
+    "LICENSE is the Apache License text",
+    "both workflows exist; signoff.yml still runs the report, integrator, attestation and byte-reproducibility gates"
+  ],
+  "ci": {
+    "keeps_valid": [
+      "selftest.yml: harness/extraction unit tests, pinned tools and PDK, report and spec-citation checks",
+      "signoff.yml: characterization report + evidence sidecar freshness, integrator view, T1 attestation freshness, byte-reproducible klt signoff record"
+    ],
+    "workflows": [
+      {
+        "content_hash": "sha256:658bfdae4defc2c2824cb1617662ecfeacc404694258e0041f17f9cb6f669824",
+        "path": ".github/workflows/selftest.yml"
+      },
+      {
+        "content_hash": "sha256:5869b80b2c74cfe28e0b58602c8bd27bc493cd30217fd02238c2cfeb4fa01939",
+        "path": ".github/workflows/signoff.yml"
+      }
+    ]
+  },
+  "license": {
+    "content_hash": "sha256:cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "kind": "Apache-2.0",
+    "path": "LICENSE"
+  },
+  "readme": {
+    "audited_sections": [
+      "block description (opening paragraph)",
+      "Target specification",
+      "Reproducing the results",
+      "License"
+    ],
+    "hash_note": "README.md is edited often and is deliberately not hash-pinned; t1_attest.py --check re-audits the sections in CI",
+    "path": "README.md"
+  },
+  "schema_version": 1,
+  "spec_table": {
+    "note": "full per-row table; README links it",
+    "path": "spec/target-spec.md"
+  },
+  "subject": "repo-hygiene audit record",
+  "t1_item": 10
+}

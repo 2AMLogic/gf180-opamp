@@ -1,0 +1,39 @@
+{
+  "checks": [
+    "every listed source and the derived netlist exist",
+    "netlist declares subcircuit opamp_two_stage and has at least 5 device instances",
+    "selftest.sh runs the netlist freshness gate and selftest.yml runs selftest.sh"
+  ],
+  "files": [
+    {
+      "content_hash": "sha256:ef8a987a9cda84e895be8d3cdafc9d3310e5c6b09c5fa0b4fe8a3161b7c288b5",
+      "path": "design/opamp_two_stage.sch",
+      "role": "source"
+    },
+    {
+      "content_hash": "sha256:8512b23927d10d88e56b4ad8f96151d96afafe1ae91d1d75bafe2c8be3696085",
+      "path": "design/opamp_two_stage.sym",
+      "role": "source"
+    },
+    {
+      "content_hash": "sha256:9cf20d40935df8ad11f98381ca8747a4eeb5e68e14d2858c52e6d3d87de192aa",
+      "path": "design/xschemrc",
+      "role": "source"
+    },
+    {
+      "content_hash": "sha256:aebce42c7a4e3e7242ae2b8f9c08d797d77c8d9b4fe3fcefbf237d71d7207c01",
+      "hash_note": "sha256 of the file with the checkout-specific '** sch_path:' comment removed",
+      "path": "design/netlist/opamp_two_stage.spice",
+      "role": "derived-netlist"
+    }
+  ],
+  "freshness_gate": {
+    "run_by": "sim/selftest.sh via .github/workflows/selftest.yml",
+    "script": "sim/ci_netlist_check.py",
+    "what": "re-exports the schematic with the pinned xschem and diffs against the committed netlist"
+  },
+  "regenerate": "xschem -n -x -q --rcfile design/xschemrc -o design/netlist design/opamp_two_stage.sch",
+  "schema_version": 1,
+  "subject": "design-source inventory",
+  "t1_item": 1
+}

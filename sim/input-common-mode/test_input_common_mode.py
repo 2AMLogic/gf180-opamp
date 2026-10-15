@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import csv
 import io
+import json
 import math
 import shutil
 import sys
@@ -138,6 +139,43 @@ class RequestTests(unittest.TestCase):
         for d in m.DEVICES:
             for p in ("vds", "vdsat", "id"):
                 self.assertIn(f"@m.xdut.{d}.m0[{p}]", args)
+
+
+class MeasurementConfigTests(unittest.TestCase):
+    """Issue #180: the runner and `measurement_config.py` read ONE source, so the
+    fingerprint cannot drift from what is run. Offline: no simulator, no numpy."""
+
+    def test_runner_constants_come_from_the_config(self):
+        for n in ("CORNERS", "TEMPS_C", "SUPPLIES_V", "DEVICES", "MODES", "SERVO_NOMINAL",
+                  "SCAN_STEP_MV", "REFINE_STEP_MV", "MAX_REFINE_ROUNDS", "TARGET_VCM_MV",
+                  "AC_FSTART", "AC_FSTOP", "AC_PPD", "OP_PRINT", "OP_TAIL"):
+            self.assertIs(getattr(m, n), getattr(m.mc, n), n)
+
+    def test_request_analysis_args_are_the_config_ac_args(self):
+        pdk = m.Pdk(path=Path("/x/gf180mcuD"), variant="gf180mcuD", source="test")
+        req = m.icmr_request(Path("/tmp/tb.spice"), pdk, "sf", m.TEMPS_C, [(3300, 1200)])
+        self.assertEqual(req["analysis"], {"kind": "ac", "args": m.mc.ac_args()})
+
+    def test_controls_use_the_config_settings(self):
+        self.assertEqual(m.mc.UNEQUAL_CM, {"acp": 1.0, "acn": 0.99})
+        self.assertEqual(m.mc.ISOLATION_CSV, m.C.ISOLATION_CSV)
+        self.assertEqual(m.mc.ISOLATION_INADEQUATE_CSV, m.C.ISOLATION_INADEQUATE_CSV)
+
+    def test_fingerprint_roundtrip_of_the_committed_bench(self):
+        mc = m.mc
+        texts = {"bench": m.TESTBENCH.read_text()}
+        blob = "\n".join(mc.fingerprint_lines(texts) + mc.inputs_section(texts))
+        self.assertIn(mc.fingerprint(texts), blob)
+        self.assertIn(mc.MODULE_REL, blob)
+        body = blob.split("```json\n", 1)[1].split("\n```", 1)[0]
+        import harness
+        self.assertEqual(harness.measurement_fingerprint(json.loads(body)), mc.fingerprint(texts))
+        # the current bench and grid give the same fingerprint in any checkout: no
+        # record ids, workspace paths or backend/scheduling options are inputs
+        blob_json = harness.fingerprint_json(mc.inputs(texts))
+        self.assertNotIn(str(m.REPO_ROOT), blob_json)
+        for word in ("record", "backend", "retr", "batch", "work", "timeout"):
+            self.assertNotIn(word, blob_json.lower().replace("opamp_two_stage.dut", ""))
 
 
 class EvaluationTests(unittest.TestCase):

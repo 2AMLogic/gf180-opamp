@@ -1,0 +1,69 @@
+* tb_overdrive.spice -- input-overdrive / output-saturation recovery (issue #183;
+* evidence only, no spec row).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_overdrive_recovery.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+*
+* CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`, `.control` or
+* `.end`; klt adds the corner's `.lib` cards, `.temp`, the supply alters
+* and the analysis. Vdd and Vcm are swept together by index (VCM = VDD/2,
+* i.e. 1.65 V at the nominal 3.30 V supply), the convention of every other
+* experiment in sim/.
+*
+* Unity-gain follower (vinn = vout), CL = 2 pF [DR-1] on vout, no other load
+* (identical loading to tb_step.spice / tb_slew.spice). The input is driven
+* BEYOND THE RAILS at every grid corner, so the output clips at its output-
+* stage limit (VDD - dropout high; the M7 sink limit low), and the overdrive
+* is then removed (input back at VCM): how long does the output take to
+* return to within 1 % of its linear value, and does it latch?
+*
+* Series construction (Vcm in series with TWO pulse sources, signal node on
+* the n+ terminal of each, as in tb_step.spice) keeps the swept quantity a
+* plain DC source, which every klt runner version alters correctly; the
+* pulse amplitudes are FIXED in volts, chosen to overdrive past the output
+* stage's reach at every grid supply (VCM tracks VDD/2):
+*
+*   input high = VCM + 1.85 V = 3.335 / 3.50 / 3.665 V  at 2.97 / 3.30 / 3.63 V
+*              = VDD + 0.365 / +0.20 / +0.035 V   (above VDD everywhere)
+*   input low  = VCM - 1.90 V = -0.415 / -0.25 / -0.085 V
+*              = below ground everywhere
+*
+*   t = 0 .. 400 ns   input at VCM; the transient starts from the operating
+*                     point, so the output is already settled at its linear
+*                     value (the pre-overdrive reference level)
+*   t = 400 ns        input driven to VCM + 1.85 V (1 ns edge); the output
+*                     slews to and clips at its positive limit; 600 ns hold
+*   t = 1.0 us        overdrive removed (1 ns edge back to VCM); the
+*                     recovery-high window is 1.0 us .. 2.6 us
+*   t = 2.6 us        input driven to VCM - 1.90 V (1 ns edge); the output
+*                     clips at its negative limit; 600 ns hold
+*   t = 3.2 us        overdrive removed (1 ns edge back to VCM); the
+*                     recovery-low window is 3.2 us .. end of run
+*   t = 4.9 us        end of run
+*
+* 600 ns of saturation is >= 37 closed-loop time constants (GBW >= 10 MHz
+* => tau <= 15.9 ns), so the compensation node and second stage settle into
+* the saturated state, not a half-driven one. Each 1.6-1.7 us recovery
+* window is >= 100 tau. Sampling is 5 ns (1000 rows; see
+* sim/slew-swing-power/README.md, "Batch-fleet timing": denser sampling made
+* 45-point fleet jobs hit the per-point timeout).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+Vdd vdd 0 dc 3.3
+Vcm vcm 0 dc 1.65
+Vup n1 vcm dc 0 pulse(0 1.85 400n 1n 1n 599n 100u)
+Vdn vinp n1 dc 0 pulse(0 -1.9 2.6u 1n 1n 599n 100u)
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vout vout ibias opamp_two_stage
+CL vout 0 2p
+
+* Only the two nodes the driver reads are saved (fleet rawfile size; see
+* sim/slew-swing-power/README.md, "Batch-fleet timing").
+.save v(vinp) v(vout)

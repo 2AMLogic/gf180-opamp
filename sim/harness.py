@@ -42,12 +42,23 @@ were previously copied into, or loaded by file path from, the individual
 experiment drivers; one copy here means the batch-submit retry policy
 (retry the same off-host submit on a capacity refusal, never fall back to
 another backend) is fixed in one place.
+
+Work-dir staging (issue #94): `stage_workdir` / `DUT_INCLUDE_NAME` -- the
+guard / copy `design.ngspice` / write DUT / rewrite-includes skeleton that
+every runner's `materialise()` previously repeated (and on which the copies
+had begun to drift). The guards themselves and the bench-specific `.param`
+/ `Ibias` substitution stay per-experiment.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
+import math
 import os
+import re
+import shutil
+import statistics
 import subprocess
 import sys
 import time
@@ -58,6 +69,149 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[1]
 #: The committed xschem export of the DUT (every bench measures this).
 DUT_EXPORT = REPO_ROOT / "design" / "netlist" / "opamp_two_stage.spice"
+
+
+def load_sibling(module_name: str, relpath: str):
+    """Import a sibling driver by repo-relative path (issue #68).
+
+    Experiment directories contain hyphens, so the drivers cannot be imported
+    by name. Guarded by `sys.modules`: a driver already loaded under
+    `module_name` (by a test, or by another driver) is reused, so every
+    importer shares ONE copy of the module.
+    """
+    if module_name in sys.modules:
+        return sys.modules[module_name]
+    path = REPO_ROOT / relpath
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = mod
+    # The loaded driver's own directory is on sys.path while it executes, as it
+    # would be when run as a script (issue #85: a driver importing a helper that
+    # sits next to it must not depend on which directory the importer ran from).
+    here = str(path.resolve().parent)
+    sys.path.insert(0, here)
+    try:
+        spec.loader.exec_module(mod)
+    except BaseException:
+        sys.modules.pop(module_name, None)
+        raise
+    finally:
+        try:
+            sys.path.remove(here)
+        except ValueError:
+            pass
+    return mod
+
+#: Measurement-configuration fingerprint (issue #85). Version of the
+#: normalisation rules below; bump it when they change so old fingerprints are
+#: reported as "different rules" rather than silently compared.
+FINGERPRINT_VERSION = 1
+
+
+def canonical_bench_lines(text: str) -> list[str]:
+    """Canonical form of a SPICE bench body for freshness comparison.
+
+    Rules (version 1): continuation lines (`+`) are joined to their parent;
+    full-line `*` comments, `;`/`$` trailing comments and blank lines are
+    dropped; whitespace runs collapse to one space; text is lower-cased
+    (SPICE is case-insensitive); `.include`/`.inc` targets are reduced to
+    their basename (the driver rewrites them to per-run absolute paths, which
+    must not change the fingerprint). Component values are NOT numerically
+    re-parsed: `2p` and `2e-12` fingerprint differently, deliberately.
+    """
+    logical: list[str] = []
+    for raw in text.splitlines():
+        ln = raw.strip()
+        if ln.startswith("+") and logical:
+            logical[-1] += " " + ln[1:].strip()
+        else:
+            logical.append(ln)
+    out: list[str] = []
+    for ln in logical:
+        if not ln or ln.startswith("*"):
+            continue
+        ln = ln.split(";", 1)[0]
+        ln = ln.split(" $", 1)[0]
+        ln = " ".join(ln.split()).lower()
+        m = re.match(r"^(\.(?:include|inc))\s+['\"]?([^'\"\s]+)['\"]?$", ln)
+        if m:
+            ln = f"{m.group(1)} '{m.group(2).replace(chr(92), '/').rsplit('/', 1)[-1]}'"
+        if ln:
+            out.append(ln)
+    return out
+
+
+def fingerprint_json(inputs: dict) -> str:
+    """Deterministic JSON of a fingerprint-input dict (sorted keys, no spaces)."""
+    return json.dumps(inputs, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
+
+
+def measurement_fingerprint(inputs: dict) -> str:
+    """sha256 over the canonical JSON of the effective measurement inputs."""
+    import hashlib
+
+    return hashlib.sha256(fingerprint_json(inputs).encode()).hexdigest()
+
+
+def load_config_module(path: Path, name: str | None = None):
+    """Load a stdlib `measurement_config.py` by file path (issues #85, #89).
+
+    Cached per resolved path (not per name), so a scratch checkout used by the
+    offline report never shares a module with the real repository. Compiled
+    from source (no bytecode cache) so an edited module is never shadowed by a
+    stale `.pyc`. `purge_config_modules()` drops the cache.
+    """
+    import types
+
+    path = Path(path).resolve()
+    if name is None:
+        try:
+            name = "_mcfg_" + re.sub(r"\W", "_", path.relative_to(REPO_ROOT).as_posix())
+        except ValueError:  # a scratch checkout: key by its full path
+            name = "_mcfg_" + re.sub(r"\W", "_", path.as_posix())
+    if name in sys.modules:
+        return sys.modules[name]
+    mod = types.ModuleType(name)
+    mod.__file__ = str(path)
+    sys.modules[name] = mod
+    try:
+        exec(compile(path.read_text(), str(path), "exec"), mod.__dict__)
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
+    return mod
+
+
+def purge_config_modules() -> None:
+    """Forget every config module loaded by `load_config_module`."""
+    for k in [k for k in sys.modules if k.startswith("_mcfg_")]:
+        del sys.modules[k]
+
+
+def fingerprint_header_lines(inputs: dict, covers: str) -> list[str]:
+    """The `**Measurement fingerprint**` header line a record embeds."""
+    return [
+        f"- **Measurement fingerprint**: version {inputs['fingerprint_version']}, sha256 "
+        f"`{measurement_fingerprint(inputs)}` over the canonical inputs retained in "
+        f"the 'Measurement fingerprint inputs' section ({covers}; excludes record IDs, "
+        "paths and backend scheduling)",
+    ]
+
+
+def fingerprint_inputs_section(inputs: dict, module_rel: str) -> list[str]:
+    """The `## Measurement fingerprint inputs` block a record embeds."""
+    return [
+        "## Measurement fingerprint inputs",
+        "",
+        "Canonical JSON (sorted keys, compact separators); its sha256 is the fingerprint in the header. "
+        f"Recompute with `{module_rel}`.",
+        "",
+        "```json",
+        fingerprint_json(inputs),
+        "```",
+        "",
+    ]
+
 
 DEFAULT_VARIANT = "gf180mcuD"
 # Pinned open_pdks revision of the gf180mcu PDK (full hash). CI's
@@ -207,20 +361,70 @@ def run_corner(deck: str, corner: str, temp_c: float, workdir: Path) -> "tuple[s
 # --------------------------------------------------------------------------
 
 
-def load_dut_text() -> str:
-    """The committed export as an includable subcircuit.
+def normalize_dut_text(export_text: str) -> str:
+    """Normalise an xschem export text into the includable subcircuit.
 
     Reuses `subckt_from_export()` from `design/check_dc_op.py` unchanged, so
-    the DC operating-point check and every testbench consume the export
-    through one conversion: uncomment xschem's `**.subckt`/`**.ends`, drop
-    `.end`.
+    the DC operating-point check, every testbench and the report's stale-DUT
+    gate (issue #75) consume the export through one conversion: uncomment
+    xschem's `**.subckt`/`**.ends`, drop `.end`.
     """
     design = str(REPO_ROOT / "design")
     if design not in sys.path:
         sys.path.insert(0, design)
     from check_dc_op import subckt_from_export
 
-    return subckt_from_export(DUT_EXPORT.read_text())
+    return subckt_from_export(export_text)
+
+
+def load_dut_text() -> str:
+    """The committed export as an includable subcircuit (see normalize_dut_text)."""
+    return normalize_dut_text(DUT_EXPORT.read_text())
+
+
+# --------------------------------------------------------------------------
+# Per-run work-directory staging
+# --------------------------------------------------------------------------
+
+#: Name every committed testbench `.include`s the DUT under; `stage_workdir`
+#: writes the DUT to this file and rewrites the include to its absolute path.
+DUT_INCLUDE_NAME = "opamp_two_stage.dut.spice"
+
+
+def stage_workdir(
+    work: Path,
+    pdk: Pdk,
+    tb_text: str,
+    *,
+    guard_tb,
+    guard_dut,
+    dut_text: str | None = None,
+    tb_label: str = "testbench",
+) -> str:
+    """Stage one per-run work directory; return the include-rewritten bench text.
+
+    The skeleton every runner's `materialise()` shares (issue #94): guard the
+    committed bench text with `guard_tb`, create `work`, copy the PDK's
+    `design.ngspice` into it, guard the DUT (the committed export via
+    `load_dut_text`, or `dut_text` for a control) with `guard_dut`, write it
+    as `DUT_INCLUDE_NAME`, and rewrite the bench's two `.include` targets to
+    the absolute paths in `work`. Guards are per-bench callables returning a
+    list of error strings; either guard failing raises RuntimeError before
+    anything further is written. The bench-specific `.param` / `Ibias`
+    substitution and the `tb.spice` write stay with the caller.
+    """
+    errs = guard_tb(tb_text)
+    if errs:
+        raise RuntimeError(f"{tb_label} guard failed:\n  " + "\n  ".join(errs))
+    work.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(pdk.design_include, work / "design.ngspice")
+    dut = load_dut_text() if dut_text is None else dut_text
+    derrs = guard_dut(dut)
+    if derrs:
+        raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(derrs))
+    (work / DUT_INCLUDE_NAME).write_text(dut)
+    tb = tb_text.replace("'design.ngspice'", f"'{work / 'design.ngspice'}'")
+    return tb.replace(f"'{DUT_INCLUDE_NAME}'", f"'{work / DUT_INCLUDE_NAME}'")
 
 
 # --------------------------------------------------------------------------
@@ -339,3 +543,100 @@ def claim_record_paths(base: Path, record: str, *, plots: bool = True) -> dict[s
         if p.exists():
             raise FileExistsError(f"{p} already exists; evidence is append-only")
     return paths
+
+
+# --------------------------------------------------------------------------
+# Monte Carlo statistics / extraction shared by the *-mc drivers (issue #153)
+# --------------------------------------------------------------------------
+
+
+def percentile(values: list[float], q: float) -> float:
+    """Linear-interpolated percentile (numpy's default 'linear' method)."""
+    xs = sorted(values)
+    if not xs:
+        raise ValueError("no values")
+    pos = (len(xs) - 1) * q / 100.0
+    lo = math.floor(pos)
+    hi = min(lo + 1, len(xs) - 1)
+    return xs[lo] + (xs[hi] - xs[lo]) * (pos - lo)
+
+
+def skew(xs: list[float]) -> float:
+    """Population skewness (0.0 for a degenerate, zero-variance sample)."""
+    n = len(xs)
+    m = statistics.fmean(xs)
+    m2 = sum((x - m) ** 2 for x in xs) / n
+    return 0.0 if m2 <= 0 else sum((x - m) ** 3 for x in xs) / n / m2**1.5
+
+
+def extract_mc_samples(
+    report: dict,
+    want: list[tuple],
+    n_expected: int,
+    *,
+    point_key,
+    fmt_key,
+    sample_cls,
+    parse_scalars,
+    validate_sample,
+    clamp_floor,
+    read_log=None,
+) -> tuple[dict[tuple, list], list[str]]:
+    """Samples per grid point from a klt Monte Carlo report.
+
+    Blocking: every expected point contributes exactly `n_expected` samples
+    with distinct sample indices 0..n-1, each with a retained log, every
+    scalar present and every per-sample check passing. Nothing is dropped
+    silently: an invalid sample is a problem string.
+
+    The per-driver pieces are parameters: `point_key(corner) -> tuple`,
+    `fmt_key(key) -> str`, `sample_cls(key, idx, seeds, vals, problems[, lb])`
+    (with a `.valid` property), `parse_scalars(log) -> dict`,
+    `validate_sample(vals, vcm) -> (problems, lower_bound)` and
+    `clamp_floor(sample)`.
+    """
+    read_log = read_log or (lambda p: Path(p).read_text())
+    problems: list[str] = []
+    out: dict[tuple, list] = {k: [] for k in want}
+    seen: dict[tuple, set] = {k: set() for k in want}
+    for c in report.get("corners", []):
+        try:
+            k = point_key(c)
+        except (KeyError, TypeError, ValueError):
+            problems.append(f"{c.get('corner_id', '?')}: unparseable corner")
+            continue
+        cid = str(c.get("corner_id", fmt_key(k)))
+        if k not in out:
+            problems.append(f"{cid}: unexpected grid point")
+            continue
+        mcd = c.get("monte_carlo") or {}
+        idx = mcd.get("sample_index")
+        if idx is None or idx in seen[k]:
+            problems.append(f"{cid}: missing or duplicate sample index {idx!r}")
+            continue
+        seen[k].add(idx)
+        logp = (c.get("artifacts") or {}).get("log")
+        try:
+            log = read_log(logp) if logp else None
+        except OSError:
+            log = None
+        seeds = {s: mcd.get(s) for s in ("seed", "mismatch_seed", "process_seed")}
+        if not log:
+            diag = "; ".join(d.get("message", "")[:160] for d in c.get("diagnostics", []) if d.get("severity") == "error")
+            s = sample_cls(k, idx, seeds, {}, [f"no ngspice log retained ({diag or c.get('status')})"])
+        else:
+            vals = parse_scalars(log)
+            vcm = float((c.get("supply_v") or {}).get("vcm", k[2] / 2))
+            probs, lb = validate_sample(vals, vcm)
+            s = sample_cls(k, idx, seeds, vals, probs, lb)
+            if s.valid:
+                clamp_floor(s)
+        if not s.valid:
+            problems.append(f"{cid}: " + "; ".join(s.problems))
+        out[k].append(s)
+    for k in want:
+        got = sorted(seen[k])
+        if got != list(range(n_expected)):
+            problems.append(f"{fmt_key(k)}: sample indices {got[:5]}{'...' if len(got) > 5 else ''} "
+                            f"({len(got)}), expected 0..{n_expected - 1}")
+    return out, problems

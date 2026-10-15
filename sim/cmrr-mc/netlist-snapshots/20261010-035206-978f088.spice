@@ -1,0 +1,359 @@
+* netlist snapshot for CMRR Monte Carlo record 20261010-035206-978f088 (issue #61)
+* ---- committed testbench (sim/cmrr-mc/testbench/tb_cmrr_mc.spice) ----
+* | * tb_cmrr_mc.spice -- mismatch-aware CMRR bench: both AC excitations of ONE
+* | * Monte Carlo sample in ONE deck (issue #61; spec row: CMRR; DR-3 residual (e3)).
+* | *
+* | * DEVICE UNDER TEST: the committed xschem export
+* | * design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* | * (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* | * FILE. The driver (run_cmrr_mc.py) materialises `opamp_two_stage.dut.spice`
+* | * from the committed export (the wrapper normalisation every bench uses) and
+* | * rewrites the two `.include` targets below to absolute paths of the per-run
+* | * work directory. test_cmrr_mc.py guards both includes, the absence of
+* | * transistors and every line of the circuit below.
+* | *
+* | * This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* | * `.control` or `.end`. `klt sim` adds the corner's `.lib` cards, `.temp`,
+* | * the supply `alter`s, the Monte Carlo seed card and the `.ac` analysis.
+* | *
+* | * ---- Circuit: identical to sim/cmrr/testbench/tb_cmrr.spice ----
+* | * Same DUT instance, Ibias = 10 uA (ideal), CL = 2 pF [DR-1], DC input common
+* | * mode VCM = VDD/2 (vdd and vcm swept together by `klt sim`), and the same
+* | * ideal DC servo (Esb buffer -> Rsv/Csv low-pass, tau = 1e18 s -> Esv in
+* | * series with the vinn AC source). See sim/cmrr/README.md "Bench".
+* | *
+* | * ---- What differs: one deck carries both excitations ----
+* | * Under mismatch Monte Carlo, Ad and Acm must come from the SAME sampled
+* | * devices. The systematic bench runs the two excitations as two separate
+* | * `klt sim` requests; here the driver appends control commands to the
+* | * analysis line so that ONE ngspice process runs
+* | *     ac (dm: acp = +0.5, acn = -0.5)   -> plot ac1
+* | *     op                                 (DC operating point, printed)
+* | *     alter vcm acmag=1 ; alter vnac acmag=1
+* | *     ac (cm: acp = acn = 1)             -> plot ac2
+* | *     op                                 (DC operating point, printed again)
+* | * on one parsed circuit. The per-instance mismatch values (`agauss` in the
+* | * PDK's `fets_mm` subcircuits) are drawn once, when the netlist is parsed, so
+* | * both sweeps see the same devices. The driver checks that per sample: the
+* | * DC output (which carries the sampled offset, sigma ~ 5 mV) printed after
+* | * each sweep must agree to 1 uV.
+* | *
+* | * ---- Mismatch switch ----
+* | * `sw_stat_mismatch` gates the per-instance MOS mismatch of the plain
+* | * `nfet_03v3`/`pfet_03v3` subcircuits (default 0 in design.ngspice). It is set
+* | * on the single `.param` line below, AFTER the design.ngspice include, so it
+* | * overrides the PDK default; `sw_stat_global` is not touched (global spread
+* | * is the five MOS corners). The driver rewrites only this `.param` line
+* | * (acp/acn are fixed at the dm values; sw_stat_mismatch = 0 for the
+* | * mismatch-off control).
+* | 
+* | .include 'design.ngspice'
+* | .include 'opamp_two_stage.dut.spice'
+* | 
+* | .param acp=0.5 acn=-0.5 rsv=1e9 csv=1e9 sw_stat_mismatch=1
+* | 
+* | Vdd vdd 0 dc 3.3
+* | Vcm vinp 0 dc 1.65 ac {acp}
+* | Ibias vdd ibias dc 10u
+* | Xdut vdd 0 vinp vinn vout ibias opamp_two_stage
+* | Esb vsb 0 vout 0 1
+* | Rsv vsb vsv {rsv}
+* | Csv vsv 0 {csv}
+* | Esv vinn vnac vsv 0 1
+* | Vnac vnac 0 dc 0 ac {acn}
+* | CL vout 0 2p
+* ---- DUT include (wrapper-normalised export), sha256 81fbd914f8254a49 ----
+* | ** sch_path: /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-17/design/opamp_two_stage.sch
+* | .subckt opamp_two_stage vdd vss vinp vinn vout ibias
+* | 
+* | *.iopin vdd
+* | *.iopin vss
+* | *.iopin vinp
+* | *.iopin vinn
+* | *.iopin vout
+* | *.iopin ibias
+* | XMB1 ibias ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM5 tail ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM1 n1 vinn tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM2 n2 vinp tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM4 n2 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM6 vout n2 vdd vdd pfet_03v3 L=1u W=72u nf=24 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XM7 vout ibias vss vss nfet_03v3 L=2u W=36u nf=12 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* | + ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+* | XCC n2 nz cap_mim_2f0_m4m5_noshield c_width=17.4u c_length=17.4u m=1
+* | XRZ vout nz vss ppolyf_u_1k r_width=2u r_length=4u m=1
+* | .ends
+* ---- negative-control DUT copy (XM3 W changed), sha256 f0cfc3547d25503c: the changed line ----
+* | XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=5.4u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
+* ---- klt request `grid` ----
+* | {
+* |   "netlist": "tb.spice",
+* |   "engine": "ngspice",
+* |   "models": {
+* |     "pdk": "gf180mcuD",
+* |     "lib": "libs.tech/ngspice/sm141064.ngspice"
+* |   },
+* |   "corners": {
+* |     "process": [
+* |       {
+* |         "name": "typical",
+* |         "sections": [
+* |           "typical",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "ff",
+* |         "sections": [
+* |           "ff",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "ss",
+* |         "sections": [
+* |           "ss",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "fs",
+* |         "sections": [
+* |           "fs",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "sf",
+* |         "sections": [
+* |           "sf",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       }
+* |     ],
+* |     "supply_v": {
+* |       "vdd": [
+* |         3.3
+* |       ],
+* |       "vcm": [
+* |         1.65
+* |       ]
+* |     },
+* |     "temperature_c": [
+* |       27.0
+* |     ]
+* |   },
+* |   "analysis": {
+* |     "kind": "ac",
+* |     "args": "dec 20 0.1 1e+09\nop\nlet cmc_op1_vout = v(vout)\nlet cmc_op1_vinp = v(vinp)\nlet cmc_offset = v(vout) - v(vinp)\nalter vcm acmag=1\nalter vnac acmag=1\nac dec 20 0.1 1e+09\nop\nlet cmc_op_parity = v(vout) - op1.v(vout)\nsetplot ac2\nlet cmc_op1_vout = op1.cmc_op1_vout\nlet cmc_op1_vinp = op1.cmc_op1_vinp\nlet cmc_offset = op1.cmc_offset\nlet cmc_op_parity = op2.cmc_op_parity\nlet cmc_npts = length(frequency)\nlet cmc_f0 = real(frequency[0])\nlet cmc_f20 = real(frequency[20])\nlet cmc_f80 = real(frequency[80])\nlet cmc_f100 = real(frequency[100])\nlet cmc_f120 = real(frequency[120])\nlet cmc_f140 = real(frequency[140])\nlet cmc_vd1 = ac1.v(vinp) - ac1.v(vinn)\nlet cmc_vc1 = (ac1.v(vinp) + ac1.v(vinn)) / 2\nlet cmc_vd2 = v(vinp) - v(vinn)\nlet cmc_vc2 = (v(vinp) + v(vinn)) / 2\nlet cmc_dm_vderr = vecmax(mag(cmc_vd1 - 1))\nlet cmc_dm_vcerr = vecmax(mag(cmc_vc1))\nlet cmc_cm_vcerr = vecmax(mag(cmc_vc2 - 1))\nlet cmc_cm_leak = vecmax(mag(cmc_vd2 / cmc_vc2))\nlet cmc_det = cmc_vd1 * cmc_vc2 - cmc_vc1 * cmc_vd2\nlet cmc_det_min = vecmin(mag(cmc_det))\nlet cmc_adv = (ac1.v(vout) * cmc_vc2 - v(vout) * cmc_vc1) / cmc_det\nlet cmc_acmv = (cmc_vd1 * v(vout) - cmc_vd2 * ac1.v(vout)) / cmc_det\nlet cmc_acmmag = mag(cmc_acmv)\nlet cmc_acm_min = vecmin(cmc_acmmag)\nlet cmc_addb = db(cmc_adv)\nlet cmc_acmdb = db(cmc_acmv)\nlet cmc_cmrrdb = cmc_addb - cmc_acmdb\nlet cmc_cmrr_spread = vecmax(cmc_cmrrdb[0,20]) - vecmin(cmc_cmrrdb[0,20])\nlet cmc_acm_spread = vecmax(cmc_acmdb[0,20]) - vecmin(cmc_acmdb[0,20])\nlet cmc_ad_spread = vecmax(cmc_addb[0,20]) - vecmin(cmc_addb[0,20])\nlet cmc_acm_re0 = real(cmc_acmv[0])\nlet cmc_acm_im0 = imag(cmc_acmv[0])\nlet cmc_cmrr_dc = mean(cmc_cmrrdb[0,20])\nlet cmc_ad_dc = mean(cmc_addb[0,20])\nlet cmc_acm_dc = mean(cmc_acmmag[0,20])\nlet cmc_cmrr_1k = cmc_cmrrdb[80]\nlet cmc_ad_1k = cmc_addb[80]\nlet cmc_acm_1k = cmc_acmmag[80]\nlet cmc_cmrr_10k = cmc_cmrrdb[100]\nlet cmc_ad_10k = cmc_addb[100]\nlet cmc_acm_10k = cmc_acmmag[100]\nlet cmc_cmrr_100k = cmc_cmrrdb[120]\nlet cmc_ad_100k = cmc_addb[120]\nlet cmc_acm_100k = cmc_acmmag[120]\nlet cmc_cmrr_1m = cmc_cmrrdb[140]\nlet cmc_ad_1m = cmc_addb[140]\nlet cmc_acm_1m = cmc_acmmag[140]\nmeas ac cmc_fu_hz when cmc_addb=0 fall=1\nmeas ac cmc_cmrr_fu find cmc_cmrrdb when cmc_addb=0 fall=1\nmeas ac cmc_acm_fu find cmc_acmmag when cmc_addb=0 fall=1\nlet cmc_ad_fu = 0\nprint cmc_op1_vout\nprint cmc_op1_vinp\nprint cmc_offset\nprint cmc_op_parity\nprint cmc_npts\nprint cmc_f0\nprint cmc_f20\nprint cmc_f80\nprint cmc_f100\nprint cmc_f120\nprint cmc_f140\nprint cmc_dm_vderr\nprint cmc_dm_vcerr\nprint cmc_cm_vcerr\nprint cmc_cm_leak\nprint cmc_det_min\nprint cmc_acm_min\nprint cmc_cmrr_spread\nprint cmc_acm_spread\nprint cmc_ad_spread\nprint cmc_acm_re0\nprint cmc_acm_im0\nprint cmc_cmrr_dc\nprint cmc_ad_dc\nprint cmc_acm_dc\nprint cmc_cmrr_1k\nprint cmc_ad_1k\nprint cmc_acm_1k\nprint cmc_cmrr_10k\nprint cmc_ad_10k\nprint cmc_acm_10k\nprint cmc_cmrr_100k\nprint cmc_ad_100k\nprint cmc_acm_100k\nprint cmc_cmrr_1m\nprint cmc_ad_1m\nprint cmc_acm_1m\nprint cmc_cmrr_fu\nprint cmc_ad_fu\nprint cmc_acm_fu\nprint cmc_fu_hz"
+* |   },
+* |   "measurements": [],
+* |   "options": {
+* |     "timeout_s": 300,
+* |     "keep_artifacts": true,
+* |     "waveforms": false
+* |   },
+* |   "monte_carlo": {
+* |     "n": 300,
+* |     "seed": 45,
+* |     "vary": "mismatch"
+* |   },
+* |   "batch": {
+* |     "runner_version_check": "warn"
+* |   }
+* | }
+* ---- klt request `switch-off` ----
+* | {
+* |   "netlist": "tb.spice",
+* |   "engine": "ngspice",
+* |   "models": {
+* |     "pdk": "gf180mcuD",
+* |     "lib": "libs.tech/ngspice/sm141064.ngspice"
+* |   },
+* |   "corners": {
+* |     "process": [
+* |       {
+* |         "name": "typical",
+* |         "sections": [
+* |           "typical",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "ff",
+* |         "sections": [
+* |           "ff",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "ss",
+* |         "sections": [
+* |           "ss",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "fs",
+* |         "sections": [
+* |           "fs",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       },
+* |       {
+* |         "name": "sf",
+* |         "sections": [
+* |           "sf",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       }
+* |     ],
+* |     "supply_v": {
+* |       "vdd": [
+* |         3.3
+* |       ],
+* |       "vcm": [
+* |         1.65
+* |       ]
+* |     },
+* |     "temperature_c": [
+* |       27.0
+* |     ]
+* |   },
+* |   "analysis": {
+* |     "kind": "ac",
+* |     "args": "dec 20 0.1 1e+09\nop\nlet cmc_op1_vout = v(vout)\nlet cmc_op1_vinp = v(vinp)\nlet cmc_offset = v(vout) - v(vinp)\nalter vcm acmag=1\nalter vnac acmag=1\nac dec 20 0.1 1e+09\nop\nlet cmc_op_parity = v(vout) - op1.v(vout)\nsetplot ac2\nlet cmc_op1_vout = op1.cmc_op1_vout\nlet cmc_op1_vinp = op1.cmc_op1_vinp\nlet cmc_offset = op1.cmc_offset\nlet cmc_op_parity = op2.cmc_op_parity\nlet cmc_npts = length(frequency)\nlet cmc_f0 = real(frequency[0])\nlet cmc_f20 = real(frequency[20])\nlet cmc_f80 = real(frequency[80])\nlet cmc_f100 = real(frequency[100])\nlet cmc_f120 = real(frequency[120])\nlet cmc_f140 = real(frequency[140])\nlet cmc_vd1 = ac1.v(vinp) - ac1.v(vinn)\nlet cmc_vc1 = (ac1.v(vinp) + ac1.v(vinn)) / 2\nlet cmc_vd2 = v(vinp) - v(vinn)\nlet cmc_vc2 = (v(vinp) + v(vinn)) / 2\nlet cmc_dm_vderr = vecmax(mag(cmc_vd1 - 1))\nlet cmc_dm_vcerr = vecmax(mag(cmc_vc1))\nlet cmc_cm_vcerr = vecmax(mag(cmc_vc2 - 1))\nlet cmc_cm_leak = vecmax(mag(cmc_vd2 / cmc_vc2))\nlet cmc_det = cmc_vd1 * cmc_vc2 - cmc_vc1 * cmc_vd2\nlet cmc_det_min = vecmin(mag(cmc_det))\nlet cmc_adv = (ac1.v(vout) * cmc_vc2 - v(vout) * cmc_vc1) / cmc_det\nlet cmc_acmv = (cmc_vd1 * v(vout) - cmc_vd2 * ac1.v(vout)) / cmc_det\nlet cmc_acmmag = mag(cmc_acmv)\nlet cmc_acm_min = vecmin(cmc_acmmag)\nlet cmc_addb = db(cmc_adv)\nlet cmc_acmdb = db(cmc_acmv)\nlet cmc_cmrrdb = cmc_addb - cmc_acmdb\nlet cmc_cmrr_spread = vecmax(cmc_cmrrdb[0,20]) - vecmin(cmc_cmrrdb[0,20])\nlet cmc_acm_spread = vecmax(cmc_acmdb[0,20]) - vecmin(cmc_acmdb[0,20])\nlet cmc_ad_spread = vecmax(cmc_addb[0,20]) - vecmin(cmc_addb[0,20])\nlet cmc_acm_re0 = real(cmc_acmv[0])\nlet cmc_acm_im0 = imag(cmc_acmv[0])\nlet cmc_cmrr_dc = mean(cmc_cmrrdb[0,20])\nlet cmc_ad_dc = mean(cmc_addb[0,20])\nlet cmc_acm_dc = mean(cmc_acmmag[0,20])\nlet cmc_cmrr_1k = cmc_cmrrdb[80]\nlet cmc_ad_1k = cmc_addb[80]\nlet cmc_acm_1k = cmc_acmmag[80]\nlet cmc_cmrr_10k = cmc_cmrrdb[100]\nlet cmc_ad_10k = cmc_addb[100]\nlet cmc_acm_10k = cmc_acmmag[100]\nlet cmc_cmrr_100k = cmc_cmrrdb[120]\nlet cmc_ad_100k = cmc_addb[120]\nlet cmc_acm_100k = cmc_acmmag[120]\nlet cmc_cmrr_1m = cmc_cmrrdb[140]\nlet cmc_ad_1m = cmc_addb[140]\nlet cmc_acm_1m = cmc_acmmag[140]\nmeas ac cmc_fu_hz when cmc_addb=0 fall=1\nmeas ac cmc_cmrr_fu find cmc_cmrrdb when cmc_addb=0 fall=1\nmeas ac cmc_acm_fu find cmc_acmmag when cmc_addb=0 fall=1\nlet cmc_ad_fu = 0\nprint cmc_op1_vout\nprint cmc_op1_vinp\nprint cmc_offset\nprint cmc_op_parity\nprint cmc_npts\nprint cmc_f0\nprint cmc_f20\nprint cmc_f80\nprint cmc_f100\nprint cmc_f120\nprint cmc_f140\nprint cmc_dm_vderr\nprint cmc_dm_vcerr\nprint cmc_cm_vcerr\nprint cmc_cm_leak\nprint cmc_det_min\nprint cmc_acm_min\nprint cmc_cmrr_spread\nprint cmc_acm_spread\nprint cmc_ad_spread\nprint cmc_acm_re0\nprint cmc_acm_im0\nprint cmc_cmrr_dc\nprint cmc_ad_dc\nprint cmc_acm_dc\nprint cmc_cmrr_1k\nprint cmc_ad_1k\nprint cmc_acm_1k\nprint cmc_cmrr_10k\nprint cmc_ad_10k\nprint cmc_acm_10k\nprint cmc_cmrr_100k\nprint cmc_ad_100k\nprint cmc_acm_100k\nprint cmc_cmrr_1m\nprint cmc_ad_1m\nprint cmc_acm_1m\nprint cmc_cmrr_fu\nprint cmc_ad_fu\nprint cmc_acm_fu\nprint cmc_fu_hz"
+* |   },
+* |   "measurements": [],
+* |   "options": {
+* |     "timeout_s": 300,
+* |     "keep_artifacts": true,
+* |     "waveforms": false
+* |   },
+* |   "monte_carlo": {
+* |     "n": 4,
+* |     "seed": 45,
+* |     "vary": "mismatch"
+* |   },
+* |   "batch": {
+* |     "runner_version_check": "warn"
+* |   }
+* | }
+* ---- klt request `process-only` ----
+* | {
+* |   "netlist": "tb.spice",
+* |   "engine": "ngspice",
+* |   "models": {
+* |     "pdk": "gf180mcuD",
+* |     "lib": "libs.tech/ngspice/sm141064.ngspice"
+* |   },
+* |   "corners": {
+* |     "process": [
+* |       {
+* |         "name": "typical",
+* |         "sections": [
+* |           "typical",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       }
+* |     ],
+* |     "supply_v": {
+* |       "vdd": [
+* |         3.3
+* |       ],
+* |       "vcm": [
+* |         1.65
+* |       ]
+* |     },
+* |     "temperature_c": [
+* |       27.0
+* |     ]
+* |   },
+* |   "analysis": {
+* |     "kind": "ac",
+* |     "args": "dec 20 0.1 1e+09\nop\nlet cmc_op1_vout = v(vout)\nlet cmc_op1_vinp = v(vinp)\nlet cmc_offset = v(vout) - v(vinp)\nalter vcm acmag=1\nalter vnac acmag=1\nac dec 20 0.1 1e+09\nop\nlet cmc_op_parity = v(vout) - op1.v(vout)\nsetplot ac2\nlet cmc_op1_vout = op1.cmc_op1_vout\nlet cmc_op1_vinp = op1.cmc_op1_vinp\nlet cmc_offset = op1.cmc_offset\nlet cmc_op_parity = op2.cmc_op_parity\nlet cmc_npts = length(frequency)\nlet cmc_f0 = real(frequency[0])\nlet cmc_f20 = real(frequency[20])\nlet cmc_f80 = real(frequency[80])\nlet cmc_f100 = real(frequency[100])\nlet cmc_f120 = real(frequency[120])\nlet cmc_f140 = real(frequency[140])\nlet cmc_vd1 = ac1.v(vinp) - ac1.v(vinn)\nlet cmc_vc1 = (ac1.v(vinp) + ac1.v(vinn)) / 2\nlet cmc_vd2 = v(vinp) - v(vinn)\nlet cmc_vc2 = (v(vinp) + v(vinn)) / 2\nlet cmc_dm_vderr = vecmax(mag(cmc_vd1 - 1))\nlet cmc_dm_vcerr = vecmax(mag(cmc_vc1))\nlet cmc_cm_vcerr = vecmax(mag(cmc_vc2 - 1))\nlet cmc_cm_leak = vecmax(mag(cmc_vd2 / cmc_vc2))\nlet cmc_det = cmc_vd1 * cmc_vc2 - cmc_vc1 * cmc_vd2\nlet cmc_det_min = vecmin(mag(cmc_det))\nlet cmc_adv = (ac1.v(vout) * cmc_vc2 - v(vout) * cmc_vc1) / cmc_det\nlet cmc_acmv = (cmc_vd1 * v(vout) - cmc_vd2 * ac1.v(vout)) / cmc_det\nlet cmc_acmmag = mag(cmc_acmv)\nlet cmc_acm_min = vecmin(cmc_acmmag)\nlet cmc_addb = db(cmc_adv)\nlet cmc_acmdb = db(cmc_acmv)\nlet cmc_cmrrdb = cmc_addb - cmc_acmdb\nlet cmc_cmrr_spread = vecmax(cmc_cmrrdb[0,20]) - vecmin(cmc_cmrrdb[0,20])\nlet cmc_acm_spread = vecmax(cmc_acmdb[0,20]) - vecmin(cmc_acmdb[0,20])\nlet cmc_ad_spread = vecmax(cmc_addb[0,20]) - vecmin(cmc_addb[0,20])\nlet cmc_acm_re0 = real(cmc_acmv[0])\nlet cmc_acm_im0 = imag(cmc_acmv[0])\nlet cmc_cmrr_dc = mean(cmc_cmrrdb[0,20])\nlet cmc_ad_dc = mean(cmc_addb[0,20])\nlet cmc_acm_dc = mean(cmc_acmmag[0,20])\nlet cmc_cmrr_1k = cmc_cmrrdb[80]\nlet cmc_ad_1k = cmc_addb[80]\nlet cmc_acm_1k = cmc_acmmag[80]\nlet cmc_cmrr_10k = cmc_cmrrdb[100]\nlet cmc_ad_10k = cmc_addb[100]\nlet cmc_acm_10k = cmc_acmmag[100]\nlet cmc_cmrr_100k = cmc_cmrrdb[120]\nlet cmc_ad_100k = cmc_addb[120]\nlet cmc_acm_100k = cmc_acmmag[120]\nlet cmc_cmrr_1m = cmc_cmrrdb[140]\nlet cmc_ad_1m = cmc_addb[140]\nlet cmc_acm_1m = cmc_acmmag[140]\nmeas ac cmc_fu_hz when cmc_addb=0 fall=1\nmeas ac cmc_cmrr_fu find cmc_cmrrdb when cmc_addb=0 fall=1\nmeas ac cmc_acm_fu find cmc_acmmag when cmc_addb=0 fall=1\nlet cmc_ad_fu = 0\nprint cmc_op1_vout\nprint cmc_op1_vinp\nprint cmc_offset\nprint cmc_op_parity\nprint cmc_npts\nprint cmc_f0\nprint cmc_f20\nprint cmc_f80\nprint cmc_f100\nprint cmc_f120\nprint cmc_f140\nprint cmc_dm_vderr\nprint cmc_dm_vcerr\nprint cmc_cm_vcerr\nprint cmc_cm_leak\nprint cmc_det_min\nprint cmc_acm_min\nprint cmc_cmrr_spread\nprint cmc_acm_spread\nprint cmc_ad_spread\nprint cmc_acm_re0\nprint cmc_acm_im0\nprint cmc_cmrr_dc\nprint cmc_ad_dc\nprint cmc_acm_dc\nprint cmc_cmrr_1k\nprint cmc_ad_1k\nprint cmc_acm_1k\nprint cmc_cmrr_10k\nprint cmc_ad_10k\nprint cmc_acm_10k\nprint cmc_cmrr_100k\nprint cmc_ad_100k\nprint cmc_acm_100k\nprint cmc_cmrr_1m\nprint cmc_ad_1m\nprint cmc_acm_1m\nprint cmc_cmrr_fu\nprint cmc_ad_fu\nprint cmc_acm_fu\nprint cmc_fu_hz"
+* |   },
+* |   "measurements": [],
+* |   "options": {
+* |     "timeout_s": 300,
+* |     "keep_artifacts": true,
+* |     "waveforms": false
+* |   },
+* |   "monte_carlo": {
+* |     "n": 20,
+* |     "seed": 45,
+* |     "vary": "process"
+* |   },
+* |   "batch": {
+* |     "runner_version_check": "warn"
+* |   }
+* | }
+* ---- klt request `imbalance` ----
+* | {
+* |   "netlist": "tb.spice",
+* |   "engine": "ngspice",
+* |   "models": {
+* |     "pdk": "gf180mcuD",
+* |     "lib": "libs.tech/ngspice/sm141064.ngspice"
+* |   },
+* |   "corners": {
+* |     "process": [
+* |       {
+* |         "name": "typical",
+* |         "sections": [
+* |           "typical",
+* |           "res_typical",
+* |           "mimcap_typical"
+* |         ]
+* |       }
+* |     ],
+* |     "supply_v": {
+* |       "vdd": [
+* |         3.3
+* |       ],
+* |       "vcm": [
+* |         1.65
+* |       ]
+* |     },
+* |     "temperature_c": [
+* |       27.0
+* |     ]
+* |   },
+* |   "analysis": {
+* |     "kind": "ac",
+* |     "args": "dec 20 0.1 1e+09\nop\nlet cmc_op1_vout = v(vout)\nlet cmc_op1_vinp = v(vinp)\nlet cmc_offset = v(vout) - v(vinp)\nalter vcm acmag=1\nalter vnac acmag=1\nac dec 20 0.1 1e+09\nop\nlet cmc_op_parity = v(vout) - op1.v(vout)\nsetplot ac2\nlet cmc_op1_vout = op1.cmc_op1_vout\nlet cmc_op1_vinp = op1.cmc_op1_vinp\nlet cmc_offset = op1.cmc_offset\nlet cmc_op_parity = op2.cmc_op_parity\nlet cmc_npts = length(frequency)\nlet cmc_f0 = real(frequency[0])\nlet cmc_f20 = real(frequency[20])\nlet cmc_f80 = real(frequency[80])\nlet cmc_f100 = real(frequency[100])\nlet cmc_f120 = real(frequency[120])\nlet cmc_f140 = real(frequency[140])\nlet cmc_vd1 = ac1.v(vinp) - ac1.v(vinn)\nlet cmc_vc1 = (ac1.v(vinp) + ac1.v(vinn)) / 2\nlet cmc_vd2 = v(vinp) - v(vinn)\nlet cmc_vc2 = (v(vinp) + v(vinn)) / 2\nlet cmc_dm_vderr = vecmax(mag(cmc_vd1 - 1))\nlet cmc_dm_vcerr = vecmax(mag(cmc_vc1))\nlet cmc_cm_vcerr = vecmax(mag(cmc_vc2 - 1))\nlet cmc_cm_leak = vecmax(mag(cmc_vd2 / cmc_vc2))\nlet cmc_det = cmc_vd1 * cmc_vc2 - cmc_vc1 * cmc_vd2\nlet cmc_det_min = vecmin(mag(cmc_det))\nlet cmc_adv = (ac1.v(vout) * cmc_vc2 - v(vout) * cmc_vc1) / cmc_det\nlet cmc_acmv = (cmc_vd1 * v(vout) - cmc_vd2 * ac1.v(vout)) / cmc_det\nlet cmc_acmmag = mag(cmc_acmv)\nlet cmc_acm_min = vecmin(cmc_acmmag)\nlet cmc_addb = db(cmc_adv)\nlet cmc_acmdb = db(cmc_acmv)\nlet cmc_cmrrdb = cmc_addb - cmc_acmdb\nlet cmc_cmrr_spread = vecmax(cmc_cmrrdb[0,20]) - vecmin(cmc_cmrrdb[0,20])\nlet cmc_acm_spread = vecmax(cmc_acmdb[0,20]) - vecmin(cmc_acmdb[0,20])\nlet cmc_ad_spread = vecmax(cmc_addb[0,20]) - vecmin(cmc_addb[0,20])\nlet cmc_acm_re0 = real(cmc_acmv[0])\nlet cmc_acm_im0 = imag(cmc_acmv[0])\nlet cmc_cmrr_dc = mean(cmc_cmrrdb[0,20])\nlet cmc_ad_dc = mean(cmc_addb[0,20])\nlet cmc_acm_dc = mean(cmc_acmmag[0,20])\nlet cmc_cmrr_1k = cmc_cmrrdb[80]\nlet cmc_ad_1k = cmc_addb[80]\nlet cmc_acm_1k = cmc_acmmag[80]\nlet cmc_cmrr_10k = cmc_cmrrdb[100]\nlet cmc_ad_10k = cmc_addb[100]\nlet cmc_acm_10k = cmc_acmmag[100]\nlet cmc_cmrr_100k = cmc_cmrrdb[120]\nlet cmc_ad_100k = cmc_addb[120]\nlet cmc_acm_100k = cmc_acmmag[120]\nlet cmc_cmrr_1m = cmc_cmrrdb[140]\nlet cmc_ad_1m = cmc_addb[140]\nlet cmc_acm_1m = cmc_acmmag[140]\nmeas ac cmc_fu_hz when cmc_addb=0 fall=1\nmeas ac cmc_cmrr_fu find cmc_cmrrdb when cmc_addb=0 fall=1\nmeas ac cmc_acm_fu find cmc_acmmag when cmc_addb=0 fall=1\nlet cmc_ad_fu = 0\nprint cmc_op1_vout\nprint cmc_op1_vinp\nprint cmc_offset\nprint cmc_op_parity\nprint cmc_npts\nprint cmc_f0\nprint cmc_f20\nprint cmc_f80\nprint cmc_f100\nprint cmc_f120\nprint cmc_f140\nprint cmc_dm_vderr\nprint cmc_dm_vcerr\nprint cmc_cm_vcerr\nprint cmc_cm_leak\nprint cmc_det_min\nprint cmc_acm_min\nprint cmc_cmrr_spread\nprint cmc_acm_spread\nprint cmc_ad_spread\nprint cmc_acm_re0\nprint cmc_acm_im0\nprint cmc_cmrr_dc\nprint cmc_ad_dc\nprint cmc_acm_dc\nprint cmc_cmrr_1k\nprint cmc_ad_1k\nprint cmc_acm_1k\nprint cmc_cmrr_10k\nprint cmc_ad_10k\nprint cmc_acm_10k\nprint cmc_cmrr_100k\nprint cmc_ad_100k\nprint cmc_acm_100k\nprint cmc_cmrr_1m\nprint cmc_ad_1m\nprint cmc_acm_1m\nprint cmc_cmrr_fu\nprint cmc_ad_fu\nprint cmc_acm_fu\nprint cmc_fu_hz"
+* |   },
+* |   "measurements": [],
+* |   "options": {
+* |     "timeout_s": 300,
+* |     "keep_artifacts": true,
+* |     "waveforms": false
+* |   },
+* |   "monte_carlo": {
+* |     "n": 300,
+* |     "seed": 45,
+* |     "vary": "mismatch"
+* |   },
+* |   "batch": {
+* |     "runner_version_check": "warn"
+* |   }
+* | }

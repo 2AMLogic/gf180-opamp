@@ -1,0 +1,21 @@
+{
+  "kind": "generic",
+  "provenance": {
+    "deck": null,
+    "input": {
+      "content_hash": "sha256:1b76f789e78f8726786a800e8435ba318ebc5d6648fb29b2c36dd4cdf09d1f1d",
+      "path": {
+        "path": "manifests/attest/testbench-inventory.json",
+        "scope": "repo"
+      }
+    },
+    "klayout_version": null,
+    "klt_version": null,
+    "pdk": null
+  },
+  "schema_version": 1,
+  "source": "manifests/attest/testbench-inventory.json",
+  "status": "pass",
+  "summary": "every claimed measurement's testbench is committed with a documented invocation; PDK revision pinned and CI-enforced",
+  "t1_item": 9
+}

@@ -1,0 +1,203 @@
+* netlist snapshot for record 20261010-082214-a2cc91f (issue #113)
+* Reproduces the measured design: DUT contents, testbench, conditions.
+* ---- conditions: klt sim request ----
+* {
+*  "engine": "ngspice",
+*  "models": {
+*   "pdk": "gf180mcuD",
+*   "lib": "libs.tech/ngspice/sm141064.ngspice"
+*  },
+*  "corners": {
+*   "process": [
+*    {
+*     "name": "typical",
+*     "sections": [
+*      "typical",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ff",
+*     "sections": [
+*      "ff",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ss",
+*     "sections": [
+*      "ss",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "fs",
+*     "sections": [
+*      "fs",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "sf",
+*     "sections": [
+*      "sf",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    }
+*   ],
+*   "supply_v": {
+*    "vdd": [
+*     2.97,
+*     3.3,
+*     3.63
+*    ],
+*    "vcm": [
+*     1.485,
+*     1.65,
+*     1.815
+*    ]
+*   },
+*   "temperature_c": [
+*    -40.0,
+*    27.0,
+*    125.0
+*   ]
+*  },
+*  "analysis": {
+*   "kind": "tran",
+*   "args": "1e-09 1.1e-06"
+*  },
+*  "measurements": [
+*   {
+*    "name": "vlo_v",
+*    "spice": ".meas tran vlo_v FIND v(vout) AT=9e-08",
+*    "unit": "V"
+*   },
+*   {
+*    "name": "vhi_v",
+*    "spice": ".meas tran vhi_v FIND v(vout) AT=5.9e-07",
+*    "unit": "V"
+*   },
+*   {
+*    "name": "vmax_rise_v",
+*    "spice": ".meas tran vmax_rise_v MAX v(vout) FROM=1e-07 TO=5.9e-07",
+*    "unit": "V"
+*   },
+*   {
+*    "name": "vmin_fall_v",
+*    "spice": ".meas tran vmin_fall_v MIN v(vout) FROM=6e-07 TO=1.1e-06",
+*    "unit": "V"
+*   }
+*  ],
+*  "options": {
+*   "timeout_s": 600,
+*   "keep_artifacts": true,
+*   "waveforms": true
+*  },
+*  "batch": {
+*   "runner_version_check": "warn"
+*  }
+* }
+
+* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----
+** sch_path: /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-17/design/opamp_two_stage.sch
+.subckt opamp_two_stage vdd vss vinp vinn vout ibias
+
+*.iopin vdd
+*.iopin vss
+*.iopin vinp
+*.iopin vinn
+*.iopin vout
+*.iopin ibias
+XMB1 ibias ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM5 tail ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM1 n1 vinn tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM2 n2 vinp tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM4 n2 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM6 vout n2 vdd vdd pfet_03v3 L=1u W=72u nf=24 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM7 vout ibias vss vss nfet_03v3 L=2u W=36u nf=12 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XCC n2 nz cap_mim_2f0_m4m5_noshield c_width=17.4u c_length=17.4u m=1
+XRZ vout nz vss ppolyf_u_1k r_width=2u r_length=4u m=1
+.ends
+* ---- testbench: sim/step-response/testbench/tb_step.spice (verbatim) ----
+* tb_step.spice -- unity-gain follower small-step response (issue #113; evidence only, no spec row).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE. The driver (run_step_response.py) materialises
+* `opamp_two_stage.dut.spice` from the committed export by the same
+* wrapper normalisation design/check_dc_op.py uses and rewrites the two
+* `.include` targets below to absolute paths of the per-run work directory.
+*
+* CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`, `.control` or
+* `.end`; klt adds the corner's `.lib` cards, `.temp`, the supply alters
+* and the analysis. Vdd and Vcm are swept together by index (VCM = VDD/2,
+* i.e. 1.65 V at the nominal 3.30 V supply), the convention of every other
+* experiment in sim/.
+*
+* Unity-gain follower (vinn = vout), CL = 2 pF [DR-1] on vout, no other load
+* (identical to tb_slew.spice except for the step size and timing).
+* Input = VCM + a +-50 mV step (100 mV, fixed in volts, centred on VCM).
+* Series construction (Vcm in series with Vstep) keeps the swept quantity a
+* plain DC source, which every klt runner version alters correctly.
+*
+*   t = 0 .. 100 ns   input low  (VCM - 50 mV); the transient starts from the
+*                     operating point, so the output is already settled
+*   t = 100 ns        rising edge  (1 ns)
+*   t = 600 ns        falling edge (1 ns)
+*   t = 1.1 us        end of run
+*
+* 500 ns after each edge: with GBW >= 10 MHz the closed-loop time constant is
+* tau = 1/(2*pi*GBW) <= 15.9 ns, so each edge window is >= 31 tau; a
+* single-pole response reaches 0.1 % in 6.9 tau (<= 110 ns). The settled level
+* is read over the last 50 ns of each window (see README).
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+Vdd vdd 0 dc 3.3
+Vcm vcm 0 dc 1.65
+Vstep vinp vcm dc 0 pulse(-0.05 0.05 100n 1n 1n 499n 100u)
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vout vout ibias opamp_two_stage
+CL vout 0 2p
+
+* Only the two nodes the driver reads are saved (fleet rawfile size; see
+* sim/slew-swing-power/README.md, "Batch-fleet timing").
+.save v(vinp) v(vout)
+
+* ---- klt-generated deck of the nominal point ----
+* | * klt sim -- generated corner deck, do not edit
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice res_typical
+* | .lib /opt/pdk/gf180mcuD/libs.tech/ngspice/sm141064.ngspice mimcap_typical
+* | .include /var/tmp/eda-job-klt-sim-aae64f5afc3d/inputs/netlist.cir
+* | .temp 27.0
+* | .meas tran vlo_v FIND v(vout) AT=9e-08
+* | .meas tran vhi_v FIND v(vout) AT=5.9e-07
+* | .meas tran vmax_rise_v MAX v(vout) FROM=1e-07 TO=5.9e-07
+* | .meas tran vmin_fall_v MIN v(vout) FROM=6e-07 TO=1.1e-06
+* | .control
+* | alter vcm=1.65
+* | alter vdd=3.3
+* | set filetype=ascii
+* | tran 1e-09 1.1e-06
+* | write /var/tmp/eda-job-klt-sim-aae64f5afc3d/outputs/artifacts/typical_vcm1p650_vdd3p300V_27C/waveform.raw
+* | quit
+* | .endc
+* | .end

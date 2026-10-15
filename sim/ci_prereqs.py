@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fail loudly when a sim/selftest.sh prerequisite is missing (issue #52).
 
-Checks klt, ngspice and the gf180mcu PDK, naming each missing item and the
+Checks klt, ngspice, xschem and the gf180mcu PDK, naming each missing item and the
 place that was searched. The PDK that find_pdk() selects must also carry the
 pinned open_pdks revision: its SOURCES file is read and the open_pdks hash
 compared (full hash, exact match) against the expected revision. A mismatch,
@@ -10,13 +10,19 @@ provenance) is a failure with expected/actual diagnostics. This is what makes
 a restored PDK cache trustworthy: the cache key alone does not verify the
 restored contents.
 
+xschem must also be the pinned release (ci_netlist_check.PINNED_XSCHEM_VERSION,
+the one that exported design/netlist/): `xschem --version` is parsed and
+compared exactly; another release, or unparseable output, is a failure with
+expected/actual diagnostics. If $SELFTEST_XSCHEM_VERSION is set (the workflow
+pin) it must equal PINNED_XSCHEM_VERSION.
+
 Expected revision: --expect-rev, else $GF180_PDK_REV, else harness.PINNED_PDK_REV.
 If $GF180_PDK_REV is set it must equal harness.PINNED_PDK_REV (so the
 workflow pin and the harness pin cannot drift apart silently).
 
 No simulator is run; nothing is written.
 
-    python3 sim/ci_prereqs.py              # tools + PDK + revision
+    python3 sim/ci_prereqs.py              # tools + xschem version + PDK + revision
     python3 sim/ci_prereqs.py --pdk-only   # PDK + revision only
 """
 
@@ -31,6 +37,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from ci_netlist_check import PINNED_XSCHEM_VERSION, xschem_version_problem  # noqa: E402
 from harness import DEFAULT_VARIANT, PINNED_PDK_REV, Pdk, PdkNotFound, find_pdk  # noqa: E402
 
 FULL_HASH = re.compile(r"^[0-9a-f]{40}$")
@@ -81,21 +88,40 @@ def expected_revision(cli: str | None) -> tuple[str | None, str | None]:
     return expected, None
 
 
+def xschem_pin_problem(exe: str) -> str | None:
+    """Return a diagnostic unless `exe` is the pinned xschem (and env agrees)."""
+    env = os.environ.get("SELFTEST_XSCHEM_VERSION")
+    if env and env != PINNED_XSCHEM_VERSION:
+        return (
+            "SELFTEST_XSCHEM_VERSION disagrees with sim/ci_netlist_check.py PINNED_XSCHEM_VERSION\n"
+            f"  SELFTEST_XSCHEM_VERSION {env}\n"
+            f"  PINNED_XSCHEM_VERSION   {PINNED_XSCHEM_VERSION}"
+        )
+    return xschem_version_problem(exe, PINNED_XSCHEM_VERSION)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--pdk-only", action="store_true", help="skip the klt/ngspice PATH checks")
+    ap.add_argument("--pdk-only", action="store_true", help="skip the klt/ngspice/xschem PATH and version checks")
     ap.add_argument("--expect-rev", help="expected open_pdks full hash (default: $GF180_PDK_REV or the harness pin)")
     args = ap.parse_args(argv)
 
     problems: list[str] = []
     if not args.pdk_only:
         path_env = os.environ.get("PATH", "")
-        for tool in ("klt", "ngspice"):
+        for tool in ("klt", "ngspice", "xschem"):
             found = shutil.which(tool)
-            if found:
-                print(f"ok: {tool} -> {found}")
-            else:
+            if not found:
                 problems.append(f"{tool} not found on PATH (searched: {path_env})")
+                continue
+            if tool == "xschem":
+                bad = xschem_pin_problem(found)
+                if bad:
+                    problems.append(bad)
+                    continue
+                print(f"ok: xschem -> {found} (XSCHEM V{PINNED_XSCHEM_VERSION} == pinned)")
+            else:
+                print(f"ok: {tool} -> {found}")
 
     expected, rev_problem = expected_revision(args.expect_rev)
     if rev_problem:

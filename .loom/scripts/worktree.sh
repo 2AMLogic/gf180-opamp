@@ -1136,8 +1136,8 @@ Monorepo / Generated-Artifact Symlinks:
   Each created symlink is added to the worktree's .git/info/exclude so 'git add -A'
   never stages it; linking is best-effort and never aborts worktree creation. Repos
   with no nested node_modules and no worktree.linkPaths config see no change.
-  NEITHER node_modules family runs on a pnpm workspace — pnpm purges THROUGH the alias
-  into the main clone (#8944). Override: worktree.linkNodeModules true|false|"auto".
+  NEITHER node_modules family runs on a pnpm workspace (#8944; override: worktree.linkNodeModules
+  true|false|"auto"). Pre-#8944 aliases: loom-daemon worktree-link --retire-aliases (#9152).
 
 Resuming Abandoned Work:
   If an agent abandoned work on issue #42, a new agent can resume:
@@ -1633,8 +1633,10 @@ fi
 # this script's caller has ALWAYS already claimed by the time it runs
 # (builder.md: claim, then create worktree), so the issue legitimately
 # carries the caller's own `loom:building` label, lease, and possibly
-# branch -- the only leg that still means "do not build a duplicate" is
-# OPEN_PR, the one leg --force-claim can never override. Only exit 0
+# branch -- the only legs that still refuse are OPEN_PR ("do not build a
+# duplicate"), TARGET_IS_PR (#9929, the number is a PR), CLOSED (#11863,
+# nothing left to build) and FROZEN (#11743, `loom:frozen`: a human took the
+# issue out of every lane), the legs --force-claim can never override. Only exit 0
 # (blocked; its reason token went to >&3, its explanation to stderr)
 # refuses; a read failure, an old daemon, or any other code fails OPEN,
 # exactly like the #8553/#5783 guards above. A caller refused here adopts

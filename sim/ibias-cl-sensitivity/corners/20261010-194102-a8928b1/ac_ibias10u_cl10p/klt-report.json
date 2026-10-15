@@ -1,0 +1,316 @@
+{
+ "schema_version": 3,
+ "netlist": {
+  "path": null,
+  "scope": "external"
+ },
+ "status": "pass",
+ "corner_count": 3,
+ "passed": 3,
+ "failed": 0,
+ "errored": 0,
+ "inconclusive": 0,
+ "diagnostic_counts": {
+  "by_code": {},
+  "by_severity": {},
+  "corners_with_diagnostics": 0
+ },
+ "metrics": {
+  "sim__corner__count": 3,
+  "sim__corner__passed_count": 3,
+  "sim__corner__failed_count": 0,
+  "sim__corner__errored_count": 0,
+  "sim__corner__inconclusive_count": 0
+ },
+ "environment": {
+  "engine": "ngspice",
+  "engine_version": "46",
+  "ngspice_binary": "/usr/bin/ngspice",
+  "models_lib": {
+   "path": null,
+   "scope": "external"
+  },
+  "models_lib_sha256": "6edba54d23b38a2c60f8ffdbaa3eb75a7568c615e4820808969bd1121b77b1aa",
+  "netlist_sha256": "fe8cde6624077d34fa9a344bdae57b2a437d6aee40e46c971ca4c881fbdb607e",
+  "netlist_closure": [
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "fe8cde6624077d34fa9a344bdae57b2a437d6aee40e46c971ca4c881fbdb607e"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "81fbd914f8254a49af9eaaa819d41ca88dde49cd73128602e1bfb921dec07860"
+   }
+  ],
+  "remote": {
+   "provider": "aws-batch-fleet",
+   "job_id": "klt-sim-a7364e5b4ff1",
+   "bucket": "2am-batch-jobs-221082181346",
+   "region": "us-east-1",
+   "instance_id": "i-0790d4c57d6819b51",
+   "instance_type": "m6i.4xlarge",
+   "availability_zone": "us-east-1b",
+   "ami_id": "ami-0e40e3245f1923ac8",
+   "lifecycle": "spot",
+   "spot": true,
+   "state": "done",
+   "exit_code": "0",
+   "concurrency": "1",
+   "physical_cores": "8",
+   "elapsed_seconds": 17,
+   "runner_klt_version": "0.5.0",
+   "client_klt_version": "0.7.0+g39f6da54ae4c",
+   "runner_compatibility": "mismatch",
+   "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g39f6da54ae4c; request options the runner does not know may have been ignored -- update the runner image or use a compatible client"
+  }
+ },
+ "coverage": {
+  "corners_simulated": 3,
+  "measurements_declared": 3,
+  "measurements_with_limits": 0,
+  "unrecognized_limit_keys": [],
+  "schema_version": 1,
+  "known": true,
+  "checked": [
+   "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"a_first_db\"]/observation",
+   "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"gbw_hz\"]/observation",
+   "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"ph_gbw_rad\"]/observation",
+   "measurement:[1,\"fs/vcm=1.485_vdd=2.970V/125C\",\"a_first_db\"]/observation",
+   "measurement:[1,\"fs/vcm=1.485_vdd=2.970V/125C\",\"gbw_hz\"]/observation",
+   "measurement:[1,\"fs/vcm=1.485_vdd=2.970V/125C\",\"ph_gbw_rad\"]/observation",
+   "measurement:[2,\"ss/vcm=1.485_vdd=2.970V/125C\",\"a_first_db\"]/observation",
+   "measurement:[2,\"ss/vcm=1.485_vdd=2.970V/125C\",\"gbw_hz\"]/observation",
+   "measurement:[2,\"ss/vcm=1.485_vdd=2.970V/125C\",\"ph_gbw_rad\"]/observation"
+  ],
+  "skipped": [],
+  "inapplicable": [
+   {
+    "id": "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"a_first_db\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"gbw_hz\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[0,\"typical/vcm=1.650_vdd=3.300V/27C\",\"ph_gbw_rad\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[1,\"fs/vcm=1.485_vdd=2.970V/125C\",\"a_first_db\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[1,\"fs/vcm=1.485_vdd=2.970V/125C\",\"gbw_hz\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[1,\"fs/vcm=1.485_vdd=2.970V/125C\",\"ph_gbw_rad\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[2,\"ss/vcm=1.485_vdd=2.970V/125C\",\"a_first_db\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[2,\"ss/vcm=1.485_vdd=2.970V/125C\",\"gbw_hz\"]/limits",
+    "reason": "characterization_without_limits"
+   },
+   {
+    "id": "measurement:[2,\"ss/vcm=1.485_vdd=2.970V/125C\",\"ph_gbw_rad\"]/limits",
+    "reason": "characterization_without_limits"
+   }
+  ],
+  "unknown": [],
+  "nothing_checked": false,
+  "nothing_checked_reasons": []
+ },
+ "provenance": {
+  "klt_version": "0.7.0+g39f6da54ae4c",
+  "klayout_version": "0.30.12",
+  "pdk": {
+   "name": "gf180mcuD",
+   "source": "search root: ~/.volare",
+   "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  },
+  "deck": {
+   "name": "sm141064.ngspice",
+   "content_hash": "sha256:6edba54d23b38a2c60f8ffdbaa3eb75a7568c615e4820808969bd1121b77b1aa",
+   "released": false
+  },
+  "input": {
+   "content_hash": "sha256:fe8cde6624077d34fa9a344bdae57b2a437d6aee40e46c971ca4c881fbdb607e",
+   "role": "netlist"
+  }
+ },
+ "measurements": [
+  {
+   "name": "a_first_db",
+   "unit": "dB",
+   "limits": null,
+   "status": "pass",
+   "worst_case": {
+    "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+    "value": 95.9886,
+    "margin": null
+   }
+  },
+  {
+   "name": "gbw_hz",
+   "unit": "Hz",
+   "limits": null,
+   "status": "pass",
+   "worst_case": {
+    "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+    "value": 8335930.0,
+    "margin": null
+   }
+  },
+  {
+   "name": "ph_gbw_rad",
+   "unit": "rad",
+   "limits": null,
+   "status": "pass",
+   "worst_case": {
+    "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+    "value": -2.59089,
+    "margin": null
+   }
+  }
+ ],
+ "corners": [
+  {
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 0.54,
+   "measurements": [
+    {
+     "name": "a_first_db",
+     "value": 95.9886,
+     "unit": "dB",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "gbw_hz",
+     "value": 8335930.0,
+     "unit": "Hz",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "ph_gbw_rad",
+     "value": -2.59089,
+     "unit": "rad",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.485_vdd=2.970V/125C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 0.54,
+   "measurements": [
+    {
+     "name": "a_first_db",
+     "value": 94.0989,
+     "unit": "dB",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "gbw_hz",
+     "value": 6903070.0,
+     "unit": "Hz",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "ph_gbw_rad",
+     "value": -2.61372,
+     "unit": "rad",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.485_vdd=2.970V/125C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 0.548,
+   "measurements": [
+    {
+     "name": "a_first_db",
+     "value": 93.7922,
+     "unit": "dB",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "gbw_hz",
+     "value": 6600790.0,
+     "unit": "Hz",
+     "status": "pass",
+     "margin": null
+    },
+    {
+     "name": "ph_gbw_rad",
+     "value": -2.59915,
+     "unit": "rad",
+     "status": "pass",
+     "margin": null
+    }
+   ],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  }
+ ]
+}

@@ -1,14 +1,22 @@
 {
   "experiments": {
-    "cmrr": "sim/cmrr/records/20261009-105631-30ec86d.md",
-    "gain-gbw-pm": "sim/gain-gbw-pm/records/20261009-055759-2524b3e.md",
-    "noise": "sim/noise/records/20261009-082007-68b4567.md",
-    "offset-mc": "sim/offset-mc/records/20261009-072205-96bf3cc.md",
-    "psrr": "sim/psrr/records/20261009-105929-30ec86d.md",
-    "slew-swing-power": {
-      "power": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
-      "slew": "sim/slew-swing-power/records/20261009-142137-1dab1db.md",
-      "swing": "sim/slew-swing-power/records/20261009-143715-4d5aa43.md"
-    }
+    "cmrr": "sim/cmrr/records/20261010-163601-0127eb7.md",
+    "cmrr-mc": "sim/cmrr-mc/records/20261010-202454-e4be1ac.md",
+    "gain-gbw-pm": "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md",
+    "gain-gbw-pm-mc": "sim/gain-gbw-pm-mc/records/20261011-072005-9c9b0f1.md",
+    "input-common-mode": "sim/input-common-mode/records/20261010-164310-0127eb7.md",
+    "noise": "sim/noise/records/20261010-163507-0127eb7.md",
+    "offset-mc": "sim/offset-mc/records/20261010-185141-e4be1ac.md",
+    "psrr": "sim/psrr/records/20261010-163854-0127eb7.md",
+    "psrr-mc": "sim/psrr-mc/records/20261011-145434-286b06c.md",
+    "slew-swing-power": "sim/slew-swing-power/records/20261010-161852-0127eb7.md"
+  },
+  "supplementary": {
+    "gain-gbw-pm-passive-corners": "sim/gain-gbw-pm/records/20261010-161720-0127eb7.md",
+    "slew-swing-power-passive-corners": "sim/slew-swing-power/records/20261010-162823-0127eb7.md",
+    "gain-gbw-pm-passive-corners-full": "sim/gain-gbw-pm/records/20261011-042113-c635487.md",
+    "slew-swing-power-passive-corners-full": "sim/slew-swing-power/records/20261011-052206-c635487.md",
+    "psrr-passive-corners-full": "sim/psrr/records/20261011-102729-6612014.md",
+    "step-response-follower": "sim/step-response/records/20261011-140956-cb03235.md"
   }
 }

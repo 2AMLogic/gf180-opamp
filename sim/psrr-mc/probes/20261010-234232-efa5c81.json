@@ -1,0 +1,221 @@
+{
+ "corner_count": 3,
+ "corners": [
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc0",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "sample_index": 0,
+    "seed": 1240223581
+   },
+   "process": "typical",
+   "runtime_s": 0.816,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc1",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "sample_index": 1,
+    "seed": 1176304945
+   },
+   "process": "typical",
+   "runtime_s": 0.815,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  },
+  {
+   "artifacts": {
+    "deck": "corner.cir",
+    "log": "ngspice.log",
+    "raw": null,
+    "waveform": null
+   },
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc2",
+   "diagnostics": [],
+   "measurements": [],
+   "monte_carlo": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "sample_index": 2,
+    "seed": 1017889434
+   },
+   "process": "typical",
+   "runtime_s": 0.816,
+   "status": "pass",
+   "supply_v": {
+    "vcm": 1.65,
+    "vdd": 3.3
+   },
+   "temperature_c": 27.0
+  }
+ ],
+ "coverage": {
+  "checked": [],
+  "corners_simulated": 3,
+  "inapplicable": [],
+  "known": true,
+  "measurements_declared": 0,
+  "measurements_with_limits": 0,
+  "nothing_checked": true,
+  "nothing_checked_reasons": [
+   "no_requested_measurements"
+  ],
+  "schema_version": 1,
+  "skipped": [
+   {
+    "id": "corner:[0,\"typical/vcm=1.650_vdd=3.300V/27C/mc0\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[1,\"typical/vcm=1.650_vdd=3.300V/27C/mc1\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[2,\"typical/vcm=1.650_vdd=3.300V/27C/mc2\"]",
+    "reason": "no_requested_measurements"
+   }
+  ],
+  "unknown": [],
+  "unrecognized_limit_keys": []
+ },
+ "diagnostic_counts": {
+  "by_code": {},
+  "by_severity": {},
+  "corners_with_diagnostics": 0
+ },
+ "environment": {
+  "engine": "ngspice",
+  "engine_version": "46",
+  "models_lib": {
+   "path": null,
+   "scope": "external"
+  },
+  "models_lib_sha256": "6edba54d23b38a2c60f8ffdbaa3eb75a7568c615e4820808969bd1121b77b1aa",
+  "monte_carlo": {
+   "family_mismatch": [
+    {
+     "active": null,
+     "family": "other",
+     "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+    },
+    {
+     "active": false,
+     "family": "resistor",
+     "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+    },
+    {
+     "active": null,
+     "family": "capacitor",
+     "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+    }
+   ],
+   "n": 3,
+   "seed": 45,
+   "vary": "mismatch"
+  },
+  "netlist_closure": [
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "48afcc3ecb8746c9976abe59368d74d12b8c685fcce965931abe0830fec448ba"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+   }
+  ],
+  "netlist_sha256": "48afcc3ecb8746c9976abe59368d74d12b8c685fcce965931abe0830fec448ba",
+  "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+  "remote": {
+   "ami_id": "ami-0e40e3245f1923ac8",
+   "availability_zone": "us-east-1b",
+   "bucket": "2am-batch-jobs-221082181346",
+   "client_klt_version": "0.7.0+g39f6da54ae4c",
+   "concurrency": "1",
+   "elapsed_seconds": 7,
+   "exit_code": "0",
+   "instance_id": "i-04e9b051f39b48656",
+   "instance_type": "m6i.4xlarge",
+   "job_id": "klt-sim-13f0ccc998f3",
+   "lifecycle": "spot",
+   "physical_cores": "8",
+   "provider": "aws-batch-fleet",
+   "region": "us-east-1",
+   "runner_compatibility": "mismatch",
+   "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g39f6da54ae4c; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+   "runner_klt_version": "0.5.0",
+   "spot": true,
+   "state": "done"
+  }
+ },
+ "errored": 0,
+ "failed": 0,
+ "inconclusive": 0,
+ "measurements": [],
+ "metrics": {
+  "sim__corner__count": 3,
+  "sim__corner__errored_count": 0,
+  "sim__corner__failed_count": 0,
+  "sim__corner__inconclusive_count": 0,
+  "sim__corner__passed_count": 3
+ },
+ "netlist": {
+  "path": null,
+  "scope": "external"
+ },
+ "passed": 3,
+ "provenance": {
+  "deck": {
+   "content_hash": "sha256:6edba54d23b38a2c60f8ffdbaa3eb75a7568c615e4820808969bd1121b77b1aa",
+   "name": "sm141064.ngspice",
+   "released": false
+  },
+  "input": {
+   "content_hash": "sha256:48afcc3ecb8746c9976abe59368d74d12b8c685fcce965931abe0830fec448ba",
+   "role": "netlist"
+  },
+  "klayout_version": "0.30.12",
+  "klt_version": "0.7.0+g39f6da54ae4c",
+  "pdk": {
+   "name": "gf180mcuD",
+   "source": "search root: ~/.volare",
+   "version": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+  }
+ },
+ "schema_version": 3,
+ "status": "not_checked"
+}

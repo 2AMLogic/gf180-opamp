@@ -198,7 +198,15 @@ undoes each of `ci.yml`'s speed trade-offs: an unpartitioned full run with no
 first build, the whole release target matrix minus signing, every
 `package-lock.json`, `cargo deny` against `deny.toml`, the shell suites at
 parallelism 1 and 8 and on macOS/bash 3.2, `nextest` three times over for
-flakes, Rust beta, and the Docker smokes without their path filter.
+flakes, Rust beta, the Docker smokes without their path filter, the Docker-backed
+session-exec / private-workspace fixtures, and the `--ignored` real-service
+suites (pinned Collector / ClickHouse running the committed SigNoz SQL
+verbatim) that the PR gate no longer runs since #11967 — a PR that breaks one
+of those artifacts is caught here within a day, not pre-merge.
+Since #11966 `Release Build Check` runs on a PR only when image inputs
+changed, so a non-image PR's release-profile observation is owed by the
+`push` run of its merge commit and the daily `release-matrix` (and
+`merge_group` where a queue is enabled; dormant on `rjwalters/loom`).
 
 One job is not a speed trade-off paid back but a proof `ci.yml` cannot make
 (#10868): `Compatibility Floor (SUPPORTS_INSTALLED)` runs the compatibility
@@ -206,11 +214,11 @@ contract's direction A against the release `SUPPORTS_INSTALLED` names, where
 `ci.yml` tests only the release just before the change
 ([`release-cadence.md`](release-cadence.md), "Compatibility contract").
 
-The full **default-feature** suite runs only here (#10823): `ci.yml`'s
-`Rust Unit Tests` legs run the whole workspace with `--features
-loom-daemon/otlp` (the shipped configuration), and the PR gate adds only a
-targeted `--lib` step for the `#[cfg(not(feature = "otlp"))]` tests, whose
-names it derives from source.
+Since #10700 the OTLP exporter is compiled unconditionally, so there is one
+build configuration: `ci.yml`'s `Rust Unit Tests` legs and the nightly
+unpartitioned run test the same code (`--features loom-daemon/otlp` is a no-op
+alias where it still appears), and the former PR-gate step for
+`#[cfg(not(feature = "otlp"))]` tests is gone with the tests themselves.
 
 **A red daily run nobody reads is worse than none**, because it trains people
 to ignore red. So the `report` job is part of the mechanism, not a nicety:
@@ -238,6 +246,13 @@ to ignore red. So the `report` job is part of the mechanism, not a nicety:
   the label set is intentional and `.github/labels.yml` is authoritative.
   Identity lives in the title, which is why the lookup ignores labels and the
   issue body asks that the title be left unchanged.
+- **This repo's ci-daily also records the same decisions on its dashboard's
+  alert hub** (see the workflow's header comment). After the issue step, the
+  `report` job posts `open` for each job whose issue it opened or updated and
+  `resolved` for each green job, with the job's Actions OIDC token (no secret).
+  It is best-effort (`continue-on-error`, warnings only) and posts only from
+  `main`; it never changes an issue, and an outage there never turns the
+  report red.
 
 SigNoz needs nothing workflow-side: `loom-daemon ci-telemetry` captures every
 run of every workflow of the configured owners by auto-discovery, so the daily

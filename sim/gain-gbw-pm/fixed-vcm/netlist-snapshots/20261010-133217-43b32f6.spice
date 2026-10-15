@@ -1,0 +1,194 @@
+* netlist snapshot for record 20261010-133217-43b32f6 (issue #125, fixed VCM 1.2 V)
+* ---- conditions: klt sim request (grid) ----
+* {
+*  "engine": "ngspice",
+*  "models": {
+*   "pdk": "gf180mcuD",
+*   "lib": "libs.tech/ngspice/sm141064.ngspice"
+*  },
+*  "corners": {
+*   "process": [
+*    {
+*     "name": "typical",
+*     "sections": [
+*      "typical",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ff",
+*     "sections": [
+*      "ff",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "ss",
+*     "sections": [
+*      "ss",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "fs",
+*     "sections": [
+*      "fs",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    },
+*    {
+*     "name": "sf",
+*     "sections": [
+*      "sf",
+*      "res_typical",
+*      "mimcap_typical"
+*     ]
+*    }
+*   ],
+*   "supply_v": {
+*    "vdd": [
+*     2.97,
+*     3.3,
+*     3.63
+*    ],
+*    "vcm": [
+*     1.2,
+*     1.2,
+*     1.2
+*    ]
+*   },
+*   "temperature_c": [
+*    -40.0,
+*    27.0,
+*    125.0
+*   ]
+*  },
+*  "analysis": {
+*   "kind": "ac",
+*   "args": "dec 20 0.1 1e+09"
+*  },
+*  "measurements": [
+*   {
+*    "name": "a_first_db",
+*    "spice": ".meas ac a_first_db FIND vdb(vout) AT=0.1",
+*    "unit": "dB"
+*   },
+*   {
+*    "name": "gbw_hz",
+*    "spice": ".meas ac gbw_hz WHEN vdb(vout)=0 FALL=1",
+*    "unit": "Hz"
+*   },
+*   {
+*    "name": "ph_gbw_rad",
+*    "spice": ".meas ac ph_gbw_rad FIND vp(vout) WHEN vdb(vout)=0 FALL=1",
+*    "unit": "rad"
+*   }
+*  ],
+*  "options": {
+*   "timeout_s": 300,
+*   "keep_artifacts": true,
+*   "waveforms": true
+*  },
+*  "batch": {
+*   "runner_version_check": "warn"
+*  }
+* }
+
+* ---- DUT (wrapper-normalised) ----
+** sch_path: /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-17/design/opamp_two_stage.sch
+.subckt opamp_two_stage vdd vss vinp vinn vout ibias
+
+*.iopin vdd
+*.iopin vss
+*.iopin vinp
+*.iopin vinn
+*.iopin vout
+*.iopin ibias
+XMB1 ibias ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM5 tail ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM1 n1 vinn tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM2 n2 vinp tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM4 n2 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM6 vout n2 vdd vdd pfet_03v3 L=1u W=72u nf=24 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM7 vout ibias vss vss nfet_03v3 L=2u W=36u nf=12 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XCC n2 nz cap_mim_2f0_m4m5_noshield c_width=17.4u c_length=17.4u m=1
+XRZ vout nz vss ppolyf_u_1k r_width=2u r_length=4u m=1
+.ends
+* ---- testbench (verbatim) ----
+* tb_gain_gbw_pm.spice -- open-loop AC testbench for the committed sized
+* schematic (issue #38; spec rows: open-loop DC gain, GBW, phase margin).
+*
+* DEVICE UNDER TEST: the committed xschem export
+* design/netlist/opamp_two_stage.spice, instantiated as `opamp_two_stage`
+* (ports: vdd vss vinp vinn vout ibias). NO TRANSISTOR IS DECLARED IN THIS
+* FILE -- every device, including the Miller cap CC and nulling resistor RZ,
+* comes from the DUT include below. The driver (run_gain_gbw_pm.py)
+* materialises `opamp_two_stage.dut.spice` from the committed export by the
+* same wrapper normalisation design/check_dc_op.py uses (uncomment xschem's
+* `**.subckt`/`**.ends`, drop the deck-terminating `.end`; nothing else is
+* touched) and rewrites the two `.include` targets below to absolute paths
+* of the per-run work directory. test_gain_gbw_pm.py guards that both
+* includes are present and that no transistor is declared here.
+*
+* This file is a CIRCUIT BODY in `klt sim`'s sense: no `.lib`, `.temp`,
+* `.control` or `.end`. `klt sim` adds the corner's `.lib` cards, `.temp`,
+* the supply `alter`s and the `.ac` analysis.
+*
+* ---- Bias and load (design/README.md; spec/target-spec.md Sec.1) ----
+*   - Ibias: 10 uA driven INTO the `ibias` node from vdd (the polarity
+*     design/check_dc_op.py uses).
+*   - CL = 2 pF [DR-1] on vout.
+*   - Input common mode tracks VDD/2: `Vcm` and `Vdd` are swept together
+*     by `klt sim` (corners.supply_v keys vdd and vcm move by index).
+*   - Committed RZ/CC stay in the DUT; this bench neither tunes nor
+*     bypasses them.
+*
+* ---- DC-closed, AC-open arrangement ----
+* A huge inductor Lfb from vout to the inverting input vinn closes the loop
+* at DC (unity-gain buffer: the amplifier self-biases at vinn = vout = VCM,
+* the same operating point design/check_dc_op.py verifies) while being an
+* AC open: |Z| = 2*pi*f*Lfb >= ~6e8 ohm even at the 0.1 Hz sweep start, far
+* above the ~Mohm-class output resistance, so it does not load the output
+* and the loop is open for every swept frequency. A huge capacitor Cfb from
+* vinn to ground makes vinn an AC ground, so the AC stimulus on vinp is the
+* whole differential input. The driver still divides by the ACTUAL
+* differential phasor v(vinp)-v(vinn) rather than assuming it is 1.
+*
+* The Lfb/Cfb values are the `.param` line below; the driver rewrites that
+* line (and only that line) for the feedback-isolation sweep that
+* demonstrates the measured low-frequency plateau does not depend on the
+* isolation (see the record). A SMALL Lfb loads the output and shows up as
+* a spurious gain rise with frequency instead of a plateau -- that is the
+* failure mode the plateau check exists to catch.
+*
+* ---- Polarity ----
+* vinp is the non-inverting input: the plateau gain must come out
+* positive-real (phase ~ 0 deg). The driver fails a point whose plateau
+* phase is not within 10 deg of 0.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param lfb=1e9 cfb=1e9
+
+Vdd vdd 0 dc 3.3
+Vcm vinp 0 dc 1.65 ac 1
+Ibias vdd ibias dc 10u
+Xdut vdd 0 vinp vinn vout ibias opamp_two_stage
+Lfb vout vinn {lfb}
+Cfb vinn 0 {cfb}
+CL vout 0 2p
+

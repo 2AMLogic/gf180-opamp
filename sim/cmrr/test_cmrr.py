@@ -414,5 +414,38 @@ class SimTests(unittest.TestCase):
         self.assertIn("unequal CM drive", pt.reason)
 
 
+class MeasurementFingerprint(unittest.TestCase):
+    """Issue #89: the runner and the fingerprint share ONE configuration source."""
+
+    TB = r.TESTBENCH.read_text()
+    PDK = r.Pdk(Path("/x/gf180mcuD"), "gf180mcuD", "test")
+
+    def inp(self):
+        return r.mc.inputs({"bench": self.TB})
+
+    def test_runner_constants_are_the_fingerprinted_ones(self):
+        for n in ("MODES", "SERVO_NOMINAL", "ISOLATION_CSV", "CONTROL_MIRROR", "CONTROL_MIRROR_INFO", "UNEQUAL_CM",
+                  "OP_TAIL", "OP_PRINT", "CORNERS", "TEMPS_C", "SUPPLIES_V"):
+            self.assertIs(getattr(r, n), getattr(r.mc, n), n)
+        self.assertEqual(r.DEVICES, r.mc.DEVICES)
+        self.assertEqual(tuple(r.mc.DEVICES), tuple(r.G.DEVICES))
+
+    def test_request_analysis_is_what_the_fingerprint_hashes(self):
+        for local in (False, True):
+            req = r.ac_request(Path("/x/tb.spice"), self.PDK, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V, local=local)
+            self.assertEqual(req["analysis"], {"kind": self.inp()["analysis"]["kind"], "args": self.inp()["analysis"]["args"]})
+            self.assertEqual(req["models"]["lib"], self.inp()["models"]["lib"])
+
+    def test_excitation_comes_from_the_fingerprinted_modes(self):
+        p = r.with_servo(r.MODES["cm"])
+        self.assertEqual({k: p[k] for k in ("acp", "acn")}, self.inp()["excitation"]["modes"]["cm"])
+        self.assertEqual({k: p[k] for k in ("rsv", "csv")}, self.inp()["excitation"]["servo"])
+
+    def test_record_embeds_header_and_inputs(self):
+        blob = "\n".join(r.mc.fingerprint_lines({"bench": self.TB}) + r.mc.inputs_section({"bench": self.TB}))
+        self.assertIn(r.mc.fingerprint({"bench": self.TB}), blob)
+        self.assertIn("## Measurement fingerprint inputs", blob)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

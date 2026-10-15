@@ -1,10 +1,22 @@
 {
   "block": "gf180-opamp",
-  "kind": "analog",
   "evidence": {
+    "1": {
+      "content_hash": "sha256:36edcf4ae3eb940a0a33b0e3b80a74efbccbbce8579c771729f0bf546e2d6454",
+      "file": "manifests/attest/item-1.evidence.json"
+    },
+    "10": {
+      "content_hash": "sha256:95cedcdcd36ba3fb53024b12fefb2a0880532939667720683f78d8ff27fd0362",
+      "file": "manifests/attest/item-10.evidence.json"
+    },
     "8": {
-      "file": "sim/reports/characterization-report.evidence.json",
-      "content_hash": "sha256:0c172c720b9dd6bdef7dd00a8bb11467912b6d4563b4a7f78423a738061eaf2d"
+      "content_hash": "sha256:1ef0e7d84323cd5e104b0c9f1d371f4779226f3d185186ddd82c80b78fe466a4",
+      "file": "sim/reports/characterization-report.evidence.json"
+    },
+    "9": {
+      "content_hash": "sha256:1b76f789e78f8726786a800e8435ba318ebc5d6648fb29b2c36dd4cdf09d1f1d",
+      "file": "manifests/attest/item-9.evidence.json"
     }
-  }
+  },
+  "kind": "analog"
 }

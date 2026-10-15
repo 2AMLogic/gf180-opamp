@@ -1,0 +1,3255 @@
+{
+ "comparison": [
+  {
+   "index": 0,
+   "key": [
+    "ss",
+    27.0,
+    3.0
+   ],
+   "offset_dev": 0.004737867,
+   "offset_separate": 0.001144837,
+   "offset_together": -0.00359303,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "seed": 1240223581
+   },
+   "together": {
+    "mismatch_seed": 592941757,
+    "process_seed": 529049884,
+    "seed": 1043706957
+   }
+  },
+  {
+   "index": 1,
+   "key": [
+    "ss",
+    27.0,
+    3.0
+   ],
+   "offset_dev": 0.003904531,
+   "offset_separate": -0.00235813,
+   "offset_together": 0.001546401,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "seed": 1176304945
+   },
+   "together": {
+    "mismatch_seed": 1411865675,
+    "process_seed": 529049884,
+    "seed": 149732359
+   }
+  },
+  {
+   "index": 2,
+   "key": [
+    "ss",
+    27.0,
+    3.0
+   ],
+   "offset_dev": 0.0023007080000000003,
+   "offset_separate": 0.001491439,
+   "offset_together": -0.000809269,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "seed": 1017889434
+   },
+   "together": {
+    "mismatch_seed": 369713294,
+    "process_seed": 529049884,
+    "seed": 534671352
+   }
+  },
+  {
+   "index": 0,
+   "key": [
+    "ss",
+    27.0,
+    3.3
+   ],
+   "offset_dev": 0.007870183999999999,
+   "offset_separate": 0.001146568,
+   "offset_together": 0.009016752,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "seed": 1240223581
+   },
+   "together": {
+    "mismatch_seed": 107717907,
+    "process_seed": 1348797194,
+    "seed": 492681893
+   }
+  },
+  {
+   "index": 1,
+   "key": [
+    "ss",
+    27.0,
+    3.3
+   ],
+   "offset_dev": 0.0020352200000000003,
+   "offset_separate": -0.00235016,
+   "offset_together": -0.00438538,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "seed": 1176304945
+   },
+   "together": {
+    "mismatch_seed": 188297928,
+    "process_seed": 1348797194,
+    "seed": 1341787407
+   }
+  },
+  {
+   "index": 2,
+   "key": [
+    "ss",
+    27.0,
+    3.3
+   ],
+   "offset_dev": 0.0013360687,
+   "offset_separate": 0.001498583,
+   "offset_together": 0.0001625143,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "seed": 1017889434
+   },
+   "together": {
+    "mismatch_seed": 65605153,
+    "process_seed": 1348797194,
+    "seed": 714541863
+   }
+  },
+  {
+   "index": 0,
+   "key": [
+    "ss",
+    125.0,
+    3.0
+   ],
+   "offset_dev": 0.00017516100000000007,
+   "offset_separate": 0.00125205,
+   "offset_together": 0.001076889,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "seed": 1240223581
+   },
+   "together": {
+    "mismatch_seed": 960026969,
+    "process_seed": 189827504,
+    "seed": 850855679
+   }
+  },
+  {
+   "index": 1,
+   "key": [
+    "ss",
+    125.0,
+    3.0
+   ],
+   "offset_dev": 0.0013109499999999997,
+   "offset_separate": -0.00248551,
+   "offset_together": -0.00117456,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "seed": 1176304945
+   },
+   "together": {
+    "mismatch_seed": 130333218,
+    "process_seed": 189827504,
+    "seed": 309269021
+   }
+  },
+  {
+   "index": 2,
+   "key": [
+    "ss",
+    125.0,
+    3.0
+   ],
+   "offset_dev": 0.003685399,
+   "offset_separate": 0.001554059,
+   "offset_together": -0.00213134,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "seed": 1017889434
+   },
+   "together": {
+    "mismatch_seed": 942809336,
+    "process_seed": 189827504,
+    "seed": 1924738371
+   }
+  },
+  {
+   "index": 0,
+   "key": [
+    "ss",
+    125.0,
+    3.3
+   ],
+   "offset_dev": 0.005080147,
+   "offset_separate": 0.001253993,
+   "offset_together": 0.00633414,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "seed": 1240223581
+   },
+   "together": {
+    "mismatch_seed": 2095496086,
+    "process_seed": 2120171820,
+    "seed": 205393668
+   }
+  },
+  {
+   "index": 1,
+   "key": [
+    "ss",
+    125.0,
+    3.3
+   ],
+   "offset_dev": 0.0032928195,
+   "offset_separate": -0.00248076,
+   "offset_together": 0.0008120595,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "seed": 1176304945
+   },
+   "together": {
+    "mismatch_seed": 1448717404,
+    "process_seed": 2120171820,
+    "seed": 2146932276
+   }
+  },
+  {
+   "index": 2,
+   "key": [
+    "ss",
+    125.0,
+    3.3
+   ],
+   "offset_dev": 0.0028034590000000003,
+   "offset_separate": 0.001558979,
+   "offset_together": -0.00124448,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "seed": 1017889434
+   },
+   "together": {
+    "mismatch_seed": 126911379,
+    "process_seed": 2120171820,
+    "seed": 577474882
+   }
+  },
+  {
+   "index": 0,
+   "key": [
+    "typical",
+    27.0,
+    3.0
+   ],
+   "offset_dev": 0.0,
+   "offset_separate": 0.001139981,
+   "offset_together": 0.001139981,
+   "same": {
+    "mismatch_seed": true,
+    "process_seed": true,
+    "seed": true
+   },
+   "separate": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "seed": 1240223581
+   },
+   "together": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "seed": 1240223581
+   }
+  },
+  {
+   "index": 1,
+   "key": [
+    "typical",
+    27.0,
+    3.0
+   ],
+   "offset_dev": 0.0,
+   "offset_separate": -0.00236311,
+   "offset_together": -0.00236311,
+   "same": {
+    "mismatch_seed": true,
+    "process_seed": true,
+    "seed": true
+   },
+   "separate": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "seed": 1176304945
+   },
+   "together": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "seed": 1176304945
+   }
+  },
+  {
+   "index": 2,
+   "key": [
+    "typical",
+    27.0,
+    3.0
+   ],
+   "offset_dev": 0.0,
+   "offset_separate": 0.001468206,
+   "offset_together": 0.001468206,
+   "same": {
+    "mismatch_seed": true,
+    "process_seed": true,
+    "seed": true
+   },
+   "separate": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "seed": 1017889434
+   },
+   "together": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "seed": 1017889434
+   }
+  },
+  {
+   "index": 0,
+   "key": [
+    "typical",
+    27.0,
+    3.3
+   ],
+   "offset_dev": 0.01115677,
+   "offset_separate": 0.00114122,
+   "offset_together": 0.01229799,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "seed": 1240223581
+   },
+   "together": {
+    "mismatch_seed": 1757987474,
+    "process_seed": 280454172,
+    "seed": 712513040
+   }
+  },
+  {
+   "index": 1,
+   "key": [
+    "typical",
+    27.0,
+    3.3
+   ],
+   "offset_dev": 0.009735131000000001,
+   "offset_separate": -0.00235553,
+   "offset_together": 0.007379601,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "seed": 1176304945
+   },
+   "together": {
+    "mismatch_seed": 828251435,
+    "process_seed": 280454172,
+    "seed": 1419668468
+   }
+  },
+  {
+   "index": 2,
+   "key": [
+    "typical",
+    27.0,
+    3.3
+   ],
+   "offset_dev": 0.0058006989999999994,
+   "offset_separate": 0.001474799,
+   "offset_together": -0.0043259,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "seed": 1017889434
+   },
+   "together": {
+    "mismatch_seed": 2132351872,
+    "process_seed": 280454172,
+    "seed": 1917699586
+   }
+  },
+  {
+   "index": 0,
+   "key": [
+    "typical",
+    125.0,
+    3.0
+   ],
+   "offset_dev": 0.0035206359999999997,
+   "offset_separate": 0.001244969,
+   "offset_together": 0.004765605,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "seed": 1240223581
+   },
+   "together": {
+    "mismatch_seed": 1338284299,
+    "process_seed": 558766540,
+    "seed": 1995730792
+   }
+  },
+  {
+   "index": 1,
+   "key": [
+    "typical",
+    125.0,
+    3.0
+   ],
+   "offset_dev": 0.004769103,
+   "offset_separate": -0.00248474,
+   "offset_together": 0.002284363,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "seed": 1176304945
+   },
+   "together": {
+    "mismatch_seed": 77679007,
+    "process_seed": 558766540,
+    "seed": 401178685
+   }
+  },
+  {
+   "index": 2,
+   "key": [
+    "typical",
+    125.0,
+    3.0
+   ],
+   "offset_dev": 0.00412624,
+   "offset_separate": 0.0015306,
+   "offset_together": -0.00259564,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "seed": 1017889434
+   },
+   "together": {
+    "mismatch_seed": 1796383430,
+    "process_seed": 558766540,
+    "seed": 254508664
+   }
+  },
+  {
+   "index": 0,
+   "key": [
+    "typical",
+    125.0,
+    3.3
+   ],
+   "offset_dev": 0.0006213268,
+   "offset_separate": 0.001246313,
+   "offset_together": 0.0006249862,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1073930998,
+    "process_seed": 250201949,
+    "seed": 1240223581
+   },
+   "together": {
+    "mismatch_seed": 866126268,
+    "process_seed": 559149245,
+    "seed": 1784565164
+   }
+  },
+  {
+   "index": 1,
+   "key": [
+    "typical",
+    125.0,
+    3.3
+   ],
+   "offset_dev": 0.002272231,
+   "offset_separate": -0.00248042,
+   "offset_together": -0.000208189,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 1947764510,
+    "process_seed": 250201949,
+    "seed": 1176304945
+   },
+   "together": {
+    "mismatch_seed": 1062732594,
+    "process_seed": 559149245,
+    "seed": 1602525381
+   }
+  },
+  {
+   "index": 2,
+   "key": [
+    "typical",
+    125.0,
+    3.3
+   ],
+   "offset_dev": 0.002417503,
+   "offset_separate": 0.001534934,
+   "offset_together": -0.000882569,
+   "same": {
+    "mismatch_seed": false,
+    "process_seed": false,
+    "seed": false
+   },
+   "separate": {
+    "mismatch_seed": 874458741,
+    "process_seed": 250201949,
+    "seed": 1017889434
+   },
+   "together": {
+    "mismatch_seed": 16339327,
+    "process_seed": 559149245,
+    "seed": 783865368
+   }
+  }
+ ],
+ "klt_reports": {
+  "sep.ss.125C.3.00V": {
+   "corner_count": 3,
+   "corners": [
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/125C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1073930998,
+      "process_seed": 250201949,
+      "sample_index": 0,
+      "seed": 1240223581
+     },
+     "process": "ss",
+     "runtime_s": 0.808,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/125C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1947764510,
+      "process_seed": 250201949,
+      "sample_index": 1,
+      "seed": 1176304945
+     },
+     "process": "ss",
+     "runtime_s": 0.81,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/125C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 874458741,
+      "process_seed": 250201949,
+      "sample_index": 2,
+      "seed": 1017889434
+     },
+     "process": "ss",
+     "runtime_s": 0.809,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    }
+   ],
+   "coverage": {
+    "checked": [],
+    "corners_simulated": 3,
+    "inapplicable": [],
+    "known": true,
+    "measurements_declared": 0,
+    "measurements_with_limits": 0,
+    "nothing_checked": true,
+    "nothing_checked_reasons": [
+     "no_requested_measurements"
+    ],
+    "schema_version": 1,
+    "skipped": [
+     {
+      "id": "corner:[0,\"ss/vcm=1.500_vdd=3.000V/125C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[1,\"ss/vcm=1.500_vdd=3.000V/125C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[2,\"ss/vcm=1.500_vdd=3.000V/125C/mc2\"]",
+      "reason": "no_requested_measurements"
+     }
+    ],
+    "unknown": [],
+    "unrecognized_limit_keys": []
+   },
+   "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+   },
+   "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "models_lib": {
+     "path": null,
+     "scope": "external"
+    },
+    "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+    "monte_carlo": {
+     "family_mismatch": [
+      {
+       "active": null,
+       "family": "other",
+       "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      },
+      {
+       "active": false,
+       "family": "resistor",
+       "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+      },
+      {
+       "active": null,
+       "family": "capacitor",
+       "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      }
+     ],
+     "n": 3,
+     "seed": 45,
+     "vary": "mismatch"
+    },
+    "netlist_closure": [
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+     }
+    ],
+    "netlist_sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "remote": {
+     "ami_id": "ami-0e40e3245f1923ac8",
+     "availability_zone": "us-east-1d",
+     "bucket": "2am-batch-jobs-221082181346",
+     "client_klt_version": "0.7.0+g0d0312b30708",
+     "concurrency": "1",
+     "elapsed_seconds": 43,
+     "exit_code": "0",
+     "instance_id": "i-0ba139463522489df",
+     "instance_type": "c7i.4xlarge",
+     "job_id": "klt-sim-bc026bb5263f",
+     "lifecycle": "spot",
+     "physical_cores": "8",
+     "provider": "aws-batch-fleet",
+     "region": "us-east-1",
+     "runner_compatibility": "mismatch",
+     "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g0d0312b30708; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+     "runner_klt_version": "0.5.0",
+     "spot": true,
+     "state": "done"
+    }
+   },
+   "errored": 0,
+   "failed": 0,
+   "inconclusive": 0,
+   "measurements": [],
+   "metrics": {
+    "sim__corner__count": 3,
+    "sim__corner__errored_count": 0,
+    "sim__corner__failed_count": 0,
+    "sim__corner__inconclusive_count": 0,
+    "sim__corner__passed_count": 3
+   },
+   "netlist": {
+    "path": null,
+    "scope": "external"
+   },
+   "passed": 3,
+   "provenance": {
+    "deck": {
+     "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+     "name": "sm141064.ngspice",
+     "released": false
+    },
+    "input": {
+     "content_hash": "sha256:173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+     "role": "netlist"
+    },
+    "klayout_version": "0.30.12",
+    "klt_version": "0.7.0+g0d0312b30708",
+    "pdk": {
+     "ambiguous_sources": [
+      "search root: ~/.volare"
+     ],
+     "name": "gf180mcuD",
+     "source": "search root: ~/.ciel",
+     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    }
+   },
+   "schema_version": 3,
+   "status": "not_checked"
+  },
+  "sep.ss.125C.3.30V": {
+   "corner_count": 3,
+   "corners": [
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/125C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1073930998,
+      "process_seed": 250201949,
+      "sample_index": 0,
+      "seed": 1240223581
+     },
+     "process": "ss",
+     "runtime_s": 0.48,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/125C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1947764510,
+      "process_seed": 250201949,
+      "sample_index": 1,
+      "seed": 1176304945
+     },
+     "process": "ss",
+     "runtime_s": 0.526,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/125C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 874458741,
+      "process_seed": 250201949,
+      "sample_index": 2,
+      "seed": 1017889434
+     },
+     "process": "ss",
+     "runtime_s": 0.528,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    }
+   ],
+   "coverage": {
+    "checked": [],
+    "corners_simulated": 3,
+    "inapplicable": [],
+    "known": true,
+    "measurements_declared": 0,
+    "measurements_with_limits": 0,
+    "nothing_checked": true,
+    "nothing_checked_reasons": [
+     "no_requested_measurements"
+    ],
+    "schema_version": 1,
+    "skipped": [
+     {
+      "id": "corner:[0,\"ss/vcm=1.650_vdd=3.300V/125C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[1,\"ss/vcm=1.650_vdd=3.300V/125C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[2,\"ss/vcm=1.650_vdd=3.300V/125C/mc2\"]",
+      "reason": "no_requested_measurements"
+     }
+    ],
+    "unknown": [],
+    "unrecognized_limit_keys": []
+   },
+   "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+   },
+   "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "models_lib": {
+     "path": null,
+     "scope": "external"
+    },
+    "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+    "monte_carlo": {
+     "family_mismatch": [
+      {
+       "active": null,
+       "family": "other",
+       "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      },
+      {
+       "active": false,
+       "family": "resistor",
+       "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+      },
+      {
+       "active": null,
+       "family": "capacitor",
+       "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      }
+     ],
+     "n": 3,
+     "seed": 45,
+     "vary": "mismatch"
+    },
+    "netlist_closure": [
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+     }
+    ],
+    "netlist_sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "remote": {
+     "ami_id": "ami-0e40e3245f1923ac8",
+     "availability_zone": "us-east-1d",
+     "bucket": "2am-batch-jobs-221082181346",
+     "client_klt_version": "0.7.0+g0d0312b30708",
+     "concurrency": "1",
+     "elapsed_seconds": 7,
+     "exit_code": "0",
+     "instance_id": "i-0207c424e2df74949",
+     "instance_type": "c7i.4xlarge",
+     "job_id": "klt-sim-69fcb8319c48",
+     "lifecycle": "spot",
+     "physical_cores": "8",
+     "provider": "aws-batch-fleet",
+     "region": "us-east-1",
+     "runner_compatibility": "mismatch",
+     "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g0d0312b30708; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+     "runner_klt_version": "0.5.0",
+     "spot": true,
+     "state": "done"
+    }
+   },
+   "errored": 0,
+   "failed": 0,
+   "inconclusive": 0,
+   "measurements": [],
+   "metrics": {
+    "sim__corner__count": 3,
+    "sim__corner__errored_count": 0,
+    "sim__corner__failed_count": 0,
+    "sim__corner__inconclusive_count": 0,
+    "sim__corner__passed_count": 3
+   },
+   "netlist": {
+    "path": null,
+    "scope": "external"
+   },
+   "passed": 3,
+   "provenance": {
+    "deck": {
+     "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+     "name": "sm141064.ngspice",
+     "released": false
+    },
+    "input": {
+     "content_hash": "sha256:173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+     "role": "netlist"
+    },
+    "klayout_version": "0.30.12",
+    "klt_version": "0.7.0+g0d0312b30708",
+    "pdk": {
+     "ambiguous_sources": [
+      "search root: ~/.volare"
+     ],
+     "name": "gf180mcuD",
+     "source": "search root: ~/.ciel",
+     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    }
+   },
+   "schema_version": 3,
+   "status": "not_checked"
+  },
+  "sep.ss.27C.3.00V": {
+   "corner_count": 3,
+   "corners": [
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/27C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1073930998,
+      "process_seed": 250201949,
+      "sample_index": 0,
+      "seed": 1240223581
+     },
+     "process": "ss",
+     "runtime_s": 0.767,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/27C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1947764510,
+      "process_seed": 250201949,
+      "sample_index": 1,
+      "seed": 1176304945
+     },
+     "process": "ss",
+     "runtime_s": 0.773,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/27C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 874458741,
+      "process_seed": 250201949,
+      "sample_index": 2,
+      "seed": 1017889434
+     },
+     "process": "ss",
+     "runtime_s": 0.771,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    }
+   ],
+   "coverage": {
+    "checked": [],
+    "corners_simulated": 3,
+    "inapplicable": [],
+    "known": true,
+    "measurements_declared": 0,
+    "measurements_with_limits": 0,
+    "nothing_checked": true,
+    "nothing_checked_reasons": [
+     "no_requested_measurements"
+    ],
+    "schema_version": 1,
+    "skipped": [
+     {
+      "id": "corner:[0,\"ss/vcm=1.500_vdd=3.000V/27C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[1,\"ss/vcm=1.500_vdd=3.000V/27C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[2,\"ss/vcm=1.500_vdd=3.000V/27C/mc2\"]",
+      "reason": "no_requested_measurements"
+     }
+    ],
+    "unknown": [],
+    "unrecognized_limit_keys": []
+   },
+   "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+   },
+   "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "models_lib": {
+     "path": null,
+     "scope": "external"
+    },
+    "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+    "monte_carlo": {
+     "family_mismatch": [
+      {
+       "active": null,
+       "family": "other",
+       "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      },
+      {
+       "active": false,
+       "family": "resistor",
+       "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+      },
+      {
+       "active": null,
+       "family": "capacitor",
+       "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      }
+     ],
+     "n": 3,
+     "seed": 45,
+     "vary": "mismatch"
+    },
+    "netlist_closure": [
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+     }
+    ],
+    "netlist_sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "remote": {
+     "ami_id": "ami-0e40e3245f1923ac8",
+     "availability_zone": "us-east-1d",
+     "bucket": "2am-batch-jobs-221082181346",
+     "client_klt_version": "0.7.0+g0d0312b30708",
+     "concurrency": "1",
+     "elapsed_seconds": 8,
+     "exit_code": "0",
+     "instance_id": "i-08e85cf4908e6a55d",
+     "instance_type": "c7i.4xlarge",
+     "job_id": "klt-sim-17dc04bf01f1",
+     "lifecycle": "spot",
+     "physical_cores": "8",
+     "provider": "aws-batch-fleet",
+     "region": "us-east-1",
+     "runner_compatibility": "mismatch",
+     "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g0d0312b30708; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+     "runner_klt_version": "0.5.0",
+     "spot": true,
+     "state": "done"
+    }
+   },
+   "errored": 0,
+   "failed": 0,
+   "inconclusive": 0,
+   "measurements": [],
+   "metrics": {
+    "sim__corner__count": 3,
+    "sim__corner__errored_count": 0,
+    "sim__corner__failed_count": 0,
+    "sim__corner__inconclusive_count": 0,
+    "sim__corner__passed_count": 3
+   },
+   "netlist": {
+    "path": null,
+    "scope": "external"
+   },
+   "passed": 3,
+   "provenance": {
+    "deck": {
+     "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+     "name": "sm141064.ngspice",
+     "released": false
+    },
+    "input": {
+     "content_hash": "sha256:173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+     "role": "netlist"
+    },
+    "klayout_version": "0.30.12",
+    "klt_version": "0.7.0+g0d0312b30708",
+    "pdk": {
+     "ambiguous_sources": [
+      "search root: ~/.volare"
+     ],
+     "name": "gf180mcuD",
+     "source": "search root: ~/.ciel",
+     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    }
+   },
+   "schema_version": 3,
+   "status": "not_checked"
+  },
+  "sep.ss.27C.3.30V": {
+   "corner_count": 3,
+   "corners": [
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/27C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1073930998,
+      "process_seed": 250201949,
+      "sample_index": 0,
+      "seed": 1240223581
+     },
+     "process": "ss",
+     "runtime_s": 0.446,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/27C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1947764510,
+      "process_seed": 250201949,
+      "sample_index": 1,
+      "seed": 1176304945
+     },
+     "process": "ss",
+     "runtime_s": 0.449,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/27C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 874458741,
+      "process_seed": 250201949,
+      "sample_index": 2,
+      "seed": 1017889434
+     },
+     "process": "ss",
+     "runtime_s": 0.444,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    }
+   ],
+   "coverage": {
+    "checked": [],
+    "corners_simulated": 3,
+    "inapplicable": [],
+    "known": true,
+    "measurements_declared": 0,
+    "measurements_with_limits": 0,
+    "nothing_checked": true,
+    "nothing_checked_reasons": [
+     "no_requested_measurements"
+    ],
+    "schema_version": 1,
+    "skipped": [
+     {
+      "id": "corner:[0,\"ss/vcm=1.650_vdd=3.300V/27C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[1,\"ss/vcm=1.650_vdd=3.300V/27C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[2,\"ss/vcm=1.650_vdd=3.300V/27C/mc2\"]",
+      "reason": "no_requested_measurements"
+     }
+    ],
+    "unknown": [],
+    "unrecognized_limit_keys": []
+   },
+   "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+   },
+   "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "models_lib": {
+     "path": null,
+     "scope": "external"
+    },
+    "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+    "monte_carlo": {
+     "family_mismatch": [
+      {
+       "active": null,
+       "family": "other",
+       "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      },
+      {
+       "active": false,
+       "family": "resistor",
+       "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+      },
+      {
+       "active": null,
+       "family": "capacitor",
+       "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      }
+     ],
+     "n": 3,
+     "seed": 45,
+     "vary": "mismatch"
+    },
+    "netlist_closure": [
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+     }
+    ],
+    "netlist_sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "remote": {
+     "ami_id": "ami-0e40e3245f1923ac8",
+     "availability_zone": "us-east-1c",
+     "bucket": "2am-batch-jobs-221082181346",
+     "client_klt_version": "0.7.0+g0d0312b30708",
+     "concurrency": "1",
+     "elapsed_seconds": 6,
+     "exit_code": "0",
+     "instance_id": "i-0b8ce8149441a8997",
+     "instance_type": "c7i.4xlarge",
+     "job_id": "klt-sim-571c6efea4f4",
+     "lifecycle": "spot",
+     "physical_cores": "8",
+     "provider": "aws-batch-fleet",
+     "region": "us-east-1",
+     "runner_compatibility": "mismatch",
+     "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g0d0312b30708; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+     "runner_klt_version": "0.5.0",
+     "spot": true,
+     "state": "done"
+    }
+   },
+   "errored": 0,
+   "failed": 0,
+   "inconclusive": 0,
+   "measurements": [],
+   "metrics": {
+    "sim__corner__count": 3,
+    "sim__corner__errored_count": 0,
+    "sim__corner__failed_count": 0,
+    "sim__corner__inconclusive_count": 0,
+    "sim__corner__passed_count": 3
+   },
+   "netlist": {
+    "path": null,
+    "scope": "external"
+   },
+   "passed": 3,
+   "provenance": {
+    "deck": {
+     "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+     "name": "sm141064.ngspice",
+     "released": false
+    },
+    "input": {
+     "content_hash": "sha256:173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+     "role": "netlist"
+    },
+    "klayout_version": "0.30.12",
+    "klt_version": "0.7.0+g0d0312b30708",
+    "pdk": {
+     "ambiguous_sources": [
+      "search root: ~/.volare"
+     ],
+     "name": "gf180mcuD",
+     "source": "search root: ~/.ciel",
+     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    }
+   },
+   "schema_version": 3,
+   "status": "not_checked"
+  },
+  "sep.typical.125C.3.00V": {
+   "corner_count": 3,
+   "corners": [
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/125C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1073930998,
+      "process_seed": 250201949,
+      "sample_index": 0,
+      "seed": 1240223581
+     },
+     "process": "typical",
+     "runtime_s": 0.581,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/125C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1947764510,
+      "process_seed": 250201949,
+      "sample_index": 1,
+      "seed": 1176304945
+     },
+     "process": "typical",
+     "runtime_s": 0.575,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/125C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 874458741,
+      "process_seed": 250201949,
+      "sample_index": 2,
+      "seed": 1017889434
+     },
+     "process": "typical",
+     "runtime_s": 0.574,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    }
+   ],
+   "coverage": {
+    "checked": [],
+    "corners_simulated": 3,
+    "inapplicable": [],
+    "known": true,
+    "measurements_declared": 0,
+    "measurements_with_limits": 0,
+    "nothing_checked": true,
+    "nothing_checked_reasons": [
+     "no_requested_measurements"
+    ],
+    "schema_version": 1,
+    "skipped": [
+     {
+      "id": "corner:[0,\"typical/vcm=1.500_vdd=3.000V/125C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[1,\"typical/vcm=1.500_vdd=3.000V/125C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[2,\"typical/vcm=1.500_vdd=3.000V/125C/mc2\"]",
+      "reason": "no_requested_measurements"
+     }
+    ],
+    "unknown": [],
+    "unrecognized_limit_keys": []
+   },
+   "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+   },
+   "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "models_lib": {
+     "path": null,
+     "scope": "external"
+    },
+    "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+    "monte_carlo": {
+     "family_mismatch": [
+      {
+       "active": null,
+       "family": "other",
+       "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      },
+      {
+       "active": false,
+       "family": "resistor",
+       "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+      },
+      {
+       "active": null,
+       "family": "capacitor",
+       "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      }
+     ],
+     "n": 3,
+     "seed": 45,
+     "vary": "mismatch"
+    },
+    "netlist_closure": [
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+     }
+    ],
+    "netlist_sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "remote": {
+     "ami_id": "ami-0e40e3245f1923ac8",
+     "availability_zone": "us-east-1d",
+     "bucket": "2am-batch-jobs-221082181346",
+     "client_klt_version": "0.7.0+g0d0312b30708",
+     "concurrency": "1",
+     "elapsed_seconds": 7,
+     "exit_code": "0",
+     "instance_id": "i-01d2ce60fe7ea15cb",
+     "instance_type": "c7i.4xlarge",
+     "job_id": "klt-sim-cb7cd641ffe5",
+     "lifecycle": "spot",
+     "physical_cores": "8",
+     "provider": "aws-batch-fleet",
+     "region": "us-east-1",
+     "runner_compatibility": "mismatch",
+     "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g0d0312b30708; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+     "runner_klt_version": "0.5.0",
+     "spot": true,
+     "state": "done"
+    }
+   },
+   "errored": 0,
+   "failed": 0,
+   "inconclusive": 0,
+   "measurements": [],
+   "metrics": {
+    "sim__corner__count": 3,
+    "sim__corner__errored_count": 0,
+    "sim__corner__failed_count": 0,
+    "sim__corner__inconclusive_count": 0,
+    "sim__corner__passed_count": 3
+   },
+   "netlist": {
+    "path": null,
+    "scope": "external"
+   },
+   "passed": 3,
+   "provenance": {
+    "deck": {
+     "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+     "name": "sm141064.ngspice",
+     "released": false
+    },
+    "input": {
+     "content_hash": "sha256:173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+     "role": "netlist"
+    },
+    "klayout_version": "0.30.12",
+    "klt_version": "0.7.0+g0d0312b30708",
+    "pdk": {
+     "ambiguous_sources": [
+      "search root: ~/.volare"
+     ],
+     "name": "gf180mcuD",
+     "source": "search root: ~/.ciel",
+     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    }
+   },
+   "schema_version": 3,
+   "status": "not_checked"
+  },
+  "sep.typical.125C.3.30V": {
+   "corner_count": 3,
+   "corners": [
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/125C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1073930998,
+      "process_seed": 250201949,
+      "sample_index": 0,
+      "seed": 1240223581
+     },
+     "process": "typical",
+     "runtime_s": 0.639,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/125C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1947764510,
+      "process_seed": 250201949,
+      "sample_index": 1,
+      "seed": 1176304945
+     },
+     "process": "typical",
+     "runtime_s": 0.638,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/125C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 874458741,
+      "process_seed": 250201949,
+      "sample_index": 2,
+      "seed": 1017889434
+     },
+     "process": "typical",
+     "runtime_s": 0.687,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    }
+   ],
+   "coverage": {
+    "checked": [],
+    "corners_simulated": 3,
+    "inapplicable": [],
+    "known": true,
+    "measurements_declared": 0,
+    "measurements_with_limits": 0,
+    "nothing_checked": true,
+    "nothing_checked_reasons": [
+     "no_requested_measurements"
+    ],
+    "schema_version": 1,
+    "skipped": [
+     {
+      "id": "corner:[0,\"typical/vcm=1.650_vdd=3.300V/125C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[1,\"typical/vcm=1.650_vdd=3.300V/125C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[2,\"typical/vcm=1.650_vdd=3.300V/125C/mc2\"]",
+      "reason": "no_requested_measurements"
+     }
+    ],
+    "unknown": [],
+    "unrecognized_limit_keys": []
+   },
+   "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+   },
+   "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "models_lib": {
+     "path": null,
+     "scope": "external"
+    },
+    "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+    "monte_carlo": {
+     "family_mismatch": [
+      {
+       "active": null,
+       "family": "other",
+       "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      },
+      {
+       "active": false,
+       "family": "resistor",
+       "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+      },
+      {
+       "active": null,
+       "family": "capacitor",
+       "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      }
+     ],
+     "n": 3,
+     "seed": 45,
+     "vary": "mismatch"
+    },
+    "netlist_closure": [
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+     }
+    ],
+    "netlist_sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "remote": {
+     "ami_id": "ami-0e40e3245f1923ac8",
+     "availability_zone": "us-east-1d",
+     "bucket": "2am-batch-jobs-221082181346",
+     "client_klt_version": "0.7.0+g0d0312b30708",
+     "concurrency": "1",
+     "elapsed_seconds": 6,
+     "exit_code": "0",
+     "instance_id": "i-01abe4e8dbaa83e4e",
+     "instance_type": "c7i.4xlarge",
+     "job_id": "klt-sim-f3e5ff054f49",
+     "lifecycle": "spot",
+     "physical_cores": "8",
+     "provider": "aws-batch-fleet",
+     "region": "us-east-1",
+     "runner_compatibility": "mismatch",
+     "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g0d0312b30708; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+     "runner_klt_version": "0.5.0",
+     "spot": true,
+     "state": "done"
+    }
+   },
+   "errored": 0,
+   "failed": 0,
+   "inconclusive": 0,
+   "measurements": [],
+   "metrics": {
+    "sim__corner__count": 3,
+    "sim__corner__errored_count": 0,
+    "sim__corner__failed_count": 0,
+    "sim__corner__inconclusive_count": 0,
+    "sim__corner__passed_count": 3
+   },
+   "netlist": {
+    "path": null,
+    "scope": "external"
+   },
+   "passed": 3,
+   "provenance": {
+    "deck": {
+     "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+     "name": "sm141064.ngspice",
+     "released": false
+    },
+    "input": {
+     "content_hash": "sha256:173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+     "role": "netlist"
+    },
+    "klayout_version": "0.30.12",
+    "klt_version": "0.7.0+g0d0312b30708",
+    "pdk": {
+     "ambiguous_sources": [
+      "search root: ~/.volare"
+     ],
+     "name": "gf180mcuD",
+     "source": "search root: ~/.ciel",
+     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    }
+   },
+   "schema_version": 3,
+   "status": "not_checked"
+  },
+  "sep.typical.27C.3.00V": {
+   "corner_count": 3,
+   "corners": [
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/27C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1073930998,
+      "process_seed": 250201949,
+      "sample_index": 0,
+      "seed": 1240223581
+     },
+     "process": "typical",
+     "runtime_s": 0.578,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/27C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1947764510,
+      "process_seed": 250201949,
+      "sample_index": 1,
+      "seed": 1176304945
+     },
+     "process": "typical",
+     "runtime_s": 0.579,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/27C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 874458741,
+      "process_seed": 250201949,
+      "sample_index": 2,
+      "seed": 1017889434
+     },
+     "process": "typical",
+     "runtime_s": 0.579,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    }
+   ],
+   "coverage": {
+    "checked": [],
+    "corners_simulated": 3,
+    "inapplicable": [],
+    "known": true,
+    "measurements_declared": 0,
+    "measurements_with_limits": 0,
+    "nothing_checked": true,
+    "nothing_checked_reasons": [
+     "no_requested_measurements"
+    ],
+    "schema_version": 1,
+    "skipped": [
+     {
+      "id": "corner:[0,\"typical/vcm=1.500_vdd=3.000V/27C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[1,\"typical/vcm=1.500_vdd=3.000V/27C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[2,\"typical/vcm=1.500_vdd=3.000V/27C/mc2\"]",
+      "reason": "no_requested_measurements"
+     }
+    ],
+    "unknown": [],
+    "unrecognized_limit_keys": []
+   },
+   "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+   },
+   "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "models_lib": {
+     "path": null,
+     "scope": "external"
+    },
+    "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+    "monte_carlo": {
+     "family_mismatch": [
+      {
+       "active": null,
+       "family": "other",
+       "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      },
+      {
+       "active": false,
+       "family": "resistor",
+       "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+      },
+      {
+       "active": null,
+       "family": "capacitor",
+       "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      }
+     ],
+     "n": 3,
+     "seed": 45,
+     "vary": "mismatch"
+    },
+    "netlist_closure": [
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+     }
+    ],
+    "netlist_sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "remote": {
+     "ami_id": "ami-0e40e3245f1923ac8",
+     "availability_zone": "us-east-1c",
+     "bucket": "2am-batch-jobs-221082181346",
+     "client_klt_version": "0.7.0+g0d0312b30708",
+     "concurrency": "1",
+     "elapsed_seconds": 8,
+     "exit_code": "0",
+     "instance_id": "i-0a29829a00d81e917",
+     "instance_type": "c7i.4xlarge",
+     "job_id": "klt-sim-569b2c8b08e7",
+     "lifecycle": "spot",
+     "physical_cores": "8",
+     "provider": "aws-batch-fleet",
+     "region": "us-east-1",
+     "runner_compatibility": "mismatch",
+     "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g0d0312b30708; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+     "runner_klt_version": "0.5.0",
+     "spot": true,
+     "state": "done"
+    }
+   },
+   "errored": 0,
+   "failed": 0,
+   "inconclusive": 0,
+   "measurements": [],
+   "metrics": {
+    "sim__corner__count": 3,
+    "sim__corner__errored_count": 0,
+    "sim__corner__failed_count": 0,
+    "sim__corner__inconclusive_count": 0,
+    "sim__corner__passed_count": 3
+   },
+   "netlist": {
+    "path": null,
+    "scope": "external"
+   },
+   "passed": 3,
+   "provenance": {
+    "deck": {
+     "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+     "name": "sm141064.ngspice",
+     "released": false
+    },
+    "input": {
+     "content_hash": "sha256:173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+     "role": "netlist"
+    },
+    "klayout_version": "0.30.12",
+    "klt_version": "0.7.0+g0d0312b30708",
+    "pdk": {
+     "ambiguous_sources": [
+      "search root: ~/.volare"
+     ],
+     "name": "gf180mcuD",
+     "source": "search root: ~/.ciel",
+     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    }
+   },
+   "schema_version": 3,
+   "status": "not_checked"
+  },
+  "sep.typical.27C.3.30V": {
+   "corner_count": 3,
+   "corners": [
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1073930998,
+      "process_seed": 250201949,
+      "sample_index": 0,
+      "seed": 1240223581
+     },
+     "process": "typical",
+     "runtime_s": 0.628,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1947764510,
+      "process_seed": 250201949,
+      "sample_index": 1,
+      "seed": 1176304945
+     },
+     "process": "typical",
+     "runtime_s": 0.678,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 874458741,
+      "process_seed": 250201949,
+      "sample_index": 2,
+      "seed": 1017889434
+     },
+     "process": "typical",
+     "runtime_s": 0.676,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    }
+   ],
+   "coverage": {
+    "checked": [],
+    "corners_simulated": 3,
+    "inapplicable": [],
+    "known": true,
+    "measurements_declared": 0,
+    "measurements_with_limits": 0,
+    "nothing_checked": true,
+    "nothing_checked_reasons": [
+     "no_requested_measurements"
+    ],
+    "schema_version": 1,
+    "skipped": [
+     {
+      "id": "corner:[0,\"typical/vcm=1.650_vdd=3.300V/27C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[1,\"typical/vcm=1.650_vdd=3.300V/27C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[2,\"typical/vcm=1.650_vdd=3.300V/27C/mc2\"]",
+      "reason": "no_requested_measurements"
+     }
+    ],
+    "unknown": [],
+    "unrecognized_limit_keys": []
+   },
+   "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+   },
+   "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "models_lib": {
+     "path": null,
+     "scope": "external"
+    },
+    "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+    "monte_carlo": {
+     "family_mismatch": [
+      {
+       "active": null,
+       "family": "other",
+       "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      },
+      {
+       "active": false,
+       "family": "resistor",
+       "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+      },
+      {
+       "active": null,
+       "family": "capacitor",
+       "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      }
+     ],
+     "n": 3,
+     "seed": 45,
+     "vary": "mismatch"
+    },
+    "netlist_closure": [
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+     }
+    ],
+    "netlist_sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "remote": {
+     "ami_id": "ami-0e40e3245f1923ac8",
+     "availability_zone": "us-east-1c",
+     "bucket": "2am-batch-jobs-221082181346",
+     "client_klt_version": "0.7.0+g0d0312b30708",
+     "concurrency": "1",
+     "elapsed_seconds": 7,
+     "exit_code": "0",
+     "instance_id": "i-08697e7e63e2b2323",
+     "instance_type": "c7i.4xlarge",
+     "job_id": "klt-sim-7ba27b244bbf",
+     "lifecycle": "spot",
+     "physical_cores": "8",
+     "provider": "aws-batch-fleet",
+     "region": "us-east-1",
+     "runner_compatibility": "mismatch",
+     "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g0d0312b30708; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+     "runner_klt_version": "0.5.0",
+     "spot": true,
+     "state": "done"
+    }
+   },
+   "errored": 0,
+   "failed": 0,
+   "inconclusive": 0,
+   "measurements": [],
+   "metrics": {
+    "sim__corner__count": 3,
+    "sim__corner__errored_count": 0,
+    "sim__corner__failed_count": 0,
+    "sim__corner__inconclusive_count": 0,
+    "sim__corner__passed_count": 3
+   },
+   "netlist": {
+    "path": null,
+    "scope": "external"
+   },
+   "passed": 3,
+   "provenance": {
+    "deck": {
+     "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+     "name": "sm141064.ngspice",
+     "released": false
+    },
+    "input": {
+     "content_hash": "sha256:173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+     "role": "netlist"
+    },
+    "klayout_version": "0.30.12",
+    "klt_version": "0.7.0+g0d0312b30708",
+    "pdk": {
+     "ambiguous_sources": [
+      "search root: ~/.volare"
+     ],
+     "name": "gf180mcuD",
+     "source": "search root: ~/.ciel",
+     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    }
+   },
+   "schema_version": 3,
+   "status": "not_checked"
+  },
+  "together": {
+   "corner_count": 24,
+   "corners": [
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/27C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1073930998,
+      "process_seed": 250201949,
+      "sample_index": 0,
+      "seed": 1240223581
+     },
+     "process": "typical",
+     "runtime_s": 1.453,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/27C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1947764510,
+      "process_seed": 250201949,
+      "sample_index": 1,
+      "seed": 1176304945
+     },
+     "process": "typical",
+     "runtime_s": 7.442,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/27C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 874458741,
+      "process_seed": 250201949,
+      "sample_index": 2,
+      "seed": 1017889434
+     },
+     "process": "typical",
+     "runtime_s": 1.313,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/125C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1338284299,
+      "process_seed": 558766540,
+      "sample_index": 0,
+      "seed": 1995730792
+     },
+     "process": "typical",
+     "runtime_s": 25.567,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/125C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 77679007,
+      "process_seed": 558766540,
+      "sample_index": 1,
+      "seed": 401178685
+     },
+     "process": "typical",
+     "runtime_s": 25.76,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.500_vdd=3.000V/125C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1796383430,
+      "process_seed": 558766540,
+      "sample_index": 2,
+      "seed": 254508664
+     },
+     "process": "typical",
+     "runtime_s": 25.306,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1757987474,
+      "process_seed": 280454172,
+      "sample_index": 0,
+      "seed": 712513040
+     },
+     "process": "typical",
+     "runtime_s": 1.345,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 828251435,
+      "process_seed": 280454172,
+      "sample_index": 1,
+      "seed": 1419668468
+     },
+     "process": "typical",
+     "runtime_s": 1.396,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/27C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 2132351872,
+      "process_seed": 280454172,
+      "sample_index": 2,
+      "seed": 1917699586
+     },
+     "process": "typical",
+     "runtime_s": 0.985,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/125C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 866126268,
+      "process_seed": 559149245,
+      "sample_index": 0,
+      "seed": 1784565164
+     },
+     "process": "typical",
+     "runtime_s": 24.571,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/125C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1062732594,
+      "process_seed": 559149245,
+      "sample_index": 1,
+      "seed": 1602525381
+     },
+     "process": "typical",
+     "runtime_s": 17.789,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "typical/vcm=1.650_vdd=3.300V/125C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 16339327,
+      "process_seed": 559149245,
+      "sample_index": 2,
+      "seed": 783865368
+     },
+     "process": "typical",
+     "runtime_s": 18.658,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/27C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 592941757,
+      "process_seed": 529049884,
+      "sample_index": 0,
+      "seed": 1043706957
+     },
+     "process": "ss",
+     "runtime_s": 0.89,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/27C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1411865675,
+      "process_seed": 529049884,
+      "sample_index": 1,
+      "seed": 149732359
+     },
+     "process": "ss",
+     "runtime_s": 0.861,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/27C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 369713294,
+      "process_seed": 529049884,
+      "sample_index": 2,
+      "seed": 534671352
+     },
+     "process": "ss",
+     "runtime_s": 0.842,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/125C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 960026969,
+      "process_seed": 189827504,
+      "sample_index": 0,
+      "seed": 850855679
+     },
+     "process": "ss",
+     "runtime_s": 18.479,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/125C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 130333218,
+      "process_seed": 189827504,
+      "sample_index": 1,
+      "seed": 309269021
+     },
+     "process": "ss",
+     "runtime_s": 17.232,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.500_vdd=3.000V/125C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 942809336,
+      "process_seed": 189827504,
+      "sample_index": 2,
+      "seed": 1924738371
+     },
+     "process": "ss",
+     "runtime_s": 6.683,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.5,
+      "vdd": 3.0
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/27C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 107717907,
+      "process_seed": 1348797194,
+      "sample_index": 0,
+      "seed": 492681893
+     },
+     "process": "ss",
+     "runtime_s": 0.686,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/27C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 188297928,
+      "process_seed": 1348797194,
+      "sample_index": 1,
+      "seed": 1341787407
+     },
+     "process": "ss",
+     "runtime_s": 0.737,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/27C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 65605153,
+      "process_seed": 1348797194,
+      "sample_index": 2,
+      "seed": 714541863
+     },
+     "process": "ss",
+     "runtime_s": 0.681,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 27.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/125C/mc0",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 2095496086,
+      "process_seed": 2120171820,
+      "sample_index": 0,
+      "seed": 205393668
+     },
+     "process": "ss",
+     "runtime_s": 3.694,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/125C/mc1",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 1448717404,
+      "process_seed": 2120171820,
+      "sample_index": 1,
+      "seed": 2146932276
+     },
+     "process": "ss",
+     "runtime_s": 1.796,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    },
+    {
+     "artifacts": {
+      "deck": "corner.cir",
+      "log": "ngspice.log",
+      "raw": null,
+      "waveform": null
+     },
+     "corner_id": "ss/vcm=1.650_vdd=3.300V/125C/mc2",
+     "diagnostics": [],
+     "measurements": [],
+     "monte_carlo": {
+      "mismatch_seed": 126911379,
+      "process_seed": 2120171820,
+      "sample_index": 2,
+      "seed": 577474882
+     },
+     "process": "ss",
+     "runtime_s": 1.133,
+     "status": "pass",
+     "supply_v": {
+      "vcm": 1.65,
+      "vdd": 3.3
+     },
+     "temperature_c": 125.0
+    }
+   ],
+   "coverage": {
+    "checked": [],
+    "corners_simulated": 24,
+    "inapplicable": [],
+    "known": true,
+    "measurements_declared": 0,
+    "measurements_with_limits": 0,
+    "nothing_checked": true,
+    "nothing_checked_reasons": [
+     "no_requested_measurements"
+    ],
+    "schema_version": 1,
+    "skipped": [
+     {
+      "id": "corner:[0,\"typical/vcm=1.500_vdd=3.000V/27C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[1,\"typical/vcm=1.500_vdd=3.000V/27C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[10,\"typical/vcm=1.650_vdd=3.300V/125C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[11,\"typical/vcm=1.650_vdd=3.300V/125C/mc2\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[12,\"ss/vcm=1.500_vdd=3.000V/27C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[13,\"ss/vcm=1.500_vdd=3.000V/27C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[14,\"ss/vcm=1.500_vdd=3.000V/27C/mc2\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[15,\"ss/vcm=1.500_vdd=3.000V/125C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[16,\"ss/vcm=1.500_vdd=3.000V/125C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[17,\"ss/vcm=1.500_vdd=3.000V/125C/mc2\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[18,\"ss/vcm=1.650_vdd=3.300V/27C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[19,\"ss/vcm=1.650_vdd=3.300V/27C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[2,\"typical/vcm=1.500_vdd=3.000V/27C/mc2\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[20,\"ss/vcm=1.650_vdd=3.300V/27C/mc2\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[21,\"ss/vcm=1.650_vdd=3.300V/125C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[22,\"ss/vcm=1.650_vdd=3.300V/125C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[23,\"ss/vcm=1.650_vdd=3.300V/125C/mc2\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[3,\"typical/vcm=1.500_vdd=3.000V/125C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[4,\"typical/vcm=1.500_vdd=3.000V/125C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[5,\"typical/vcm=1.500_vdd=3.000V/125C/mc2\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[6,\"typical/vcm=1.650_vdd=3.300V/27C/mc0\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[7,\"typical/vcm=1.650_vdd=3.300V/27C/mc1\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[8,\"typical/vcm=1.650_vdd=3.300V/27C/mc2\"]",
+      "reason": "no_requested_measurements"
+     },
+     {
+      "id": "corner:[9,\"typical/vcm=1.650_vdd=3.300V/125C/mc0\"]",
+      "reason": "no_requested_measurements"
+     }
+    ],
+    "unknown": [],
+    "unrecognized_limit_keys": []
+   },
+   "diagnostic_counts": {
+    "by_code": {},
+    "by_severity": {},
+    "corners_with_diagnostics": 0
+   },
+   "environment": {
+    "engine": "ngspice",
+    "engine_version": "46",
+    "models_lib": {
+     "path": null,
+     "scope": "external"
+    },
+    "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+    "monte_carlo": {
+     "family_mismatch": [
+      {
+       "active": null,
+       "family": "other",
+       "note": "mismatch activity for the 'other' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      },
+      {
+       "active": false,
+       "family": "resistor",
+       "note": "The poly-resistor subcircuits' per-instance mismatch hook (mis_r, scaling body resistance via `(1 + mis_r * <switch>)`) defaults to a hardcoded 0, and the accompanying Pelgrom-style sigma formula ships commented out in the vendored deck -- resistor mismatch is structurally disabled regardless of sw_stat_mismatch. A run with mismatch enabled samples no resistor variation. See issue #355."
+      },
+      {
+       "active": null,
+       "family": "capacitor",
+       "note": "mismatch activity for the 'capacitor' family is not independently verified for PDK family 'gf180mcu'; treat any sampled spread for it as unconfirmed."
+      }
+     ],
+     "n": 3,
+     "seed": 45,
+     "vary": "mismatch"
+    },
+    "netlist_closure": [
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "091cb530bf85160a1f07878fb81f789ca367d018991c8ab41a584cd1a85c6692"
+     },
+     {
+      "path": null,
+      "scope": "external",
+      "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+     }
+    ],
+    "netlist_sha256": "173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+    "ngspice_binary": "/home/ubuntu/.local/bin/ngspice",
+    "remote": {
+     "ami_id": "ami-0e40e3245f1923ac8",
+     "availability_zone": "us-east-1b",
+     "bucket": "2am-batch-jobs-221082181346",
+     "client_klt_version": "0.7.0+g0d0312b30708",
+     "concurrency": "1",
+     "elapsed_seconds": 31,
+     "exit_code": "0",
+     "instance_id": "i-02f1f571ca7f2157a",
+     "instance_type": "c7i.4xlarge",
+     "job_id": "klt-sim-2bfce8d8bcf2",
+     "lifecycle": "spot",
+     "physical_cores": "8",
+     "provider": "aws-batch-fleet",
+     "region": "us-east-1",
+     "runner_compatibility": "mismatch",
+     "runner_compatibility_warning": "the fleet runner ran klt 0.5.0 but the submitting client is 0.7.0+g0d0312b30708; request options the runner does not know may have been ignored -- update the runner image or use a compatible client",
+     "runner_klt_version": "0.5.0",
+     "spot": true,
+     "state": "done"
+    }
+   },
+   "errored": 0,
+   "failed": 0,
+   "inconclusive": 0,
+   "measurements": [],
+   "metrics": {
+    "sim__corner__count": 24,
+    "sim__corner__errored_count": 0,
+    "sim__corner__failed_count": 0,
+    "sim__corner__inconclusive_count": 0,
+    "sim__corner__passed_count": 24
+   },
+   "netlist": {
+    "path": null,
+    "scope": "external"
+   },
+   "passed": 24,
+   "provenance": {
+    "deck": {
+     "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+     "name": "sm141064.ngspice",
+     "released": false
+    },
+    "input": {
+     "content_hash": "sha256:173a84f5039de4919d48be124efb83413f9a160abe47f8f9ef37de191bc1bbfc",
+     "role": "netlist"
+    },
+    "klayout_version": "0.30.12",
+    "klt_version": "0.7.0+g0d0312b30708",
+    "pdk": {
+     "ambiguous_sources": [
+      "search root: ~/.volare"
+     ],
+     "name": "gf180mcuD",
+     "source": "search root: ~/.ciel",
+     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+    }
+   },
+   "schema_version": 3,
+   "status": "not_checked"
+  }
+ }
+}

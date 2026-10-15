@@ -2,6 +2,149 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-14
+
+- **PR #203**: Record enable-acquisition evidence at all 45 PVT points (#191)
+- **Issue #191** (closed): sim: characterize supply and external-bias enable acquisition across PVT
+
+### 2026-10-13
+
+- **PR #200**: report: integrate ungraded follower step-response evidence
+- **PR #199**: sim: configuration freshness for CMRR-MC and gain/GBW/PM-MC (#197)
+- **Issue #198** (closed): report: integrate ungraded follower step-response evidence
+- **Issue #197** (closed): sim: add configuration freshness for CMRR and gain/GBW/PM mismatch evidence
+
+### 2026-10-12
+
+- **PR #196**: sim(psrr-mc): full T/VDD grid mismatch characterization tooling (#190)
+
+### 2026-10-11
+
+- **Issue #189** (closed): Auditor guard telemetry: force-op detached prompt during evidence guard test authoring
+- **PR #193**: sim: supply and external-bias enable acquisition across PVT (bench, extraction, tests; evidence pending)
+- **PR #188**: sim: input-overdrive and output-saturation recovery across the PVT grid
+- **PR #187**: report: derive offset temperature drift and systematic-vs-statistical split (#184)
+- **PR #186**: sim: fingerprint the input-common-mode measurement configuration
+- **PR #185**: report: include the committed PSRR mismatch Monte Carlo record in the characterization report
+- **PR #181**: feat(#99): commit the full PSRR+/PSRR- mismatch Monte Carlo record
+- **PR #178**: report: integrate the gain/GBW/PM mismatch Monte Carlo record as ungraded, hash-pinned evidence
+- **PR #177**: ci: fail PRs that modify or delete committed sim/ evidence (#159)
+- **PR #176**: sim: re-measure step response and ibias/CL sensitivity on the retuned DUT
+- **PR #175**: report: integrate ungraded full-passive PSRR evidence (bound-free supplementary adapter)
+- **PR #174**: fix: require exact 45 default stems in latest_gain_dir selection
+- **PR #171**: sim/report: check live verdict prose against the characterization report
+- **PR #170**: fix: reject gain verdict-token, binding-corner and stretch-count contradictions in extract_gain
+- **PR #169**: fix(sim): pin offset driver to full PVT grid in one-command campaign
+- **PR #165**: signoff: cite artifact-anchored envelopes for T1 items 1, 9, 10 (#160)
+- **PR #164**: sim: standalone full RZ/CC x PVT PSRR study at 1 kHz and 10 kHz
+- **PR #163**: docs: correct pre-retune verdict prose in spec/target-spec.md and manifests/README.md
+- **PR #162**: refactor(sim): share MC percentile/skew/extract between cmrr-mc and psrr-mc
+- **PR #158**: docs: guard confinement reproduction and evidence package (#146)
+- **PR #157**: sim: gain/GBW/PM mismatch Monte Carlo campaign on the retuned DUT (#142)
+- **PR #152**: sim: extend independent RZ/CC verification to the full 405-cell PVT envelope
+- **PR #151**: test(sim/psrr-mc): offset-sigma gate test, IMBALANCE_RAILS pin, gate mutation (#99, partial)
+- **PR #149**: sim(cmrr-mc): seed partition-invariance probe for #140 (seeds NOT invariant; chunked grid parked)
+- **PR #148**: fix(report): preserve published evidence bundle when candidate validation fails
+- **PR #145**: feat(sim/psrr-mc): PSRR+/PSRR- mismatch Monte Carlo driver, controls and tests (record pending)
+- **Issue #184** (closed): report: derive offset temperature drift and systematic-vs-statistical split from the committed offset Monte Carlo
+- **Issue #183** (closed): sim: input-overdrive and output-saturation recovery across the PVT grid
+- **Issue #182** (closed): report: include the committed PSRR mismatch Monte Carlo record in the characterization report
+- **Issue #180** (closed): sim: add measurement-configuration freshness for input common-mode evidence
+- **Issue #179** (closed): Auditor: review force-op:detached guard decisions
+- **Issue #173** (closed): report: integrate ungraded full-passive PSRR evidence
+- **Issue #172** (closed): report: integrate descriptive gain/GBW/PM mismatch evidence
+- **Issue #168** (closed): report: validate gain verdict tokens and binding corners against per-point evidence
+- **Issue #167** (closed): characterize: preserve full-PVT offset coverage in the default campaign
+- **Issue #161** (closed): sim: latest_gain_dir() now picks the 405-cell passive study dir, breaking the default CMRR/PSRR/noise gain-bench cross-check
+- **Issue #160** (closed): signoff: determine which klt envelopes honestly back T1 items 1, 9 and 10, cite them or file the tool gap
+- **Issue #159** (closed): ci: fail PRs that modify or delete committed sim/ evidence (enforce append-only beyond write time)
+- **Issue #156** (closed): sim/report: extend the spec citation drift check to catch stale verdict prose
+- **Issue #155** (closed): sim: standalone full RZ/CC x PVT PSRR study at 1 kHz and 10 kHz
+- **Issue #154** (closed): docs: correct pre-retune verdict prose in spec/target-spec.md and manifests/README.md (PM no longer fails)
+- **Issue #153** (closed): Consolidate duplicated MC stats helpers (percentile/_skew/extract) in cmrr-mc and psrr-mc
+- **Issue #150** (closed): sim: extend independent RZ/CC verification to the full 405-cell PVT envelope
+- **Issue #147** (closed): report: preserve the published evidence bundle when candidate validation fails
+- **Issue #146** (closed): Auditor: capture reproducible scratch-path and checkpoint guard cases for upstream review
+- **Issue #142** (closed): sim: run the gain/GBW/PM mismatch Monte Carlo campaign on the retuned DUT now that the #42 gate is open
+- **Issue #139** (closed): Re-measure step-response and ibias/CL sensitivity on the retuned compensation DUT
+- **Issue #99** (closed): sim: PSRR+ / PSRR- mismatch Monte Carlo
+
+- **PR #143**: docs(#141): reconcile sim/README coverage-and-gaps with selected records
+- **Issue #141** (closed): docs: reconcile sim/README.md coverage-and-gaps section with the 45-point offset record and post-retune results
+
+### 2026-10-10
+
+- **PR #138**: design(#42): retune Miller compensation so phase margin meets 60 deg at 45/45 PVT points
+- **PR #137**: feat(#114): ibias and CL sensitivity record
+- **PR #135**: sim: mismatch Monte Carlo runner for gain, GBW and phase margin (#129)
+- **PR #134**: docs(#133): reconcile status prose with passive-corner side study
+- **PR #132**: ci(#131): extend regression-check mutations to ibias-cl-sensitivity and shared sim modules
+- **PR #130**: report: derive and hash supplementary passive-corner evidence (#121)
+- **PR #128**: docs(#102): sweep main-clean baseline recipe and regression check
+- **PR #126**: sim: gain/GBW/PM at the LDO 1.20 V input (fixed-VCM option + 45-point record)
+- **PR #127**: feat(#124): report the committed CMRR mismatch Monte Carlo record
+- **PR #123**: report: support the committed full-PVT offset Monte Carlo record (#120)
+- **PR #122**: feat(#114): ibias and CL sensitivity experiment (record pending)
+- **PR #119**: feat(#97): passive-corner side-study record for slew/swing/power
+- **PR #118**: sim: offset Monte Carlo over the 45-point T/VDD grid (--grid full, N=300 per point)
+- **Issue #42** (closed): Design: phase margin misses the ratified 60 deg target at 30/45 PVT points (worst 57.34 deg at FS / 125 C / 2.97 V)
+- **Issue #114** (closed): sim: ibias and CL sensitivity of GBW, PM, slew and power (evidence for the PM shortfall)
+- **Issue #129** (closed): sim: mismatch Monte Carlo of gain, GBW and phase margin (statistical evidence for the PM/GBW rows)
+- **Issue #133** (closed): docs: reconcile README, sim/README and target-spec status with the committed slew/swing/power passive-corner study
+- **Issue #131** (closed): ci: extend ci_regression_check.sh mutation coverage to ibias-cl-sensitivity and shared sim modules
+- **Issue #121** (closed): report: derive and hash supplementary passive-corner evidence
+- **Issue #102** (closed): Document and test a confined sweep main-clean baseline invocation
+- **Issue #125** (closed): sim: characterize gain GBW and PM at the LDO 1.20 V input operating point
+- **Issue #124** (closed): report: include separately scoped mismatch CMRR evidence
+- **Issue #120** (closed): report: support the committed full-PVT offset Monte Carlo record
+- **Issue #101** (closed): Auditor: retain rm-scope-outside-repo guard pending scoped lexical proof
+- **Issue #97** (closed): sim: measure slew, swing and power across RZ/CC passive corners (replace the analytic slew scaling)
+- **Issue #106** (closed): sim: extend offset Monte Carlo to the 45-point T/VDD grid (N=300 per point)
+- **Issue #89** (closed): Extend measurement freshness checks to the remaining selected characterization experiments
+- **PR #116**: sim: closed-loop follower step response (overshoot, settling) across the PVT grid (#113)
+- **PR #115**: feat(#112): check target-spec.md Sec. 2 record citations against selection.json
+- **PR #111**: feat: attach cross-checked ICMR evidence to the ungraded proposed row
+- **PR #110**: docs(#95): cite passive-corner study in README and aggregate report
+- **PR #109**: feat(#97): --passive-corners RZ x CC side study for slew/swing/power
+- **PR #108**: ci(#107): extend ci_regression_check.sh teeth coverage to every sim experiment
+- **PR #104**: refactor(#94): consolidate materialise() work-dir staging into harness.stage_workdir
+- **PR #103**: selftest: gate design/check_dc_op.py in CI (#96)
+- **PR #100**: spec: propose CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-6; #61)
+- **PR #92**: feat(#89): extend measurement freshness fingerprints to the remaining characterization experiments
+- **Issue #113** (closed): sim: closed-loop follower step response (overshoot and settling) across the PVT grid
+- **Issue #112** (closed): ci: check that target-spec.md measured-record citations match sim/report/selection.json
+- **Issue #90** (closed): Include measured input common-mode evidence in the aggregate report without ratifying its bound
+- **Issue #95** (closed): README and aggregate report: cite the passive-corner study instead of claiming passives were never swept
+- **Issue #107** (closed): ci: extend ci_regression_check.sh mutation (teeth) coverage to every sim experiment
+- **Issue #88** (closed): Auditor: review stash guard denial during isolated driver validation
+- **Issue #94** (closed): Consolidate duplicated materialise() work-dir staging into sim/harness.py
+- **Issue #96** (closed): selftest: run design/check_dc_op.py so the schematic bias smoke check is gated in CI
+- **Issue #61** (closed): spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4)
+- **PR #91**: docs(#82): document absolute scratch cleanup paths in layout/README
+- **PR #87**: feat(#85): track measurement-configuration freshness alongside DUT identity
+- **PR #86**: feat(#84): validate integrator view against interface and signoff tier
+- **PR #81**: Reject characterization evidence that no longer matches the current DUT
+- **PR #80**: refactor(#68): consolidate sibling-driver loader and gain-bench reader
+- **PR #78**: ci(#76): check committed netlist matches xschem export of the schematic
+- **Issue #85** (closed): Track measurement-configuration freshness alongside DUT identity in characterization evidence
+- **Issue #84** (closed): Validate the integrator view against the committed interface and signoff tier
+- **Issue #83** (closed): Auditor Capability Request: Python unavailable for local report validation
+- **Issue #82** (closed): layout: document absolute scratch cleanup paths for validation
+- **Issue #76** (closed): Check that the committed simulation netlist still represents the xschem schematic
+- **Issue #75** (closed): Reject characterization evidence that no longer matches the current DUT
+- **Issue #68** (closed): Consolidate sibling-driver loader and gain-bench reader duplicated across sim runners
+
+### 2026-10-09
+
+- **PR #74**: sim(gain-gbw-pm): RZ x CC passive-corner axis and record (#70)
+- **PR #73**: signoff: bump pinned klt grader to 0.7.0 and regenerate the signoff record
+- **PR #72**: docs: reconcile slew/swing/power status with committed PASS record (#69)
+- **PR #67**: sim+spec: follower-biased input common-mode range (45 PVT x VCM scan) and proposed ICMR row via DR-0005 (#60)
+- **Issue #71** (closed): signoff: bump the pinned klt grader past 0.5.0 and regenerate the signoff record
+- **Issue #70** (closed): T1 item 5: quantify RZ/CC passive-corner sensitivity of phase margin, GBW and slew (DR-3 section d obligation)
+- **Issue #69** (closed): docs: reconcile README and target-spec status for slew, swing and power with committed PASS records
+- **Issue #60** (closed): spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown
+
 ### 2026-10-09
 
 - **PR #65**: refactor(sim): move duplicated klt sim wrapper helpers into harness.py

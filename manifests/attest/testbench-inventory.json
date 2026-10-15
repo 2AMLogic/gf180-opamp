@@ -1,0 +1,179 @@
+{
+  "checks": [
+    "each selected experiment has exactly one run_*.py driver and at least one committed testbench/tb_*.spice of its own, or (BENCH_REUSE) pins the committed bench of the experiment it reuses, with the reuse documented in its README",
+    "each experiment README documents a 'python3 sim/<exp>/<driver>' invocation",
+    "sim/harness.py PINNED_PDK_REV equals selftest.yml GF180_PDK_REV",
+    "sim/characterize.sh, sim/selftest.sh, sim/ci_prereqs.py, sim/ci_pdk_rev_check.sh exist"
+  ],
+  "cold_start": {
+    "all_experiments": "sim/characterize.sh",
+    "fast_smoke": "sim/selftest.sh",
+    "prerequisites": "sim/README.md (ngspice, xschem 3.4.7, klt, pinned PDK via volare)"
+  },
+  "experiments": [
+    {
+      "documented_invocation": "python3 sim/cmrr/run_cmrr.py --smoke",
+      "documented_smoke_invocation": "python3 sim/cmrr/run_cmrr.py --smoke",
+      "driver": "sim/cmrr/run_cmrr.py",
+      "experiment": "cmrr",
+      "readme": "sim/cmrr/README.md",
+      "run_by_characterize_sh": true,
+      "testbenches": [
+        {
+          "content_hash": "sha256:ba9f881c1ebc504607e6aba77824fd787181323756bbef62b4d4c5528e866ce5",
+          "path": "sim/cmrr/testbench/tb_cmrr.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/cmrr-mc/run_cmrr_mc.py --smoke",
+      "documented_smoke_invocation": "python3 sim/cmrr-mc/run_cmrr_mc.py --smoke",
+      "driver": "sim/cmrr-mc/run_cmrr_mc.py",
+      "experiment": "cmrr-mc",
+      "readme": "sim/cmrr-mc/README.md",
+      "run_by_characterize_sh": false,
+      "testbenches": [
+        {
+          "content_hash": "sha256:56f30e55f59464b8f95363a2641e0da3911382d8faf602a14b9df476022e9a7c",
+          "path": "sim/cmrr-mc/testbench/tb_cmrr_mc.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/gain-gbw-pm/run_gain_gbw_pm.py",
+      "documented_smoke_invocation": "python3 sim/gain-gbw-pm/run_gain_gbw_pm.py --smoke",
+      "driver": "sim/gain-gbw-pm/run_gain_gbw_pm.py",
+      "experiment": "gain-gbw-pm",
+      "readme": "sim/gain-gbw-pm/README.md",
+      "run_by_characterize_sh": true,
+      "testbenches": [
+        {
+          "content_hash": "sha256:c68b9c3fd6d0cbfd6bea70e0106b3e8f69d6613af28433ddf58cbad2202bdc0c",
+          "path": "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py --smoke",
+      "documented_smoke_invocation": "python3 sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py --smoke",
+      "driver": "sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py",
+      "experiment": "gain-gbw-pm-mc",
+      "readme": "sim/gain-gbw-pm-mc/README.md",
+      "run_by_characterize_sh": false,
+      "testbench_reuse": "no testbench/ of its own: sim/gain-gbw-pm-mc/run_gain_gbw_pm_mc.py stages a derived copy of sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice (mismatch switch added) and guards it against the committed bench",
+      "testbenches": [
+        {
+          "content_hash": "sha256:c68b9c3fd6d0cbfd6bea70e0106b3e8f69d6613af28433ddf58cbad2202bdc0c",
+          "path": "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/input-common-mode/run_input_common_mode.py --smoke",
+      "documented_smoke_invocation": "python3 sim/input-common-mode/run_input_common_mode.py --smoke",
+      "driver": "sim/input-common-mode/run_input_common_mode.py",
+      "experiment": "input-common-mode",
+      "readme": "sim/input-common-mode/README.md",
+      "run_by_characterize_sh": true,
+      "testbenches": [
+        {
+          "content_hash": "sha256:e3e85e8ca751a76fc91a86e486664f3ea0c4c413b8a2f699cc19f1fcd336a426",
+          "path": "sim/input-common-mode/testbench/tb_input_common_mode.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/noise/run_noise.py --smoke",
+      "documented_smoke_invocation": "python3 sim/noise/run_noise.py --smoke",
+      "driver": "sim/noise/run_noise.py",
+      "experiment": "noise",
+      "readme": "sim/noise/README.md",
+      "run_by_characterize_sh": true,
+      "testbenches": [
+        {
+          "content_hash": "sha256:4e73ce427e40f2855e837a1915e04a1f4616b12d453e275beea2db211cb1de87",
+          "path": "sim/noise/testbench/tb_noise.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/offset-mc/run_offset_mc.py --smoke",
+      "documented_smoke_invocation": "python3 sim/offset-mc/run_offset_mc.py --smoke",
+      "driver": "sim/offset-mc/run_offset_mc.py",
+      "experiment": "offset-mc",
+      "readme": "sim/offset-mc/README.md",
+      "run_by_characterize_sh": true,
+      "testbenches": [
+        {
+          "content_hash": "sha256:4496bd4df68057e784d66962060a0ccbb975ac0db9a9fb388ce2eb35772163f9",
+          "path": "sim/offset-mc/testbench/tb_offset_mc.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/psrr/run_psrr.py --smoke",
+      "documented_smoke_invocation": "python3 sim/psrr/run_psrr.py --smoke",
+      "driver": "sim/psrr/run_psrr.py",
+      "experiment": "psrr",
+      "readme": "sim/psrr/README.md",
+      "run_by_characterize_sh": true,
+      "testbenches": [
+        {
+          "content_hash": "sha256:60e02ef0813411af8e5576b4a3dd43ead9228caaeca0cdc3d06cca744aa19d0f",
+          "path": "sim/psrr/testbench/tb_psrr.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/psrr-mc/run_psrr_mc.py --smoke",
+      "documented_smoke_invocation": "python3 sim/psrr-mc/run_psrr_mc.py --smoke",
+      "driver": "sim/psrr-mc/run_psrr_mc.py",
+      "experiment": "psrr-mc",
+      "readme": "sim/psrr-mc/README.md",
+      "run_by_characterize_sh": false,
+      "testbenches": [
+        {
+          "content_hash": "sha256:5b0eb891409b950ddf3a2d45ffd4adf2d78db76d488549781d0420d082480ce6",
+          "path": "sim/psrr-mc/testbench/tb_psrr_mc.spice"
+        }
+      ]
+    },
+    {
+      "documented_invocation": "python3 sim/slew-swing-power/run_slew_swing_power.py",
+      "documented_smoke_invocation": "python3 sim/slew-swing-power/run_slew_swing_power.py --smoke",
+      "driver": "sim/slew-swing-power/run_slew_swing_power.py",
+      "experiment": "slew-swing-power",
+      "readme": "sim/slew-swing-power/README.md",
+      "run_by_characterize_sh": true,
+      "testbenches": [
+        {
+          "content_hash": "sha256:92187966f34e6087533f6908f70118ba91bb766b562773457c8e679265612765",
+          "path": "sim/slew-swing-power/testbench/tb_power.spice"
+        },
+        {
+          "content_hash": "sha256:a37a6ceca098d6926b3c37c86960b825c3f64e2a7aa3aa31ddea6eb6a26ab813",
+          "path": "sim/slew-swing-power/testbench/tb_slew.spice"
+        },
+        {
+          "content_hash": "sha256:d6a363aedc63a5b76eae2f032bdb1467ddfbf17e3e0b6a9f42a55737a78e7031",
+          "path": "sim/slew-swing-power/testbench/tb_swing.spice"
+        }
+      ]
+    }
+  ],
+  "pinned_pdk": {
+    "enforced_by": [
+      "sim/ci_prereqs.py",
+      "sim/ci_pdk_rev_check.sh"
+    ],
+    "open_pdks_revision": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+    "pinned_in": [
+      "sim/harness.py PINNED_PDK_REV",
+      ".github/workflows/selftest.yml GF180_PDK_REV"
+    ]
+  },
+  "schema_version": 1,
+  "scope": "every experiment whose record sim/report/selection.json selects for the characterization report (the claimed measurements)",
+  "subject": "testbench inventory",
+  "t1_item": 9
+}

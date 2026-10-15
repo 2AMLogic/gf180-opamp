@@ -5,7 +5,7 @@
   "tier": null,
   "t1_item_count": 11,
   "build_t1_item_count": 11,
-  "t1_met_count": 1,
+  "t1_met_count": 4,
   "source_doc": "manifests/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:4c67ffc59128482d00f7d87cf446b6a96b9ab0c41ae5234098244e3052033335",
   "build": {
@@ -25,10 +25,29 @@
       "partition": null,
       "text": "committed schematic sources (or generator) plus the netlist derived from them, regenerated on design change.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/attest/item-1.evidence.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:36edcf4ae3eb940a0a33b0e3b80a74efbccbbce8579c771729f0bf546e2d6454",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 1,
+          "path": {
+            "path": "manifests/attest/design-sources.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:36edcf4ae3eb940a0a33b0e3b80a74efbccbbce8579c771729f0bf546e2d6454",
+          "input_verified": true,
+          "summary": "every design source and the derived netlist are inventoried; the netlist is regenerated from the schematic and checked in CI",
+          "source": "manifests/attest/design-sources.json"
+        }
+      }
     },
     {
       "tier": "T1",
@@ -121,7 +140,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:0c172c720b9dd6bdef7dd00a8bb11467912b6d4563b4a7f78423a738061eaf2d",
+        "content_hash": "sha256:1ef0e7d84323cd5e104b0c9f1d371f4779226f3d185186ddd82c80b78fe466a4",
         "input_verified": true,
         "exit_status": 0
       }
@@ -133,10 +152,29 @@
       "partition": null,
       "text": "every claimed measurement's testbench committed, with a documented cold-start invocation a third party can run; pinned PDK revision.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/attest/item-9.evidence.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:1b76f789e78f8726786a800e8435ba318ebc5d6648fb29b2c36dd4cdf09d1f1d",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 9,
+          "path": {
+            "path": "manifests/attest/testbench-inventory.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:1b76f789e78f8726786a800e8435ba318ebc5d6648fb29b2c36dd4cdf09d1f1d",
+          "input_verified": true,
+          "summary": "every claimed measurement's testbench is committed with a documented invocation; PDK revision pinned and CI-enforced",
+          "source": "manifests/attest/testbench-inventory.json"
+        }
+      }
     },
     {
       "tier": "T1",
@@ -145,10 +183,29 @@
       "partition": null,
       "text": "a README stating what the block is, its spec table, and how to reproduce every result; a license; CI that at minimum keeps the harness and evidence formats valid.",
       "notes": [],
-      "status": "unmet",
-      "reason": "no_evidence",
+      "status": "met",
+      "reason": null,
       "graded_by_build": true,
-      "citation": null
+      "citation": {
+        "file": "manifests/attest/item-10.evidence.json",
+        "command": null,
+        "kind": "generic",
+        "check_status": "pass",
+        "content_hash": "sha256:95cedcdcd36ba3fb53024b12fefb2a0880532939667720683f78d8ff27fd0362",
+        "input_verified": true,
+        "exit_status": 0,
+        "artifact_binding": {
+          "t1_item": 10,
+          "path": {
+            "path": "manifests/attest/repo-hygiene.json",
+            "scope": "repo"
+          },
+          "content_hash": "sha256:95cedcdcd36ba3fb53024b12fefb2a0880532939667720683f78d8ff27fd0362",
+          "input_verified": true,
+          "summary": "README (block, spec table link, reproduction), license and CI audited",
+          "source": "manifests/attest/repo-hygiene.json"
+        }
+      }
     },
     {
       "tier": "T1",

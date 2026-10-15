@@ -25,6 +25,16 @@ are superseded as evidence by the newest record here.
 - **Grid (45 points)**: MOS process `typical, ff, ss, fs, sf` × temperature
   −40, 27, 125 °C × supply 2.97, 3.30, 3.63 V (±10 %). One small-signal
   `.ac` sweep per point, `0.1 Hz – 1 GHz`, 20 points/decade.
+- **Full-envelope passive mode** (`--passive-corners --passive-scope full`,
+  issue #150): the same independent RZ x CC sections at ALL 45 MOS/T/VDD points
+  = 405 cells in ONE `klt sim` request (default `--passive-scope limited` is the
+  27-cell mode below, unchanged). The runner requires exactly the 405 expected
+  keys (missing/duplicate/unexpected cells are errors), checks each generated
+  deck against its encoded MOS/resistor/capacitor sections, and writes no record
+  unless complete. Deterministic; not partitioned. Use
+  `--batch-runner-version-check warn` while the fleet runner is older than the
+  client. Records carry a `**Scope**: full` line. First full record:
+  `20261011-042113-c635487` (PM and GBW PASS 405/405; fleet job `klt-sim-aea648e8d3bc`).
 - **Passive-section policy**: every MOS corner is paired with the same
   `res_typical` and `mimcap_typical` sections (what the nominal DC check
   uses). The grid varies MOS corner, temperature and supply. It does **not**
@@ -33,8 +43,13 @@ are superseded as evidence by the newest record here.
   `mimcap_{typical,ff,ss}` independently at fs/125 C/2.97 V, ss/125 C/2.97 V and
   nominal as ONE `klt sim` request (see record `20261009-234014-55b400c`, which
   supersedes `20261009-233341-95dfc2a` with a corrected verdict header from the same data). The
-  committed `RZ`/`CC` are used as drawn and never retuned here — their
-  phase-margin consequence is simply part of the measurement.
+  committed `RZ`/`CC` are used as drawn and never retuned by the driver — their
+  phase-margin consequence is simply part of the measurement. The design itself
+  was retuned in issue #42 (RZ 2.11 kOhm -> 11.23 kOhm, CC 0.619 -> 0.578 pF;
+  `design/opamp_sizing.md` section 4); the newest grid record
+  `20261010-161514-0127eb7` and passive study `20261010-161720-0127eb7`
+  measure the retuned design, and every earlier record measures the pre-retune
+  design and is retained unchanged.
 
 ## Measurement technique
 
@@ -166,6 +181,58 @@ the driver refuses to overwrite an existing id:
   binding corners, all 45 points, operating-point and polarity checks,
   isolation study, controls, and the PDK revision used.
 
+## Fixed common-mode option (`--vcm-fixed`, issue #125)
+
+The default bench tracks VCM = VDD/2 and is unchanged. `--vcm-fixed VOLTS`
+holds the amplifier input common mode at one value at every supply point (the
+`supply_v.vcm` axis of the same one-request klt matrix becomes a constant); the
+LDO consumer's documented nominal input is 1.20 V
+(`spec/decision-records/0005-input-common-mode-range-row.md`, which also records
+the 15 mV low-side headroom at SS and that the consumer tolerance is
+unspecified -- none is invented here).
+
+```bash
+python3 sim/gain-gbw-pm/run_gain_gbw_pm.py --smoke --vcm-fixed 1.20   # one local nominal point
+python3 sim/gain-gbw-pm/run_gain_gbw_pm.py --vcm-fixed 1.20           # smoke, then the 45-point grid
+```
+
+- The value is validated before any tool is touched or anything is submitted
+  (finite, > 0 V, below every supply point; not combinable with
+  `--passive-corners` / `--recompute-passive` / `--recompute-fixed-vcm`). The driver runs the nominal
+  point locally first and does not submit the grid if it fails, then checks the
+  klt report really carried the requested VCM at every point.
+- Same bench, extraction, bounds, ideal 10 uA bias, 2 pF, typical passives. The
+  common-mode policy is part of the measurement fingerprint (`vcm_rule` is
+  `fixed:1.2`, versus `vdd/2`; default fingerprints are byte-identical to before)
+  and of the record header.
+- Evidence is written under `fixed-vcm/{records,corners,netlist-snapshots}/`,
+  **not** `records/` / `corners/`, so the report generator and the shared
+  45-point cross-checks (`latest_gain_dir`) keep selecting the VDD/2 records.
+  Failed, missing or invalid points are listed explicitly in the record (exit 1);
+  a failed submit writes no record and never falls back to a local grid (exit 2).
+- Exit semantics match the default grid: a ratified-bound miss is a diagnostic
+  result (exit 0, misses printed); with `--strict` it exits 1 **after** the
+  record and corner data are written.
+- Records retain the canonical measurement-fingerprint inputs (JSON that
+  rehashes to the header fingerprint). `--recompute-fixed-vcm RECORD` writes a
+  new record superseding RECORD from its committed `fixed-vcm/corners/RECORD/`
+  data and the testbench in its netlist snapshot, with no simulator.
+- The record compares each point with the newest VDD/2 record's stored data
+  (gain, GBW, PM deltas) and reports the per-point DC follower error
+  `|vout - VCM|` from an operating-point request on the same grid (vout-only on
+  the fleet) plus one local device-level nominal operating point.
+
+Result, record `fixed-vcm/records/20261010-134147-1739a3d.md` (supersedes
+`20261010-133217-43b32f6`, which omitted its fingerprint-inputs section;
+regenerated from that record's committed data, no new simulation, every
+number unchanged; 45/45 points valid): relative to the VDD/2 baseline, DC gain moves -0.60 .. +0.42 dB, GBW
+-2.7 .. -0.3 %, PM +0.04 .. +0.62 deg; the pass counts against the unchanged
+bounds are identical (gain 45/45, GBW 45/45, PM 15/45), worst PM 57.38 deg
+(fs / 125 C / 2.97 V) versus 57.34 deg, and the nominal follower error is zero
+with all DUT MOSFETs saturated. The PM shortfall therefore persists at the
+consumer's operating point; it is evidence for #42, not a consumer contract or a
+T1 completion claim.
+
 ## Guards
 
 `test_gain_gbw_pm.py` (stdlib `unittest`; no simulator) covers:
@@ -187,6 +254,11 @@ the driver refuses to overwrite an existing id:
 
 - Deterministic corners only — no mismatch / Monte Carlo (offset has its own
   future testbench), no noise, CMRR/PSRR (#39), slew, swing or power.
+  A mismatch Monte Carlo runner for these three rows now exists in
+  [`../gain-gbw-pm-mc/`](../gain-gbw-pm-mc/README.md) (issue #129). It reuses
+  this bench, extraction and guards. **No mismatch evidence exists yet**:
+  its N = 300 campaign is gated on #42's revised DUT and deterministic
+  record, so the rows here still rest on deterministic corners only.
 - Passive corners are not independently exercised (see the policy above).
 - GBW and phase margin are defined by the first 0 dB crossing of the
   small-signal response with `CL = 2 pF` on the output and the committed

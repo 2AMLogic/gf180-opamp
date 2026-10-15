@@ -214,6 +214,40 @@ Records are evidence: the claim line states which rows were measured and
 their pass/fail against the ratified bounds with the worst-case corner per
 figure.
 
+## Passive-corner side study (`--passive-corners`, issue #97)
+
+The 45-point grid pairs every MOS corner with `res_typical` / `mimcap_typical`.
+`--passive-corners` is an opt-in side study that measures slew, swing and
+quiescent power across independent RZ (`res_typical/ff/ss`) x CC
+(`mimcap_typical/ff/ss`) sections at the three binding points the gain study
+used (fs / 125 C / 2.97 V, ss / 125 C / 2.97 V, typical / 27 C / 3.30 V): 27
+cells per figure, one `klt sim` corner-matrix request per figure (batch fleet on
+dispatch workers; a refused submit is reported and no record is written, never
+a local grid). The slew number is a transient measurement, not the analytic
+1/CC scaling in the gain study. Each cell's generated deck is checked to load
+the PDK sections its name encodes. The record is titled `# slew/swing/power
+passive-corner study` and is never selected by `sim/report` (`STUDY_TITLES`);
+it is judged against, and changes, no ratified bound. The section-pairing
+helpers live in `sim/passive_corners.py`, shared with the gain driver.
+
+### Full-envelope mode (`--passive-corners --passive-scope full`, issue #150)
+
+`--passive-scope limited` (the default) is the three-point study above and is
+unchanged. `--passive-scope full` crosses all 5 MOS corners x 3 temperatures x
+3 supplies (the 45-point grid) with the 9 independent RZ x CC combinations:
+405 cells per figure, one `klt sim` corner-matrix request per figure (no
+`exclude`; the process axis carries the 45 MOS x RZ x CC names). The runner
+requires exactly the 405 expected keys (missing, duplicated and unexpected
+cells are errors), checks every generated deck against the sections its name
+encodes, and writes no record unless every requested figure is complete. The
+sweep is deterministic (no Monte Carlo seeds) and is not partitioned: each
+figure is one request; use `--figures` to submit a subset explicitly. Records
+carry a `**Scope**: full` line and the same tables, so the same extractor in
+`sim/report` ingests them under the separate supplementary key
+`slew-swing-power-passive-corners-full`. Fleet use needs
+`--batch-runner-version-check warn` while the fleet runner is older than the
+client (as for the other fleet studies).
+
 ## Records
 
 | Record | Rows judged | Result | Notes |
@@ -221,5 +255,9 @@ figure.
 | [`20261009-114727-1dab1db`](records/20261009-114727-1dab1db.md), [`20261009-121017-1dab1db`](records/20261009-121017-1dab1db.md) | power, swing | power and swing PASS 45/45; slew NOT RUN | fleet per-point timeouts on the slew grid (see "Batch-fleet timing"); kept as history, not selected |
 | [`20261009-142137-1dab1db`](records/20261009-142137-1dab1db.md) | power, slew, swing | all PASS 45/45 | **selected for power and slew**. Its swing data holds `vin_v vout_v` only, so its swing verdict cannot be re-derived from committed files |
 | [`20261009-143715-4d5aa43`](records/20261009-143715-4d5aa43.md) | swing (`--figures swing`, one 45-point fleet request) | swing PASS 45/45, worst 2.465 Vpp at ss / 125 C / 2.97 V; stretch ≥ 2.6 Vpp at 35/45; every edge bound by M6 (upper) / M7 (lower) leaving saturation | **selected for swing**. Its `swing/*.dat` files carry the M6/M7 Vds/Vdsat vectors; 45/45 points re-derive exactly |
+| [`20261010-094234-fe6599f`](records/20261010-094234-fe6599f.md) | side study (`--passive-corners`, issue #97), not judged by the report | power, slew, swing PASS 27/27 RZ x CC cells; worst slew 13.4 V/us, swing 2.465 Vpp (both ss / 125 C / 2.97 V), power 273.7 uW | measured, not analytic; never selected by `sim/report` |
+| [`20261010-161852-0127eb7`](records/20261010-161852-0127eb7.md) | power, slew, swing (issue #42 retune, RZ 11.23 kOhm / CC 0.578 pF) | all PASS 45/45; worst slew 15.50 V/us (ss / 125 C / 2.97 V), swing 2.465 Vpp (ss / 125 C / 2.97 V), power 310.98 uW (ff / -40 C / 3.63 V); swing re-derives 45/45 from committed files | **selected for power, slew and swing** on the revised design; the three older selected records above measure the pre-retune design |
+| [`20261010-162823-0127eb7`](records/20261010-162823-0127eb7.md) | side study (`--passive-corners`), revised design | power, slew, swing PASS 27/27 RZ x CC cells; worst slew 14.25 V/us (ss / 125 C / 2.97 V, RZ best, CC worst) | measured; never selected by `sim/report` as a graded row |
+| [`20261011-052206-c635487`](records/20261011-052206-c635487.md) | side study, `--passive-corners --passive-scope full` (issue #150), 405 cells per figure | power, slew, swing PASS 405/405; worst slew 14.25 V/us (ss / 125 C / 2.97 V, RZ best, CC worst), swing 2.465 Vpp (ss / 125 C / 2.97 V, RZ best, CC typical), power 311 uW (ff / -40 C / 3.63 V, RZ best, CC typical) | measured on the current DUT; three fleet requests (power `klt-sim-70fee84bf182`, slew `klt-sim-a81d6211aa85`, swing in the record); supplementary key `slew-swing-power-passive-corners-full`, never graded |
 
 `sim/report/selection.json` names the record for each row.

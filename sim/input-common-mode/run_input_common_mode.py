@@ -56,6 +56,12 @@ Evidence (append-only, a new record id every run):
     netlist-snapshots/<rid>.spice                     DUT + testbench + conditions
     records/<rid>.md, records/<rid>-plots/*.png
 
+Each record also carries the versioned measurement-configuration fingerprint
+(issue #180; `measurement_config.py`): the effective bench, analysis, scan and
+refinement settings it was measured with. The report gates a fingerprinted
+selection against the current configuration; records written before #180 keep
+their freshness reported as unknown.
+
 Usage:
     python3 sim/input-common-mode/run_input_common_mode.py            # full scan + refinement + record
     python3 sim/input-common-mode/run_input_common_mode.py --smoke    # nominal point, local, no record
@@ -71,7 +77,6 @@ import argparse
 import csv
 import gzip
 import hashlib
-import importlib.util
 import io
 import json
 import math
@@ -104,31 +109,31 @@ from harness import (  # noqa: E402
     remote_of,
     run_klt,
     run_klt_retrying,
+    load_sibling,
     sanitise_report,
 )
 
 # The CMRR driver owns the servo-bench guards, materialisation, the excitation
 # checks and the joint Ad/Acm solve; reuse them unchanged so the benches stay
 # structurally identical (it in turn reuses the gain driver's DUT guards).
-if "cmrr_driver" in sys.modules:
-    C = sys.modules["cmrr_driver"]
-else:
-    _spec = importlib.util.spec_from_file_location("cmrr_driver", REPO_ROOT / "sim" / "cmrr" / "run_cmrr.py")
-    C = importlib.util.module_from_spec(_spec)
-    sys.modules["cmrr_driver"] = C
-    _spec.loader.exec_module(C)
+C = load_sibling("cmrr_driver", "sim/cmrr/run_cmrr.py")
 G = C.G
+# One source for everything the measurement fingerprint covers (issue #180):
+# the driver imports its fingerprinted settings FROM the stdlib config module
+# below, so the fingerprint cannot drift from what is run.
+mc = load_sibling("input_common_mode_measurement_config",
+                  "sim/input-common-mode/measurement_config.py")
 
 TESTBENCH = HERE / "testbench" / "tb_input_common_mode.spice"
 CMRR_DIR = REPO_ROOT / "sim" / "cmrr"
 
-CORNERS = G.CORNERS
-TEMPS_C = G.TEMPS_C
-SUPPLIES_V = G.SUPPLIES_V
+CORNERS = mc.CORNERS
+TEMPS_C = mc.TEMPS_C
+SUPPLIES_V = mc.SUPPLIES_V
 NOMINAL = G.NOMINAL
-DEVICES = G.DEVICES  # xm1..xm7, xmb1
-MODES = C.MODES
-SERVO_NOMINAL = C.SERVO_NOMINAL
+DEVICES = mc.DEVICES  # xm1..xm7, xmb1
+MODES = mc.MODES
+SERVO_NOMINAL = mc.SERVO_NOMINAL
 
 # --------------------------------------------------------------------------
 # Axes, sweep, criteria
@@ -137,19 +142,22 @@ SERVO_NOMINAL = C.SERVO_NOMINAL
 #: Supplies and VCM are handled in integer millivolts so identities never
 #: depend on float formatting.
 SUPPLIES_MV = [int(round(v * 1000)) for v in SUPPLIES_V]
-SCAN_STEP_MV = 50
-REFINE_STEP_MV = 5
-MAX_REFINE_ROUNDS = 3
-TARGET_VCM_MV = 1200  # the LDO's VREF
+SCAN_STEP_MV = mc.SCAN_STEP_MV
+REFINE_STEP_MV = mc.REFINE_STEP_MV
+MAX_REFINE_ROUNDS = mc.MAX_REFINE_ROUNDS
+TARGET_VCM_MV = mc.TARGET_VCM_MV  # the LDO's VREF
 
 #: Low-frequency AC grid: the shared grid's start and density, stopped at 10 Hz
 #: (the plateau band is 0.1-1 Hz; the rest of the shared sweep is irrelevant to
 #: a DC-plateau gain and would only multiply the cost of ~6000 units).
-AC_FSTART, AC_FSTOP, AC_PPD = G.AC_FSTART, 10.0, G.AC_PPD
+AC_FSTART, AC_FSTOP, AC_PPD = mc.AC_FSTART, mc.AC_FSTOP, mc.AC_PPD
 N_FREQ = int(round(math.log10(AC_FSTOP / AC_FSTART) * AC_PPD)) + 1
 BAND_HI_HZ = 1.0  # plateau band = 0.1-1 Hz
 
 GAIN_MIN_DB = G.GAIN_MIN_DB  # ratified bound (60 dB), reused not restated
+# Everything below is read only AFTER a simulation (validation/grading, not a
+# simulation input): it is deliberately OUTSIDE the measurement fingerprint --
+# see measurement_config.py's docstring for the split.
 PLATEAU_TOL_DB = C.PLATEAU_TOL_DB  # 0.10 dB
 POLARITY_TOL_DEG = G.POLARITY_TOL_DEG
 SAT_TOL_V = 1e-3  # numerical tolerance on |Vds| - |Vdsat| (bench-validity, not a performance bound)
@@ -173,11 +181,10 @@ CURRENT_DEVICES = ("xm1", "xm2", "xm5")  # input pair + tail must carry current
 #: Appended to `analysis.args`: klt places it verbatim in the `.control` block
 #: after `ac`; it prints the DC operating point of the same deck (inputs,
 #: output and every DUT MOSFET's vds, vdsat, id) into the retained log, then
-#: re-selects the ac plot so klt's `write` dumps the AC response.
-OP_PRINT = ["v(vout)", "v(vinp)", "v(vinn)"] + [
-    f"@m.xdut.{d}.m0[{p}]" for d in DEVICES for p in ("vds", "vdsat", "id")
-]
-OP_TAIL = "\nop\nprint " + " ".join(OP_PRINT) + "\nsetplot ac1"
+#: re-selects the ac plot so klt's `write` dumps the AC response. Defined by
+#: the config module (the fingerprint hashes the same args string).
+OP_PRINT = mc.OP_PRINT
+OP_TAIL = mc.OP_TAIL
 
 Key = tuple[str, float, int, int]  # (process, temperature_c, vdd_mv, vcm_mv)
 Combo = tuple[str, float, int]  # (process, temperature_c, vdd_mv)
@@ -256,7 +263,7 @@ def icmr_request(netlist: Path, pdk: Pdk, processes: str | list[str], temps: lis
     req = G.ac_request(netlist, pdk, procs, temps, [3.3])
     req["corners"]["supply_v"] = paired_supply(pairs)
     req["measurements"] = []
-    req["analysis"] = {"kind": "ac", "args": f"dec {AC_PPD:g} {AC_FSTART:g} {AC_FSTOP:g}" + OP_TAIL}
+    req["analysis"] = {"kind": "ac", "args": mc.ac_args()}
     if local:
         req["models"]["pdk_root"] = str(pdk.path.parent)
     return req
@@ -696,7 +703,7 @@ def run_controls(pdk: Pdk, work: Path, table: dict[Key, Sample]) -> Controls:
     if not nominal.valid:
         probs.append(f"local nominal midrail control invalid: {'; '.join(nominal.invalid_reasons)}")
     iso: list[tuple[str, Sample]] = []
-    for csv_v in C.ISOLATION_CSV:
+    for csv_v in mc.ISOLATION_CSV:
         s, _, _ = local_sample(f"iso-csv{csv_v:g}", pdk, work, nom_key_vcm, over={"csv": csv_v})
         label = f"servo tau = {SERVO_NOMINAL['rsv'] * csv_v:g} s"
         iso.append((label, s))
@@ -705,10 +712,11 @@ def run_controls(pdk: Pdk, work: Path, table: dict[Key, Sample]) -> Controls:
         elif nominal.valid and abs(s.gain_mean_db - nominal.gain_mean_db) > ISOLATION_TOL_DB:
             probs.append(f"isolation {label}: plateau gain moves {abs(s.gain_mean_db - nominal.gain_mean_db):.4f} dB "
                          f"(> {ISOLATION_TOL_DB} dB)")
-    inad, _, _ = local_sample("iso-inadequate", pdk, work, nom_key_vcm, over={"csv": C.ISOLATION_INADEQUATE_CSV})
+    inad, _, _ = local_sample("iso-inadequate", pdk, work, nom_key_vcm,
+                              over={"csv": mc.ISOLATION_INADEQUATE_CSV})
     if inad.valid:
         probs.append("an intentionally inadequate servo (tau = 1e-3 s) was NOT rejected")
-    uneq, _, _ = local_sample("unequal-cm", pdk, work, nom_key_vcm, cm_params={"acp": 1.0, "acn": 0.99})
+    uneq, _, _ = local_sample("unequal-cm", pdk, work, nom_key_vcm, cm_params=dict(mc.UNEQUAL_CM))
     if uneq.valid:
         probs.append("unequal common-mode drive (acp = 1, acn = 0.99) was NOT rejected")
 
@@ -1197,6 +1205,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
     add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; commit `{record.rsplit('-', 1)[-1]}`; issue #60")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (sha256 of the wrapper-normalised include "
         f"`{dut_sha[:16]}`), unchanged; snapshot `netlist-snapshots/{record}.spice`")
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
+        add(ln)
     for ln in C.pdk_lines(pdk, reports):
         add(ln.replace("the grid's open-loop response reproduces the committed gain-bench record (see Cross-checks)",
                        "the scan's midrail samples reproduce the committed CMRR record (see Controls: midrail "
@@ -1368,7 +1378,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
     for label, s in cn.iso:
         d = abs(s.gain_mean_db - cn.nominal.gain_mean_db) if s.valid and cn.nominal and cn.nominal.valid else float("nan")
         add(f"- **Servo isolation**, {label}: plateau gain moves {d:.5f} dB (tolerance {ISOLATION_TOL_DB} dB).")
-    add(f"- **Inadequate servo** (tau = {SERVO_NOMINAL['rsv'] * C.ISOLATION_INADEQUATE_CSV:g} s): "
+    add(f"- **Inadequate servo** (tau = {SERVO_NOMINAL['rsv'] * mc.ISOLATION_INADEQUATE_CSV:g} s): "
         + (f"REJECTED ({cn.inadequate.invalid_reasons[0][:140]})" if cn.inadequate is not None and not cn.inadequate.valid
            else "NOT rejected") + ".")
     add("- **Unequal common-mode drive** (acp = 1, acn = 0.99): "
@@ -1384,6 +1394,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
         f"with `samples.csv` (status, gain, margin) and with the headline numbers above: "
         f"**{'identical' if recheck_ok else 'MISMATCH'}**.")
     add("")
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}))
     add("## Plots")
     add("")
     for p in plots:
@@ -1402,7 +1413,9 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
         f"`corners/{record}/requests/*.json.gz` and `reports/*.json.gz` (every klt request and sanitised report), "
         f"`corners/{record}/controls/` (local control logs).")
     add(f"- Testbench `sim/input-common-mode/testbench/tb_input_common_mode.spice`; driver "
-        "`sim/input-common-mode/run_input_common_mode.py`; tests `sim/input-common-mode/test_input_common_mode.py`.")
+        "`sim/input-common-mode/run_input_common_mode.py`; measurement configuration "
+        "`sim/input-common-mode/measurement_config.py` (recomputes the measurement fingerprint above); "
+        "tests `sim/input-common-mode/test_input_common_mode.py`.")
     add(f"- Timestamp / author: {stamp:%Y-%m-%dT%H:%M:%SZ}, agent-builder (issue #60)")
     add("")
     return "\n".join(L)

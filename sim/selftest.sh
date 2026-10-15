@@ -11,15 +11,48 @@
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"
 
+echo "== design: committed netlist vs fresh xschem export (scratch dir; issue #76) =="
+python3 test_netlist_check.py
+python3 ci_netlist_check.py
+
+echo "== design: schematic bias/convergence smoke check (one nominal local ngspice point; writes nothing; issue #96) =="
+python3 ../design/check_dc_op.py
+
 echo "== sim/report: characterization report generator tests + staleness check (no simulator) =="
 python3 report/test_report.py
 python3 report/characterization_report.py --check
+
+echo "== sim/report: spec/target-spec.md Sec. 2 record citations vs selection.json (no simulator; issue #112) =="
+python3 report/test_spec_citation_check.py
+python3 report/spec_citation_check.py
+
+echo "== sim/report: spec/README verdict prose vs the characterization report (no simulator; issue #156) =="
+python3 report/test_spec_verdict_prose_check.py
+python3 report/spec_verdict_prose_check.py
+
+echo "== sim: per-experiment measurement-configuration fingerprint modules (no simulator) =="
+python3 test_measurement_config.py
+
+echo "== sim: shared harness work-dir staging (no simulator, no PDK) =="
+python3 test_harness.py
+
+echo "== sim: characterize.sh wrapper flag routing + fail-fast (stub drivers, no simulator; issue #167) =="
+python3 test_characterize_wrapper.py
+
+echo "== sim: committed-evidence append-only guard unit tests (temp git repos, no simulator; issue #159) =="
+python3 test_evidence_append_only.py
 
 echo "== sim/gain-gbw-pm: extraction + source-guard tests (no simulator) =="
 python3 gain-gbw-pm/test_gain_gbw_pm.py
 
 echo "== sim/gain-gbw-pm: smoke test (typical, 27C, 3.30 V, one local point) =="
 python3 gain-gbw-pm/run_gain_gbw_pm.py --smoke
+
+echo "== sim/gain-gbw-pm-mc: transport + extraction parity + sample accounting + guard + #42 gate tests (no simulator) =="
+python3 gain-gbw-pm-mc/test_gain_gbw_pm_mc.py
+
+echo "== sim/gain-gbw-pm-mc: smoke test (typical, 27C, 3.30 V, local single units; parity with the gain driver; writes nothing) =="
+python3 gain-gbw-pm-mc/run_gain_gbw_pm_mc.py --smoke
 
 echo "== sim/offset-mc: statistics + extraction + source-guard tests (one control pair runs locally) =="
 python3 offset-mc/test_offset_mc.py
@@ -39,11 +72,23 @@ python3 cmrr/test_cmrr.py
 echo "== sim/cmrr: smoke test (typical, 27C, 3.30 V, both excitations, local) =="
 python3 cmrr/run_cmrr.py --smoke
 
+echo "== sim/cmrr-mc: statistics + extraction + source-guard tests (one nominal local unit runs) =="
+python3 cmrr-mc/test_cmrr_mc.py
+
+echo "== sim/cmrr-mc: smoke test (typical, 27C, 3.30 V, both excitations in one deck, local) =="
+python3 cmrr-mc/run_cmrr_mc.py --smoke
+
 echo "== sim/psrr: extraction + source/request-guard tests (one nominal local triple runs) =="
 python3 psrr/test_psrr.py
 
 echo "== sim/psrr: smoke test (typical, 27C, 3.30 V, all three excitations, local) =="
 python3 psrr/run_psrr.py --smoke
+
+echo "== sim/psrr-mc: statistics + extraction + source-guard tests (one nominal local unit runs) =="
+python3 psrr-mc/test_psrr_mc.py
+
+echo "== sim/psrr-mc: smoke test (typical, 27C, 3.30 V, dm/vdd/vss excitations in one deck, local) =="
+python3 psrr-mc/run_psrr_mc.py --smoke
 
 echo "== sim/slew-swing-power: extraction + source-guard tests (no simulator) =="
 python3 slew-swing-power/test_slew_swing_power.py
@@ -51,8 +96,32 @@ python3 slew-swing-power/test_slew_swing_power.py
 echo "== sim/slew-swing-power: smoke test (typical, 27C, 3.30 V, one local point per figure) =="
 python3 slew-swing-power/run_slew_swing_power.py --smoke
 
+echo "== sim/step-response: extraction + source-guard tests (no simulator) =="
+python3 step-response/test_step_response.py
+
+echo "== sim/step-response: smoke test (typical, 27C, 3.30 V, one local point) =="
+python3 step-response/run_step_response.py --smoke
+
+echo "== sim/overdrive-recovery: extraction + source-guard tests (no simulator) =="
+python3 overdrive-recovery/test_overdrive_recovery.py
+
+echo "== sim/overdrive-recovery: smoke test (typical, 27C, 3.30 V, one local point) =="
+python3 overdrive-recovery/run_overdrive_recovery.py --smoke
+
+echo "== sim/enable-acquisition: extraction + source-guard tests (no simulator) =="
+python3 enable-acquisition/test_enable_acquisition.py
+
+echo "== sim/enable-acquisition: smoke test (typical, 27C, 3.30 V, one local point per scenario; writes no record) =="
+python3 enable-acquisition/run_enable_acquisition.py --smoke
+
 echo "== sim/input-common-mode: request/extraction/range tests (local nominal units run) =="
 python3 input-common-mode/test_input_common_mode.py
 
 echo "== sim/input-common-mode: smoke test (typical, 27C, 3.30 V, VCM 1.20 V and 1.65 V, both excitations, local) =="
 python3 input-common-mode/run_input_common_mode.py --smoke
+
+echo "== sim/ibias-cl-sensitivity: extraction + substitution + source-guard tests (no simulator) =="
+python3 ibias-cl-sensitivity/test_ibias_cl_sensitivity.py
+
+echo "== sim/ibias-cl-sensitivity: smoke test (typical, 27C, 3.30 V, one local point) =="
+python3 ibias-cl-sensitivity/run_ibias_cl_sensitivity.py --smoke

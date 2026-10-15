@@ -18,30 +18,59 @@ compliance are three different things, as of the committed records named
 below:
 
 - **Measured against a ratified bound (45-point PVT grid, schematic level):**
-  DC gain and GBW pass at 45/45 points (worst 93.79 dB and 10.42 MHz, both at
-  SS / 125 C / 2.97 V); slew rate, output swing and quiescent power also pass
-  at 45/45 points (worst 14.51 V/us at SS / 125 C / 2.97 V, 2.46 Vpp at
-  SS / 125 C / 2.97 V, and 310.98 uW at FF / -40 C / 3.63 V; record
-  [`20261009-142137-1dab1db`](sim/slew-swing-power/records/20261009-142137-1dab1db.md));
-  these PASS verdicts cover the MOS / temperature / supply grid only, with
-  passives at typical; phase margin **fails** its 60 degree target, passing
-  at only 15/45 points (worst 57.34 degrees at FS / 125 C / 2.97 V). Record:
-  [`20261009-055759-2524b3e`](sim/gain-gbw-pm/records/20261009-055759-2524b3e.md).
-  The circuit repair is tracked in [#42](https://github.com/2AMLogic/gf180-opamp/issues/42).
+  after the Miller-compensation retune of [#42](https://github.com/2AMLogic/gf180-opamp/issues/42)
+  (RZ 2.11 kOhm -> 11.23 kOhm, CC 0.619 pF -> 0.578 pF), DC gain, GBW and
+  phase margin all pass at 45/45 points (worst 93.79 dB and 11.910 MHz, both at
+  SS / 125 C / 2.97 V, and 71.99 degrees at FS / 125 C / 2.97 V; record
+  [`20261010-161514-0127eb7`](sim/gain-gbw-pm/records/20261010-161514-0127eb7.md));
+  slew rate, output swing and quiescent power also pass at 45/45 points
+  (worst 15.50 V/us at SS / 125 C / 2.97 V, 2.46 Vpp at SS / 125 C / 2.97 V,
+  and 310.98 uW at FF / -40 C / 3.63 V; record
+  [`20261010-161852-0127eb7`](sim/slew-swing-power/records/20261010-161852-0127eb7.md)).
+  Before the retune, PM passed at only 15/45 points (worst 57.34 degrees) and
+  GBW worst was 10.42 MHz (records `20261010-020141-1e51d1c`,
+  `20261009-142137-1dab1db`, kept unchanged). These PASS verdicts cover the
+  MOS / temperature / supply grid only, with passives at typical.
 - **Measured, bound still open (no verdict):** input-referred noise
-  ([`20261009-082007-68b4567`](sim/noise/records/20261009-082007-68b4567.md),
+  ([`20261010-163507-0127eb7`](sim/noise/records/20261010-163507-0127eb7.md),
   45 points), input offset mismatch Monte Carlo
-  ([`20261009-072205-96bf3cc`](sim/offset-mc/records/20261009-072205-96bf3cc.md),
-  five process corners x 300 samples at 27 C / 3.30 V only), CMRR
-  ([`20261009-105631-30ec86d`](sim/cmrr/records/20261009-105631-30ec86d.md))
+  ([`20261010-185141-e4be1ac`](sim/offset-mc/records/20261010-185141-e4be1ac.md),
+  45-point PVT grid x 300 samples per point; worst |mean| + 3 sigma 15.458 mV
+  at typical / 27 C / 3.30 V), CMRR
+  ([`20261010-163601-0127eb7`](sim/cmrr/records/20261010-163601-0127eb7.md))
   and PSRR
-  ([`20261009-105929-30ec86d`](sim/psrr/records/20261009-105929-30ec86d.md)),
-  both systematic-only (matched devices, 45 points). Their numeric bounds are
+  ([`20261010-163854-0127eb7`](sim/psrr/records/20261010-163854-0127eb7.md)),
+  both systematic-only (matched devices, 45 points); the characterization
+  report also lists the CMRR mismatch Monte Carlo record
+  ([`20261010-202454-e4be1ac`](sim/cmrr-mc/records/20261010-202454-e4be1ac.md),
+  five corners x 300 samples at 27 C / 3.30 V only) and the PSRR mismatch
+  Monte Carlo record
+  ([`20261011-145434-286b06c`](sim/psrr-mc/records/20261011-145434-286b06c.md),
+  same population) beside them as separate, ungraded information. Their numeric bounds are
   not ratified.
 - **Not yet measured:** post-layout verification (no layout evidence; area is
   open).
 
-All circuit results use typical passives only. The `klt signoff` verdict of
+The selected 45-point records use typical passives; they do not sweep RZ/CC.
+Two 27-cell passive-corner screening studies on the retuned design (RZ and CC
+each at the PDK typical/ff/ss sections, at FS / 125 C / 2.97 V, SS / 125 C /
+2.97 V and typical / 27 C / 3.30 V) cover only those three points:
+gain/GBW/PM
+([`20261010-161720-0127eb7`](sim/gain-gbw-pm/records/20261010-161720-0127eb7.md))
+and slew, swing and power
+([`20261010-162823-0127eb7`](sim/slew-swing-power/records/20261010-162823-0127eb7.md)).
+Issue #150 adds the FULL-envelope studies (`--passive-scope full`): all 5 MOS
+corners x 3 temperatures x 3 supplies x 9 independent RZ x CC combinations =
+405 cells per figure, on the same design. Gain/GBW/PM
+([`20261011-042113-c635487`](sim/gain-gbw-pm/records/20261011-042113-c635487.md))
+shows PM >= 60 degrees at 405/405 cells (worst 64.47 degrees, FS / 125 C /
+2.97 V, RZ ff, CC ff) and GBW >= 10 MHz at 405/405 cells (worst 10.726 MHz,
+SS / 125 C / 2.97 V, RZ ff, CC ss); slew, swing and power
+([`20261011-052206-c635487`](sim/slew-swing-power/records/20261011-052206-c635487.md))
+pass 405/405 per row (worst slew 14.25 V/us, swing 2.465 Vpp, power 311 uW).
+The full studies are supplementary evidence (not graded rows); DC gain is not
+measured by the passive study, and the other figures (noise, offset, CMRR,
+PSRR, input common mode) remain at typical passives only. The `klt signoff` verdict of
 record ([`manifests/`](manifests/README.md)) is still below T1; no T1 claim
 is made. The 5 V device flavors remain surveyed but not characterized, and
 the 5 V stretch row stays unopened.
@@ -88,6 +117,36 @@ this block's nearest same-PDK siblings (`gf180-bandgap`, `gf180-ldo`) and
 [gap-to-T1 tracker](https://github.com/2AMLogic/gf180-opamp/issues/7) for the
 block's current distance from the klayout-tools T1 ("sim-validated")
 design-evidence tier.
+
+## Reproducing the results
+
+Every recorded result comes from a committed testbench under `sim/<experiment>/testbench/`
+driven by one `sim/<experiment>/run_*.py`. Prerequisites (ngspice, xschem 3.4.7, the
+pinned `klt`, and the gf180mcu PDK at the open_pdks revision pinned in
+`sim/harness.py`) are listed in [`sim/README.md`](sim/README.md).
+
+```bash
+sim/selftest.sh                      # fast check: no records written, one local nominal point per bench
+sim/characterize.sh                  # full PVT grids; appends new records, then rebuilds the report
+python3 sim/report/characterization_report.py --check   # committed report + evidence sidecar current
+python3 manifests/t1_attest.py --check                  # T1 items 1/9/10 inventories current
+klt signoff --manifest manifests/gf180-opamp.json \
+            --tiers-doc manifests/design-evidence-tiers.md --format json   # see manifests/README.md
+```
+
+Multi-corner and Monte Carlo grids go through `klt sim` (never hand-looped `ngspice`).
+The experiments `sim/characterize.sh` does not drive (for example `sim/cmrr-mc/`) document
+their own commands in their READMEs. The testbench inventory behind signoff T1 item 9 is
+[`manifests/attest/testbench-inventory.json`](manifests/attest/testbench-inventory.json).
+
+## Orchestration notes
+
+Sweep coordinators that need a main-clean baseline should follow
+[`docs/sweep-baseline.md`](docs/sweep-baseline.md): it covers the unique
+scratch path outside the repository, the snapshot and baseline commands,
+retention, cleanup and what happens if the baseline goes missing. The recipe
+is checked by
+[`scripts/test-sweep-baseline.sh`](scripts/test-sweep-baseline.sh).
 
 ## License
 

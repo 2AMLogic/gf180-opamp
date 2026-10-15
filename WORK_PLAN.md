@@ -5,15 +5,21 @@ Current Loom label state. Tracking and blocked items do not constitute ready wor
 <!-- guide:plan-body:start -->
 ## Operator Attention: Merge-Risk-Hold Pileup
 
-Judge-approved PRs stuck under a `loom:operator` merge-risk hold — implementation work is done, only a human merge decision is missing.
+Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
 _None._
 
-## Operator Priority
+## Very Important
 
-Issues the operator starred (`loom:operator-priority`); land these first.
+`loom:very-important` (one counts per workspace); every stage takes these first.
 
 _None._
+
+## Important
+
+`loom:important`; taken before unlabelled work.
+
+- **#77**: Prepare a reproducible GF180 layout device pilot before full op-amp placement
 
 ## Ready
 
@@ -25,8 +31,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#60**: spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown
-- **#61**: spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4)
+_None._
 
 ## PRs Awaiting Review
 
@@ -38,19 +43,22 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#79**: feat(#77): GF180 layout device pilot (isolated cells, regen recipe, DRC/LVS evidence)
 
 ## Proposed
 
 Issues carrying `loom:curated`.
 
 - **#7**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
-- **#60**: spec: add an input common-mode range row (testbench + decision record) — consumers currently grade it unknown *(curated)*
-- **#61**: spec: ratify CMRR and PSRR bounds with a mismatch-aware CMRR statistic (DR-3 residuals e3, e4) *(curated)*
+- **#77**: Prepare a reproducible GF180 layout device pilot before full op-amp placement *(curated)*
+- **#98**: sim: CMRR mismatch Monte Carlo over the T/VDD grid (45 points x N=300) *(curated)*
+- **#140**: cmrr-mc: full grid as a single batch request exceeds the 3600 s fleet job limit *(curated)*
+- **#190**: sim: extend PSRR mismatch characterization to the full temperature and supply grid *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#62**: spec: ratify noise band/bound and offset 3-sigma bound via a decision record (DR-3 residuals e1, e2) *(architect)*
+- **#105**: Consolidate duplicated guard_dut and guard_testbench core into sim/harness.py *(hermit)*
 
 ## Epics
 
@@ -58,15 +66,16 @@ _None._
 
 ## Backlog Balance
 
-| Tier | Count |
+| Bucket | Count |
 |------|-------|
 | Operator merge-risk holds | 0 |
-| Operator priority | 0 |
+| Very important | 0 |
+| Important | 1 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 2 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 3 |
-| Architect / Hermit proposals | 1 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 5 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
