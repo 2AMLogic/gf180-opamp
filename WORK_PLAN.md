@@ -31,13 +31,13 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#105**: Consolidate duplicated guard_dut and guard_testbench core into sim/harness.py
+_None._
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#207**: refactor(sim): share generic bench guards and logical_lines in harness
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -70,8 +70,8 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 1 |
+| In Progress (`loom:building`) | 0 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 4 |
 | Architect / Hermit proposals | 1 |
