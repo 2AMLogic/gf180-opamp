@@ -2,6 +2,10 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-16
+
+- **PR #211**: sim(cmrr-mc): record seed re-probe on fleet klt 0.7.0 (still not partition-invariant)
+
 ### 2026-10-15
 
 - **PR #207**: refactor(sim): share generic bench guards and logical_lines in harness
