@@ -273,11 +273,11 @@ expect_fail report spec_citation_check.py ../spec/target-spec.md \
 # Derived offset temperature-drift view (issue #184): the report suite must catch a units
 # regression (uV -> mV scaling dropped) and a drift slope computed with the wrong temperature span.
 control report test_report.py
-expect_fail report test_report.py report/characterization_report.py \
+expect_fail report test_report.py report/extract_mc.py \
   "arithmetic: offset drift view reports mV where it labels uV" \
   'mean, sig = s["mean"] * 1e3, s["sigma"] * 1e3  # mV -> uV' \
   'mean, sig = s["mean"], s["sigma"]  # mV -> uV'
-expect_fail report test_report.py report/characterization_report.py \
+expect_fail report test_report.py report/extract_mc.py \
   "arithmetic: end-to-end drift divides by the wrong temperature span" \
   '(ms[-1] - ms[0]) / span,' '(ms[-1] - ms[0]) / (span + 1),'
 
