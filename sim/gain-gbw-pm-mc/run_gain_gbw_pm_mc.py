@@ -55,7 +55,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import json
 import math
 import re
@@ -83,8 +82,10 @@ from harness import (  # noqa: E402
     load_sibling,
     ngspice_version,
     remote_of,
+    request_for_snapshot,
     run_klt,
     sanitise_report,
+    sha256_text,
     submit_request,
 )
 
@@ -128,10 +129,6 @@ DIFF_EXC_TOL_V = 1e-6
 
 class GateError(RuntimeError):
     """A full-campaign request refused before anything is claimed or submitted."""
-
-
-def dut_sha256(dut_text: str) -> str:
-    return hashlib.sha256(dut_text.encode()).hexdigest()
 
 
 def campaign_gate(pin: str | None, det_record: str | None, *, current_sha: str,
@@ -606,13 +603,11 @@ def write_vectors(cdir: Path, samples: dict[Key, list[Sample]]) -> list[str]:
 
 
 def write_snapshot(path: Path, record: str, req: dict, dut_text: str) -> None:
-    r = json.loads(json.dumps(req))
-    r["netlist"] = Path(r["netlist"]).name
-    r.get("models", {}).pop("pdk_root", None)
+    r = request_for_snapshot(req)
     L = [f"* netlist snapshot for gain/GBW/PM Monte Carlo record {record} (issue #129)",
          "* ---- committed testbench (sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice) + mismatch switch ----"]
     L += [f"* | {ln}" for ln in inject_mismatch(G.TESTBENCH.read_text(), 1).splitlines()]
-    L += [f"* ---- DUT include (wrapper-normalised export), sha256 {dut_sha256(dut_text)} ----"]
+    L += [f"* ---- DUT include (wrapper-normalised export), sha256 {sha256_text(dut_text)} ----"]
     L += [f"* | {ln}" for ln in dut_text.splitlines()]
     L += ["* ---- klt request ----"] + [f"* | {ln}" for ln in json.dumps(r, indent=2).splitlines()]
     with path.open("x") as fh:
@@ -793,7 +788,7 @@ def run_campaign(args, *, base: Path = HERE, records_dir: Path = GAIN_RECORDS) -
     -> append-only record. Any refusal happens before anything is written or
     submitted; a failed submit or an incomplete sample set writes nothing."""
     dut = load_dut_text()
-    errs = campaign_gate(args.revised_dut_sha256, args.deterministic_record, current_sha=dut_sha256(dut),
+    errs = campaign_gate(args.revised_dut_sha256, args.deterministic_record, current_sha=sha256_text(dut),
                          records_dir=records_dir)
     if errs:
         print("CAMPAIGN GATE: refused before submission:\n  " + "\n  ".join(errs), file=sys.stderr)
@@ -839,7 +834,7 @@ def run_campaign(args, *, base: Path = HERE, records_dir: Path = GAIN_RECORDS) -
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         with paths["record"].open("x") as fh:
             fh.write(build_record(record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, kver=kver, rep=rep,
-                                  wall=wall, stats=stats, samples=samples, dut_sha=dut_sha256(dut),
+                                  wall=wall, stats=stats, samples=samples, dut_sha=sha256_text(dut),
                                   det_record=args.deterministic_record))
     print(f"record written: {paths['record']}")
     return 0
