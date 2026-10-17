@@ -3,7 +3,7 @@
   "provenance": {
     "deck": null,
     "input": {
-      "content_hash": "sha256:36edcf4ae3eb940a0a33b0e3b80a74efbccbbce8579c771729f0bf546e2d6454",
+      "content_hash": "sha256:be6ff2260cccb6677e37de5e752861d4f4379118ac61844231ada03bb357c550",
       "path": {
         "path": "manifests/attest/design-sources.json",
         "scope": "repo"
