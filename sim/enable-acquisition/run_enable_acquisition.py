@@ -104,6 +104,11 @@ from harness import (  # noqa: E402
     stage_workdir,
     fmt_finite,
     describe_backend,
+    check_rederive,
+    copy_controls,
+    index_corners,
+    persist_points,
+    read_raw,
 )
 
 g = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
@@ -404,36 +409,10 @@ def crosscheck(k: Key, vals: dict, m: Metrics, sched: dict) -> list[str]:
     return bad
 
 
-def _read_raw(c: dict, k: Key, problems: list[str]):
-    diag = "; ".join(d.get("message", "")[:200] for d in c.get("diagnostics", []) if d.get("severity") == "error")
-    raw = (c.get("artifacts") or {}).get("raw")
-    if not raw or not Path(raw).is_file():
-        problems.append(f"simulation failed for {g.fmt_key(k)}: {diag or 'no rawfile retained'}")
-        return None
-    try:
-        return ssp.parse_ascii_real_raw(Path(raw).read_text())
-    except ValueError as exc:
-        problems.append(f"malformed data for {g.fmt_key(k)}: {exc}")
-        return None
-
-
-def _index(report: dict, want: list[Key], problems: list[str]) -> dict:
-    seen: dict[Key, dict] = {}
-    for c in report.get("corners", []):
-        k = g.point_key(c)
-        if k in seen:
-            problems.append(f"duplicate result for {g.fmt_key(k)}")
-        seen[k] = c
-    extra = set(seen) - set(want)
-    if extra:
-        problems.append(f"unexpected extra points: {sorted(extra)}")
-    return seen
-
-
 def analyse_reference(report: dict, want: list[Key]) -> tuple[dict, dict, list[str]]:
     """Powered steady reference per point: {key: v_ref}, artifacts, problems."""
     problems: list[str] = []
-    seen = _index(report, want, problems)
+    seen = index_corners(report, want, problems)
     refs, arts = {}, {}
     for k in want:
         c = seen.get(k)
@@ -456,13 +435,13 @@ def analyse_report(report: dict, want: list[Key], sched: dict, refs: dict) -> tu
     problems: list[str] = []
     results: dict[Key, Metrics] = {}
     arts: dict[Key, dict] = {}
-    seen = _index(report, want, problems)
+    seen = index_corners(report, want, problems)
     for k in want:
         c = seen.get(k)
         if c is None:
             problems.append(f"missing result for {g.fmt_key(k)}")
             continue
-        vec = _read_raw(c, k, problems)
+        vec = read_raw(c, k, problems)
         if vec is None:
             continue
         vals = _meas(c)
@@ -530,38 +509,9 @@ def same_result(a: Metrics, b: Metrics) -> bool:
     return True
 
 
-def persist_points(sub: Path, results: dict, arts: dict, report: dict) -> None:
-    """One case's committed evidence: per-point logs, decks and `.dat.gz`
-    traces, plus the sanitised klt report. Used for the primary grids and for
-    the long-window follow-ups alike (a follow-up keeps its evidence too)."""
-    for k, a in arts.items():
-        stem = g.point_stem(k)
-        if a["log"]:
-            shutil.copyfile(a["log"], sub / f"{stem}.log")
-        if a["deck"]:
-            shutil.copyfile(a["deck"], sub / f"{stem}.cir")
-        save_point_data(results[k], sub / f"{stem}.dat.gz")
-    (sub / "klt-report.json").write_text(json.dumps(sanitise_report(report), indent=1))
-
-
-def check_rederive(sub: Path, sched: dict, results: dict, refs: dict, label: str,
-                   rbad: list[str]) -> tuple[int, int]:
-    """Re-extract every persisted point of `sub` from its committed `.dat.gz`
-    trace and compare with the in-memory metrics; mismatch / unreadable points
-    are appended to `rbad` (prefixed `label`). Returns (n_ok, n_all)."""
-    n_ok = n_all = 0
-    for k, m in results.items():
-        n_all += 1
-        try:
-            m2 = rederive(sub / f"{g.point_stem(k)}.dat.gz", sched, k[2], refs[k])
-        except (ValueError, OSError) as exc:
-            rbad.append(f"{label} {g.fmt_key(k)}: {exc}")
-            continue
-        if same_result(m, m2):
-            n_ok += 1
-        else:
-            rbad.append(f"{label} {g.fmt_key(k)}")
-    return n_ok, n_all
+def _rederive_with(sched: dict, refs: dict):
+    """`harness.check_rederive`'s `rederive(path, key)` for one case's schedule."""
+    return lambda path, k: rederive(path, sched, k[2], refs[k])
 
 
 def snapshot_case_lines(label: str, req: dict, sched: dict) -> list[str]:
@@ -1151,24 +1101,23 @@ def main(argv: list[str] | None = None) -> int:
             sub = cdir / f"{scenario}_{ramp}"
             sub.mkdir()
             _req, rep = case_reports[(scenario, ramp)]
-            persist_points(sub, results, case_arts[(scenario, ramp)], rep)
-            a, b = check_rederive(sub, sched, results, refs, f"{scenario}/{ramp}", rbad)
+            persist_points(sub, results, case_arts[(scenario, ramp)], rep, save=save_point_data, suffix=".dat.gz")
+            a, b = check_rederive(sub, results, rederive=_rederive_with(sched, refs), same=same_result,
+                                  suffix=".dat.gz", label=f"{scenario}/{ramp}", rbad=rbad)
             n_ok += a
             n_all += b
         for (scenario, ramp), (lsched, lres) in long_results.items():
             lsub = cdir / f"long_{scenario}_{ramp}"
             lsub.mkdir()
             _lreq, lrep = long_reports[(scenario, ramp)]
-            persist_points(lsub, lres, long_arts[(scenario, ramp)], lrep)
-            a, b = check_rederive(lsub, lsched, lres, refs, f"long {scenario}/{ramp}", rbad)
+            persist_points(lsub, lres, long_arts[(scenario, ramp)], lrep, save=save_point_data, suffix=".dat.gz")
+            a, b = check_rederive(lsub, lres, rederive=_rederive_with(lsched, refs), same=same_result,
+                                  suffix=".dat.gz", label=f"long {scenario}/{ramp}", rbad=rbad)
             n_ok += a
             n_all += b
         ccdir = cdir / "controls"
         ccdir.mkdir()
-        for c in ctrls:
-            for kind, src in c.files.items():
-                if src and Path(src).is_file():
-                    shutil.copyfile(src, ccdir / f"{c.name}.{'log' if kind == 'log' else 'cir'}")
+        copy_controls(ccdir, ctrls)
 
         dut_text = load_dut_text()
         dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()

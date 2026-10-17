@@ -586,8 +586,8 @@ class LongWindowPersistenceTests(unittest.TestCase):
             primary, follow = d / "supply-first_slow", d / "long_supply-first_slow"
             primary.mkdir()
             follow.mkdir()
-            r.persist_points(primary, res, arts, reports["primary"])
-            r.persist_points(follow, lres, larts, reports["long"])
+            r.persist_points(primary, res, arts, reports["primary"], save=r.save_point_data, suffix=".dat.gz")
+            r.persist_points(follow, lres, larts, reports["long"], save=r.save_point_data, suffix=".dat.gz")
             stem = r.g.point_stem(self.KEY)
             for sub, tag in ((primary, "primary"), (follow, "long")):
                 self.assertEqual((sub / f"{stem}.log").read_text(), f"{tag} log\n")
@@ -600,7 +600,8 @@ class LongWindowPersistenceTests(unittest.TestCase):
             n_ok = n_all = 0
             for sub, s, rr, label in ((primary, sched, res, "supply-first/slow"),
                                       (follow, lsched, lres, "long supply-first/slow")):
-                a, b = r.check_rederive(sub, s, rr, refs, label, rbad)
+                a, b = r.check_rederive(sub, rr, rederive=r._rederive_with(s, refs), same=r.same_result,
+                                        suffix=".dat.gz", label=label, rbad=rbad)
                 n_ok += a
                 n_all += b
             self.assertEqual((n_ok, n_all, rbad), (2, 2, []))
@@ -614,10 +615,11 @@ class LongWindowPersistenceTests(unittest.TestCase):
             d = Path(d)
             sub = d / "supply-first_slow"
             sub.mkdir()
-            r.persist_points(sub, {self.KEY: m}, self._arts(d), {"corners": []})
+            r.persist_points(sub, {self.KEY: m}, self._arts(d), {"corners": []}, save=r.save_point_data, suffix=".dat.gz")
             (sub / f"{r.g.point_stem(self.KEY)}.dat.gz").unlink()
             rbad = []
-            n_ok, n_all = r.check_rederive(sub, sched, {self.KEY: m}, {self.KEY: VCM}, "supply-first/slow", rbad)
+            n_ok, n_all = r.check_rederive(sub, {self.KEY: m}, rederive=r._rederive_with(sched, {self.KEY: VCM}),
+                                           same=r.same_result, suffix=".dat.gz", label="supply-first/slow", rbad=rbad)
             self.assertEqual((n_ok, n_all), (0, 1))
             self.assertEqual(len(rbad), 1)
             self.assertIn("supply-first/slow", rbad[0])
