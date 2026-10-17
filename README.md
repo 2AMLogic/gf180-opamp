@@ -148,6 +148,9 @@ retention, cleanup and what happens if the baseline goes missing. The recipe
 is checked by
 [`scripts/test-sweep-baseline.sh`](scripts/test-sweep-baseline.sh).
 
+The guard-confinement evidence package and its upstream handoff status are
+in [`docs/guard-confinement-handoff.md`](docs/guard-confinement-handoff.md).
+
 ## License
 
 Apache-2.0.
