@@ -31,7 +31,6 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#238**: Hoist duplicated MC snapshot writer and request sanitiser into sim/harness.py
 - **#240**: Re-pin open_pdks to f6eeac7 via ciel, with a revision-checked PDK search, before minting layout evidence
 
 ## PRs Awaiting Review
@@ -44,7 +43,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#244**: refactor: hoist MC snapshot writer, request sanitiser and sha256 into harness
+_None._
 
 ## Proposed
 
@@ -72,9 +71,9 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 2 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
+| Approved PRs awaiting merge | 0 |
 | Curated | 4 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |

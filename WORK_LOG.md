@@ -4,6 +4,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-17
 
+- **PR #244**: refactor: hoist MC snapshot writer, request sanitiser and sha256 into harness
+- **Issue #238** (closed): Hoist duplicated MC snapshot writer and request sanitiser into sim/harness.py
 - **PR #245**: refactor: hoist per-bench fingerprint wrappers into harness.fingerprint_api
 - **Issue #237** (closed): Collapse 14 copy-pasted fingerprint wrappers in sim/*/measurement_config.py into a harness factory
 - **PR #243**: build: re-pin open_pdks to f6eeac7 via ciel, search ~/.ciel before ~/.volare
