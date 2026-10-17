@@ -31,7 +31,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#225**: Consolidate triplicated describe_backend/_fmt and inline remote lookups into sim/harness.py
+- **#232**: Hoist duplicated MC submit() and parse_scalars() into sim/harness
 
 ## PRs Awaiting Review
 
