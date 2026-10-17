@@ -66,6 +66,7 @@ import shutil
 import sys
 import tempfile
 from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 
 import numpy as np
@@ -86,14 +87,15 @@ from harness import (  # noqa: E402
     load_dut_text,
     load_sibling,
     ngspice_version,
-    run_klt,
     run_klt_retrying,
     sanitise_report,
-    set_cl,
-    set_ibias,
-    stage_workdir,
     fmt_finite,
     describe_backend,
+    materialise_bench,
+    tran_request,
+    save_point_data as _save_point_data,
+    run_unit as _run_unit,
+    run_controls as _run_controls,
 )
 
 # Shared DUT/testbench source guards, grid bookkeeping and request skeleton:
@@ -156,33 +158,10 @@ PHASES = (
 
 
 
-def materialise(work: Path, pdk: Pdk, *, ibias_a: float | None = None, cl_f: float | None = None,
-                dut_text: str | None = None) -> Path:
-    """Write the per-run work directory; return the testbench path.
-
-    The committed testbench is used verbatim except for the two `.include`
-    targets (rewritten to absolute paths in `work`) and, for a control only,
-    an explicit `Ibias` or `CL` override. `dut_text` replaces the committed DUT
-    only to prove the stale-DUT guard (it must then be rejected).
-    """
-    tb = stage_workdir(work, pdk, TESTBENCH.read_text(), guard_tb=g.guard_testbench,
-                       guard_dut=g.guard_dut, dut_text=dut_text, tb_label=TESTBENCH.name)
-    if ibias_a is not None:
-        tb = set_ibias(tb, ibias_a)
-    if cl_f is not None:
-        tb = set_cl(tb, cl_f)
-    path = work / "tb.spice"
-    path.write_text(tb)
-    return path
+materialise = partial(materialise_bench, testbench=TESTBENCH, guard_tb=g.guard_testbench, guard_dut=g.guard_dut)
 
 
-def make_request(netlist: Path, pdk: Pdk, corners, temps, supplies) -> dict:
-    """One 45-point (or single-point) `corners` request."""
-    req = g.ac_request(netlist, pdk, corners, temps, supplies)
-    req["analysis"] = mc.analysis()
-    req["measurements"] = mc.measurements()
-    req["options"] = {"timeout_s": 600, "keep_artifacts": True, "waveforms": True}
-    return req
+make_request = partial(tran_request, ac_request=g.ac_request, mc=mc)
 
 
 # --------------------------------------------------------------------------
@@ -421,13 +400,7 @@ DAT_HEADER = "time_s vout_v vinp_v"
 
 
 def save_point_data(m: Metrics, path: Path) -> None:
-    """Every rawfile sample of the point: `time_s vout_v vinp_v` (enough for
-    `rederive()` to reproduce the extraction from the committed file alone)."""
-    if m.x.size == 0:
-        path.write_text(f"# INVALID: {m.reason}\n")
-        return
-    head = ([] if m.valid else [f"INVALID: {m.reason}"]) + [DAT_HEADER]
-    np.savetxt(path, np.column_stack([m.x, m.y, m.vin]), header="\n".join(head), fmt=("%.9e", "%.10e", "%.10e"))
+    _save_point_data(m, path, DAT_HEADER)
 
 
 def rederive(path: Path) -> Metrics:
@@ -520,31 +493,11 @@ class ControlRun:
     files: dict = field(default_factory=dict)
 
 
-def run_unit(name: str, pdk: Pdk, work: Path, overrides: dict):
-    """The nominal point as its own single-unit `klt sim`, LOCAL (allowed by
-    the host rules; the 45-point grid never takes this path)."""
-    wd = work / name
-    tb = materialise(wd, pdk, **overrides)
-    proc, temp, vdd = NOMINAL
-    req = make_request(tb, pdk, [proc], [temp], [vdd])
-    rep = run_klt(req, wd / "out", "local", wd)
-    res, arts, problems = analyse_report(rep, [NOMINAL])
-    if NOMINAL not in res:
-        raise KltError("; ".join(problems))
-    return res[NOMINAL], arts[NOMINAL], problems
+run_unit = partial(_run_unit, nominal=NOMINAL, materialise=materialise, make_request=make_request,
+                   analyse_report=analyse_report)
 
 
-def run_controls(pdk: Pdk, work: Path) -> list[ControlRun]:
-    out = []
-    for name, desc, ov in mc.CONTROLS:
-        cr = ControlRun(name, desc)
-        try:
-            m, a, _ = run_unit(name, pdk, work, ov)
-            cr.metrics, cr.files = m, {"log": a["log"], "deck": a["deck"]}
-        except (KltError, KeyError, RuntimeError) as exc:
-            cr.error = str(exc)[:300]
-        out.append(cr)
-    return out
+run_controls = partial(_run_controls, controls=mc.CONTROLS, control_cls=ControlRun, run_unit=run_unit)
 
 
 def control_failures(ctrls: list[ControlRun]) -> list[str]:

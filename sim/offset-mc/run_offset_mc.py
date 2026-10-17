@@ -89,6 +89,8 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     DUT_EXPORT,  # noqa: F401  (re-exported: tests read these)
     DUT_INCLUDE_NAME,  # noqa: F401
+    lost_shard_refusals,
+    remote_jobs,
     KltError,
     Pdk,
     allocate_record_id,
@@ -172,13 +174,6 @@ NOMINAL_CSV = HERE / "corners" / NOMINAL_RECORD / "offset_samples.csv"
 #: (seed, corner index, sample index) over the WHOLE request, so sharding
 #: changes no sample's value.
 GRID_HOSTS = 3
-#: A shard whose launch the fleet refused (shared concurrency cap or Spot
-#: capacity) comes back as `lost_shard` units, not a submit error, and
-#: `batch.capacity_wait_s` does not wait out the concurrency cap
-#: (2AMLogic/klayout-tools#2917). Such a run is re-submitted whole (still
-#: through `klt sim`, never locally), up to `--batch-submit-retries` times.
-_LOST_SHARD_TRANSIENT = ("already running", "BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity")
-
 
 # --------------------------------------------------------------------------
 # DUT: the committed export, wrapper-normalised (`harness.load_dut_text`)
@@ -317,28 +312,6 @@ def grid_request(netlist: Path, pdk: Pdk, corners: list[str], grid: str, n: int,
     if hosts and hosts > 1:
         req["remote"] = {"hosts": int(hosts)}
     return req
-
-
-def lost_shard_refusals(report: dict) -> int:
-    """Units lost because a shard's fleet launch was refused for capacity or
-    the shared concurrency cap (nothing ran for them; re-submittable)."""
-    n = 0
-    for c in report.get("corners", []):
-        for d in c.get("diagnostics", []) or []:
-            msg = str(d.get("message", ""))
-            if (d.get("code") == "lost_shard" or "shard lost" in msg) and any(t in msg for t in _LOST_SHARD_TRANSIENT):
-                n += 1
-                break
-    return n
-
-
-def remote_jobs(report: dict) -> list[dict]:
-    """The fleet job block(s) of a report: one `environment.remote` block, or
-    its `fleet[]` entries for a sharded run (`None` for a lost shard)."""
-    r = remote_of(report)
-    if "fleet" in r:
-        return [e or {} for e in r.get("fleet") or []]
-    return [r] if r else []
 
 
 # --------------------------------------------------------------------------

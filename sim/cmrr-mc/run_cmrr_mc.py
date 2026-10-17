@@ -61,7 +61,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import hashlib
 import importlib.util
 import json
 import math
@@ -95,6 +94,10 @@ from harness import (  # noqa: E402
     run_klt_retrying,
     sanitise_report,
     skew,
+    exec_line,
+    as_mc as _as_mc,
+    sha256_text as _sha,
+    fmt_digits as fmt,
 )
 
 # The systematic CMRR driver owns the bench guards, the materialisation, the
@@ -549,22 +552,6 @@ def keys_of(corners, temps, supplies) -> list[tuple]:
 # --------------------------------------------------------------------------
 
 
-def _sha(text: str) -> str:
-    return hashlib.sha256(text.encode()).hexdigest()
-
-
-def exec_line(tag: str, rep: dict, wall: float) -> str:
-    r = remote_of(rep)
-    env = rep.get("environment") or {}
-    eng_s = f"{env.get('engine', 'ngspice')} {env.get('engine_version', '')}".strip()
-    if not r:
-        return f"  - `{tag}`: backend `local`; engine `{eng_s}`; wall {wall:.0f} s"
-    return (f"  - `{tag}`: backend `{r.get('provider')}`, job `{r.get('job_id')}`, "
-            f"{'Spot ' if r.get('spot') else ''}{r.get('instance_type', '')}, state `{r.get('state')}`, "
-            f"runner klt `{r.get('runner_klt_version')}` vs client `{r.get('client_klt_version')}` "
-            f"(compatibility `{r.get('runner_compatibility')}`); engine `{eng_s}`; wall {wall:.0f} s")
-
-
 def write_csv(path: Path, samples: dict[tuple, list[Sample]]) -> None:
     cols = ["process", "temperature_c", "vdd_v", "sample_index", "rndseed", "mismatch_seed", "process_seed",
             "valid", "lower_bound"] + [s for s in SCALARS if not re.match(r"cmc_f\d+$", s)]
@@ -593,10 +580,6 @@ def write_snapshot(path: Path, record: str, reqs: dict[str, dict], tb_text: str,
         r.get("models", {}).pop("pdk_root", None)
         L += [f"* ---- klt request `{tag}` ----"] + [f"* | {ln}" for ln in json.dumps(r, indent=2).splitlines()]
     path.write_text("\n".join(L) + "\n")
-
-
-def fmt(x: float, nd: int = 2) -> str:
-    return "n/a" if not math.isfinite(x) else f"{x:.{nd}f}"
 
 
 def build_record(*, record, stamp, pdk, ngspice, kver, grid, reports, walls, samples, stats, off_rows, off_probs,
@@ -812,14 +795,6 @@ def smoke(pdk: Pdk) -> int:
           f"{s.fig('cmrr', 'dc'):.2f} dB, 10 kHz {s.fig('cmrr', '10k'):.2f} dB, at f_u {s.fig('cmrr', 'fu'):.2f} dB")
     print("smoke test OK")
     return 0
-
-
-def _as_mc(rep: dict) -> dict:
-    """A non-MC single-unit report, dressed as sample 0 (smoke test only)."""
-    for c in rep.get("corners", []):
-        if not c.get("monte_carlo"):
-            c["monte_carlo"] = {"sample_index": 0}
-    return rep
 
 
 def probe(pdk: Pdk, args) -> int:

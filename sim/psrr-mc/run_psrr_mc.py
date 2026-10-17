@@ -72,7 +72,6 @@ from __future__ import annotations
 import argparse
 import contextlib
 import csv
-import hashlib
 import json
 import math
 import re
@@ -105,6 +104,12 @@ from harness import (  # noqa: E402
     run_klt_retrying,
     sanitise_report,
     skew,
+    lost_shard_refusals,
+    remote_jobs,
+    exec_line,
+    as_mc as _as_mc,
+    sha256_text as _sha,
+    fmt_digits as fmt,
 )
 
 # The systematic PSRR driver owns the bench guard (driven vss, ground-
@@ -211,13 +216,6 @@ NOMINAL_CSV = HERE / "corners" / NOMINAL_RECORD / "samples.csv"
 #: the measured per-unit time (the offset deck's ~0.30 s/unit does NOT
 #: transfer: it is one DC op, not three 201-point AC sweeps).
 GRID_HOSTS = 8
-#: A shard whose launch the fleet refused (shared concurrency cap or Spot
-#: capacity) comes back as `lost_shard` units, not a submit error, and
-#: `batch.capacity_wait_s` does not wait out the concurrency cap
-#: (2AMLogic/klayout-tools#2917). Such a run is re-submitted whole (still
-#: through `klt sim`, never locally), up to `--batch-submit-retries` times.
-_LOST_SHARD_TRANSIENT = ("already running", "BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity")
-
 # --------------------------------------------------------------------------
 # Testbench guard and materialisation
 # --------------------------------------------------------------------------
@@ -316,28 +314,6 @@ def grid_keys(grid: str) -> list[tuple]:
     """Every (process, T, VDD) point of a grid, in record order."""
     temps, supplies, _ = mc.grid_axes(grid)
     return [(c, float(t), float(v)) for c in CORNERS for t in temps for v in supplies]
-
-
-def lost_shard_refusals(report: dict) -> int:
-    """Units lost because a shard's fleet launch was refused for capacity or
-    the shared concurrency cap (nothing ran for them; re-submittable)."""
-    n = 0
-    for c in report.get("corners", []):
-        for d in c.get("diagnostics", []) or []:
-            msg = str(d.get("message", ""))
-            if (d.get("code") == "lost_shard" or "shard lost" in msg) and any(t in msg for t in _LOST_SHARD_TRANSIENT):
-                n += 1
-                break
-    return n
-
-
-def remote_jobs(report: dict) -> list[dict]:
-    """The fleet job block(s) of a report: one `environment.remote` block, or
-    its `fleet[]` entries for a sharded run (`None` for a lost shard)."""
-    r = remote_of(report)
-    if "fleet" in r:
-        return [e or {} for e in r.get("fleet") or []]
-    return [r] if r else []
 
 
 # --------------------------------------------------------------------------
@@ -782,22 +758,6 @@ def submit(tag: str, tb: Path, pdk: Pdk, corners, temps, supplies, n: int, args,
 # --------------------------------------------------------------------------
 
 
-def _sha(text: str) -> str:
-    return hashlib.sha256(text.encode()).hexdigest()
-
-
-def exec_line(tag: str, rep: dict, wall: float) -> str:
-    r = remote_of(rep)
-    env = rep.get("environment") or {}
-    eng_s = f"{env.get('engine', 'ngspice')} {env.get('engine_version', '')}".strip()
-    if not r:
-        return f"  - `{tag}`: backend `local`; engine `{eng_s}`; wall {wall:.0f} s"
-    return (f"  - `{tag}`: backend `{r.get('provider')}`, job `{r.get('job_id')}`, "
-            f"{'Spot ' if r.get('spot') else ''}{r.get('instance_type', '')}, state `{r.get('state')}`, "
-            f"runner klt `{r.get('runner_klt_version')}` vs client `{r.get('client_klt_version')}` "
-            f"(compatibility `{r.get('runner_compatibility')}`); engine `{eng_s}`; wall {wall:.0f} s")
-
-
 def write_csv(path: Path, samples: dict[tuple, list[Sample]], keys: list | None = None,
               vcm_of: dict | None = None) -> None:
     """Per-sample CSV. `keys` fixes the point order (grid records); `vcm_of`
@@ -838,10 +798,6 @@ def write_snapshot(path: Path, record: str, reqs: dict[str, dict], tb_text: str,
         r.get("models", {}).pop("pdk_root", None)
         L += [f"* ---- klt request `{tag}` ----"] + [f"* | {ln}" for ln in json.dumps(r, indent=2).splitlines()]
     path.write_text("\n".join(L) + "\n")
-
-
-def fmt(x: float, nd: int = 2) -> str:
-    return "n/a" if not math.isfinite(x) else f"{x:.{nd}f}"
 
 
 def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, samples, stats, off_rows, off_probs,
@@ -1476,14 +1432,6 @@ def add_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--batch-submit-retries", type=int, default=0)
     ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
     ap.add_argument("--keep-work", type=Path, default=None, help="keep the work dir (never commit it)")
-
-
-def _as_mc(rep: dict) -> dict:
-    """A non-MC single-unit report, dressed as sample 0 (smoke test only)."""
-    for c in rep.get("corners", []):
-        if not c.get("monte_carlo"):
-            c["monte_carlo"] = {"sample_index": 0}
-    return rep
 
 
 def local_unit(pdk: Pdk, *, mismatch: int = 1, dut_text: str | None = None,
