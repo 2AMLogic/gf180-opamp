@@ -111,6 +111,7 @@ from harness import (  # noqa: E402
     fmt_digits as fmt,
     parse_prefixed_scalars,
     submit_request,
+    write_mc_snapshot,
 )
 
 # The systematic PSRR driver owns the bench guard (driven vss, ground-
@@ -768,20 +769,9 @@ def write_csv(path: Path, samples: dict[tuple, list[Sample]], keys: list | None 
 
 
 def write_snapshot(path: Path, record: str, reqs: dict[str, dict], tb_text: str, dut_text: str, ctl_dut: str) -> None:
-    L = [f"* netlist snapshot for PSRR Monte Carlo record {record} (issue #99)",
-         "* ---- committed testbench (sim/psrr-mc/testbench/tb_psrr_mc.spice) ----"]
-    L += [f"* | {ln}" for ln in tb_text.splitlines()]
-    L += [f"* ---- DUT include (wrapper-normalised export), sha256 {_sha(dut_text)[:16]} ----"]
-    L += [f"* | {ln}" for ln in dut_text.splitlines()]
-    L += [(f"* ---- negative-control DUT copy ({CONTROL_MIRROR[0]} {CONTROL_MIRROR[1]} changed), sha256 "
-           f"{_sha(ctl_dut)[:16]}: the changed line ----")]
-    L += [f"* | {ln}" for ln in ctl_dut.splitlines() if ln.lower().startswith(CONTROL_MIRROR[0].lower() + " ")]
-    for tag, req in reqs.items():
-        r = json.loads(json.dumps(req))
-        r["netlist"] = Path(r["netlist"]).name
-        r.get("models", {}).pop("pdk_root", None)
-        L += [f"* ---- klt request `{tag}` ----"] + [f"* | {ln}" for ln in json.dumps(r, indent=2).splitlines()]
-    path.write_text("\n".join(L) + "\n")
+    write_mc_snapshot(path, title=f"PSRR Monte Carlo record {record} (issue #99)",
+                      tb_label="sim/psrr-mc/testbench/tb_psrr_mc.spice",
+                      tb_text=tb_text, dut_text=dut_text, ctl_dut=ctl_dut, control_mirror=CONTROL_MIRROR, reqs=reqs)
 
 
 def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, samples, stats, off_rows, off_probs,

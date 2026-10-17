@@ -466,7 +466,7 @@ class GateTests(unittest.TestCase):
     def test_current_committed_export_is_the_pre_redesign_dut(self):
         # Until #42 lands, the committed export is the pre-redesign DUT, so a
         # full campaign on this checkout is refused whatever is pinned.
-        cur = m.dut_sha256(m.load_dut_text())
+        cur = m.sha256_text(m.load_dut_text())
         if cur == m.PRE_REDESIGN_DUT_SHA256:
             self.assertTrue(m.campaign_gate(cur, DET_RECORD, current_sha=cur))
 
