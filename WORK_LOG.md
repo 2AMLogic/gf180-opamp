@@ -4,6 +4,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-17
 
+- **PR #230**: refactor(sim): hoist duplicated transient and MC runner helpers into harness
+- **Issue #229** (closed): Consolidate remaining byte-identical runner helpers (step-response/overdrive-recovery, MC runners) into sim/harness.py
 - **PR #228**: refactor(sim): hoist describe_backend and fmt_finite into harness, use remote_of
 - **Issue #225** (closed): Consolidate triplicated describe_backend/_fmt and inline remote lookups into sim/harness.py
 - **PR #224**: refactor(sim): remove unused helpers, imports and locals
