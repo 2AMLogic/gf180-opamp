@@ -58,7 +58,7 @@ machine.) **`xschem -q` exits 10 on a successful netlist run** — check that
 `design/netlist/opamp_two_stage.spice` was rewritten, not the exit status,
 if you wrap this in a script. `design/xschemrc` finds the gf180mcu install by the same rules as
 `sim/gm-id-characterization/run_gmid.py` — `GF180_PDK_PATH`, then
-`PDK_ROOT` + `PDK`, then `~/.volare/gf180mcuD` — sources the PDK's own
+`PDK_ROOT` + `PDK`, then `~/.ciel/gf180mcuD`, then legacy `~/.volare/gf180mcuD` — sources the PDK's own
 xschemrc so the gf180mcu device symbols resolve, and adds `design/` plus
 every `sim/<experiment-slug>/testbench/`.
 
@@ -131,7 +131,7 @@ remaining gap is tracked by
 ## Prerequisites
 
 `xschem`, `ngspice`, Python 3, and the pinned gf180mcu PDK revision
-(open_pdks `c6d73a35f524070e85faff4a6a9eef49553ebc2b`, `gf180mcuD` variant)
+(open_pdks `f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7`, `gf180mcuD` variant)
 — see
 [`sim/gm-id-characterization/README.md`](../sim/gm-id-characterization/README.md)
-for the volare install recipe this repo uses.
+for the ciel install recipe this repo uses.

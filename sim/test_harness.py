@@ -7,10 +7,12 @@ anywhere the stdlib does.
 
 from __future__ import annotations
 
+import os
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -203,6 +205,38 @@ class McSnapshotTests(unittest.TestCase):
         self.assertEqual(lines[6], "* | XM3 a b")
         self.assertIn("* ---- klt request `tag` ----", lines)
         self.assertNotIn("pdk_root", "\n".join(lines))
+
+
+class FindPdkSearchOrderTests(unittest.TestCase):
+    """`find_pdk` prefers ~/.ciel (the pinned tree) over ~/.volare (issue #240)."""
+
+    def _home(self, tools: list[str]) -> Path:
+        home = Path(tempfile.mkdtemp())
+        self.addCleanup(lambda: __import__("shutil").rmtree(home, ignore_errors=True))
+        for tool in tools:
+            ngspice = home / f".{tool}" / "gf180mcuD" / "libs.tech" / "ngspice"
+            ngspice.mkdir(parents=True)
+            (ngspice / "sm141064.ngspice").write_text("")
+        return home
+
+    def _find(self, home: Path) -> "harness.Pdk":
+        env = {k: v for k, v in os.environ.items() if k not in ("GF180_PDK_PATH", "PDK_ROOT", "PDK")}
+        env["HOME"] = str(home)
+        with mock.patch.dict(os.environ, env, clear=True):
+            return harness.find_pdk()
+
+    def test_ciel_wins_over_volare(self) -> None:
+        pdk = self._find(self._home(["volare", "ciel"]))
+        self.assertEqual(pdk.source, "ciel-default")
+
+    def test_volare_only_is_the_legacy_fallback(self) -> None:
+        self.assertEqual(self._find(self._home(["volare"])).source, "volare-default")
+
+    def test_neither_tree_names_the_ciel_install(self) -> None:
+        with self.assertRaises(harness.PdkNotFound) as cm:
+            self._find(self._home([]))
+        self.assertIn("ciel enable --pdk-family gf180mcu", str(cm.exception))
+        self.assertIn(harness.PINNED_PDK_REV, str(cm.exception))
 
 
 if __name__ == "__main__":

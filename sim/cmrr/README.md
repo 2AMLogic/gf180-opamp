@@ -107,7 +107,7 @@ python3 sim/cmrr/run_cmrr.py --batch-runner-version-check warn \
 Cold-start prerequisites:
 
 - `klt`, `ngspice` and the pinned gf180mcu PDK (`find_pdk` in
-  `sim/harness.py`; `volare enable --pdk gf180mcu c6d73a35…`).
+  `sim/harness.py`; `ciel enable --pdk-family gf180mcu -l gf180mcu_fd_pr f6eeac7d…`).
 - Python 3 with `numpy` and a `matplotlib` that imports with it.
 - The committed gain-bench dataset (`sim/gain-gbw-pm/corners/`), used for the
   decomposition cross-check.

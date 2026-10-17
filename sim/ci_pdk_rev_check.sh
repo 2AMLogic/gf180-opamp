@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # sim/ci_pdk_rev_check.sh -- prove the PDK revision gate has teeth (issue #52).
 #
-# Builds scratch PDK fixtures in the volare default layout
-# ($HOME/.volare/gf180mcuD -> volare/gf180mcu/versions/<rev>/gf180mcuD, which
-# is exactly what an actions/cache restore of ~/.volare produces) and runs
+# Builds scratch PDK fixtures in the ciel default layout
+# ($HOME/.ciel/gf180mcuD -> ciel/gf180mcu/versions/<rev>/gf180mcuD, which is
+# exactly what an actions/cache restore of ~/.ciel produces) and in the legacy
+# volare layout ($HOME/.volare/...), including a stale volare tree alongside
+# the ciel one and runs
 # `sim/ci_prereqs.py --pdk-only` against each with HOME pointed at the
 # fixture. The pinned revision must pass; a wrong revision, a missing SOURCES
 # file and a SOURCES file without an open_pdks line must each fail with
@@ -18,17 +20,23 @@ trap 'rm -rf "$work"' EXIT
 pinned="$(python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import harness; print(harness.PINNED_PDK_REV)' "$repo/sim")"
 wrong="0123456789abcdef0123456789abcdef01234567"
 
-# make_fixture <name> <dir-rev> <SOURCES content or __NONE__>
-make_fixture() {
-  local name="$1" rev="$2" sources="$3"
-  local home="$work/$name"
-  local vdir="$home/.volare/volare/gf180mcu/versions/$rev/gf180mcuD"
+# add_tree <home> <tool: ciel|volare> <dir-rev> <SOURCES content or __NONE__>
+add_tree() {
+  local home="$1" tool="$2" rev="$3" sources="$4"
+  local vdir="$home/.$tool/$tool/gf180mcu/versions/$rev/gf180mcuD"
   mkdir -p "$vdir/libs.tech/ngspice"
   : >"$vdir/libs.tech/ngspice/sm141064.ngspice"
   if [ "$sources" != "__NONE__" ]; then
     printf '%s\n' "$sources" >"$vdir/SOURCES"
   fi
-  ln -s "volare/gf180mcu/versions/$rev/gf180mcuD" "$home/.volare/gf180mcuD"
+  ln -s "$tool/gf180mcu/versions/$rev/gf180mcuD" "$home/.$tool/gf180mcuD"
+}
+
+# make_fixture <name> <dir-rev> <SOURCES content or __NONE__> [tool, default ciel]
+make_fixture() {
+  local name="$1" rev="$2" sources="$3" tool="${4:-ciel}"
+  local home="$work/$name"
+  add_tree "$home" "$tool" "$rev" "$sources"
   echo "$home"
 }
 
@@ -74,7 +82,24 @@ h_lying="$(make_fixture lying "$pinned" "open_pdks $wrong")"
 h_nosrc="$(make_fixture nosources "$pinned" "__NONE__")"
 h_noline="$(make_fixture noline "$pinned" "gf180mcu deadbeef")"
 
+# A stale ~/.volare tree at the old revision next to the pinned ~/.ciel tree
+# must not win the search; and a ciel tree at the wrong revision must fail even
+# when a volare tree at the pinned revision exists (ciel is searched first).
+h_shadow="$(make_fixture shadow "$pinned" "open_pdks $pinned")"
+add_tree "$h_shadow" volare "$wrong" "open_pdks $wrong"
+h_ciel_wrong_volare_ok="$(make_fixture cielwrong "$wrong" "open_pdks $wrong")"
+add_tree "$h_ciel_wrong_volare_ok" volare "$pinned" "open_pdks $pinned"
+# Legacy: only a volare tree.
+h_volare_pinned="$(make_fixture volarepinned "$pinned" "open_pdks $pinned" volare)"
+h_volare_wrong="$(make_fixture volarewrong "$wrong" "open_pdks $wrong" volare)"
+
 expect_pass "pinned revision (restored cache)" "$h_pinned"
+expect_pass "pinned ciel tree with a stale volare tree alongside" "$h_shadow"
+grep -qF "$h_shadow/.ciel" "$work/out.txt" \
+  || { echo "FAIL: shadowed run did not select the ~/.ciel tree" >&2; cat "$work/out.txt" >&2; exit 1; }
+expect_fail "wrong-revision ciel tree is not rescued by a pinned volare tree" "actual   open_pdks $wrong" "$h_ciel_wrong_volare_ok"
+expect_pass "legacy volare layout at the pin" "$h_volare_pinned"
+expect_fail "legacy volare layout at the wrong revision" "actual   open_pdks $wrong" "$h_volare_wrong"
 expect_pass "pinned revision with GF180_PDK_REV set" "$h_pinned" GF180_PDK_REV="$pinned"
 grep -qF "open_pdks $pinned == expected" "$work/out.txt" \
   || { echo "FAIL: pass output lacks the verified revision" >&2; cat "$work/out.txt" >&2; exit 1; }

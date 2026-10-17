@@ -16,7 +16,7 @@ writes no record.
 What it does:
 
 1. Resolves the gf180mcu PDK via the shared `sim/harness.py` module
-   (`find_pdk`: GF180_PDK_PATH, then PDK_ROOT+PDK, then ~/.volare/<variant>
+   (`find_pdk`: GF180_PDK_PATH, then PDK_ROOT+PDK, then ~/.ciel/<variant>, then ~/.volare/<variant>
    -- one master copy shared with the `sim/` runners since issue #30's
    operator ruling, 2026-10-02).
 2. Turns `design/netlist/opamp_two_stage.spice` -- the xschem export,
