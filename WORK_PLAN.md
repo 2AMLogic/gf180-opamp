@@ -31,7 +31,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#232**: Hoist duplicated MC submit() and parse_scalars() into sim/harness
+_None._
 
 ## PRs Awaiting Review
 
@@ -57,6 +57,8 @@ Issues carrying `loom:curated`.
 
 - **#62**: spec: ratify noise band/bound and offset 3-sigma bound via a decision record (DR-3 residuals e1, e2) *(architect)*
 - **#226**: Consolidate duplicated sw_stat_mismatch switch guard across four MC runners into sim/harness.py *(hermit)*
+- **#237**: Collapse 14 copy-pasted fingerprint wrappers in sim/*/measurement_config.py into a harness factory *(hermit)*
+- **#238**: Hoist duplicated MC snapshot writer and request sanitiser into sim/harness.py *(hermit)*
 
 ## Epics
 
@@ -70,10 +72,10 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 3 |
-| Architect / Hermit proposals | 2 |
+| Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

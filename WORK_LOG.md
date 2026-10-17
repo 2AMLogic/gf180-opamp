@@ -4,6 +4,10 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-17
 
+- **PR #236**: refactor(sim): hoist corner indexing, point persistence and re-derivation into harness
+- **Issue #235** (closed): Hoist transient-runner corner indexing, point persistence and re-derivation loops into sim/harness
+- **PR #234**: refactor(sim): hoist MC submit wrapper and scalar parser into harness
+- **Issue #232** (closed): Hoist duplicated MC submit() and parse_scalars() into sim/harness
 - **PR #230**: refactor(sim): hoist duplicated transient and MC runner helpers into harness
 - **Issue #229** (closed): Consolidate remaining byte-identical runner helpers (step-response/overdrive-recovery, MC runners) into sim/harness.py
 - **PR #228**: refactor(sim): hoist describe_backend and fmt_finite into harness, use remote_of
