@@ -2,6 +2,10 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-17
+
+- **PR #216**: docs: add owner-mapped handoff for guard-confinement evidence
+
 ### 2026-10-16
 
 - **PR #211**: sim(cmrr-mc): record seed re-probe on fleet klt 0.7.0 (still not partition-invariant)
