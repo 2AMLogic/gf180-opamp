@@ -97,16 +97,8 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
     }
 
 
-def fingerprint(texts: dict, retained: dict | None = None) -> str:
-    return harness.measurement_fingerprint(inputs(texts, retained))
-
-
-def fingerprint_lines(texts: dict, retained: dict | None = None) -> list[str]:
-    return harness.fingerprint_header_lines(
-        inputs(texts, retained),
-        "bench content, `.noise` analysis, integration bands/spot/fit settings, control settings, "
-        "corner axes, model library/sections")
-
-
-def inputs_section(texts: dict, retained: dict | None = None) -> list[str]:
-    return harness.fingerprint_inputs_section(inputs(texts, retained), MODULE_REL)
+fingerprint, fingerprint_lines, inputs_section = harness.fingerprint_api(
+    inputs,
+    "bench content, `.noise` analysis, integration bands/spot/fit settings, control settings, "
+    "corner axes, model library/sections",
+    MODULE_REL)

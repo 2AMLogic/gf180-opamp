@@ -33,6 +33,7 @@ import harness  # noqa: E402
 
 EXPERIMENT = "gain-gbw-pm"
 FINGERPRINT_VERSION = harness.FINGERPRINT_VERSION
+MODULE_REL = "sim/gain-gbw-pm/measurement_config.py"
 TESTBENCH_REL = "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice"
 
 #: MOS corners; each is bundled with the SAME typical resistor and MIM
@@ -80,31 +81,7 @@ def inputs(testbench_text: str, vcm_fixed_v: float | None = None) -> dict:
     }
 
 
-def fingerprint(testbench_text: str, vcm_fixed_v: float | None = None) -> str:
-    return harness.measurement_fingerprint(inputs(testbench_text, vcm_fixed_v))
-
-
-def fingerprint_lines(testbench_text: str, vcm_fixed_v: float | None = None) -> list[str]:
-    """Markdown lines a record embeds (header line + retained inputs block)."""
-    inp = inputs(testbench_text, vcm_fixed_v)
-    return [
-        f"- **Measurement fingerprint**: version {FINGERPRINT_VERSION}, sha256 "
-        f"`{harness.measurement_fingerprint(inp)}` over the canonical inputs retained in "
-        "the 'Measurement fingerprint inputs' section (bench content, `.ac` analysis, corner axes, "
-        "model library/sections; excludes record IDs, paths and backend scheduling)",
-    ]
-
-
-def inputs_section(testbench_text: str, vcm_fixed_v: float | None = None) -> list[str]:
-    inp = inputs(testbench_text, vcm_fixed_v)
-    return [
-        "## Measurement fingerprint inputs",
-        "",
-        "Canonical JSON (sorted keys, compact separators); its sha256 is the fingerprint in the header. "
-        "Recompute with `sim/gain-gbw-pm/measurement_config.py`.",
-        "",
-        "```json",
-        harness.fingerprint_json(inp),
-        "```",
-        "",
-    ]
+fingerprint, fingerprint_lines, inputs_section = harness.fingerprint_api(
+    inputs,
+    "bench content, `.ac` analysis, corner axes, model library/sections",
+    MODULE_REL)

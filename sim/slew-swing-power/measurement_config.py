@@ -160,17 +160,10 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
     }
 
 
-def fingerprint(texts: dict, retained: dict | None = None) -> str:
-    return harness.measurement_fingerprint(inputs(texts, retained))
-
-
-def fingerprint_lines(texts: dict, retained: dict | None = None) -> list[str]:
+def _covers(texts: dict, retained: dict | None = None) -> str:
     figs = ", ".join(selected_figures(texts, retained)) or "none"
-    return harness.fingerprint_header_lines(
-        inputs(texts, retained),
-        f"measured figures only ({figs}): per-figure bench content, analysis, timing/sweep/criterion "
-        "and control settings; shared corner axes and model library/sections")
+    return (f"measured figures only ({figs}): per-figure bench content, analysis, timing/sweep/criterion "
+            "and control settings; shared corner axes and model library/sections")
 
 
-def inputs_section(texts: dict, retained: dict | None = None) -> list[str]:
-    return harness.fingerprint_inputs_section(inputs(texts, retained), MODULE_REL)
+fingerprint, fingerprint_lines, inputs_section = harness.fingerprint_api(inputs, _covers, MODULE_REL)
