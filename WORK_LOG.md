@@ -4,6 +4,9 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-17
 
+- **PR #245**: refactor: hoist per-bench fingerprint wrappers into harness.fingerprint_api
+- **Issue #237** (closed): Collapse 14 copy-pasted fingerprint wrappers in sim/*/measurement_config.py into a harness factory
+- **PR #243**: build: re-pin open_pdks to f6eeac7 via ciel, search ~/.ciel before ~/.volare
 - **PR #236**: refactor(sim): hoist corner indexing, point persistence and re-derivation into harness
 - **Issue #235** (closed): Hoist transient-runner corner indexing, point persistence and re-derivation loops into sim/harness
 - **PR #234**: refactor(sim): hoist MC submit wrapper and scalar parser into harness
