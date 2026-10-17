@@ -31,7 +31,8 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#238**: Hoist duplicated MC snapshot writer and request sanitiser into sim/harness.py
+- **#240**: Re-pin open_pdks to f6eeac7 via ciel, with a revision-checked PDK search, before minting layout evidence
 
 ## PRs Awaiting Review
 
@@ -43,7 +44,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#244**: refactor: hoist MC snapshot writer, request sanitiser and sha256 into harness
 
 ## Proposed
 
@@ -52,13 +53,12 @@ Issues carrying `loom:curated`.
 - **#7**: Track the gap to T1 sim-validated / bronze (klayout-tools design-evidence tiers) *(curated)*
 - **#98**: sim: CMRR mismatch Monte Carlo over the T/VDD grid (45 points x N=300) *(curated)*
 - **#190**: sim: extend PSRR mismatch characterization to the full temperature and supply grid *(curated)*
+- **#240**: Re-pin open_pdks to f6eeac7 via ciel, with a revision-checked PDK search, before minting layout evidence *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#62**: spec: ratify noise band/bound and offset 3-sigma bound via a decision record (DR-3 residuals e1, e2) *(architect)*
 - **#226**: Consolidate duplicated sw_stat_mismatch switch guard across four MC runners into sim/harness.py *(hermit)*
-- **#237**: Collapse 14 copy-pasted fingerprint wrappers in sim/*/measurement_config.py into a harness factory *(hermit)*
-- **#238**: Hoist duplicated MC snapshot writer and request sanitiser into sim/harness.py *(hermit)*
 
 ## Epics
 
@@ -72,10 +72,10 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 3 |
-| Architect / Hermit proposals | 4 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 4 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
