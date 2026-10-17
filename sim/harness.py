@@ -1009,6 +1009,31 @@ def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
 
+def request_for_snapshot(req: dict) -> dict:
+    """Copy of a klt request as recorded in a netlist snapshot: basename `netlist`, no host `models.pdk_root`."""
+    r = json.loads(json.dumps(req))
+    r["netlist"] = Path(r["netlist"]).name
+    r.get("models", {}).pop("pdk_root", None)
+    return r
+
+
+def write_mc_snapshot(path: Path, *, title: str, tb_label: str, tb_text: str, dut_text: str, ctl_dut: str,
+                      control_mirror: tuple, reqs: dict[str, dict]) -> None:
+    """Write the netlist snapshot of a CMRR/PSRR Monte Carlo record: testbench, DUT, control-line, requests."""
+    L = [f"* netlist snapshot for {title}",
+         f"* ---- committed testbench ({tb_label}) ----"]
+    L += [f"* | {ln}" for ln in tb_text.splitlines()]
+    L += [f"* ---- DUT include (wrapper-normalised export), sha256 {sha256_text(dut_text)[:16]} ----"]
+    L += [f"* | {ln}" for ln in dut_text.splitlines()]
+    L += [(f"* ---- negative-control DUT copy ({control_mirror[0]} {control_mirror[1]} changed), sha256 "
+           f"{sha256_text(ctl_dut)[:16]}: the changed line ----")]
+    L += [f"* | {ln}" for ln in ctl_dut.splitlines() if ln.lower().startswith(control_mirror[0].lower() + " ")]
+    for tag, req in reqs.items():
+        L += [f"* ---- klt request `{tag}` ----"] + [
+            f"* | {ln}" for ln in json.dumps(request_for_snapshot(req), indent=2).splitlines()]
+    path.write_text("\n".join(L) + "\n")
+
+
 def exec_line(tag: str, rep: dict, wall: float) -> str:
     r = remote_of(rep)
     env = rep.get("environment") or {}

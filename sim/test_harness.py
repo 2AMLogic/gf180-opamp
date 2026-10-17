@@ -183,6 +183,30 @@ class SubmitRequestTests(unittest.TestCase):
         self.assertGreaterEqual(wall, 0.0)
 
 
+class McSnapshotTests(unittest.TestCase):
+    REQ = {"netlist": "/a/b/tb.spice", "models": {"pdk_root": "/x", "corner": "tt"}}
+
+    def test_request_for_snapshot_sanitises_a_copy(self):
+        r = harness.request_for_snapshot(self.REQ)
+        self.assertEqual(r, {"netlist": "tb.spice", "models": {"corner": "tt"}})
+        self.assertEqual(self.REQ["netlist"], "/a/b/tb.spice")
+        self.assertIn("pdk_root", self.REQ["models"])
+
+    def test_write_mc_snapshot_layout(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "s.spice"
+            harness.write_mc_snapshot(p, title="X record r", tb_label="tb.spice", tb_text="t1", dut_text="d1",
+                                      ctl_dut="XM3 a b\nXM1 c\n", control_mirror=("XM3", "W", "6u", "5.4u"),
+                                      reqs={"tag": self.REQ})
+            lines = p.read_text().splitlines()
+        self.assertEqual(lines[0], "* netlist snapshot for X record r")
+        self.assertEqual(lines[1], "* ---- committed testbench (tb.spice) ----")
+        self.assertIn("* ---- negative-control DUT copy (XM3 W changed), sha256 ", lines[5])
+        self.assertEqual(lines[6], "* | XM3 a b")
+        self.assertIn("* ---- klt request `tag` ----", lines)
+        self.assertNotIn("pdk_root", "\n".join(lines))
+
+
 class FindPdkSearchOrderTests(unittest.TestCase):
     """`find_pdk` prefers ~/.ciel (the pinned tree) over ~/.volare (issue #240)."""
 
