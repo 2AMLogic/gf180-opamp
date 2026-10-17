@@ -84,15 +84,7 @@ def inputs(texts: dict) -> dict:
     }
 
 
-def fingerprint(texts: dict) -> str:
-    return harness.measurement_fingerprint(inputs(texts))
-
-
-def fingerprint_lines(texts: dict) -> list[str]:
-    return harness.fingerprint_header_lines(
-        inputs(texts),
-        "sibling bench content, analyses, sweep values, substituted lines, corner tuples, model library/sections")
-
-
-def inputs_section(texts: dict) -> list[str]:
-    return harness.fingerprint_inputs_section(inputs(texts), MODULE_REL)
+fingerprint, fingerprint_lines, inputs_section = harness.fingerprint_api(
+    inputs,
+    "sibling bench content, analyses, sweep values, substituted lines, corner tuples, model library/sections",
+    MODULE_REL)

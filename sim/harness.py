@@ -227,6 +227,26 @@ def fingerprint_inputs_section(inputs: dict, module_rel: str) -> list[str]:
     ]
 
 
+def fingerprint_api(inputs_fn, covers, module_rel: str):
+    """The `(fingerprint, fingerprint_lines, inputs_section)` trio of a `measurement_config.py`.
+
+    Each forwards its arguments to `inputs_fn`. `covers` is the header's
+    description string, or a callable taking the same arguments and returning
+    it when the description depends on them.
+    """
+
+    def fingerprint(*args, **kw) -> str:
+        return measurement_fingerprint(inputs_fn(*args, **kw))
+
+    def fingerprint_lines(*args, **kw) -> list[str]:
+        return fingerprint_header_lines(inputs_fn(*args, **kw), covers(*args, **kw) if callable(covers) else covers)
+
+    def inputs_section(*args, **kw) -> list[str]:
+        return fingerprint_inputs_section(inputs_fn(*args, **kw), module_rel)
+
+    return fingerprint, fingerprint_lines, inputs_section
+
+
 DEFAULT_VARIANT = "gf180mcuD"
 # Pinned open_pdks revision of the gf180mcu PDK (full hash). CI's
 # GF180_PDK_REV must equal this; sim/ci_prereqs.py enforces it on the PDK

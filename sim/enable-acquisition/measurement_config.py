@@ -199,17 +199,9 @@ def inputs(bench_text: str) -> dict:
     }
 
 
-def fingerprint(bench_text: str) -> str:
-    return harness.measurement_fingerprint(inputs(bench_text))
-
-
-def fingerprint_lines(bench_text: str) -> list[str]:
-    return harness.fingerprint_header_lines(
-        inputs(bench_text),
-        "bench content, transient analysis and `.meas` cards, every scenario/ramp schedule, acquisition band, "
-        "dwell and drift rules, initial-state and final-level validity limits, controls, corner axes "
-        "and model library/sections")
-
-
-def inputs_section(bench_text: str) -> list[str]:
-    return harness.fingerprint_inputs_section(inputs(bench_text), MODULE_REL)
+fingerprint, fingerprint_lines, inputs_section = harness.fingerprint_api(
+    inputs,
+    "bench content, transient analysis and `.meas` cards, every scenario/ramp schedule, acquisition band, "
+    "dwell and drift rules, initial-state and final-level validity limits, controls, corner axes "
+    "and model library/sections",
+    MODULE_REL)

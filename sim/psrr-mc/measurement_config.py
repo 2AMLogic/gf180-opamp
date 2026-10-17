@@ -239,17 +239,9 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
     return out
 
 
-def fingerprint(texts: dict, retained: dict | None = None) -> str:
-    return harness.measurement_fingerprint(inputs(texts, retained))
-
-
-def fingerprint_lines(texts: dict, retained: dict | None = None) -> list[str]:
-    return harness.fingerprint_header_lines(
-        inputs(texts, retained),
-        "bench content incl. the mismatch switch, `.ac` analysis + three-sweep control tail, dm drive/servo, "
-        "figure definitions and numerical floor, Monte Carlo count/seed/mode, control settings, corner "
-        "conditions, model library/sections")
-
-
-def inputs_section(texts: dict, retained: dict | None = None) -> list[str]:
-    return harness.fingerprint_inputs_section(inputs(texts, retained), MODULE_REL)
+fingerprint, fingerprint_lines, inputs_section = harness.fingerprint_api(
+    inputs,
+    "bench content incl. the mismatch switch, `.ac` analysis + three-sweep control tail, dm drive/servo, "
+    "figure definitions and numerical floor, Monte Carlo count/seed/mode, control settings, corner "
+    "conditions, model library/sections",
+    MODULE_REL)

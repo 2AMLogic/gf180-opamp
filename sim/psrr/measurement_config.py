@@ -114,18 +114,12 @@ def _default_inputs(texts: dict) -> dict:
     }
 
 
-def fingerprint(texts: dict, retained: dict | None = None) -> str:
-    return harness.measurement_fingerprint(inputs(texts, retained))
-
-
-def fingerprint_lines(texts: dict, retained: dict | None = None) -> list[str]:
-    inp = inputs(texts, retained)
+def _covers(texts: dict, retained: dict | None = None) -> str:
     covers = ("bench content, `.ac` analysis + operating-point print, rail/input excitation modes, servo and "
               "isolation values, feedthrough fixture, corner axes, model library/sections")
-    if "passive_study" in inp:
+    if "passive_study" in inputs(texts, retained):
         covers += ", RZ x CC passive-study scope/points/sections/factors"
-    return harness.fingerprint_header_lines(inp, covers)
+    return covers
 
 
-def inputs_section(texts: dict, retained: dict | None = None) -> list[str]:
-    return harness.fingerprint_inputs_section(inputs(texts, retained), MODULE_REL)
+fingerprint, fingerprint_lines, inputs_section = harness.fingerprint_api(inputs, _covers, MODULE_REL)
