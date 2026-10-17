@@ -132,13 +132,13 @@ Requires `ngspice`, `klt`, Python 3 with `numpy` and `matplotlib`, and the
 pinned gf180mcu PDK revision:
 
 ```bash
-pip install volare
-volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b
+pip install ciel==2.6.1
+ciel enable --pdk-family gf180mcu -l gf180mcu_fd_pr f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7
 ```
 
 PDK resolution (first hit wins): `$GF180_PDK_PATH` (a gf180mcu variant
 directory with `libs.tech/`), else `$PDK_ROOT` (+ `$PDK`, default
-`gf180mcuD`), else `~/.volare/gf180mcuD`.
+`gf180mcuD`), else `~/.ciel/gf180mcuD` (legacy `~/.volare/gf180mcuD` only if no ciel tree exists).
 
 ```bash
 # Full 45-point grid + studies — mints a new append-only record.

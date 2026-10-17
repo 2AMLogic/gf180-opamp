@@ -30,7 +30,7 @@ Usage:
 
 PDK resolution (first hit wins): $GF180_PDK_PATH (a gf180mcu variant dir
 containing libs.tech/), else $PDK_ROOT (+ $PDK, default gf180mcuD), else the
-default volare install path ~/.volare/gf180mcuD -- shared implementation in
+default ciel install path ~/.ciel/gf180mcuD (then legacy ~/.volare) -- shared implementation in
 `sim/harness.py`.
 """
 

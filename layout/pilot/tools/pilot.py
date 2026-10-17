@@ -30,7 +30,7 @@ PILOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(PILOT, "..", ".."))
 PDK = "gf180mcuD"
 VARIANT = "D"
-PDK_ROOT = os.path.expanduser("~/.volare/" + PDK)
+PDK_ROOT = os.path.expanduser("~/.ciel/" + PDK)
 FOUNDRY_DRC = os.path.join(PDK_ROOT, "libs.tech/klayout/drc/run_drc.py")
 FOUNDRY_LVS = os.path.join(PDK_ROOT, "libs.tech/klayout/lvs/run_lvs.py")
 

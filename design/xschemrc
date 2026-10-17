@@ -27,7 +27,7 @@ append XSCHEM_LIBRARY_PATH :${XSCHEM_SHAREDIR}/xschem_library/devices
 #### the ngspice runners always agree on which PDK is in use:
 ####   1. GF180_PDK_PATH  -- a gf180mcu *variant* dir containing libs.tech/
 ####   2. PDK_ROOT (+ PDK, default gf180mcuD)
-####   3. the default volare install path ~/.volare/<variant>
+####   3. the default ciel install path ~/.ciel/<variant>, then legacy ~/.volare/<variant>
 #### Nothing here hardcodes a PDK path.
 
 set GF180_VARIANT {gf180mcuD}
@@ -41,8 +41,8 @@ if { [info exists env(GF180_PDK_PATH)] && $env(GF180_PDK_PATH) ne {} } {
         set GF180_VARIANT $env(PDK)
     }
     foreach candidate [list [expr {[info exists env(PDK_ROOT)] ? $env(PDK_ROOT) : {}}] \
-                            [file join $env(HOME) .volare] \
                             [file join $env(HOME) .ciel] \
+                            [file join $env(HOME) .volare] \
                             /usr/share/pdk /usr/local/share/pdk \
                             [file join $env(HOME) share pdk] /opt/pdk] {
         if { $candidate ne {} && [file isdir [file join $candidate $GF180_VARIANT libs.tech xschem]] } {
@@ -54,7 +54,7 @@ if { [info exists env(GF180_PDK_PATH)] && $env(GF180_PDK_PATH) ne {} } {
 
 if { $GF180_ROOT eq {} } {
     puts stderr "xschemrc: no gf180mcu install found."
-    puts stderr "xschemrc: install it with volare (see sim/gm-id-characterization/README.md)"
+    puts stderr "xschemrc: install it with ciel (see sim/gm-id-characterization/README.md)"
     puts stderr "xschemrc: or point GF180_PDK_PATH at an existing variant directory."
 } else {
     # The PDK ships its own xschemrc: it reads PDK_ROOT from the environment
