@@ -22,6 +22,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_ibias_cl_sensitivity as r  # noqa: E402
+import harness  # noqa: E402  (on sys.path via the runner)
 
 REPO = HERE.parents[1]
 PDK = r.Pdk(Path("/x/gf180mcuD"), "gf180mcuD", "test")
@@ -96,7 +97,7 @@ class Substitution(unittest.TestCase):
     def test_ibias_and_cl_hit_exactly_once_in_the_committed_benches(self):
         for fig, p in r.BENCH.items():
             text = p.read_text()
-            self.assertEqual(len(r._IBIAS_RE.findall(text)), 1, fig)
+            self.assertEqual(len(harness._IBIAS_RE.findall(text)), 1, fig)
             self.assertIn("Ibias vdd ibias dc 8e-06", r.set_ibias(text, 8e-6))
         for fig in ("ac", "slew"):
             out = r.set_cl(r.BENCH[fig].read_text(), 10e-12)

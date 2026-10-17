@@ -141,6 +141,8 @@ DAT_HEADER = " ".join(DAT_COLS)
 # --------------------------------------------------------------------------
 
 _BIAS_RE = re.compile(r"^Bibias\s+vdd\s+ibias\s+I\s*=\s*\S+\*v\(rb\)[ \t]*$", re.M)
+# Deliberately NOT harness.set_cl's `\s*$` regex: the CL line here is followed by a blank
+# line, which `\s*$` would swallow; `[ \t]*$` keeps the deck byte-identical (issue #218).
 _CL_RE = re.compile(r"^CL\s+vout\s+0\s+\S+[ \t]*$", re.M)
 _RS_RE = re.compile(r"^Vrs\s+rs\s+0\s+pwl\(.*\)[ \t]*$", re.M)
 _RB_RE = re.compile(r"^Vrb\s+rb\s+0\s+pwl\(.*\)[ \t]*$", re.M)

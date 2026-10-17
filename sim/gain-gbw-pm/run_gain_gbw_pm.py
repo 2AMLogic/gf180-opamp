@@ -92,6 +92,7 @@ from harness import (  # noqa: E402
     run_klt,
     run_klt_retrying,
     sanitise_report,
+    set_ibias,
     stage_workdir,
 )
 
@@ -234,7 +235,6 @@ def guard_dut(dut_text: str, *, allow_missing: tuple[str, ...] = ()) -> list[str
 # --------------------------------------------------------------------------
 
 _PARAM_RE = re.compile(r"^\.param\s+lfb=\S+\s+cfb=\S+\s*$", re.M)
-_IBIAS_RE = re.compile(r"^Ibias\s+vdd\s+ibias\s+dc\s+\S+\s*$", re.M)
 
 
 def materialise(
@@ -262,9 +262,7 @@ def materialise(
         if n != 1:
             raise RuntimeError("testbench .param lfb/cfb line not found exactly once")
     if ibias_a is not None:
-        tb, n = _IBIAS_RE.subn(f"Ibias vdd ibias dc {ibias_a:g}", tb)
-        if n != 1:
-            raise RuntimeError("testbench Ibias line not found exactly once")
+        tb = set_ibias(tb, ibias_a)
     path = work / "tb.spice"
     path.write_text(tb)
     return path

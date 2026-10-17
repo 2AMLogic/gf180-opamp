@@ -526,6 +526,26 @@ def stage_workdir(
     return tb.replace(f"'{DUT_INCLUDE_NAME}'", f"'{work / DUT_INCLUDE_NAME}'")
 
 
+_IBIAS_RE = re.compile(r"^Ibias\s+vdd\s+ibias\s+dc\s+\S+\s*$", re.M)
+_CL_RE = re.compile(r"^CL\s+vout\s+0\s+\S+\s*$", re.M)
+
+
+def set_ibias(tb: str, ibias_a: float) -> str:
+    """Return `tb` with its `Ibias` source set to `ibias_a`; the line must match exactly once."""
+    out, n = _IBIAS_RE.subn(f"Ibias vdd ibias dc {ibias_a:g}", tb)
+    if n != 1:
+        raise RuntimeError(f"testbench Ibias line matched {n} times, expected exactly once")
+    return out
+
+
+def set_cl(tb: str, cl_f: float) -> str:
+    """Return `tb` with its `CL` load set to `cl_f`; the line must match exactly once."""
+    out, n = _CL_RE.subn(f"CL vout 0 {cl_f:g}", tb)
+    if n != 1:
+        raise RuntimeError(f"testbench CL line matched {n} times, expected exactly once")
+    return out
+
+
 # --------------------------------------------------------------------------
 # `klt sim` wrapper
 # --------------------------------------------------------------------------
