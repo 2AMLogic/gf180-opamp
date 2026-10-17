@@ -4,6 +4,12 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-17
 
+- **PR #224**: refactor(sim): remove unused helpers, imports and locals
+- **Issue #223** (closed): Remove dead code in sim/: unused helpers, imports, locals
+- **PR #220**: refactor(sim): share Ibias/CL testbench override helpers via harness
+- **Issue #218** (closed): Consolidate duplicated Ibias/CL testbench override helpers into sim/harness.py
+- **PR #221**: refactor: split characterization_report.py into sibling modules
+- **Issue #219** (closed): Split sim/report/characterization_report.py (4,915 lines) into sibling modules
 - **PR #216**: docs: add owner-mapped handoff for guard-confinement evidence
 
 ### 2026-10-16

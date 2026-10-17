@@ -31,14 +31,13 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#218**: Consolidate duplicated Ibias/CL testbench override helpers into sim/harness.py
-- **#219**: Split sim/report/characterization_report.py (4,915 lines) into sibling modules
+- **#225**: Consolidate triplicated describe_backend/_fmt and inline remote lookups into sim/harness.py
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#221**: refactor: split characterization_report.py into sibling modules
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -57,6 +56,7 @@ Issues carrying `loom:curated`.
 ## Proposed (Architect / Hermit)
 
 - **#62**: spec: ratify noise band/bound and offset 3-sigma bound via a decision record (DR-3 residuals e1, e2) *(architect)*
+- **#226**: Consolidate duplicated sw_stat_mismatch switch guard across four MC runners into sim/harness.py *(hermit)*
 
 ## Epics
 
@@ -70,10 +70,10 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 2 |
-| PRs awaiting review | 1 |
+| In Progress (`loom:building`) | 1 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 3 |
-| Architect / Hermit proposals | 1 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
