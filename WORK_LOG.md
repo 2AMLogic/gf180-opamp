@@ -4,6 +4,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-17
 
+- **PR #228**: refactor(sim): hoist describe_backend and fmt_finite into harness, use remote_of
+- **Issue #225** (closed): Consolidate triplicated describe_backend/_fmt and inline remote lookups into sim/harness.py
 - **PR #224**: refactor(sim): remove unused helpers, imports and locals
 - **Issue #223** (closed): Remove dead code in sim/: unused helpers, imports, locals
 - **PR #220**: refactor(sim): share Ibias/CL testbench override helpers via harness
