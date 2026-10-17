@@ -31,13 +31,14 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#218**: Consolidate duplicated Ibias/CL testbench override helpers into sim/harness.py
+- **#219**: Split sim/report/characterization_report.py (4,915 lines) into sibling modules
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#221**: refactor: split characterization_report.py into sibling modules
 
 ## Approved (Awaiting Merge)
 
@@ -69,8 +70,8 @@ _None._
 | Very important | 0 |
 | Important | 0 |
 | Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 0 |
-| PRs awaiting review | 0 |
+| In Progress (`loom:building`) | 2 |
+| PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 3 |
 | Architect / Hermit proposals | 1 |
