@@ -85,7 +85,6 @@ import json
 import math
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 from dataclasses import dataclass, field
@@ -894,7 +893,7 @@ def smoke(pdk: Pdk) -> int:
         print(f"SMOKE TEST FAILED: {run.error}")
         return 1
     r = run.res
-    inn, on = run.totals.get("inoise_total"), run.totals.get("onoise_total")
+    on = run.totals.get("onoise_total")
     if on is None or abs(r.integrated_out_v / on - 1) > TOL_ONOISE_REL:
         print(f"SMOKE TEST FAILED: output-total cross-check (ours {r.integrated_out_v:g}, ngspice {on})")
         return 1

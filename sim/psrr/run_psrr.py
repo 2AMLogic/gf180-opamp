@@ -63,7 +63,6 @@ import hashlib
 import json
 import math
 import re
-import shutil
 import sys
 import tempfile
 import time
@@ -103,7 +102,6 @@ from passive_corners import (  # noqa: E402
     passive_combos,
     passive_expected_keys,
     passive_name,
-    passive_sections,
     scope_description,
     scope_points,
     split_passive_key,

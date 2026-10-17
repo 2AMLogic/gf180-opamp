@@ -1562,13 +1562,6 @@ def vcm_mismatches(report: dict, vcm: float) -> list[str]:
     return bad
 
 
-def _cell(m: Metrics | None, attr: str, fmt: str) -> str:
-    if m is None:
-        return "n/a"
-    if not m.valid:
-        return "INVALID"
-    return fmt.format(getattr(m, attr))
-
 
 def _delta(a: Metrics | None, b: Metrics | None, attr: str, fmt: str) -> str:
     if a is None or b is None or not (a.valid and b.valid):

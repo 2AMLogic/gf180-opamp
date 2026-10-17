@@ -72,10 +72,6 @@ def header_of(text: str) -> str:
     return text[: m.start()] if m else text
 
 
-def num(s: str) -> float:
-    return float(s.replace("+", ""))
-
-
 def corner_sort_key(c: str):
     return (CORNER_ORDER.index(c) if c in CORNER_ORDER else len(CORNER_ORDER), c)
 

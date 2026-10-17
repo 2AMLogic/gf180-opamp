@@ -66,7 +66,6 @@ import importlib.util
 import json
 import math
 import re
-import shutil
 import statistics
 import sys
 import tempfile

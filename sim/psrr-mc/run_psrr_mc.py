@@ -1142,7 +1142,6 @@ def build_grid_record(*, record, stamp, pdk, ngspice, kver, reports, walls, samp
     add = L.append
     temps, supplies, vcms = mc.grid_axes("full")
     keys = grid_keys("full")
-    npts = len(stats)
     add(f"# PSRR Monte Carlo PVT grid record `{record}`")
     add("")
     add(f"- **Date**: {stamp:%Y-%m-%d %H:%M} UTC; issue #190 (extends the issue #99 record `{NOMINAL_RECORD}` to "

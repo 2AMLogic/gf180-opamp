@@ -45,10 +45,8 @@ Exit codes: 0 ok, 1 --check found a difference, 2 selection / record error.
 from __future__ import annotations
 
 import argparse
-import bisect
 import hashlib
 import json
-import math
 import os
 import re
 import sys

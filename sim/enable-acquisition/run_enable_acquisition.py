@@ -360,7 +360,6 @@ def extract_enable(vec: dict[str, np.ndarray], sched: dict, vdd_final: float, v_
         return _bad("initial state is not unpowered/unbiased (vdd %.3f V, vout %.3f V, ibias %.3f V, "
                     "envelopes %.2f/%.2f at t=0): the run started at/near the powered operating point"
                     % (init["vdd"], init["vout"], init["ibias"], init["rs"], init["rb"]), init=init, vec=vec)
-    ends = [e[3] for e in sched["events"]]
     rail_final = sr.window_mean(t, vd, sched["tstop"] - REF_WINDOW, sched["tstop"])
     if abs(rail_final - vdd_final) > FINAL_RAIL_TOL_V:
         return _bad(f"rail did not reach its final level ({rail_final:.3f} V vs {vdd_final:.3f} V)", init=init, vec=vec)
