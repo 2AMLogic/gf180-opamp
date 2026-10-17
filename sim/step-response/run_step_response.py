@@ -80,13 +80,14 @@ from harness import (  # noqa: E402
     load_dut_text,
     load_sibling,
     ngspice_version,
-    remote_of,
     run_klt,
     run_klt_retrying,
     sanitise_report,
     set_cl,
     set_ibias,
     stage_workdir,
+    fmt_finite,
+    describe_backend,
 )
 
 # Shared DUT/testbench source guards, grid bookkeeping and request skeleton:
@@ -629,15 +630,11 @@ def build_plots(results: dict[Key, Metrics], plot_dir: Path) -> list[str]:
 # --------------------------------------------------------------------------
 
 
-def _fmt(v: float, spec: str = ".2f") -> str:
-    return "n/a" if not (isinstance(v, float) and math.isfinite(v)) else format(v, spec)
-
-
 def fmt_ts(v: float) -> str:
     """Settling time in ns; `not settled` for inf."""
     if isinstance(v, float) and math.isinf(v):
         return "not settled"
-    return _fmt(v * 1e9 if isinstance(v, float) else float("nan"), ".1f")
+    return fmt_finite(v * 1e9 if isinstance(v, float) else float("nan"), ".1f")
 
 
 def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, results, ctrls, ctrl_bad,
@@ -660,7 +657,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, 
         "row** and this record judges none; a bound would need a `spec/` decision record (issue #113)."
     )
     add(f"- **Result summary**: {s.n_total - s.n_invalid}/{s.n_total} points measured validly ({s.n_invalid} invalid); "
-        f"worst overshoot **{_fmt(s.worst_overshoot[0])} %** at {g.fmt_key(s.worst_overshoot[1]) if s.worst_overshoot[1] else 'n/a'}; "
+        f"worst overshoot **{fmt_finite(s.worst_overshoot[0])} %** at {g.fmt_key(s.worst_overshoot[1]) if s.worst_overshoot[1] else 'n/a'}; "
         + "; ".join(f"worst {band_label(b)} settling **{fmt_ts(s.worst_ts[b][0])}{'' if math.isinf(s.worst_ts[b][0]) or not math.isfinite(s.worst_ts[b][0]) else ' ns'}** at "
                     f"{g.fmt_key(s.worst_ts[b][1]) if s.worst_ts[b][1] else 'n/a'}" for b in SETTLE_BANDS)
         + f"; monotonic at {s.n_monotonic}/{s.n_total - s.n_invalid} valid points.")
@@ -710,7 +707,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, 
         "from b, interpolated linearly; **not settled** if the output is still outside b inside the reference window, "
         f"or drifts by more than {DRIFT_FRAC:g} x b across it (a slow tail hidden in the window average); reported as "
         "such and counted as the worst settling result. Largest reference-window drift over the grid: "
-        + _fmt(max((e.drift_pct for m in results.values() if m.valid for e in m.edges()), default=float("nan")), ".2g")
+        + fmt_finite(max((e.drift_pct for m in results.values() if m.valid for e in m.edges()), default=float("nan")), ".2g")
         + " % of the step.")
     add("- **10-90 % time** is reported only to show how far a 100 mV step is from small-signal behaviour.")
     add("- Per point the reported overshoot and settling times are the WORSE of the rising and falling edges; the "
@@ -720,7 +717,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, 
     add("")
     add("| Figure | Worst value | Point (process / T / VDD) |")
     add("|---|---|---|")
-    add(f"| Overshoot (worse edge) | {_fmt(s.worst_overshoot[0])} % | {g.fmt_key(s.worst_overshoot[1]) if s.worst_overshoot[1] else 'n/a'} |")
+    add(f"| Overshoot (worse edge) | {fmt_finite(s.worst_overshoot[0])} % | {g.fmt_key(s.worst_overshoot[1]) if s.worst_overshoot[1] else 'n/a'} |")
     for b in SETTLE_BANDS:
         v, k = s.worst_ts[b]
         unit = "" if not math.isfinite(v) else " ns"
@@ -737,10 +734,10 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, 
             lo_pm = min(valid, key=lambda t: t[1])
             add(f"The lowest-PM point of the gain record ({g.fmt_key(lo_pm[2])}, PM {lo_pm[1]:.2f} deg) shows "
                 f"{lo_pm[0]:.2f} % overshoot here. Points with PM < 60 deg in the gain record: overshoot "
-                + _fmt(min((o for o, p, _ in valid if p < 60), default=float("nan"))) + " .. "
-                + _fmt(max((o for o, p, _ in valid if p < 60), default=float("nan"))) + " %; points with PM >= 60 deg: "
-                + _fmt(min((o for o, p, _ in valid if p >= 60), default=float("nan"))) + " .. "
-                + _fmt(max((o for o, p, _ in valid if p >= 60), default=float("nan"))) + " %.")
+                + fmt_finite(min((o for o, p, _ in valid if p < 60), default=float("nan"))) + " .. "
+                + fmt_finite(max((o for o, p, _ in valid if p < 60), default=float("nan"))) + " %; points with PM >= 60 deg: "
+                + fmt_finite(min((o for o, p, _ in valid if p >= 60), default=float("nan"))) + " .. "
+                + fmt_finite(max((o for o, p, _ in valid if p >= 60), default=float("nan"))) + " %.")
     add("")
     add("## All 45 points")
     add("")
@@ -763,7 +760,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, 
         add(f"| `{k[0]}` | {k[1]:g} | {k[2]:.2f} | {r.overshoot_pct:.2f} / {f.overshoot_pct:.2f} | "
             f"{max(r.preshoot_pct, f.preshoot_pct):.2f} | {fmt_ts(r.ts[b1])} / {fmt_ts(f.ts[b1])} | "
             f"{fmt_ts(r.ts[b2])} / {fmt_ts(f.ts[b2])} | {'yes' if m.monotonic else 'no'} | "
-            f"{_fmt(r.t10_90 * 1e9, '.1f')} / {_fmt(f.t10_90 * 1e9, '.1f')} | {pmc[0]} | {pmc[1]} | |")
+            f"{fmt_finite(r.t10_90 * 1e9, '.1f')} / {fmt_finite(f.t10_90 * 1e9, '.1f')} | {pmc[0]} | {pmc[1]} | |")
     add("")
     add("## Controls (single local units at the nominal point; recorded separately from the grid evidence)")
     add("")
@@ -808,16 +805,6 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, 
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
-
-
-def describe_backend(report: dict) -> str:
-    remote = remote_of(report)
-    return (
-        f"`klt sim` backend `{remote.get('provider', 'local')}`"
-        + (f", job id `{remote.get('job_id')}`, {('Spot ' if remote.get('spot') else 'on-demand ')}{remote.get('instance_type')}, "
-           f"runner klt `{remote.get('runner_klt_version')}` vs client `{remote.get('client_klt_version')}` "
-           f"(compatibility `{remote.get('runner_compatibility')}`)" if remote else "")
-    )
 
 
 def print_point(m: Metrics) -> None:
@@ -947,7 +934,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"wrote {paths['record']}")
     s = summarise(results)
-    print(f"  worst overshoot {_fmt(s.worst_overshoot[0])} % at {g.fmt_key(s.worst_overshoot[1]) if s.worst_overshoot[1] else 'n/a'}")
+    print(f"  worst overshoot {fmt_finite(s.worst_overshoot[0])} % at {g.fmt_key(s.worst_overshoot[1]) if s.worst_overshoot[1] else 'n/a'}")
     for b in SETTLE_BANDS:
         v, k = s.worst_ts[b]
         print(f"  worst {band_label(b)} settling {fmt_ts(v)}{' ns' if math.isfinite(v) else ''} at {g.fmt_key(k) if k else 'n/a'}")

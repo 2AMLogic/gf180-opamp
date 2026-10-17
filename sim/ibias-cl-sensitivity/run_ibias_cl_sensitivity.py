@@ -78,6 +78,7 @@ from harness import (  # noqa: E402
     sanitise_report,
     set_cl,
     set_ibias,
+    remote_of,
 )
 
 g = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
@@ -393,7 +394,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, vals, ctrl_bad, refs, 
 
 
 def _backend_desc(report: dict) -> str:
-    r = (report.get("environment") or {}).get("remote") or {}
+    r = remote_of(report)
     if not r:
         return "no remote block in the klt report"
     return f"{r.get('provider')} job `{r.get('job_id')}` ({'Spot ' if r.get('spot') else 'on-demand '}{r.get('instance_type')})"

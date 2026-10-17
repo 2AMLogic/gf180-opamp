@@ -612,6 +612,22 @@ def remote_of(report: dict) -> dict:
     return (report.get("environment") or {}).get("remote") or {}
 
 
+def describe_backend(report: dict) -> str:
+    """One-line markdown description of the `klt sim` backend that produced `report`."""
+    remote = remote_of(report)
+    return (
+        f"`klt sim` backend `{remote.get('provider', 'local')}`"
+        + (f", job id `{remote.get('job_id')}`, {('Spot ' if remote.get('spot') else 'on-demand ')}{remote.get('instance_type')}, "
+           f"runner klt `{remote.get('runner_klt_version')}` vs client `{remote.get('client_klt_version')}` "
+           f"(compatibility `{remote.get('runner_compatibility')}`)" if remote else "")
+    )
+
+
+def fmt_finite(v: float, spec: str = ".2f") -> str:
+    """`format(v, spec)`, or "n/a" for a non-float or non-finite value."""
+    return "n/a" if not (isinstance(v, float) and math.isfinite(v)) else format(v, spec)
+
+
 def klt_version() -> str:
     try:
         return subprocess.run(["klt", "--version"], capture_output=True, text=True, check=True).stdout.strip()

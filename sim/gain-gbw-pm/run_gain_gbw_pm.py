@@ -94,6 +94,7 @@ from harness import (  # noqa: E402
     sanitise_report,
     set_ibias,
     stage_workdir,
+    remote_of,
 )
 
 from harness import load_config_module  # noqa: E402
@@ -1283,7 +1284,7 @@ def build_passive_record(*, record, stamp, pdk, ngspice, klt_version, backend_de
     """
     L: list[str] = []
     add = L.append
-    remote = (report.get("environment") or {}).get("remote") or {}
+    remote = remote_of(report)
     points = scope_points(scope)
     summ = passive_summary(results, points)
     pm_ok = all(m.valid and m.pm_deg >= PM_MIN_DEG for m in results.values())
@@ -1402,7 +1403,7 @@ def run_passive(pdk: Pdk, args) -> int:
             for p in problems:
                 print(f"  - {p}", file=sys.stderr)
             return 2
-        remote = (report.get("environment") or {}).get("remote") or {}
+        remote = remote_of(report)
         backend_desc = (
             f"`klt sim` backend `{remote.get('provider', 'local')}`"
             + (f" ({'Spot' if remote.get('spot') else 'on-demand'} {remote.get('instance_type')})" if remote else "")
@@ -1590,7 +1591,7 @@ def build_fixed_vcm_record(
     data_id = supersedes or record
     L: list[str] = []
     add = L.append
-    remote = (report.get("environment") or {}).get("remote") or {}
+    remote = remote_of(report)
     env = report.get("environment") or {}
     failed = [k for k in want if k not in results]
     invalid = [k for k in want if k in results and not results[k].valid]
@@ -1920,7 +1921,7 @@ def run_fixed_vcm(pdk: Pdk, args, vcm: float) -> int:
                 print(f"  - {b}", file=sys.stderr)
             return 2
         results, arts, problems = analyse_ac_report(report, want)
-        remote = (report.get("environment") or {}).get("remote") or {}
+        remote = remote_of(report)
         backend_desc = (
             f"`klt sim` backend `{remote.get('provider', 'local')}`"
             + (f" ({'Spot' if remote.get('spot') else 'on-demand'} {remote.get('instance_type')})" if remote else "")
@@ -2094,7 +2095,7 @@ def main(argv: list[str] | None = None) -> int:
             for p in problems:
                 print(f"  - {p}", file=sys.stderr)
             return 2
-        remote = (report.get("environment") or {}).get("remote") or {}
+        remote = remote_of(report)
         backend_desc = (
             f"`klt sim` backend `{remote.get('provider', 'local')}`"
             + (f" ({'Spot' if remote.get('spot') else 'on-demand'} {remote.get('instance_type')})" if remote else "")
