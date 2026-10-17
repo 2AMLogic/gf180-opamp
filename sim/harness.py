@@ -852,6 +852,89 @@ def save_point_data(m, path: Path, header: str) -> None:
     np.savetxt(path, np.column_stack([m.x, m.y, m.vin]), header="\n".join(head), fmt=("%.9e", "%.10e", "%.10e"))
 
 
+def _g():
+    """The gain bench driver (point key / stem / label helpers); loaded lazily
+    because it imports this module."""
+    return load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
+
+
+def index_corners(report: dict, want: list, problems: list[str]) -> dict:
+    """klt corners keyed by point; appends duplicate / unexpected-extra-point problems."""
+    g = _g()
+    seen: dict = {}
+    for c in report.get("corners", []):
+        k = g.point_key(c)
+        if k in seen:
+            problems.append(f"duplicate result for {g.fmt_key(k)}")
+        seen[k] = c
+    extra = set(seen) - set(want)
+    if extra:
+        problems.append(f"unexpected extra points: {sorted(extra)}")
+    return seen
+
+
+def read_raw(c: dict, k, problems: list[str]):
+    """Parsed rawfile vectors of corner `c`, or None (with a problem appended)
+    when the simulation failed or the rawfile is malformed."""
+    g = _g()
+    ssp = load_sibling("slew_swing_power_driver", "sim/slew-swing-power/run_slew_swing_power.py")
+    diag = "; ".join(d.get("message", "")[:200] for d in c.get("diagnostics", []) if d.get("severity") == "error")
+    raw = (c.get("artifacts") or {}).get("raw")
+    if not raw or not Path(raw).is_file():
+        problems.append(f"simulation failed for {g.fmt_key(k)}: {diag or 'no rawfile retained'}")
+        return None
+    try:
+        return ssp.parse_ascii_real_raw(Path(raw).read_text())
+    except ValueError as exc:
+        problems.append(f"malformed data for {g.fmt_key(k)}: {exc}")
+        return None
+
+
+def persist_points(sub: Path, results: dict, arts: dict, report: dict, *, save, suffix: str) -> None:
+    """One case's committed evidence: per-point logs, decks and `<stem><suffix>`
+    traces (written by `save(metrics, path)`), plus the sanitised klt report."""
+    g = _g()
+    for k, a in arts.items():
+        stem = g.point_stem(k)
+        if a["log"]:
+            shutil.copyfile(a["log"], sub / f"{stem}.log")
+        if a["deck"]:
+            shutil.copyfile(a["deck"], sub / f"{stem}.cir")
+        save(results[k], sub / f"{stem}{suffix}")
+    (sub / "klt-report.json").write_text(json.dumps(sanitise_report(report), indent=1))
+
+
+def check_rederive(sub: Path, results: dict, *, rederive, same, suffix: str, label: str,
+                   rbad: list[str]) -> tuple[int, int]:
+    """Re-extract every persisted point of `sub` from its committed trace
+    (`rederive(path, key)`) and compare with the in-memory metrics via
+    `same(a, b)`; mismatch / unreadable points are appended to `rbad`
+    (prefixed `label` when non-empty). Returns (n_ok, n_all)."""
+    g = _g()
+    pre = f"{label} " if label else ""
+    n_ok = n_all = 0
+    for k, m in results.items():
+        n_all += 1
+        try:
+            m2 = rederive(sub / f"{g.point_stem(k)}{suffix}", k)
+        except (ValueError, OSError) as exc:
+            rbad.append(f"{pre}{g.fmt_key(k)}: {exc}")
+            continue
+        if same(m, m2):
+            n_ok += 1
+        else:
+            rbad.append(f"{pre}{g.fmt_key(k)}")
+    return n_ok, n_all
+
+
+def copy_controls(ccdir: Path, ctrls: list, *, name=lambda c: c.name) -> None:
+    """Copy each control run's log / deck into `ccdir` as `<name>.log|.cir`."""
+    for c in ctrls:
+        for kind, src in c.files.items():
+            if src and Path(src).is_file():
+                shutil.copyfile(src, ccdir / f"{name(c)}.{'log' if kind == 'log' else 'cir'}")
+
+
 def run_unit(name: str, pdk: Pdk, work: Path, overrides: dict, *, nominal, materialise, make_request, analyse_report):
     """The nominal point as its own single-unit `klt sim`, LOCAL (allowed by
     the host rules; the 45-point grid never takes this path)."""

@@ -56,7 +56,6 @@ import hashlib
 import json
 import math
 import re
-import shutil
 import sys
 import tempfile
 from dataclasses import dataclass, field
@@ -82,7 +81,6 @@ from harness import (  # noqa: E402
     load_sibling,
     ngspice_version,
     run_klt_retrying,
-    sanitise_report,
     fmt_finite,
     describe_backend,
     materialise_bench,
@@ -90,6 +88,11 @@ from harness import (  # noqa: E402
     save_point_data as _save_point_data,
     run_unit as _run_unit,
     run_controls as _run_controls,
+    check_rederive,
+    copy_controls,
+    index_corners,
+    persist_points,
+    read_raw,
 )
 
 # Shared DUT/testbench source guards, grid bookkeeping and request skeleton:
@@ -362,26 +365,14 @@ def analyse_report(report: dict, want: list[Key]):
     problems: list[str] = []
     results: dict[Key, Metrics] = {}
     arts: dict[Key, dict] = {}
-    seen: dict[Key, dict] = {}
-    for c in report.get("corners", []):
-        k = g.point_key(c)
-        if k in seen:
-            problems.append(f"duplicate result for {g.fmt_key(k)}")
-        seen[k] = c
+    seen = index_corners(report, want, problems)
     for k in want:
         c = seen.get(k)
         if c is None:
             problems.append(f"missing result for {g.fmt_key(k)}")
             continue
-        diag = "; ".join(d.get("message", "")[:200] for d in c.get("diagnostics", []) if d.get("severity") == "error")
-        raw = (c.get("artifacts") or {}).get("raw")
-        if not raw or not Path(raw).is_file():
-            problems.append(f"simulation failed for {g.fmt_key(k)}: {diag or 'no rawfile retained'}")
-            continue
-        try:
-            vec = ssp.parse_ascii_real_raw(Path(raw).read_text())
-        except ValueError as exc:
-            problems.append(f"malformed data for {g.fmt_key(k)}: {exc}")
+        vec = read_raw(c, k, problems)
+        if vec is None:
             continue
         vals = _meas(c)
         m = extract_step(vec)
@@ -393,9 +384,6 @@ def analyse_report(report: dict, want: list[Key]):
             "deck": (c.get("artifacts") or {}).get("deck"),
             "klt_meas": vals,
         }
-    extra = set(seen) - set(want)
-    if extra:
-        problems.append(f"unexpected extra points: {sorted(extra)}")
     return results, arts, problems
 
 
@@ -833,31 +821,13 @@ def main(argv: list[str] | None = None) -> int:
 
         cdir = paths["corners"]
         cdir.mkdir(parents=True, exist_ok=False)
-        for k, a in arts.items():
-            stem = g.point_stem(k)
-            if a["log"]:
-                shutil.copyfile(a["log"], cdir / f"{stem}.log")
-            if a["deck"]:
-                shutil.copyfile(a["deck"], cdir / f"{stem}.cir")
-            save_point_data(results[k], cdir / f"{stem}.dat")
-        (cdir / "klt-report.json").write_text(json.dumps(sanitise_report(report), indent=1))
-        n_ok, rbad = 0, []
-        for k, m in results.items():
-            try:
-                m2 = rederive(cdir / f"{g.point_stem(k)}.dat")
-            except (ValueError, OSError) as exc:
-                rbad.append(f"{g.fmt_key(k)}: {exc}")
-                continue
-            if same_result(m, m2):
-                n_ok += 1
-            else:
-                rbad.append(g.fmt_key(k))
+        persist_points(cdir, results, arts, report, save=save_point_data, suffix=".dat")
+        rbad: list[str] = []
+        n_ok, _n_all = check_rederive(cdir, results, rederive=lambda p, _k: rederive(p), same=same_result,
+                                      suffix=".dat", label="", rbad=rbad)
         ccdir = cdir / "controls"
         ccdir.mkdir()
-        for c in ctrls:
-            for kind, src in c.files.items():
-                if src and Path(src).is_file():
-                    shutil.copyfile(src, ccdir / f"{c.name}.{'log' if kind == 'log' else 'cir'}")
+        copy_controls(ccdir, ctrls)
 
         dut_text = load_dut_text()
         dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()

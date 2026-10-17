@@ -226,9 +226,9 @@ expect_fail enable-acquisition test_enable_acquisition.py enable-acquisition/run
 expect_fail enable-acquisition test_enable_acquisition.py enable-acquisition/measurement_config.py \
   "extraction: powered-at-t0 initial state accepted (limit opened to 50 V)" \
   'INIT_MAX_V = 0.05' 'INIT_MAX_V = 50.0'
-expect_fail enable-acquisition test_enable_acquisition.py enable-acquisition/run_enable_acquisition.py \
-  "evidence: per-point .dat.gz trace (primary and long-window follow-up) no longer written" \
-  'save_point_data(results[k], sub / f"{stem}.dat.gz")' 'pass'
+expect_fail enable-acquisition test_enable_acquisition.py harness.py \
+  "evidence: per-point trace no longer written by persist_points (primary and long-window follow-up share it)" \
+  '        save(results[k], sub / f"{stem}{suffix}")' '        pass'
 
 # ibias-cl-sensitivity (issue #131): the substitution helpers' exactly-one-match
 # guard and the control-vs-committed-record comparison. The helpers now live in
