@@ -86,13 +86,14 @@ from harness import (  # noqa: E402
     load_dut_text,
     load_sibling,
     ngspice_version,
-    remote_of,
     run_klt,
     run_klt_retrying,
     sanitise_report,
     set_cl,
     set_ibias,
     stage_workdir,
+    fmt_finite,
+    describe_backend,
 )
 
 # Shared DUT/testbench source guards, grid bookkeeping and request skeleton:
@@ -608,10 +609,6 @@ def build_plots(results: dict[Key, Metrics], plot_dir: Path) -> list[str]:
 # --------------------------------------------------------------------------
 
 
-def _fmt(v: float, spec: str = ".2f") -> str:
-    return "n/a" if not (isinstance(v, float) and math.isfinite(v)) else format(v, spec)
-
-
 def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, results, ctrls, ctrl_bad,
                  plots, dut_sha, xchk_count, rederived) -> str:
     L: list[str] = []
@@ -642,7 +639,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, 
         f"{g.fmt_key(s.worst_rec[1]) if s.worst_rec[1] else 'n/a'}; "
         + "; ".join(f"worst {name} **{fmt_rec(v)}{' ns' if math.isfinite(v) else ''}** at "
                     f"{g.fmt_key(k) if k else 'n/a'}" for name, (v, k) in s.worst_rec_phase.items())
-        + f"; worst recovery overshoot **{_fmt(s.worst_os[0])} mV** at {g.fmt_key(s.worst_os[1]) if s.worst_os[1] else 'n/a'}; "
+        + f"; worst recovery overshoot **{fmt_finite(s.worst_os[0])} mV** at {g.fmt_key(s.worst_os[1]) if s.worst_os[1] else 'n/a'}; "
         + ("**LATCHED: none** -- every valid point returned to the band within its window"
            if not s.latched else f"**LATCHED at {len(s.latched)} point(s)**: " + ", ".join(g.fmt_key(k) for k in s.latched))
         + ".")
@@ -719,7 +716,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, 
         f"{g.fmt_key(s.worst_rec_phase['low'][1]) if s.worst_rec_phase['low'][1] else 'n/a'} |")
     add(f"| Recovery, worse polarity | {fmt_rec(s.worst_rec[0])}{' ns' if math.isfinite(s.worst_rec[0]) else ''} | "
         f"{g.fmt_key(s.worst_rec[1]) if s.worst_rec[1] else 'n/a'} |")
-    add(f"| Recovery overshoot | {_fmt(s.worst_os[0])} mV | {g.fmt_key(s.worst_os[1]) if s.worst_os[1] else 'n/a'} |")
+    add(f"| Recovery overshoot | {fmt_finite(s.worst_os[0])} mV | {g.fmt_key(s.worst_os[1]) if s.worst_os[1] else 'n/a'} |")
     if s.latched:
         add(f"| Latched points | {len(s.latched)}/{s.n_total - s.n_invalid} | "
             + ", ".join(g.fmt_key(k) for k in s.latched[:8]) + (" ..." if len(s.latched) > 8 else "") + " |")
@@ -791,16 +788,6 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_desc, report, 
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
-
-
-def describe_backend(report: dict) -> str:
-    remote = remote_of(report)
-    return (
-        f"`klt sim` backend `{remote.get('provider', 'local')}`"
-        + (f", job id `{remote.get('job_id')}`, {('Spot ' if remote.get('spot') else 'on-demand ')}{remote.get('instance_type')}, "
-           f"runner klt `{remote.get('runner_klt_version')}` vs client `{remote.get('client_klt_version')}` "
-           f"(compatibility `{remote.get('runner_compatibility')}`)" if remote else "")
-    )
 
 
 def print_point(m: Metrics) -> None:
@@ -935,7 +922,7 @@ def main(argv: list[str] | None = None) -> int:
     for name in ("high", "low"):
         v, k = s.worst_rec_phase[name]
         print(f"  worst {name} recovery {fmt_rec(v)}{' ns' if math.isfinite(v) else ''} at {g.fmt_key(k) if k else 'n/a'}")
-    print(f"  worst recovery overshoot {_fmt(s.worst_os[0])} mV; latched {len(s.latched)}; invalid {s.n_invalid}")
+    print(f"  worst recovery overshoot {fmt_finite(s.worst_os[0])} mV; latched {len(s.latched)}; invalid {s.n_invalid}")
     rc = 0
     if rbad:
         print("RE-DERIVATION MISMATCH: " + "; ".join(rbad[:6]))

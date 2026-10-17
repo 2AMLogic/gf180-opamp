@@ -101,6 +101,8 @@ from harness import (  # noqa: E402
     sanitise_report,
     set_ibias,
     stage_workdir,
+    fmt_finite,
+    remote_of,
 )
 
 
@@ -829,12 +831,8 @@ def same_swing(a: Metrics, b: Metrics) -> bool:
 # --------------------------------------------------------------------------
 
 
-def _fmt(v: float, spec: str = ".2f") -> str:
-    return "n/a" if not (isinstance(v, float) and math.isfinite(v)) else format(v, spec)
-
-
 def worst_primary(verdicts) -> str:
-    return _fmt(verdicts['swing'].worst_value, '.3f')
+    return fmt_finite(verdicts['swing'].worst_value, '.3f')
 
 
 def fingerprint_scope(ran) -> tuple[dict, dict]:
@@ -874,7 +872,7 @@ def build_record(
         extra = f" (the >= {SWING_STRETCH_V:g} Vpp stretch holds at {v.stretch_pass}/{v.n_total})" if v.stretch_pass is not None else ""
         add(
             f"  - **{v.label}: {v.verdict}** vs ratified {cmp_} {v.bound:g} {v.unit} -- "
-            f"{v.n_pass}/{v.n_total} points pass; worst {_fmt(v.worst_value)} {v.unit} at "
+            f"{v.n_pass}/{v.n_total} points pass; worst {fmt_finite(v.worst_value)} {v.unit} at "
             f"{g.fmt_key(v.binding) if v.binding else 'n/a'}{extra}."
         )
     add("- **Overall**: " + (
@@ -948,7 +946,7 @@ def build_record(
         v = verdicts[f]
         cmp_ = ">=" if v.direction == "min" else "<="
         add(f"| {v.label} | {cmp_} {v.bound:g} {v.unit} | **{v.verdict}** | {v.n_pass}/{v.n_total} | "
-            f"{_fmt(v.worst_value)} {v.unit} | {g.fmt_key(v.binding) if v.binding else 'n/a'} |")
+            f"{fmt_finite(v.worst_value)} {v.unit} | {g.fmt_key(v.binding) if v.binding else 'n/a'} |")
     add("")
     for f in FIGURES:
         res = all_results.get(f)
@@ -976,14 +974,14 @@ def build_record(
         w = wres.get(k) if wres else None
         notes = [f"{n}: {m.reason}" for n, m in (("power", p), ("slew", s), ("swing", w)) if m is not None and not m.valid]
         cells = [
-            f"{_fmt(p.power_uw)} {yn(point_passes(p, 'power'))}" if p else "n/a",
-            _fmt(p.idd_ua) if p else "n/a",
-            _fmt(s.slew_rise_vus) if s else "n/a",
-            _fmt(s.slew_fall_vus) if s else "n/a",
-            f"{_fmt(s.slew_vus)} {yn(point_passes(s, 'slew'))}" if s else "n/a",
-            f"{_fmt(w.swing_v, '.3f')} {yn(point_passes(w, 'swing'))}" if w else "n/a",
-            _fmt(w.vout_hi_v, ".3f") if w else "n/a",
-            _fmt(w.vout_lo_v, ".3f") if w else "n/a",
+            f"{fmt_finite(p.power_uw)} {yn(point_passes(p, 'power'))}" if p else "n/a",
+            fmt_finite(p.idd_ua) if p else "n/a",
+            fmt_finite(s.slew_rise_vus) if s else "n/a",
+            fmt_finite(s.slew_fall_vus) if s else "n/a",
+            f"{fmt_finite(s.slew_vus)} {yn(point_passes(s, 'slew'))}" if s else "n/a",
+            f"{fmt_finite(w.swing_v, '.3f')} {yn(point_passes(w, 'swing'))}" if w else "n/a",
+            fmt_finite(w.vout_hi_v, ".3f") if w else "n/a",
+            fmt_finite(w.vout_lo_v, ".3f") if w else "n/a",
             f"{w.edge_hi} / {w.edge_lo}" if (w and w.valid) else "n/a",
         ]
         add(f"| `{k[0]}` | {k[1]:g} | {k[2]:.2f} | " + " | ".join(cells) + f" | {'INVALID: ' + '; '.join(notes) if notes else ''} |")
@@ -997,14 +995,14 @@ def build_record(
             fin = [v for v in vals if math.isfinite(v)]
             if not fin:
                 return "n/a (never bounded within the sweep)"
-            return _fmt(min(fin), ".3f") + (f" ({n_nan} points unbounded within the sweep, excluded)" if n_nan else "")
+            return fmt_finite(min(fin), ".3f") + (f" ({n_nan} points unbounded within the sweep, excluded)" if n_nan else "")
 
         add("Worst-case (smallest) swing over the 45 points under variants of the criterion. The ratified "
             f"bound is judged ONLY at the primary criterion ({worst_primary(verdicts)} Vpp worst):")
         add("")
         add("| Variant | Worst swing over the grid (Vpp) |")
         add("|---|---|")
-        add(f"| primary: first of -3 dB gain collapse or M6/M7 leaving saturation | {_fmt(verdicts['swing'].worst_value, '.3f')} |")
+        add(f"| primary: first of -3 dB gain collapse or M6/M7 leaving saturation | {fmt_finite(verdicts['swing'].worst_value, '.3f')} |")
         add(f"| saturation only (gain ignored) | {worst('sat-only')} |")
         add(f"| gain collapse only, -3 dB (saturation ignored) | {worst('gain-only')} |")
         for fr in SWING_SENS_FRACS:
@@ -1033,7 +1031,7 @@ def build_record(
                 cells.append("not simulated")
                 notes.append(f"{f}: {c.errors.get(f, '')[:80]}")
             elif m.valid:
-                cells.append(_fmt(getattr(m, attr), fm))
+                cells.append(fmt_finite(getattr(m, attr), fm))
             else:
                 cells.append("INVALID")
                 notes.append(f"{f}: {m.reason[:100]}")
@@ -1263,7 +1261,7 @@ def run_passive(pdk: Pdk, args, figs) -> int:
                 all_results[fig] = None
                 continue
             all_results[fig], all_arts[fig], reports[fig] = results, arts, report
-            remote = (report.get("environment") or {}).get("remote") or {}
+            remote = remote_of(report)
             backend_descs[fig] = (
                 f"`klt sim` backend `{remote.get('provider', 'local')}`"
                 + (f", job id `{remote.get('job_id')}`, {('Spot ' if remote.get('spot') else 'on-demand ')}{remote.get('instance_type')}, "
@@ -1441,7 +1439,7 @@ def main(argv: list[str] | None = None) -> int:
                 all_results[fig] = None
                 continue
             all_results[fig], all_arts[fig], reports[fig] = results, arts, report
-            remote = (report.get("environment") or {}).get("remote") or {}
+            remote = remote_of(report)
             backend_descs[fig] = (
                 f"`klt sim` backend `{remote.get('provider', 'local')}`"
                 + (f", job id `{remote.get('job_id')}`, {('Spot ' if remote.get('spot') else 'on-demand ')}{remote.get('instance_type')}, "

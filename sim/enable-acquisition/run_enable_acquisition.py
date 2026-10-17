@@ -102,6 +102,8 @@ from harness import (  # noqa: E402
     run_klt_retrying,
     sanitise_report,
     stage_workdir,
+    fmt_finite,
+    describe_backend,
 )
 
 g = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
@@ -768,10 +770,6 @@ def build_plots(case_results: dict, plot_dir: Path) -> list[str]:
 # --------------------------------------------------------------------------
 
 
-def _fmt(v: float, spec: str = ".2f") -> str:
-    return "n/a" if not (isinstance(v, float) and math.isfinite(v)) else format(v, spec)
-
-
 def _acq_ns(v: float) -> str:
     return fmt_acq(v) + (" ns" if isinstance(v, float) and math.isfinite(v) else "")
 
@@ -886,7 +884,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_descs, case_re
         for k in sorted(results, key=keyorder):
             m = results[k]
             if not m.valid:
-                add(f"| `{k[0]}` | {k[1]:g} | {k[2]:.2f} | {_fmt(refs.get(k, float('nan')), '.4f')} | "
+                add(f"| `{k[0]}` | {k[1]:g} | {k[2]:.2f} | {fmt_finite(refs.get(k, float('nan')), '.4f')} | "
                     + " | ".join("n/a | n/a | n/a" for _ in names) + f" | INVALID: {m.reason} |")
                 continue
             cells = []
@@ -902,8 +900,8 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_descs, case_re
             add(f"- {n}: worst {_acq_ns(v)} at {g.fmt_key(k) if k else 'n/a'}; "
                 + (f"**NOT ACQUIRED at {len(s.censored[n])} point(s)**: " + ", ".join(g.fmt_key(x) for x in s.censored[n][:8])
                    if s.censored[n] else "every valid point acquired inside its window"))
-        add(f"- worst post-ramp overshoot {_fmt(s.worst_over[0])} mV at {g.fmt_key(s.worst_over[1]) if s.worst_over[1] else 'n/a'}; "
-            f"worst undershoot {_fmt(s.worst_under[0])} mV at {g.fmt_key(s.worst_under[1]) if s.worst_under[1] else 'n/a'}.")
+        add(f"- worst post-ramp overshoot {fmt_finite(s.worst_over[0])} mV at {g.fmt_key(s.worst_over[1]) if s.worst_over[1] else 'n/a'}; "
+            f"worst undershoot {fmt_finite(s.worst_under[0])} mV at {g.fmt_key(s.worst_under[1]) if s.worst_under[1] else 'n/a'}.")
         add("")
     add("## Long-window follow-up of unresolved points")
     add("")
@@ -943,7 +941,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_descs, case_re
             out = f"INVALID: {m.reason[:140]}"
         else:
             e = m.events[-1]
-            out = f"acq {fmt_acq(e.acq_s)}{' ns' if math.isfinite(e.acq_s) else ''}, last band exit at {_fmt(e.t_acq * 1e9, '.1f')} ns"
+            out = f"acq {fmt_acq(e.acq_s)}{' ns' if math.isfinite(e.acq_s) else ''}, last band exit at {fmt_finite(e.t_acq * 1e9, '.1f')} ns"
         add(f"| `{c.name}` | {c.description} | {out} |")
     add("")
     add("Required behaviour: nominal and cl-x5 measure validly and cl-x5 (CL = 10 pF) acquires later than nominal "
@@ -976,16 +974,6 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_descs, case_re
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
-
-
-def describe_backend(report: dict) -> str:
-    remote = remote_of(report)
-    return (
-        f"`klt sim` backend `{remote.get('provider', 'local')}`"
-        + (f", job id `{remote.get('job_id')}`, {('Spot ' if remote.get('spot') else 'on-demand ')}{remote.get('instance_type')}, "
-           f"runner klt `{remote.get('runner_klt_version')}` vs client `{remote.get('client_klt_version')}` "
-           f"(compatibility `{remote.get('runner_compatibility')}`)" if remote else "")
-    )
 
 
 def print_point(m: Metrics) -> None:
