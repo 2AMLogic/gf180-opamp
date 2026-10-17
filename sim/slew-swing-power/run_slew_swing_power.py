@@ -99,6 +99,7 @@ from harness import (  # noqa: E402
     run_klt_retrying,
     load_sibling,
     sanitise_report,
+    set_ibias,
     stage_workdir,
 )
 
@@ -162,7 +163,6 @@ XCHK_LEVEL_V = 5e-3
 # Testbench materialisation (guards shared with the sibling experiment)
 # --------------------------------------------------------------------------
 
-_IBIAS_RE = re.compile(r"^Ibias\s+vdd\s+ibias\s+dc\s+\S+\s*$", re.M)
 
 
 def materialise(fig: str, work: Path, pdk: Pdk, *, ibias_a: float | None = None) -> Path:
@@ -175,9 +175,7 @@ def materialise(fig: str, work: Path, pdk: Pdk, *, ibias_a: float | None = None)
     tb = stage_workdir(work, pdk, TESTBENCH[fig].read_text(), guard_tb=g.guard_testbench,
                        guard_dut=g.guard_dut, tb_label=TESTBENCH[fig].name)
     if ibias_a is not None:
-        tb, n = _IBIAS_RE.subn(f"Ibias vdd ibias dc {ibias_a:g}", tb)
-        if n != 1:
-            raise RuntimeError("testbench Ibias line not found exactly once")
+        tb = set_ibias(tb, ibias_a)
     path = work / "tb.spice"
     path.write_text(tb)
     return path

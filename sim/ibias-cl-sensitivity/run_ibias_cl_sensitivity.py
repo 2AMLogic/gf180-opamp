@@ -76,6 +76,8 @@ from harness import (  # noqa: E402
     run_klt,
     run_klt_retrying,
     sanitise_report,
+    set_cl,
+    set_ibias,
 )
 
 g = load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
@@ -103,29 +105,12 @@ CTRL_GAIN_DB = 0.02
 CTRL_POWER_REL = 1e-3
 CTRL_SLEW_VUS = 0.02
 
-_IBIAS_RE = re.compile(r"^Ibias\s+vdd\s+ibias\s+dc\s+\S+\s*$", re.M)
-_CL_RE = re.compile(r"^CL\s+vout\s+0\s+\S+\s*$", re.M)
-
 Key = tuple
 
 
 # --------------------------------------------------------------------------
 # Bench substitution (pure; the committed bench files are never edited)
 # --------------------------------------------------------------------------
-
-
-def set_ibias(tb: str, ibias_a: float) -> str:
-    out, n = _IBIAS_RE.subn(f"Ibias vdd ibias dc {ibias_a:g}", tb)
-    if n != 1:
-        raise RuntimeError(f"testbench Ibias line matched {n} times, expected exactly once")
-    return out
-
-
-def set_cl(tb: str, cl_f: float) -> str:
-    out, n = _CL_RE.subn(f"CL vout 0 {cl_f:g}", tb)
-    if n != 1:
-        raise RuntimeError(f"testbench CL line matched {n} times, expected exactly once")
-    return out
 
 
 def materialise(fig: str, work: Path, pdk: Pdk, ibias_a: float, cl_f: float | None = None) -> Path:

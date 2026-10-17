@@ -231,9 +231,11 @@ expect_fail enable-acquisition test_enable_acquisition.py enable-acquisition/run
   'save_point_data(results[k], sub / f"{stem}.dat.gz")' 'pass'
 
 # ibias-cl-sensitivity (issue #131): the substitution helpers' exactly-one-match
-# guard and the control-vs-committed-record comparison.
+# guard and the control-vs-committed-record comparison. The helpers now live in
+# the shared harness.py (`set_ibias`/`set_cl`, issue #218), so the guard mutation
+# lands there.
 control ibias-cl-sensitivity test_ibias_cl_sensitivity.py
-expect_fail ibias-cl-sensitivity test_ibias_cl_sensitivity.py ibias-cl-sensitivity/run_ibias_cl_sensitivity.py \
+expect_fail ibias-cl-sensitivity test_ibias_cl_sensitivity.py harness.py \
   "guard: Ibias substitution no longer requires exactly one match" \
   'if n != 1:
         raise RuntimeError(f"testbench Ibias' 'if False:

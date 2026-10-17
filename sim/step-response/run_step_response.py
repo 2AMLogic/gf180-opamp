@@ -84,6 +84,8 @@ from harness import (  # noqa: E402
     run_klt,
     run_klt_retrying,
     sanitise_report,
+    set_cl,
+    set_ibias,
     stage_workdir,
 )
 
@@ -135,8 +137,6 @@ EDGES = (("rise", RISE_T, FALL_T, +1), ("fall", FALL_T, None, -1))
 # Testbench materialisation (guards shared with the gain driver)
 # --------------------------------------------------------------------------
 
-_IBIAS_RE = re.compile(r"^Ibias\s+vdd\s+ibias\s+dc\s+\S+\s*$", re.M)
-_CL_RE = re.compile(r"^CL\s+vout\s+0\s+\S+\s*$", re.M)
 
 
 def materialise(work: Path, pdk: Pdk, *, ibias_a: float | None = None, cl_f: float | None = None,
@@ -151,13 +151,9 @@ def materialise(work: Path, pdk: Pdk, *, ibias_a: float | None = None, cl_f: flo
     tb = stage_workdir(work, pdk, TESTBENCH.read_text(), guard_tb=g.guard_testbench,
                        guard_dut=g.guard_dut, dut_text=dut_text, tb_label=TESTBENCH.name)
     if ibias_a is not None:
-        tb, n = _IBIAS_RE.subn(f"Ibias vdd ibias dc {ibias_a:g}", tb)
-        if n != 1:
-            raise RuntimeError("testbench Ibias line not found exactly once")
+        tb = set_ibias(tb, ibias_a)
     if cl_f is not None:
-        tb, n = _CL_RE.subn(f"CL vout 0 {cl_f:g}", tb)
-        if n != 1:
-            raise RuntimeError("testbench CL line not found exactly once")
+        tb = set_cl(tb, cl_f)
     path = work / "tb.spice"
     path.write_text(tb)
     return path
