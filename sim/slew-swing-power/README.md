@@ -191,7 +191,7 @@ python3 sim/slew-swing-power/test_slew_swing_power.py           # unit tests, no
 ```
 
 Cold-start prerequisites are the sibling's: `klt`, `ngspice`, the pinned
-gf180mcu PDK (`volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b`)
+gf180mcu PDK (`ciel enable --pdk-family gf180mcu -l gf180mcu_fd_pr f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7`)
 and `numpy` / `matplotlib`. The driver imports
 `../gain-gbw-pm/run_gain_gbw_pm.py` for the shared DUT normalisation, source
 guards and `klt` invocation/retry, so there is one copy of those, not two.

@@ -47,12 +47,12 @@ Requires `ngspice` and the pinned gf180mcu PDK revision, plus Python 3 with
 `numpy` and `matplotlib`.
 
 **Pinned PDK revision**: gf180mcu (`gf180mcuD` variant) at open_pdks commit
-`c6d73a35f524070e85faff4a6a9eef49553ebc2b`, installed via
-[volare](https://github.com/efabless/volare):
+`f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7`, installed via
+[ciel](https://github.com/fossi-foundation/ciel) 2.6.1 (root `~/.ciel`):
 
 ```bash
-pip install volare
-volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b
+pip install ciel==2.6.1
+ciel enable --pdk-family gf180mcu -l gf180mcu_fd_pr f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7
 ```
 
 Then, from a clean checkout:
@@ -78,7 +78,7 @@ full 15-point corner grid, and writes:
 
 PDK resolution order (first hit wins): `$GF180_PDK_PATH` (a gf180mcu variant
 directory containing `libs.tech/`), else `$PDK_ROOT` (+ `$PDK`, default
-`gf180mcuD`), else the default volare install path `~/.volare/gf180mcuD`.
+`gf180mcuD`), else the default ciel install path `~/.ciel/gf180mcuD` (legacy `~/.volare/gf180mcuD` only if no ciel tree exists).
 
 Re-running mints a new record rather than overwriting the previous one —
 `sim/`'s append-only evidence convention (`spec/porting-plan.md` §1):

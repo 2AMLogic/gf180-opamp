@@ -231,7 +231,7 @@ DEFAULT_VARIANT = "gf180mcuD"
 # Pinned open_pdks revision of the gf180mcu PDK (full hash). CI's
 # GF180_PDK_REV must equal this; sim/ci_prereqs.py enforces it on the PDK
 # find_pdk() selects.
-PINNED_PDK_REV = "c6d73a35f524070e85faff4a6a9eef49553ebc2b"
+PINNED_PDK_REV = "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
 
 
 class PdkNotFound(RuntimeError):
@@ -282,16 +282,23 @@ def find_pdk() -> Pdk:
         if _valid(path):
             return Pdk(path=path, variant=variant, source="PDK_ROOT")
 
-    # volare default install layout: ~/.volare/gf180mcuD -> a symlink into
-    # ~/.volare/volare/gf180mcu/versions/<hash>/gf180mcuD
+    # ciel default install layout (the pinned tree): ~/.ciel/gf180mcuD -> a
+    # symlink into ~/.ciel/ciel/gf180mcu/versions/<hash>/gf180mcuD. Searched
+    # before ~/.volare so a stale volare tree never shadows the pin.
+    ciel_default = Path(os.path.expanduser(f"~/.ciel/{variant}"))
+    if _valid(ciel_default):
+        return Pdk(path=ciel_default, variant=variant, source="ciel-default")
+
+    # Legacy volare layout (~/.volare/gf180mcuD): only reached when no ciel
+    # tree exists; ci_prereqs.py then fails it unless its revision is the pin.
     volare_default = Path(os.path.expanduser(f"~/.volare/{variant}"))
     if _valid(volare_default):
         return Pdk(path=volare_default, variant=variant, source="volare-default")
 
     raise PdkNotFound(
-        "gf180mcu PDK not found. Install with volare:\n"
-        "    pip install volare\n"
-        f"    volare enable --pdk gf180mcu {PINNED_PDK_REV}\n"
+        "gf180mcu PDK not found. Install with ciel 2.6.1:\n"
+        "    pip install ciel==2.6.1\n"
+        f"    ciel enable --pdk-family gf180mcu -l gf180mcu_fd_pr {PINNED_PDK_REV}\n"
         "or point at an existing install with GF180_PDK_PATH=/path/to/gf180mcuD"
     )
 

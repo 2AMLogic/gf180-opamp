@@ -22,7 +22,7 @@ single process, no ngspice).
 | Item | Pinned identity |
 |---|---|
 | klayout-tools | `klt 0.7.0+g5e5b55992a7f` (a post-tag build, so `uvx --from klayout-tools==X` cannot reproduce it; `klt` must already be on PATH at this build) |
-| PDK | `gf180mcuD`, `open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b` (`~/.volare/gf180mcuD`) |
+| PDK | `gf180mcuD`, `open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7` (`~/.ciel/gf180mcuD`) |
 | Foundry runset variant | `--variant=D` (5LM, metal_top 11K, MIM option B) |
 | Foundry DRC/LVS engine | system `klayout` binary, `KLayout 0.28.16` (what the PDK's `run_drc.py`/`run_lvs.py` shell out to) |
 | klayout python (labelling) | `klayout==0.30.12` via a throwaway `uv run --with` env |

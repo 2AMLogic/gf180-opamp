@@ -83,20 +83,22 @@ xschem --no_x -q --version | head -1             # must print XSCHEM V3.4.7
 
 Bump each independently; the signoff pin moves only with a regenerated record
 (`manifests/README.md`). The PDK pin is `GF180_PDK_REV`, which must equal
-`harness.py`'s `PINNED_PDK_REV`. The `~/.volare` cache is keyed on that
+`harness.py`'s `PINNED_PDK_REV`. The `~/.ciel` cache is keyed on that
 revision, but the key is not trusted as proof of the contents:
 `ci_prereqs.py` reads the selected PDK's `SOURCES` file and fails, with
 expected/actual hashes, unless its `open_pdks` revision is exactly the
 pinned full hash (a missing `SOURCES` or one without an `open_pdks` line is
 unknown provenance and also fails). `ci_pdk_rev_check.sh` proves that gate
-on scratch fixtures in the volare layout (pinned passes; wrong revision,
-pinned-named dir with wrong contents, and unknown provenance fail) without
-needing the real PDK. volare itself is pinned (`VOLARE_VERSION`).
+on scratch fixtures in the ciel layout (pinned passes; wrong revision,
+pinned-named dir with wrong contents, and unknown provenance fail; a stale
+`~/.volare` tree at the old revision never shadows the pinned `~/.ciel`
+tree) and in the legacy volare layout, without needing the real PDK. ciel
+itself is pinned (`CIEL_VERSION`, 2.6.1, root `~/.ciel`).
 
 Reproduce locally (needs `klt`, `ngspice`, xschem 3.4.7 (above), numpy/matplotlib, and the PDK):
 
 ```bash
-volare enable --pdk gf180mcu c6d73a35f524070e85faff4a6a9eef49553ebc2b
+ciel enable --pdk-family gf180mcu -l gf180mcu_fd_pr f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7
 python3 sim/ci_prereqs.py
 sim/ci_pdk_rev_check.sh
 SIM_REQUIRE_PREREQS=1 sim/selftest.sh

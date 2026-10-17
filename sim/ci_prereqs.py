@@ -68,7 +68,7 @@ def pdk_revision_problem(pdk: Pdk, expected: str) -> str | None:
             f"  expected open_pdks {expected}\n"
             f"  actual   open_pdks {actual}\n"
             f"  PDK      {where}\n"
-            f"  fix: volare enable --pdk gf180mcu {expected}"
+            f"  fix: ciel enable --pdk-family gf180mcu -l gf180mcu_fd_pr {expected}"
         )
     return None
 
@@ -134,6 +134,7 @@ def main(argv: list[str] | None = None) -> int:
         searched = [
             f"$GF180_PDK_PATH={os.environ.get('GF180_PDK_PATH', '<unset>')}",
             f"$PDK_ROOT/{variant} (PDK_ROOT={os.environ.get('PDK_ROOT', '<unset>')})",
+            f"~/.ciel/{variant} (= {Path('~').expanduser() / '.ciel' / variant})",
             f"~/.volare/{variant} (= {Path('~').expanduser() / '.volare' / variant})",
         ]
         problems.append("gf180mcu PDK not found (searched: " + "; ".join(searched) + f")\n{e}")
