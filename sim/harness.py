@@ -59,6 +59,7 @@ wiring, `sw_stat_mismatch` ordering, servo / load / bias lines, and the
 
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import math
@@ -775,3 +776,143 @@ def extract_mc_samples(
             problems.append(f"{fmt_key(k)}: sample indices {got[:5]}{'...' if len(got) > 5 else ''} "
                             f"({len(got)}), expected 0..{n_expected - 1}")
     return out, problems
+
+
+# --------------------------------------------------------------------------
+# Single-unit bench helpers shared by the transient benches (step-response,
+# overdrive-recovery): the runner binds its own bench, guards and report
+# analyser with `functools.partial`; the bodies were byte-identical copies.
+# --------------------------------------------------------------------------
+
+
+def materialise_bench(work: Path, pdk: Pdk, *, testbench: Path, guard_tb, guard_dut,
+                      ibias_a: float | None = None, cl_f: float | None = None,
+                      dut_text: str | None = None) -> Path:
+    """Write the per-run work directory; return the testbench path.
+
+    The committed testbench is used verbatim except for the two `.include`
+    targets (rewritten to absolute paths in `work`) and, for a control only,
+    an explicit `Ibias` or `CL` override. `dut_text` replaces the committed DUT
+    only to prove the stale-DUT guard (it must then be rejected).
+    """
+    tb = stage_workdir(work, pdk, testbench.read_text(), guard_tb=guard_tb,
+                       guard_dut=guard_dut, dut_text=dut_text, tb_label=testbench.name)
+    if ibias_a is not None:
+        tb = set_ibias(tb, ibias_a)
+    if cl_f is not None:
+        tb = set_cl(tb, cl_f)
+    path = work / "tb.spice"
+    path.write_text(tb)
+    return path
+
+
+def tran_request(netlist: Path, pdk: Pdk, corners, temps, supplies, *, ac_request, mc) -> dict:
+    """One 45-point (or single-point) `corners` request; `mc` supplies the analysis and `.meas` cards."""
+    req = ac_request(netlist, pdk, corners, temps, supplies)
+    req["analysis"] = mc.analysis()
+    req["measurements"] = mc.measurements()
+    req["options"] = {"timeout_s": 600, "keep_artifacts": True, "waveforms": True}
+    return req
+
+
+def save_point_data(m, path: Path, header: str) -> None:
+    """Every rawfile sample of the point: `header` columns (enough for the
+    runner's `rederive()` to reproduce the extraction from the committed file alone)."""
+    import numpy as np  # deferred: the rest of this module is numpy-free at import time
+
+    if m.x.size == 0:
+        path.write_text(f"# INVALID: {m.reason}\n")
+        return
+    head = ([] if m.valid else [f"INVALID: {m.reason}"]) + [header]
+    np.savetxt(path, np.column_stack([m.x, m.y, m.vin]), header="\n".join(head), fmt=("%.9e", "%.10e", "%.10e"))
+
+
+def run_unit(name: str, pdk: Pdk, work: Path, overrides: dict, *, nominal, materialise, make_request, analyse_report):
+    """The nominal point as its own single-unit `klt sim`, LOCAL (allowed by
+    the host rules; the 45-point grid never takes this path)."""
+    wd = work / name
+    tb = materialise(wd, pdk, **overrides)
+    proc, temp, vdd = nominal
+    req = make_request(tb, pdk, [proc], [temp], [vdd])
+    rep = run_klt(req, wd / "out", "local", wd)
+    res, arts, problems = analyse_report(rep, [nominal])
+    if nominal not in res:
+        raise KltError("; ".join(problems))
+    return res[nominal], arts[nominal], problems
+
+
+def run_controls(pdk: Pdk, work: Path, *, controls, control_cls, run_unit) -> list:
+    """Run every `(name, description, overrides)` control as a single unit."""
+    out = []
+    for name, desc, ov in controls:
+        cr = control_cls(name, desc)
+        try:
+            m, a, _ = run_unit(name, pdk, work, ov)
+            cr.metrics, cr.files = m, {"log": a["log"], "deck": a["deck"]}
+        except (KltError, KeyError, RuntimeError) as exc:
+            cr.error = str(exc)[:300]
+        out.append(cr)
+    return out
+
+
+# --------------------------------------------------------------------------
+# Monte Carlo runner helpers shared by the psrr-mc / cmrr-mc / offset-mc runners
+# --------------------------------------------------------------------------
+
+#: A shard whose launch the fleet refused (shared concurrency cap or Spot
+#: capacity) comes back as `lost_shard` units, not a submit error, and
+#: `batch.capacity_wait_s` does not wait out the concurrency cap
+#: (2AMLogic/klayout-tools#2917). Such a run is re-submitted whole (still
+#: through `klt sim`, never locally), up to `--batch-submit-retries` times.
+#: Substrings of a lost-shard diagnostic that mark a transient capacity refusal.
+LOST_SHARD_TRANSIENT = ("already running", "BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity")
+
+
+def lost_shard_refusals(report: dict) -> int:
+    """Units lost because a shard's fleet launch was refused for capacity or
+    the shared concurrency cap (nothing ran for them; re-submittable)."""
+    n = 0
+    for c in report.get("corners", []):
+        for d in c.get("diagnostics", []) or []:
+            msg = str(d.get("message", ""))
+            if (d.get("code") == "lost_shard" or "shard lost" in msg) and any(t in msg for t in LOST_SHARD_TRANSIENT):
+                n += 1
+                break
+    return n
+
+
+def remote_jobs(report: dict) -> list[dict]:
+    """The fleet job block(s) of a report: one `environment.remote` block, or
+    its `fleet[]` entries for a sharded run (`None` for a lost shard)."""
+    r = remote_of(report)
+    if "fleet" in r:
+        return [e or {} for e in r.get("fleet") or []]
+    return [r] if r else []
+
+
+def sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+def exec_line(tag: str, rep: dict, wall: float) -> str:
+    r = remote_of(rep)
+    env = rep.get("environment") or {}
+    eng_s = f"{env.get('engine', 'ngspice')} {env.get('engine_version', '')}".strip()
+    if not r:
+        return f"  - `{tag}`: backend `local`; engine `{eng_s}`; wall {wall:.0f} s"
+    return (f"  - `{tag}`: backend `{r.get('provider')}`, job `{r.get('job_id')}`, "
+            f"{'Spot ' if r.get('spot') else ''}{r.get('instance_type', '')}, state `{r.get('state')}`, "
+            f"runner klt `{r.get('runner_klt_version')}` vs client `{r.get('client_klt_version')}` "
+            f"(compatibility `{r.get('runner_compatibility')}`); engine `{eng_s}`; wall {wall:.0f} s")
+
+
+def as_mc(rep: dict) -> dict:
+    """A non-MC single-unit report, dressed as sample 0 (smoke test only)."""
+    for c in rep.get("corners", []):
+        if not c.get("monte_carlo"):
+            c["monte_carlo"] = {"sample_index": 0}
+    return rep
+
+
+def fmt_digits(x: float, nd: int = 2) -> str:
+    return "n/a" if not math.isfinite(x) else f"{x:.{nd}f}"
