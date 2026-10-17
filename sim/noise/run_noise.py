@@ -503,10 +503,15 @@ class ModelAudit:
 
 def audit_pdk(pdk: Pdk) -> ModelAudit:
     """Read the pinned model library: do the MOS models carry flicker noise?"""
-    lines = pdk.model_lib.read_text().splitlines()
+    wrapper = pdk.model_lib.read_text().splitlines()
+    # Newer open_pdks trees keep the wrapper (corner `.lib` sections) in
+    # sm141064.ngspice and the `.model` / noise_corner cards in the sibling
+    # sm141064.spice it includes; older trees held everything in one file.
+    body = pdk.model_lib.with_suffix(".spice")
+    lines = wrapper + (body.read_text().splitlines() if body.is_file() else [])
     sections: dict[str, bool] = {}
     cur: str | None = None
-    for ln in lines:
+    for ln in wrapper:
         m = re.match(r"^\s*\.lib\s+(\w+)\s*$", ln, re.I)
         if m:
             cur = m.group(1).lower()
@@ -515,7 +520,7 @@ def audit_pdk(pdk: Pdk) -> ModelAudit:
         if re.match(r"^\s*\.endl\b", ln, re.I):
             cur = None
             continue
-        if cur and re.match(r"^\s*\.lib\s+'sm141064\.ngspice'\s+noise_corner\s*$", ln, re.I):
+        if cur and re.match(r"^\s*\.lib\s+'sm141064\.(?:ng)?spice'\s+noise_corner\s*$", ln, re.I):
             sections[cur] = True
     noise_params: dict[str, str] = {}
     in_nc = False
