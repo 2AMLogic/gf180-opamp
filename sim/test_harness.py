@@ -148,5 +148,38 @@ class GuardCoreContinuationTests(unittest.TestCase):
         self.assertIn("CL vout 0 2p", cmrr.code_lines(WRAPPED_TB))
 
 
+class ParsePrefixedScalarsTests(unittest.TestCase):
+    def test_last_occurrence_wins_and_prefix_is_case_insensitive(self):
+        log = "cmc_x = 1.0\ncmc_x   =  2.5e+00\nCMC_Y = 3\n"
+        self.assertEqual(harness.parse_prefixed_scalars(log, "cmc_"), {"cmc_x": 2.5, "cmc_y": 3.0})
+
+    def test_other_prefix_and_non_numeric_values_are_ignored(self):
+        log = "pmc_z = nan\nfoo = 1\ncmc_w = 2\n"
+        self.assertEqual(harness.parse_prefixed_scalars(log, "pmc_"), {})
+
+
+class SubmitRequestTests(unittest.TestCase):
+    def test_attaches_batch_block_and_forwards_retry_settings(self):
+        from types import SimpleNamespace
+        args = SimpleNamespace(backend="batch", batch_submit_retries=3, batch_retry_wait_s=7.0)
+        seen = {}
+
+        def fake(req, outdir, backend, workdir, *, retries, wait_s):
+            seen.update(req=req, outdir=outdir, backend=backend, workdir=workdir, retries=retries, wait_s=wait_s)
+            return {"environment": {"remote": {"job_id": "j1"}}}
+
+        orig, orig_bb = harness.run_klt_retrying, harness.batch_block
+        harness.run_klt_retrying, harness.batch_block = fake, lambda a: {"marker": True}
+        try:
+            rep, req, wall = harness.submit_request("t", {"k": 1}, args, Path("/w"), units=4)
+        finally:
+            harness.run_klt_retrying, harness.batch_block = orig, orig_bb
+        self.assertEqual(req["batch"], {"marker": True})
+        self.assertEqual((seen["outdir"], seen["workdir"]), (Path("/w/t/out"), Path("/w/t")))
+        self.assertEqual((seen["backend"], seen["retries"], seen["wait_s"]), ("batch", 3, 7.0))
+        self.assertEqual(rep["environment"]["remote"]["job_id"], "j1")
+        self.assertGreaterEqual(wall, 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()

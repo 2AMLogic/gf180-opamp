@@ -62,7 +62,6 @@ import re
 import statistics
 import sys
 import tempfile
-import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -76,7 +75,6 @@ from harness import (  # noqa: E402
     KltError,
     Pdk,
     allocate_record_id,
-    batch_block,
     claim_record_paths,
     find_pdk,
     klt_version,
@@ -86,8 +84,8 @@ from harness import (  # noqa: E402
     ngspice_version,
     remote_of,
     run_klt,
-    run_klt_retrying,
     sanitise_report,
+    submit_request,
 )
 
 # The deterministic gain driver owns the bench, its guards, the request shape,
@@ -552,15 +550,8 @@ def submit(tag: str, tb: Path, pdk: Pdk, corners, temps, supplies, n: int, args,
     another backend."""
     check_backend(args.backend)
     req = mc_request(tb, pdk, corners, temps, supplies, n=n)
-    req["batch"] = batch_block(args)
-    units = len(corners) * len(temps) * len(supplies) * n
-    print(f"  submitting `{tag}` ({units} units, one request)...", flush=True)
-    t0 = time.time()
-    rep = run_klt_retrying(req, work / tag / "out", args.backend, work / tag,
-                           retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
-    wall = time.time() - t0
-    print(f"  `{tag}` done in {wall:.0f} s (job {remote_of(rep).get('job_id', 'local')})", flush=True)
-    return rep, req, wall
+    return submit_request(tag, req, args, work, units=len(corners) * len(temps) * len(supplies) * n,
+                          note=", one request")
 
 
 def exec_line(rep: dict, wall: float) -> str:

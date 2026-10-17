@@ -68,7 +68,6 @@ import re
 import statistics
 import sys
 import tempfile
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -80,7 +79,6 @@ from harness import (  # noqa: E402
     KltError,
     Pdk,
     allocate_record_id,
-    batch_block,
     claim_record_paths,
     extract_mc_samples,
     find_pdk,
@@ -89,15 +87,15 @@ from harness import (  # noqa: E402
     load_sibling,
     ngspice_version,
     percentile,
-    remote_of,
     run_klt,
-    run_klt_retrying,
     sanitise_report,
     skew,
     exec_line,
     as_mc as _as_mc,
     sha256_text as _sha,
     fmt_digits as fmt,
+    parse_prefixed_scalars,
+    submit_request,
 )
 
 # The systematic CMRR driver owns the bench guards, the materialisation, the
@@ -260,17 +258,9 @@ def request(netlist: Path, pdk: Pdk, corners, temps, supplies, *, n: int | None,
 # Log parsing, per-sample validation (pure; unit-tested offline)
 # --------------------------------------------------------------------------
 
-_NUM = r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?"
-_SCALAR_RE = re.compile(rf"^\s*(cmc_\w+)\s*=\s*({_NUM})\s*$", re.M | re.I)
-
-
 def parse_scalars(log: str) -> dict[str, float]:
-    """`cmc_* = value` lines of an ngspice log (last occurrence wins, so the
-    explicit `print` after a `meas` line is the value read)."""
-    out: dict[str, float] = {}
-    for name, val in _SCALAR_RE.findall(log):
-        out[name.lower()] = float(val)
-    return out
+    """`cmc_* = value` lines of an ngspice log."""
+    return parse_prefixed_scalars(log, "cmc_")
 
 
 @dataclass
@@ -524,23 +514,10 @@ def offset_mc_link(samples: dict[tuple, list[Sample]]) -> dict:
 # --------------------------------------------------------------------------
 
 
-def _run(req, outdir, args, workdir) -> dict:
-    return run_klt_retrying(req, outdir, args.backend, workdir, retries=args.batch_submit_retries,
-                            wait_s=args.batch_retry_wait_s)
-
-
 def submit(tag: str, tb: Path, pdk: Pdk, corners, temps, supplies, n: int, args, work: Path, *,
            vary: str = MC_VARY, expr: tuple[str, ...] = ()) -> tuple[dict, dict, float]:
     req = request(tb, pdk, corners, temps, supplies, n=n, vary=vary, expr=expr)
-    req["batch"] = batch_block(args)
-    units = len(corners) * len(temps) * len(supplies) * n
-    print(f"  submitting `{tag}` ({units} units)...", flush=True)
-    t0 = time.time()
-    rep = _run(req, work / tag / "out", args, work / tag)
-    wall = time.time() - t0
-    rem = remote_of(rep)
-    print(f"  `{tag}` done in {wall:.0f} s (job {rem.get('job_id', 'local')})", flush=True)
-    return rep, req, wall
+    return submit_request(tag, req, args, work, units=len(corners) * len(temps) * len(supplies) * n)
 
 
 def keys_of(corners, temps, supplies) -> list[tuple]:

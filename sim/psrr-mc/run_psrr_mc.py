@@ -99,7 +99,6 @@ from harness import (  # noqa: E402
     load_sibling,
     ngspice_version,
     percentile,
-    remote_of,
     run_klt,
     run_klt_retrying,
     sanitise_report,
@@ -110,6 +109,8 @@ from harness import (  # noqa: E402
     as_mc as _as_mc,
     sha256_text as _sha,
     fmt_digits as fmt,
+    parse_prefixed_scalars,
+    submit_request,
 )
 
 # The systematic PSRR driver owns the bench guard (driven vss, ground-
@@ -320,17 +321,9 @@ def grid_keys(grid: str) -> list[tuple]:
 # Log parsing, per-sample validation (pure; unit-tested offline)
 # --------------------------------------------------------------------------
 
-_NUM = r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?"
-_SCALAR_RE = re.compile(rf"^\s*(pmc_\w+)\s*=\s*({_NUM})\s*$", re.M | re.I)
-
-
 def parse_scalars(log: str) -> dict[str, float]:
-    """`pmc_* = value` lines of an ngspice log (last occurrence wins, so the
-    explicit `print` after a `meas` line is the value read)."""
-    out: dict[str, float] = {}
-    for name, val in _SCALAR_RE.findall(log):
-        out[name.lower()] = float(val)
-    return out
+    """`pmc_* = value` lines of an ngspice log."""
+    return parse_prefixed_scalars(log, "pmc_")
 
 
 @dataclass
@@ -741,16 +734,7 @@ def cmrr_mc_link(samples: dict[tuple, list[Sample]]) -> dict:
 def submit(tag: str, tb: Path, pdk: Pdk, corners, temps, supplies, n: int, args, work: Path, *,
            vary: str = MC_VARY) -> tuple[dict, dict, float]:
     req = request(tb, pdk, corners, temps, supplies, n=n, vary=vary)
-    req["batch"] = batch_block(args)
-    units = len(corners) * len(temps) * len(supplies) * n
-    print(f"  submitting `{tag}` ({units} units)...", flush=True)
-    t0 = time.time()
-    rep = run_klt_retrying(req, work / tag / "out", args.backend, work / tag, retries=args.batch_submit_retries,
-                           wait_s=args.batch_retry_wait_s)
-    wall = time.time() - t0
-    rem = remote_of(rep)
-    print(f"  `{tag}` done in {wall:.0f} s (job {rem.get('job_id', 'local')})", flush=True)
-    return rep, req, wall
+    return submit_request(tag, req, args, work, units=len(corners) * len(temps) * len(supplies) * n)
 
 
 # --------------------------------------------------------------------------

@@ -31,6 +31,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_gain_gbw_pm_mc as m  # noqa: E402
+import harness  # noqa: E402
 from harness import KltError, Pdk  # noqa: E402
 
 G = m.G
@@ -512,7 +513,7 @@ class SubmissionTests(unittest.TestCase):
             return klt(req)
         a = args_for(revised_dut_sha256=REVISED_SHA, deterministic_record=DET_RECORD, **kw)
         err = io.StringIO()
-        with mock.patch.object(m, "run_klt_retrying", fake), mock.patch.object(m, "run_klt") as local, \
+        with mock.patch.object(harness, "run_klt_retrying", fake), mock.patch.object(m, "run_klt") as local, \
                 contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
             rc = m.run_campaign(a, base=self.base, records_dir=self.recs)
         self.assertFalse(local.called, "a local klt run happened")
@@ -539,7 +540,7 @@ class SubmissionTests(unittest.TestCase):
         for kw in ({"revised_dut_sha256": None}, {"revised_dut_sha256": "f" * 64}, {"deterministic_record": None}):
             self.calls.clear()
             a = args_for(**{"revised_dut_sha256": REVISED_SHA, "deterministic_record": DET_RECORD, **kw})
-            with mock.patch.object(m, "run_klt_retrying", lambda *x, **y: self.calls.append(x)), \
+            with mock.patch.object(harness, "run_klt_retrying", lambda *x, **y: self.calls.append(x)), \
                     contextlib.redirect_stderr(io.StringIO()):
                 rc = m.run_campaign(a, base=self.base, records_dir=self.recs)
             self.assertEqual((rc, self.calls, self.written()), (2, [], []), kw)

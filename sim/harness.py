@@ -613,6 +613,31 @@ def remote_of(report: dict) -> dict:
     return (report.get("environment") or {}).get("remote") or {}
 
 
+def submit_request(tag: str, req: dict, args, work: Path, *, units: int, note: str = "") -> tuple[dict, dict, float]:
+    """Submit one already-built `klt sim` request: attach `batch.*`, print
+    progress, run with the capacity retry. Returns `(report, request, wall_s)`."""
+    req["batch"] = batch_block(args)
+    print(f"  submitting `{tag}` ({units} units{note})...", flush=True)
+    t0 = time.time()
+    rep = run_klt_retrying(req, work / tag / "out", args.backend, work / tag,
+                           retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
+    wall = time.time() - t0
+    print(f"  `{tag}` done in {wall:.0f} s (job {remote_of(rep).get('job_id', 'local')})", flush=True)
+    return rep, req, wall
+
+
+_NUM = r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?"
+
+
+def parse_prefixed_scalars(log: str, prefix: str) -> dict[str, float]:
+    """`<prefix>* = value` lines of an ngspice log (last occurrence wins, so the
+    explicit `print` after a `meas` line is the value read)."""
+    out: dict[str, float] = {}
+    for name, val in re.findall(rf"^\s*({re.escape(prefix)}\w+)\s*=\s*({_NUM})\s*$", log, re.M | re.I):
+        out[name.lower()] = float(val)
+    return out
+
+
 def describe_backend(report: dict) -> str:
     """One-line markdown description of the `klt sim` backend that produced `report`."""
     remote = remote_of(report)
