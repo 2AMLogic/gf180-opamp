@@ -1,6 +1,6 @@
 {
-  "loom_version": "0.19.1177",
-  "loom_commit": "9f78359079053fae40e7a50b427a827089135c6c",
+  "loom_version": "0.19.1180",
+  "loom_commit": "2b58988b8fc372abff824eaf75670461d0838c41",
   "install_date": "2026-09-05",
   "loom_source_remote": "https://github.com/rjwalters/loom.git",
   "installed_files": [
@@ -651,7 +651,12 @@
     ".agents/skills/loom-loom/SKILL.md",
     ".loom/docs/long-running-compute.md",
     ".loom/docs/trace-identity.md",
-    ".loom/scripts/tests/test-champion-followon-out-of-scope.sh"
+    ".loom/scripts/tests/test-champion-followon-out-of-scope.sh",
+    ".loom/scripts/tests/test-judge-spec-reconcile.sh",
+    ".loom/scripts/tests/test-merge-pr-feature-branch-close.sh",
+    ".agents/skills/loom-judge-reference/SKILL.md",
+    ".loom/docs/operator-presence.md",
+    ".loom/scripts/tests/test-resync-installed-local-fix-guard.sh"
   ],
   "last_resync": "2026-10-17",
   "requires_daemon": "0.19.1088"
