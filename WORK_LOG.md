@@ -4,6 +4,9 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-18
 
+- **PR #261**: refactor: share retained-CSV loading and CMRR/PSRR figure compare across report crosschecks
+- **Issue #260** (closed): Hoist duplicated retained-CSV preamble from five report crosschecks into report_common
+- **PR #259**: sim: cmrr-mc Monte Carlo re-run under f6eeac7 with client models staged
 - **PR #257**: fix(sim): stage client model files on batch submits and correct the staging note
 - **PR #256**: docs(sim): record c6d73a3 vs f6eeac7 model-file comparison and the staging blocker
 - **PR #254**: sim: new-pin ICMR, step-response and passive-corner study records (f6eeac7)
