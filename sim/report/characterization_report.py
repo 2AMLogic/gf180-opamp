@@ -59,8 +59,8 @@ from extract_mc import (  # noqa: F401
     gain_gbw_pm_mc_crosscheck, offset_drift_view, offset_grid_crosscheck, offset_stats, psrr_mc_crosscheck)
 from report_common import (  # noqa: F401
     DEFAULT_MANIFEST, DEFAULT_ROOT, DUT_REL, EXPERIMENTS, HERE, MULTI_RECORD, OUT_DIR_REL, OUT_NAME,
-    ReportError, SCHEMA, STUDY_TITLES, _harness, clean_md, common_limitations, coverage_of, coverage_text,
-    fmt_point, grid_points, parse_fingerprint, parse_provenance, posix_rel, section, sha256_file, split_cells)
+    PENDING_PDK_PINS, ReportError, SCHEMA, STUDY_TITLES, _harness, clean_md, common_limitations, coverage_of, coverage_text,
+    fmt_point, grid_points, parse_fingerprint, parse_provenance, posix_rel, record_pdk_pin, section, sha256_file, split_cells)
 from extract_icmr import (  # noqa: F401
     ICMR_EXP, ICMR_ROW_KEY, _icmr_addendum, extract_icmr, icmr_crosscheck, icmr_evidence, icmr_figures)
 from studies import (  # noqa: F401
@@ -292,7 +292,8 @@ def latest_selection(root: Path) -> dict:
     for exp in EXPERIMENTS:
         recs = sorted((root / "sim" / exp / "records").glob("*.md"))
         recs = [p for p in recs
-                if not p.read_text().lstrip().startswith(STUDY_TITLES.get(exp, ()) or ("\0",))]
+                if not p.read_text().lstrip().startswith(STUDY_TITLES.get(exp, ()) or ("\0",))
+                and record_pdk_pin(p.read_text()) not in PENDING_PDK_PINS]
         if exp in MULTI_RECORD:
             # per row, the newest record that judged it; one path when they all agree
             picked: dict = {}
