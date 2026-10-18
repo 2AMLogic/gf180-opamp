@@ -644,6 +644,9 @@ def submit_request(tag: str, req: dict, args, work: Path, *, units: int, note: s
     """Submit one already-built `klt sim` request: attach `batch.*`, print
     progress, run with the capacity retry. Returns `(report, request, wall_s)`."""
     req["batch"] = batch_block(args)
+    # Ship the client's `f6eeac7` model files with the job: otherwise the runner
+    # simulates its own library (stamp `c6d73a3`, `models_staged: false`).
+    req.setdefault("options", {})["stage_model_inputs"] = True
     print(f"  submitting `{tag}` ({units} units{note})...", flush=True)
     t0 = time.time()
     rep = run_klt_retrying(req, work / tag / "out", args.backend, work / tag,
