@@ -38,6 +38,12 @@ STUDY_TITLES = {
     "slew-swing-power": ("# slew/swing/power passive-corner study",),  # issue #97
     "psrr": ("# PSRR passive-corner study",),  # issue #155; bound-free supplementary adapter, issue #173
 }
+#: open_pdks pins whose records are append-only evidence already in `sim/` but
+#: not yet part of a regenerated report (issue #240: the f6eeac7 re-runs land
+#: before the full set and the signoff manifest do). `--latest` skips their
+#: records so a mixed-pin records directory cannot move the selection; the PR
+#: that regenerates the report and selection.json removes the pin from here.
+PENDING_PDK_PINS = ("f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",)
 CORNER_ORDER = ["typical", "ff", "ss", "fs", "sf"]
 FULL_GRID = 45
 
@@ -70,6 +76,13 @@ def section(text: str, heading_prefix: str) -> str:
 def header_of(text: str) -> str:
     m = re.search(r"^## ", text, re.M)
     return text[: m.start()] if m else text
+
+
+def record_pdk_pin(text: str):
+    """The open_pdks sha a record states on its PDK header line, or None."""
+    line = re.search(r"^- \*\*PDK[^*]*\*\*:.*$", header_of(text), re.M)
+    m = re.search(r"open_pdks `([0-9a-f]{40})`", line.group(0)) if line else None
+    return m.group(1) if m else None
 
 
 def corner_sort_key(c: str):

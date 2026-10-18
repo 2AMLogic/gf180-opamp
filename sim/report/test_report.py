@@ -769,6 +769,19 @@ class Mutations(unittest.TestCase):
         self.assertEqual(cr.latest_selection(self.root)["gain-gbw-pm"],
                          "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md")
 
+    def test_latest_selection_skips_pending_pdk_pin_records(self):
+        # issue #240: records re-run under a pin the report has not adopted yet sit beside the
+        # selected ones and must not win by recency; an unlisted pin still does
+        pin = cr.PENDING_PDK_PINS[0]
+        rec = self.root / "sim/gain-gbw-pm/records/29991231-235959-0000000.md"
+        body = "# Record 29991231-235959-0000000\n\n- **PDK revision**: gf180mcuD, open_pdks `%s` (via ciel-default)\n"
+        rec.write_text(body % pin)
+        self.assertEqual(cr.latest_selection(self.root)["gain-gbw-pm"],
+                         "sim/gain-gbw-pm/records/20261010-161514-0127eb7.md")
+        rec.write_text(body % ("0" * 40))
+        self.assertEqual(cr.latest_selection(self.root)["gain-gbw-pm"],
+                         "sim/gain-gbw-pm/records/29991231-235959-0000000.md")
+
     def test_latest_selection_ignores_the_psrr_passive_study(self):
         # issue #155: the PSRR RZ x CC study lives beside the PSRR grid records but is never selected
         # as one by recency; issue #173: it is reported only under its explicit bound-free key
