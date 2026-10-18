@@ -4,6 +4,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-18
 
+- **PR #252**: sim: nominal offset Monte Carlo re-run under open_pdks f6eeac7
+- **PR #251**: docs: Guide document maintenance update
 - **PR #250**: sim: re-run five cited experiments under open_pdks f6eeac7
 
 ### 2026-10-17
