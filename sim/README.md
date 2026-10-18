@@ -559,6 +559,20 @@ is not evidence that the libraries differ. Whether the model sections used diffe
 from the client or the fleet on `f6eeac7`), "unchanged" means unchanged against a `c6d73a3` run, so the
 "none moved" statement below and the issue #240 counterpart criterion stay open.
 
+*Model-file comparison (issue #240, 2026-10-18, no simulation).* The first route is closed: the
+`gf180mcuD/libs.tech/ngspice` model files of the two revisions are **not** identical. All four of
+`design.ngspice`, `sm141064.ngspice`, `sm141064_mim.ngspice` and `smbb000149.ngspice` differ byte-for-byte,
+and still differ after ignoring CR, blank lines and whitespace (21, 79571, 388 and 1259 changed lines): the
+`f6eeac7` build is a reformatted regeneration (`.param a=b` instead of `.param` continuation blocks,
+`sm141064.spice` includes, an extra `*.spice` copy of each file). Whether the reformatting changes any
+parameter value is not established by a text diff, so "unchanged" still cannot be claimed from file
+identity. The second route, a re-mint with the `f6eeac7` models staged from the client, is not available
+today: `klt sim --dry-run --backend batch` (klt 0.7.1) lists no staged model files for a request carrying
+`models.pdk_root`, and there is no switch to stage or to require a runner stamp match; that gap is tracked
+at `2AMLogic/klayout-tools#3946`. The `c6d73a3` build compared here is the retired local copy under
+`~/.volare` (it is not among the 90 builds `ciel ls-remote --pdk-family gf180mcu` lists). The counterpart
+criterion therefore stays open, blocked on that tool issue; no further grid was submitted.
+
 No result moved beyond its tolerance so far, conditional on the paragraph above. The `20261018-*-517c6bb`
 set also holds a second, independent mint of the five `afc17a1` experiments (gain-gbw-pm, noise, cmrr,
 psrr, slew-swing-power); the studies and the ICMR record cite it, and it agrees with the `afc17a1` set,
