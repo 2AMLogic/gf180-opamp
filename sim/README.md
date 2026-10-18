@@ -535,9 +535,16 @@ revision they ran under. New-pin counterparts, minted with the unmodified driver
 | `psrr` | `20261010-163854-0127eb7` | unchanged |
 | `slew-swing-power` | `20261010-161852-0127eb7` | unchanged (15.5 V/us, 2.465 Vpp, 311 uW) |
 | `offset-mc` (nominal 5-corner, seed 45) | `20261009-072205-96bf3cc` | unchanged (worst \|mean\|+3 sigma 15.635 mV at `sf`); record `20261018-130136-fbdbf60` |
+| `input-common-mode` | `20261010-164310-0127eb7` | unchanged (intersection [1.185, 2.705] V; 1.20 V meets at 45/45); record `20261018-012726-517c6bb` |
+| `step-response` (follower study) | `20261011-140956-cb03235` | unchanged (0.90 % overshoot, 47.1 ns / 72.2 ns settling); record `20261018-030154-517c6bb` |
+| `gain-gbw-pm` passive-corner study, 27 and 405 cells | `20261010-161720-0127eb7`, `20261011-042113-c635487` | unchanged (PM worst 64.47 deg, GBW worst 10.726 MHz, both 27/27 and 405/405); records `20261018-030626-517c6bb`, `20261018-030719-517c6bb` |
+| `slew-swing-power` passive-corner study, 27 and 405 cells | `20261010-162823-0127eb7`, `20261011-052206-c635487` | unchanged (slew 14.25 V/us, swing 2.465 Vpp, power 311 uW); records `20261018-031019-517c6bb`, `20261018-142357-91dab49` |
+| `psrr` passive-corner study, 405 cells | `20261011-102729-6612014` | unchanged (PSRR+ 10 kHz 61.09 dB, PSRR- 10 kHz 100.88 dB); record `20261018-152838-0579f26` |
 
-No result moved beyond its tolerance so far. **Still open**: the 45-point `offset-mc --grid full`
-counterpart of the cited `20261010-185141-e4be1ac` (13500 units; the fleet job was Spot-reclaimed past
-`batch.interrupted_grace_s`, so no record was written and it was not run locally), `input-common-mode`,
-the `-mc` experiments and the passive-corner / step-response studies. `selection.json` and the characterization report
+No result moved beyond its tolerance so far. The `20261018-*-517c6bb` set also holds a second,
+independent mint of the five `afc17a1` experiments (gain-gbw-pm, noise, cmrr, psrr, slew-swing-power);
+the studies and the ICMR record cite it, and it agrees with the `afc17a1` set. **Still open**: the 45-point
+`offset-mc --grid full` counterpart of the cited `20261010-185141-e4be1ac` (13500 units; the fleet job was
+Spot-reclaimed past `batch.interrupted_grace_s`, so no record was written and it was not run locally) and the
+`cmrr-mc`, `gain-gbw-pm-mc` and `psrr-mc` Monte Carlo campaigns (not run in this slice). `selection.json` and the characterization report
 keep selecting the `c6d73a3` records until the full set exists, so the report never mixes pins.
