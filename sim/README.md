@@ -519,3 +519,23 @@ devices), and PSRR is systematic-only at every point. Noise, offset, CMRR and
 PSRR are measured without a verdict because their numeric bounds are not
 ratified. There is no layout or post-layout evidence. The 5 V stretch row is
 not opened. These records are schematic-level evidence below the T1 tier.
+
+## PDK re-pin re-runs (issue #240)
+
+The pin moved from open_pdks `c6d73a3` (volare) to `f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7`
+(ciel 2.6.1). Records minted under `c6d73a3` are unchanged, true statements about the
+revision they ran under. New-pin counterparts, minted with the unmodified drivers through
+`klt sim` (batch fleet), record id `20261018-*-afc17a1`:
+
+| Experiment | Counterpart of | Headline vs `c6d73a3` record |
+|---|---|---|
+| `gain-gbw-pm` | `20261010-161514-0127eb7` | unchanged (93.79 dB, 11.910 MHz, 71.99 deg) |
+| `noise` | `20261010-163507-0127eb7` | unchanged (table formatting only) |
+| `cmrr` | `20261010-163601-0127eb7` | unchanged |
+| `psrr` | `20261010-163854-0127eb7` | unchanged |
+| `slew-swing-power` | `20261010-161852-0127eb7` | unchanged (15.5 V/us, 2.465 Vpp, 311 uW) |
+
+No result moved beyond its tolerance so far. **Still open** (the batch fleet sat at its
+concurrency cap): `input-common-mode`, `offset-mc`, the `-mc` experiments and the
+passive-corner / step-response studies. `selection.json` and the characterization report
+keep selecting the `c6d73a3` records until the full set exists, so the report never mixes pins.
