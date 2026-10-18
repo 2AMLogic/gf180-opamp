@@ -2,6 +2,10 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-18
+
+- **PR #250**: sim: re-run five cited experiments under open_pdks f6eeac7
+
 ### 2026-10-17
 
 - **PR #244**: refactor: hoist MC snapshot writer, request sanitiser and sha256 into harness
