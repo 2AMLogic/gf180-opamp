@@ -534,8 +534,10 @@ revision they ran under. New-pin counterparts, minted with the unmodified driver
 | `cmrr` | `20261010-163601-0127eb7` | unchanged |
 | `psrr` | `20261010-163854-0127eb7` | unchanged |
 | `slew-swing-power` | `20261010-161852-0127eb7` | unchanged (15.5 V/us, 2.465 Vpp, 311 uW) |
+| `offset-mc` (nominal 5-corner, seed 45) | `20261009-072205-96bf3cc` | unchanged (worst \|mean\|+3 sigma 15.635 mV at `sf`); record `20261018-130136-fbdbf60` |
 
-No result moved beyond its tolerance so far. **Still open** (the batch fleet sat at its
-concurrency cap): `input-common-mode`, `offset-mc`, the `-mc` experiments and the
-passive-corner / step-response studies. `selection.json` and the characterization report
+No result moved beyond its tolerance so far. **Still open**: the 45-point `offset-mc --grid full`
+counterpart of the cited `20261010-185141-e4be1ac` (13500 units; the fleet job was Spot-reclaimed past
+`batch.interrupted_grace_s`, so no record was written and it was not run locally), `input-common-mode`,
+the `-mc` experiments and the passive-corner / step-response studies. `selection.json` and the characterization report
 keep selecting the `c6d73a3` records until the full set exists, so the report never mixes pins.
