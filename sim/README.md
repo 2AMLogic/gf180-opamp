@@ -540,6 +540,7 @@ revision they ran under. New-pin counterparts, minted with the unmodified driver
 | `gain-gbw-pm` passive-corner study, 27 and 405 cells | `20261010-161720-0127eb7`, `20261011-042113-c635487` | unchanged (PM worst 64.47 deg, GBW worst 10.726 MHz, both 27/27 and 405/405); records `20261018-030626-517c6bb`, `20261018-030719-517c6bb` |
 | `slew-swing-power` passive-corner study, 27 and 405 cells | `20261010-162823-0127eb7`, `20261011-052206-c635487` | unchanged (slew 14.25 V/us, swing 2.465 Vpp, power 311 uW); records `20261018-031019-517c6bb`, `20261018-142357-91dab49` |
 | `psrr` passive-corner study, 405 cells | `20261011-102729-6612014` | unchanged (PSRR+ 10 kHz 61.09 dB, PSRR- 10 kHz 100.88 dB); record `20261018-152838-0579f26` |
+| `cmrr-mc` (5 corners x 300, seed 45, mismatch) | `20261010-202454-e4be1ac` | unchanged: `samples.csv` byte-identical (1500 samples), all four statistic tables and the switch-off, process-only and mirror-imbalance controls identical; record `20261018-185100-2cee40d`, **`models_staged: true`** (see below) |
 
 **Fleet library provenance (read before treating any row above as an `f6eeac7` result).** Every
 fleet-run record in this table (`afc17a1`, `517c6bb`, `0579f26`, `91dab49`, `fbdbf60`) was simulated on a
@@ -575,7 +576,19 @@ observability gap is `2AMLogic/klayout-tools#3946`). `harness.submit_request` no
 batch submit, so the Monte Carlo campaigns and the offset-mc full grid mint `f6eeac7` records when run. The
 `c6d73a3` build compared here is the retired local copy under `~/.volare` (it is not among the 90 builds
 `ciel ls-remote --pdk-family gf180mcu` lists). The counterpart criterion stays open until those grids are
-minted and their reports show `models_staged: true`; no grid was submitted in this slice.
+minted and their reports show `models_staged: true`.
+
+*First `f6eeac7` result with the models staged (issue #240, 2026-10-18).* The `cmrr-mc` campaign was re-minted as
+`cmrr-mc/records/20261018-185100-2cee40d.md` after `harness.submit_request` began setting `stage_model_inputs`. All four
+grid reports show `worker_environment.pdk.models_staged: true`, and `environment.remote.runner_model_inputs` lists the
+client's `sm141064.ngspice` / `sm141064.spice` (sha256 `f905b073...`) and `sm141064_mim.spice` (`9b85cd00...`). The runner's own
+PDK stamp is still `c6d73a3` (`pdk_stamp_comparison.status: not_comparable`), but the staged client models are what the
+netlists include, so this is a `f6eeac7`-model result. Its 1500-row `samples.csv` is **byte-identical** to the `c6d73a3`
+record's and every statistics and control table is identical, so for this experiment the reformatted `f6eeac7` models give
+the same numbers as the `c6d73a3` run; nothing moved. Each report's `environment.remote.state` reads `failed` with
+`exit_code: 4` although all units passed (`passed == corner_count`, no diagnostics; the grid-level status is
+`not_checked`, as in earlier records on runner klt 0.7.0); the same line appears in other `20261018-*` records.
+This is a single experiment: it does not extend to the other fleet records, which stay `c6d73a3`-provenance until re-minted.
 
 No result moved beyond its tolerance so far, conditional on the paragraph above. The `20261018-*-517c6bb`
 set also holds a second, independent mint of the five `afc17a1` experiments (gain-gbw-pm, noise, cmrr,
@@ -583,5 +596,5 @@ psrr, slew-swing-power); the studies and the ICMR record cite it, and it agrees 
 but it carries the same `c6d73a3` runner stamp. **Still open**: the 45-point
 `offset-mc --grid full` counterpart of the cited `20261010-185141-e4be1ac` (13500 units; the fleet job was
 Spot-reclaimed past `batch.interrupted_grace_s`, so no record was written and it was not run locally) and the
-`cmrr-mc`, `gain-gbw-pm-mc` and `psrr-mc` Monte Carlo campaigns (not run in this slice). `selection.json` and the characterization report
+`gain-gbw-pm-mc` and `psrr-mc` Monte Carlo campaigns (not run in this slice; `cmrr-mc` is re-minted above). `selection.json` and the characterization report
 keep selecting the `c6d73a3` records until the full set exists, so the report never mixes pins.
