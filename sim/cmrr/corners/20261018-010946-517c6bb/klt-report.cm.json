@@ -1,0 +1,1258 @@
+{
+ "schema_version": 3,
+ "netlist": {
+  "path": null,
+  "scope": "external"
+ },
+ "status": "not_checked",
+ "corner_count": 45,
+ "passed": 45,
+ "failed": 0,
+ "errored": 0,
+ "inconclusive": 0,
+ "diagnostic_counts": {
+  "by_code": {},
+  "by_severity": {},
+  "corners_with_diagnostics": 0
+ },
+ "metrics": {
+  "sim__corner__count": 45,
+  "sim__corner__passed_count": 45,
+  "sim__corner__failed_count": 0,
+  "sim__corner__errored_count": 0,
+  "sim__corner__inconclusive_count": 0
+ },
+ "environment": {
+  "engine": "ngspice",
+  "engine_version": "46",
+  "ngspice_binary": "/usr/local/bin/ngspice",
+  "engine_build": {
+   "version_banner": "******\n** ngspice-42 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2023, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Sun Mar 31 20:15:14 UTC 2024\n******",
+   "binary_sha256": "820658317b0b54035208da41936fd6871ce924036e5ea4113a4168b821b7fc45",
+   "probe": "ok",
+   "reason": null
+  },
+  "models_lib": {
+   "path": null,
+   "scope": "external"
+  },
+  "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+  "models_lib_sha256_scope": "client",
+  "netlist_sha256": "fd3e49e3e8b852d10a9cd435c824c6f7e0fc609a537498d4f87e7135f1cf4653",
+  "netlist_closure": [
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "fd3e49e3e8b852d10a9cd435c824c6f7e0fc609a537498d4f87e7135f1cf4653"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "7e222f050318388f37543a64fbd0be55cc15e4b93f57501a09f7c159c4c9e561"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+   }
+  ],
+  "netlist_identity": "sha256:237d0e3829b8e180bca0e4946f5e24f0107d54974acd9d8ac98d834a38e9675f",
+  "remote": {
+   "provider": "aws-batch-fleet",
+   "job_id": "klt-sim-8625695400db",
+   "bucket": "2am-batch-jobs-221082181346",
+   "region": "us-east-1",
+   "instance_id": "i-060fdd7b0be8621fe",
+   "instance_type": "m7i.4xlarge",
+   "availability_zone": "us-east-1a",
+   "ami_id": "ami-0e0bec04ad8e81877",
+   "lifecycle": "spot",
+   "spot": true,
+   "state": "failed",
+   "exit_code": "4",
+   "concurrency": "1",
+   "physical_cores": "8",
+   "elapsed_seconds": 47,
+   "client_submitted_at": "2026-10-18T01:11:16.451546Z",
+   "client_launched_at": "2026-10-18T01:11:37.111410Z",
+   "client_status_terminal_at": "2026-10-18T01:12:39.743065Z",
+   "client_collected_at": "2026-10-18T01:12:41.331716Z",
+   "runner_klt_version": "0.7.0",
+   "client_klt_version": "0.7.1.dev1820+g23b4b033a79e",
+   "runner_compatibility": "match",
+   "worker_environment": {
+    "capture": "ok",
+    "simulator": {
+     "requested_binary": "ngspice",
+     "binary_source": "PATH",
+     "selected_path": "/usr/local/bin/ngspice",
+     "version_banner": "******\n** ngspice-46 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2025, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Thu Oct  1 23:51:59 UTC 2026\n******\n",
+     "version_probe": "ok"
+    },
+    "pdk": {
+     "variant": "gf180mcuD",
+     "root": "/opt/pdk",
+     "stamp_scheme": "sources-sha256",
+     "stamp_sha256": "d5ac52956829da3fee35d0b307d4e6cb83ae0e6535b56dba2eefed61cdffaf9b",
+     "stamp_text": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+     "models_staged": false
+    },
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8488C",
+    "omp_num_threads": null,
+    "image_manifest": null,
+    "model_inputs": null,
+    "diagnostics": [],
+    "pdk_stamp_comparison": {
+     "status": "not_comparable"
+    },
+    "engine_build_comparison": {
+     "status": "mismatch",
+     "warning": "the worker's ngspice --version banner differs from the local binary's; build options (e.g. FFT linkage) may differ, so results derived from them can differ from a local run"
+    }
+   },
+   "runner_model_inputs": null,
+   "job_ceiling": {
+    "basis": "conservative_serial_bound",
+    "unit_count": 45,
+    "per_unit_timeout_s": 300,
+    "overhead_s": 120.0,
+    "job_bound_s": 13620.0,
+    "max_job_seconds": 3600.0,
+    "max_job_seconds_source": "fleet_config",
+    "exceeds_ceiling": true,
+    "check": "warn",
+    "max_units_per_job": 11,
+    "recommended_hosts": 5,
+    "warning": "batch job bound 13620s (options.timeout_s 300s x 45 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 5 to run one job per shard of at most 11 units, each within the ceiling"
+   }
+  },
+  "engine_host": "worker",
+  "client_ngspice_binary": "/usr/bin/ngspice",
+  "backend": {
+   "resolved": "batch",
+   "source": "env",
+   "requested": "batch"
+  }
+ },
+ "coverage": {
+  "corners_simulated": 45,
+  "measurements_declared": 0,
+  "measurements_with_limits": 0,
+  "unrecognized_limit_keys": [],
+  "schema_version": 1,
+  "known": true,
+  "checked": [],
+  "skipped": [
+   {
+    "id": "corner:[0,\"typical/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[1,\"typical/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[10,\"ff/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[11,\"ff/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[12,\"ff/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[13,\"ff/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[14,\"ff/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[15,\"ff/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[16,\"ff/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[17,\"ff/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[18,\"ss/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[19,\"ss/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[2,\"typical/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[20,\"ss/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[21,\"ss/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[22,\"ss/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[23,\"ss/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[24,\"ss/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[25,\"ss/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[26,\"ss/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[27,\"fs/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[28,\"fs/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[29,\"fs/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[3,\"typical/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[30,\"fs/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[31,\"fs/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[32,\"fs/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[33,\"fs/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[34,\"fs/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[35,\"fs/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[36,\"sf/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[37,\"sf/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[38,\"sf/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[39,\"sf/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[4,\"typical/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[40,\"sf/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[41,\"sf/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[42,\"sf/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[43,\"sf/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[44,\"sf/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[5,\"typical/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[6,\"typical/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[7,\"typical/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[8,\"typical/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[9,\"ff/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   }
+  ],
+  "inapplicable": [],
+  "unknown": [],
+  "nothing_checked": true,
+  "nothing_checked_reasons": [
+   "no_requested_measurements"
+  ]
+ },
+ "provenance": {
+  "klt_version": "0.7.1.dev1820+g23b4b033a79e",
+  "klayout_version": "0.30.12",
+  "pdk": {
+   "name": "gf180mcuD",
+   "source": "search root: ~/.ciel",
+   "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
+   "ambiguous_sources": [
+    "search root: ~/.volare"
+   ]
+  },
+  "deck": {
+   "name": "sm141064.ngspice",
+   "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+   "released": false
+  },
+  "input": {
+   "content_hash": "sha256:fd3e49e3e8b852d10a9cd435c824c6f7e0fc609a537498d4f87e7135f1cf4653",
+   "role": "netlist"
+  }
+ },
+ "measurements": [],
+ "corners": [
+  {
+   "corner_id": "typical/vcm=1.485_vdd=2.970V/-40C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.476,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.485_vdd=2.970V/27C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 0.596,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.485_vdd=2.970V/125C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 16.277,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/-40C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.481,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/27C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 0.535,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.650_vdd=3.300V/125C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 18.211,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.815_vdd=3.630V/-40C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.504,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.815_vdd=3.630V/27C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 28.312,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "typical/vcm=1.815_vdd=3.630V/125C",
+   "process": "typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 15.532,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.285,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 17.31,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 12.456,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.372,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 3.188,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.602,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.384,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 22.201,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 19.203,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 16.495,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.485_vdd=2.970V/27C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 0.376,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.485_vdd=2.970V/125C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 2.858,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.589,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.650_vdd=3.300V/27C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 0.426,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.650_vdd=3.300V/125C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 0.85,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.48,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.815_vdd=3.630V/27C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 0.334,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ss/vcm=1.815_vdd=3.630V/125C",
+   "process": "ss",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 18.411,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.485_vdd=2.970V/-40C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.497,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.485_vdd=2.970V/27C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 2.796,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.485_vdd=2.970V/125C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 15.267,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.650_vdd=3.300V/-40C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.379,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.650_vdd=3.300V/27C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 3.312,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.650_vdd=3.300V/125C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.502,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.815_vdd=3.630V/-40C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.438,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.815_vdd=3.630V/27C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 15.823,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "fs/vcm=1.815_vdd=3.630V/125C",
+   "process": "fs",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 14.865,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.485_vdd=2.970V/-40C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.536,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.485_vdd=2.970V/27C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 16.878,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.485_vdd=2.970V/125C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 11.659,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.650_vdd=3.300V/-40C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.482,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.650_vdd=3.300V/27C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 9.981,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.650_vdd=3.300V/125C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.883,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.815_vdd=3.630V/-40C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.432,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.815_vdd=3.630V/27C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 8.889,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "sf/vcm=1.815_vdd=3.630V/125C",
+   "process": "sf",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 6.486,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  }
+ ]
+}

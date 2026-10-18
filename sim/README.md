@@ -535,9 +535,35 @@ revision they ran under. New-pin counterparts, minted with the unmodified driver
 | `psrr` | `20261010-163854-0127eb7` | unchanged |
 | `slew-swing-power` | `20261010-161852-0127eb7` | unchanged (15.5 V/us, 2.465 Vpp, 311 uW) |
 | `offset-mc` (nominal 5-corner, seed 45) | `20261009-072205-96bf3cc` | unchanged (worst \|mean\|+3 sigma 15.635 mV at `sf`); record `20261018-130136-fbdbf60` |
+| `input-common-mode` | `20261010-164310-0127eb7` | unchanged (intersection [1.185, 2.705] V; 1.20 V meets at 45/45); record `20261018-012726-517c6bb` |
+| `step-response` (follower study) | `20261011-140956-cb03235` | unchanged (0.90 % overshoot, 47.1 ns / 72.2 ns settling); record `20261018-030154-517c6bb` |
+| `gain-gbw-pm` passive-corner study, 27 and 405 cells | `20261010-161720-0127eb7`, `20261011-042113-c635487` | unchanged (PM worst 64.47 deg, GBW worst 10.726 MHz, both 27/27 and 405/405); records `20261018-030626-517c6bb`, `20261018-030719-517c6bb` |
+| `slew-swing-power` passive-corner study, 27 and 405 cells | `20261010-162823-0127eb7`, `20261011-052206-c635487` | unchanged (slew 14.25 V/us, swing 2.465 Vpp, power 311 uW); records `20261018-031019-517c6bb`, `20261018-142357-91dab49` |
+| `psrr` passive-corner study, 405 cells | `20261011-102729-6612014` | unchanged (PSRR+ 10 kHz 61.09 dB, PSRR- 10 kHz 100.88 dB); record `20261018-152838-0579f26` |
 
-No result moved beyond its tolerance so far. **Still open**: the 45-point `offset-mc --grid full`
-counterpart of the cited `20261010-185141-e4be1ac` (13500 units; the fleet job was Spot-reclaimed past
-`batch.interrupted_grace_s`, so no record was written and it was not run locally), `input-common-mode`,
-the `-mc` experiments and the passive-corner / step-response studies. `selection.json` and the characterization report
+**Fleet library provenance (read before treating any row above as an `f6eeac7` result).** Every
+fleet-run record in this table (`afc17a1`, `517c6bb`, `0579f26`, `91dab49`, `fbdbf60`) was simulated on a
+runner whose own PDK stamp, in each grid's `klt-report*.json` (`worker_environment.pdk`), is
+`open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b` with `models_staged: false` and
+`pdk_stamp_comparison.status: not_comparable` (runner klt 0.7.0; the stamp is the same
+`stamp_sha256` `d5ac5295...` in every report). The client-side `f6eeac7` in those reports and in the
+records' `PDK revision` line is what the submitting client resolved, not what the runner used. Read
+accordingly: the grid values are **fleet library = `c6d73a3` per runner stamp; not an `f6eeac7`
+result**. The `input-common-mode` record (`20261018-012726-517c6bb`) did not commit its grid reports, so
+its runner stamp is not recorded; it ran on the same fleet and is treated the same way. The records'
+prose that the runner "(klt 0.5.0) does not report its revision" is superseded by this paragraph:
+runner klt 0.7.0 does report it. The local pinned single units do run `f6eeac7`, but they have
+not been shown to separate the two revisions' models, so their agreement with the grid's nominal point
+is not evidence that the libraries differ. Whether the model sections used differ between `c6d73a3` and
+`f6eeac7` is **not established here**; until it is (identical model files, or a re-mint with the models staged
+from the client or the fleet on `f6eeac7`), "unchanged" means unchanged against a `c6d73a3` run, so the
+"none moved" statement below and the issue #240 counterpart criterion stay open.
+
+No result moved beyond its tolerance so far, conditional on the paragraph above. The `20261018-*-517c6bb`
+set also holds a second, independent mint of the five `afc17a1` experiments (gain-gbw-pm, noise, cmrr,
+psrr, slew-swing-power); the studies and the ICMR record cite it, and it agrees with the `afc17a1` set,
+but it carries the same `c6d73a3` runner stamp. **Still open**: the 45-point
+`offset-mc --grid full` counterpart of the cited `20261010-185141-e4be1ac` (13500 units; the fleet job was
+Spot-reclaimed past `batch.interrupted_grace_s`, so no record was written and it was not run locally) and the
+`cmrr-mc`, `gain-gbw-pm-mc` and `psrr-mc` Monte Carlo campaigns (not run in this slice). `selection.json` and the characterization report
 keep selecting the `c6d73a3` records until the full set exists, so the report never mixes pins.

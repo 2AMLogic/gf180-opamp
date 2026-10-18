@@ -1,0 +1,2135 @@
+{
+ "schema_version": 3,
+ "netlist": {
+  "path": null,
+  "scope": "external"
+ },
+ "status": "not_checked",
+ "corner_count": 81,
+ "passed": 81,
+ "failed": 0,
+ "errored": 0,
+ "inconclusive": 0,
+ "diagnostic_counts": {
+  "by_code": {},
+  "by_severity": {},
+  "corners_with_diagnostics": 0
+ },
+ "metrics": {
+  "sim__corner__count": 81,
+  "sim__corner__passed_count": 81,
+  "sim__corner__failed_count": 0,
+  "sim__corner__errored_count": 0,
+  "sim__corner__inconclusive_count": 0
+ },
+ "environment": {
+  "engine": "ngspice",
+  "engine_version": "46",
+  "ngspice_binary": "/usr/local/bin/ngspice",
+  "engine_build": {
+   "version_banner": "******\n** ngspice-42 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2023, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Sun Mar 31 20:15:14 UTC 2024\n******",
+   "binary_sha256": "820658317b0b54035208da41936fd6871ce924036e5ea4113a4168b821b7fc45",
+   "probe": "ok",
+   "reason": null
+  },
+  "models_lib": {
+   "path": null,
+   "scope": "external"
+  },
+  "models_lib_sha256": "f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+  "models_lib_sha256_scope": "client",
+  "netlist_sha256": "4a5db5899819166a66cd1a12c83634ae07081488d9610b88b5855358abba8522",
+  "corner_coverage": {
+   "pdk": "gf180mcuD",
+   "sections": [
+    {
+     "process": "ff",
+     "unmoved_devices": [
+      "06v0",
+      "06v0_nvt",
+      "fets_mm",
+      "noise_corner"
+     ]
+    }
+   ]
+  },
+  "netlist_closure": [
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "4a5db5899819166a66cd1a12c83634ae07081488d9610b88b5855358abba8522"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "7e222f050318388f37543a64fbd0be55cc15e4b93f57501a09f7c159c4c9e561"
+   },
+   {
+    "path": null,
+    "scope": "external",
+    "sha256": "33b58dac62c747de979b33423bb54148cab3eb334fd9fab6051b7ed99226e41b"
+   }
+  ],
+  "netlist_identity": "sha256:cbfbd7ee0a773bb026484e3a2d2256ce2b2039e5ab460149dd1ca6dccf225a27",
+  "remote": {
+   "provider": "aws-batch-fleet",
+   "job_id": "klt-sim-f2348d7f099c",
+   "region": "us-east-1",
+   "instance_id": "i-0dcde09e7a03d1581",
+   "instance_type": "m6i.4xlarge",
+   "availability_zone": "us-east-1b",
+   "ami_id": "ami-0e0bec04ad8e81877",
+   "lifecycle": "spot",
+   "spot": true,
+   "state": "failed",
+   "exit_code": "4",
+   "concurrency": "1",
+   "physical_cores": "8",
+   "elapsed_seconds": 117,
+   "client_submitted_at": "2026-10-18T16:25:26.207172Z",
+   "client_launched_at": "2026-10-18T16:25:45.655357Z",
+   "client_status_terminal_at": "2026-10-18T16:28:20.500504Z",
+   "client_collected_at": "2026-10-18T16:28:22.334030Z",
+   "runner_klt_version": "0.7.0",
+   "client_klt_version": "0.7.1.dev2133+gc2e647e2cf05",
+   "runner_compatibility": "match",
+   "worker_environment": {
+    "capture": "ok",
+    "simulator": {
+     "requested_binary": "ngspice",
+     "binary_source": "PATH",
+     "selected_path": "/usr/local/bin/ngspice",
+     "version_banner": "******\n** ngspice-46 : Circuit level simulation program\n** Compiled with KLU Direct Linear Solver\n** The U. C. Berkeley CAD Group\n** Copyright 1985-1994, Regents of the University of California.\n** Copyright 2001-2025, The ngspice team.\n** Please get your ngspice manual from https://ngspice.sourceforge.io/docs.html\n** Please file your bug-reports at http://ngspice.sourceforge.net/bugrep.html\n** Creation Date: Thu Oct  1 23:51:59 UTC 2026\n******\n",
+     "version_probe": "ok"
+    },
+    "pdk": {
+     "variant": "gf180mcuD",
+     "root": "/opt/pdk",
+     "stamp_scheme": "sources-sha256",
+     "stamp_sha256": "d5ac52956829da3fee35d0b307d4e6cb83ae0e6535b56dba2eefed61cdffaf9b",
+     "stamp_text": "open_pdks c6d73a35f524070e85faff4a6a9eef49553ebc2b",
+     "models_staged": false
+    },
+    "cpu_model": "Intel(R) Xeon(R) Platinum 8375C CPU @ 2.90GHz",
+    "omp_num_threads": null,
+    "image_manifest": null,
+    "model_inputs": null,
+    "diagnostics": [],
+    "pdk_stamp_comparison": {
+     "status": "not_comparable"
+    },
+    "engine_build_comparison": {
+     "status": "mismatch",
+     "warning": "the worker's ngspice --version banner differs from the local binary's; build options (e.g. FFT linkage) may differ, so results derived from them can differ from a local run"
+    }
+   },
+   "runner_model_inputs": null,
+   "job_ceiling": {
+    "basis": "conservative_serial_bound",
+    "unit_count": 81,
+    "per_unit_timeout_s": 300,
+    "overhead_s": 120.0,
+    "job_bound_s": 24420.0,
+    "max_job_seconds": 3600.0,
+    "max_job_seconds_source": "fleet_config",
+    "exceeds_ceiling": true,
+    "check": "warn",
+    "max_units_per_job": 11,
+    "recommended_hosts": 8,
+    "warning": "batch job bound 24420s (options.timeout_s 300s x 81 units + 120s; a conservative fully-serial upper bound, not a runtime estimate) exceeds the fleet's whole-job ceiling of 3600s (max_job_seconds from fleet_config); a job still running at the ceiling is killed and every unit is reported batch_job_timeout. Set request.remote.hosts to at least 8 to run one job per shard of at most 11 units, each within the ceiling"
+   }
+  },
+  "engine_host": "worker",
+  "client_ngspice_binary": "/usr/bin/ngspice",
+  "backend": {
+   "resolved": "batch",
+   "source": "env",
+   "requested": "batch"
+  }
+ },
+ "coverage": {
+  "corners_simulated": 81,
+  "measurements_declared": 0,
+  "measurements_with_limits": 0,
+  "unrecognized_limit_keys": [],
+  "schema_version": 1,
+  "known": true,
+  "checked": [],
+  "skipped": [
+   {
+    "id": "corner:[0,\"ff__r-typical__c-typical/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[1,\"ff__r-typical__c-typical/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[10,\"ff__r-typical__c-best/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[11,\"ff__r-typical__c-best/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[12,\"ff__r-typical__c-best/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[13,\"ff__r-typical__c-best/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[14,\"ff__r-typical__c-best/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[15,\"ff__r-typical__c-best/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[16,\"ff__r-typical__c-best/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[17,\"ff__r-typical__c-best/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[18,\"ff__r-typical__c-worst/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[19,\"ff__r-typical__c-worst/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[2,\"ff__r-typical__c-typical/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[20,\"ff__r-typical__c-worst/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[21,\"ff__r-typical__c-worst/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[22,\"ff__r-typical__c-worst/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[23,\"ff__r-typical__c-worst/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[24,\"ff__r-typical__c-worst/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[25,\"ff__r-typical__c-worst/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[26,\"ff__r-typical__c-worst/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[27,\"ff__r-best__c-typical/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[28,\"ff__r-best__c-typical/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[29,\"ff__r-best__c-typical/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[3,\"ff__r-typical__c-typical/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[30,\"ff__r-best__c-typical/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[31,\"ff__r-best__c-typical/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[32,\"ff__r-best__c-typical/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[33,\"ff__r-best__c-typical/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[34,\"ff__r-best__c-typical/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[35,\"ff__r-best__c-typical/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[36,\"ff__r-best__c-best/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[37,\"ff__r-best__c-best/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[38,\"ff__r-best__c-best/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[39,\"ff__r-best__c-best/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[4,\"ff__r-typical__c-typical/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[40,\"ff__r-best__c-best/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[41,\"ff__r-best__c-best/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[42,\"ff__r-best__c-best/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[43,\"ff__r-best__c-best/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[44,\"ff__r-best__c-best/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[45,\"ff__r-best__c-worst/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[46,\"ff__r-best__c-worst/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[47,\"ff__r-best__c-worst/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[48,\"ff__r-best__c-worst/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[49,\"ff__r-best__c-worst/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[5,\"ff__r-typical__c-typical/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[50,\"ff__r-best__c-worst/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[51,\"ff__r-best__c-worst/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[52,\"ff__r-best__c-worst/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[53,\"ff__r-best__c-worst/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[54,\"ff__r-worst__c-typical/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[55,\"ff__r-worst__c-typical/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[56,\"ff__r-worst__c-typical/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[57,\"ff__r-worst__c-typical/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[58,\"ff__r-worst__c-typical/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[59,\"ff__r-worst__c-typical/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[6,\"ff__r-typical__c-typical/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[60,\"ff__r-worst__c-typical/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[61,\"ff__r-worst__c-typical/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[62,\"ff__r-worst__c-typical/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[63,\"ff__r-worst__c-best/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[64,\"ff__r-worst__c-best/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[65,\"ff__r-worst__c-best/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[66,\"ff__r-worst__c-best/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[67,\"ff__r-worst__c-best/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[68,\"ff__r-worst__c-best/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[69,\"ff__r-worst__c-best/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[7,\"ff__r-typical__c-typical/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[70,\"ff__r-worst__c-best/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[71,\"ff__r-worst__c-best/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[72,\"ff__r-worst__c-worst/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[73,\"ff__r-worst__c-worst/vcm=1.485_vdd=2.970V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[74,\"ff__r-worst__c-worst/vcm=1.485_vdd=2.970V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[75,\"ff__r-worst__c-worst/vcm=1.650_vdd=3.300V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[76,\"ff__r-worst__c-worst/vcm=1.650_vdd=3.300V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[77,\"ff__r-worst__c-worst/vcm=1.650_vdd=3.300V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[78,\"ff__r-worst__c-worst/vcm=1.815_vdd=3.630V/-40C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[79,\"ff__r-worst__c-worst/vcm=1.815_vdd=3.630V/27C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[8,\"ff__r-typical__c-typical/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[80,\"ff__r-worst__c-worst/vcm=1.815_vdd=3.630V/125C\"]",
+    "reason": "no_requested_measurements"
+   },
+   {
+    "id": "corner:[9,\"ff__r-typical__c-best/vcm=1.485_vdd=2.970V/-40C\"]",
+    "reason": "no_requested_measurements"
+   }
+  ],
+  "inapplicable": [],
+  "unknown": [],
+  "nothing_checked": true,
+  "nothing_checked_reasons": [
+   "no_requested_measurements"
+  ]
+ },
+ "provenance": {
+  "klt_version": "0.7.1.dev2133+gc2e647e2cf05",
+  "klayout_version": "0.30.12",
+  "pdk": {
+   "name": "gf180mcuD",
+   "source": "search root: ~/.ciel",
+   "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
+   "ambiguous_sources": [
+    "search root: ~/.volare"
+   ]
+  },
+  "deck": {
+   "name": "sm141064.ngspice",
+   "content_hash": "sha256:f6f4a96e18fc5ad11270ad3451aaecc7ac37fc81eb61e15b0d7d94c7bc594a24",
+   "released": false
+  },
+  "input": {
+   "content_hash": "sha256:4a5db5899819166a66cd1a12c83634ae07081488d9610b88b5855358abba8522",
+   "role": "netlist"
+  }
+ },
+ "measurements": [],
+ "corners": [
+  {
+   "corner_id": "ff__r-typical__c-typical/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff__r-typical__c-typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.476,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-typical/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff__r-typical__c-typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 15.487,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-typical/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff__r-typical__c-typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 9.572,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-typical/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff__r-typical__c-typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.505,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-typical/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff__r-typical__c-typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 1.946,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-typical/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff__r-typical__c-typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.028,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-typical/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff__r-typical__c-typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.484,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-typical/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff__r-typical__c-typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 20.374,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-typical/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff__r-typical__c-typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 17.589,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-best/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff__r-typical__c-best",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.425,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-best/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff__r-typical__c-best",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 16.032,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-best/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff__r-typical__c-best",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 9.639,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-best/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff__r-typical__c-best",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.434,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-best/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff__r-typical__c-best",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 2.164,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-best/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff__r-typical__c-best",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.192,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-best/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff__r-typical__c-best",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.427,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-best/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff__r-typical__c-best",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 19.914,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-best/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff__r-typical__c-best",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 17.304,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-worst/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff__r-typical__c-worst",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.388,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-worst/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff__r-typical__c-worst",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 15.85,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-worst/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff__r-typical__c-worst",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 10.144,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-worst/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff__r-typical__c-worst",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.432,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-worst/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff__r-typical__c-worst",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 2.363,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-worst/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff__r-typical__c-worst",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.09,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-worst/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff__r-typical__c-worst",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.428,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-worst/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff__r-typical__c-worst",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 20.394,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-typical__c-worst/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff__r-typical__c-worst",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 18.298,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-typical/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff__r-best__c-typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.445,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-typical/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff__r-best__c-typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 15.242,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-typical/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff__r-best__c-typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 9.758,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-typical/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff__r-best__c-typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.451,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-typical/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff__r-best__c-typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 2.159,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-typical/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff__r-best__c-typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.195,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-typical/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff__r-best__c-typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.435,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-typical/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff__r-best__c-typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 20.843,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-typical/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff__r-best__c-typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 17.579,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-best/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff__r-best__c-best",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.433,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-best/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff__r-best__c-best",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 15.656,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-best/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff__r-best__c-best",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 9.944,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-best/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff__r-best__c-best",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.429,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-best/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff__r-best__c-best",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 1.841,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-best/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff__r-best__c-best",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.191,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-best/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff__r-best__c-best",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.435,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-best/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff__r-best__c-best",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 20.671,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-best/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff__r-best__c-best",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 18.147,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-worst/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff__r-best__c-worst",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.434,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-worst/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff__r-best__c-worst",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 16.003,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-worst/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff__r-best__c-worst",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 9.518,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-worst/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff__r-best__c-worst",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.433,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-worst/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff__r-best__c-worst",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 2.258,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-worst/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff__r-best__c-worst",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.145,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-worst/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff__r-best__c-worst",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.504,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-worst/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff__r-best__c-worst",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 20.734,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-best__c-worst/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff__r-best__c-worst",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 17.564,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-typical/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff__r-worst__c-typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.479,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-typical/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff__r-worst__c-typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 16.318,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-typical/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff__r-worst__c-typical",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 9.795,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-typical/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff__r-worst__c-typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.442,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-typical/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff__r-worst__c-typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 2.293,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-typical/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff__r-worst__c-typical",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.19,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-typical/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff__r-worst__c-typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.435,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-typical/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff__r-worst__c-typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 20.868,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-typical/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff__r-worst__c-typical",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 18.31,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-best/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff__r-worst__c-best",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.382,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-best/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff__r-worst__c-best",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 15.654,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-best/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff__r-worst__c-best",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 9.631,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-best/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff__r-worst__c-best",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.388,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-best/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff__r-worst__c-best",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 2.25,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-best/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff__r-worst__c-best",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.2,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-best/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff__r-worst__c-best",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.377,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-best/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff__r-worst__c-best",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 16.069,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-best/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff__r-worst__c-best",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 14.924,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-worst/vcm=1.485_vdd=2.970V/-40C",
+   "process": "ff__r-worst__c-worst",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.437,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-worst/vcm=1.485_vdd=2.970V/27C",
+   "process": "ff__r-worst__c-worst",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 13.952,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-worst/vcm=1.485_vdd=2.970V/125C",
+   "process": "ff__r-worst__c-worst",
+   "supply_v": {
+    "vdd": 2.97,
+    "vcm": 1.485
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 9.864,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-worst/vcm=1.650_vdd=3.300V/-40C",
+   "process": "ff__r-worst__c-worst",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.434,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-worst/vcm=1.650_vdd=3.300V/27C",
+   "process": "ff__r-worst__c-worst",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 2.36,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-worst/vcm=1.650_vdd=3.300V/125C",
+   "process": "ff__r-worst__c-worst",
+   "supply_v": {
+    "vdd": 3.3,
+    "vcm": 1.65
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 1.138,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-worst/vcm=1.815_vdd=3.630V/-40C",
+   "process": "ff__r-worst__c-worst",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": -40.0,
+   "status": "pass",
+   "runtime_s": 0.434,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-worst/vcm=1.815_vdd=3.630V/27C",
+   "process": "ff__r-worst__c-worst",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 27.0,
+   "status": "pass",
+   "runtime_s": 6.83,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  },
+  {
+   "corner_id": "ff__r-worst__c-worst/vcm=1.815_vdd=3.630V/125C",
+   "process": "ff__r-worst__c-worst",
+   "supply_v": {
+    "vdd": 3.63,
+    "vcm": 1.815
+   },
+   "temperature_c": 125.0,
+   "status": "pass",
+   "runtime_s": 6.234,
+   "measurements": [],
+   "diagnostics": [],
+   "artifacts": {
+    "log": "ngspice.log",
+    "raw": "waveform.raw",
+    "waveform": "waveform.raw.json",
+    "deck": "corner.cir"
+   },
+   "monte_carlo": null
+  }
+ ]
+}
