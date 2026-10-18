@@ -4,6 +4,9 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-18
 
+- **PR #257**: fix(sim): stage client model files on batch submits and correct the staging note
+- **PR #256**: docs(sim): record c6d73a3 vs f6eeac7 model-file comparison and the staging blocker
+- **PR #254**: sim: new-pin ICMR, step-response and passive-corner study records (f6eeac7)
 - **PR #252**: sim: nominal offset Monte Carlo re-run under open_pdks f6eeac7
 - **PR #251**: docs: Guide document maintenance update
 - **PR #250**: sim: re-run five cited experiments under open_pdks f6eeac7
