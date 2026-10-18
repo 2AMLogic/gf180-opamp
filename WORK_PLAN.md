@@ -38,7 +38,7 @@ Issues currently being built (`loom:building`).
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#254**: sim: new-pin ICMR, step-response and passive-corner study records (f6eeac7)
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -73,7 +73,7 @@ _None._
 | Important | 2 |
 | Ready (`loom:issue`) | 0 |
 | In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 1 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 4 |
 | Architect / Hermit proposals | 2 |
