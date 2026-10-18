@@ -177,6 +177,7 @@ class SubmitRequestTests(unittest.TestCase):
         finally:
             harness.run_klt_retrying, harness.batch_block = orig, orig_bb
         self.assertEqual(req["batch"], {"marker": True})
+        self.assertIs(req["options"]["stage_model_inputs"], True)
         self.assertEqual((seen["outdir"], seen["workdir"]), (Path("/w/t/out"), Path("/w/t")))
         self.assertEqual((seen["backend"], seen["retries"], seen["wait_s"]), ("batch", 3, 7.0))
         self.assertEqual(rep["environment"]["remote"]["job_id"], "j1")
