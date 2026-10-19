@@ -2,6 +2,10 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-19
+
+- **PR #264**: sim: staged-model f6eeac7 re-runs of gain-gbw-pm-mc and cmrr; stage client models inside run_klt_retrying
+
 ### 2026-10-18
 
 - **PR #261**: refactor: share retained-CSV loading and CMRR/PSRR figure compare across report crosschecks
