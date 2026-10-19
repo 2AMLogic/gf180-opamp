@@ -29,4 +29,8 @@ Target specification and decision records. Spec changes require a decision recor
   [`0005-input-common-mode-range-row.md`](decision-records/0005-input-common-mode-range-row.md)
   (**proposed**, issue #60: adds the input common-mode range row from the
   measured 45-point follower-biased ICMR; not ratified before the operator's
-  approval of its carrying PR).
+  approval of its carrying PR),
+  [`0007-noise-offset-requirement-basis.md`](decision-records/0007-noise-offset-requirement-basis.md)
+  (**proposed preparation draft**, issue #62: consumer-derived noise/offset
+  requirement basis and a bounded validation plan; proposes no number and
+  changes no row).
