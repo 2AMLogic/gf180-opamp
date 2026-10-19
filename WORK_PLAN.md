@@ -19,6 +19,7 @@ _None._
 
 `loom:important`; taken before unlabelled work.
 
+- **#62**: spec: ratify noise band/bound and offset 3-sigma bound via a decision record (DR-3 residuals e1, e2)
 - **#241**: T1 items 2, 3, 4, 11: compose the full op-amp core layout from the pilot cells and mint klt DRC, LVS and ERC evidence
 - **#242**: T1 item 5: cite the retained klt sim reports per spec row, with declared gaps for rows not yet covered
 
@@ -70,7 +71,7 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 1 |
-| Important | 2 |
+| Important | 3 |
 | Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
