@@ -612,6 +612,14 @@ def run_klt(request: dict, outdir: Path, backend: str | None, workdir: Path, env
     return report
 
 
+def stage_client_models(req: dict) -> dict:
+    """Ship the client's `f6eeac7` model files with the job: otherwise the
+    runner simulates its own library (stamp `c6d73a3`, `models_staged: false`).
+    `run_klt_retrying`, the batch submit path every driver uses, applies this."""
+    req.setdefault("options", {})["stage_model_inputs"] = True
+    return req
+
+
 _TRANSIENT_SUBMIT = ("BATCH_MAX_CONCURRENT_INSTANCES", "batch_no_capacity", "no capacity")
 
 
@@ -622,6 +630,7 @@ def run_klt_retrying(request, outdir, backend, workdir, *, retries: int, wait_s:
     This only retries the same off-host submit; it never changes backend. Any
     other error, or exhausting the retries, propagates as `KltError`.
     """
+    stage_client_models(request)
     for attempt in range(retries + 1):
         try:
             return run_klt(request, outdir, backend, workdir)
@@ -644,9 +653,7 @@ def submit_request(tag: str, req: dict, args, work: Path, *, units: int, note: s
     """Submit one already-built `klt sim` request: attach `batch.*`, print
     progress, run with the capacity retry. Returns `(report, request, wall_s)`."""
     req["batch"] = batch_block(args)
-    # Ship the client's `f6eeac7` model files with the job: otherwise the runner
-    # simulates its own library (stamp `c6d73a3`, `models_staged: false`).
-    req.setdefault("options", {})["stage_model_inputs"] = True
+    stage_client_models(req)
     print(f"  submitting `{tag}` ({units} units{note})...", flush=True)
     t0 = time.time()
     rep = run_klt_retrying(req, work / tag / "out", args.backend, work / tag,
