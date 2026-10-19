@@ -1,6 +1,7 @@
 """Split out of characterization_report.py (issue #219); moved verbatim, no logic changes."""
 from __future__ import annotations
 
+import csv
 import hashlib
 import json
 import re
@@ -57,6 +58,33 @@ class ReportError(Exception):
 # --------------------------------------------------------------------------
 def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def retained_rows(root: Path, rel: str, need, label: str, kind: str = "sample",
+                  derives: str = "statistics") -> tuple:
+    """Load a record's retained per-sample CSV for a report crosscheck: (path, fieldnames, rows).
+    Raises ReportError when the file is absent or lacks a column in `need`; the caller parses the
+    rows and keeps its own semantic checks. `kind` / `derives` only word the missing-file message."""
+    p = root / rel
+    if not p.is_file():
+        raise ReportError(f"{label}: retained per-{kind} evidence is missing: {rel} (the record's {derives} "
+                          "cannot be cross-checked)")
+    with p.open(newline="") as fh:
+        rd = csv.DictReader(fh)
+        fields = rd.fieldnames
+        if not fields or any(f not in fields for f in need):
+            raise ReportError(f"{label}: {rel} lacks the columns it needs: {list(need)}")
+        rows = list(rd)
+    return p, fields, rows
+
+
+def reject_stray_sample(label: str, rel: str, k: tuple, idx: int, known, seen: set) -> None:
+    """Shared per-sample identity checks of the Monte Carlo crosschecks: the sample's grid point
+    must be one the record states (`known`), and its (point, index) must not repeat."""
+    if k not in known:
+        raise ReportError(f"{label}: {rel}: sample at unexpected grid point {fmt_point(*k)}")
+    if (k, idx) in seen:
+        raise ReportError(f"{label}: {rel}: duplicate sample index {idx} at {fmt_point(*k)}")
 
 
 def posix_rel(path: Path, root: Path) -> str:

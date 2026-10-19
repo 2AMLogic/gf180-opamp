@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import math
 import re
+import statistics
 from pathlib import Path
 from report_common import (
     ReportError, common_limitations, corner_sort_key, coverage_of, fmt_point, grid_points, header_of,
-    parse_fingerprint, parse_provenance, section, sha256_file, split_cells)
+    parse_fingerprint, parse_provenance, reject_stray_sample, retained_rows, section, sha256_file, split_cells)
 from extract_icmr import (
     _PT)
 
@@ -46,8 +47,6 @@ def offset_stats(values: list) -> dict:
     """Per-point offset statistics in mV, the driver's definitions
     (`sim/offset-mc/run_offset_mc.py` stats_of: sample sigma (n-1), population
     skew / excess kurtosis); a parity test pins the two together."""
-    import math
-    import statistics
     n = len(values)
     if n < 2 or not all(math.isfinite(x) for x in values):
         raise ValueError("need at least two finite samples")
@@ -218,40 +217,27 @@ def offset_grid_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
     """Re-derive every point's displayed statistics, and the worst points, from the record's
     retained per-sample evidence (corners/<rid>/offset_samples.csv), within the record's display
     precision. Offline; no simulator."""
-    import csv
-    import math
     rel = f"sim/offset-mc/corners/{rid}/offset_samples.csv"
-    p = root / rel
-    if not p.is_file():
-        raise ReportError(f"{label}: retained per-sample evidence is missing: {rel} (the record's statistics cannot "
-                          "be cross-checked)")
     need = ("corner", "temperature_c", "vdd_v", "vcm_v", "sample_index", "offset_v")
+    p, fields, rows = retained_rows(root, rel, need, label)
     by: dict = {}
     seen = set()
     seeds: dict = {}  # (process, VDD, sample index) -> {T: mismatch_seed}, for the drift view's independence note
-    seeds_known = True
-    with p.open(newline="") as fh:
-        rd = csv.DictReader(fh)
-        if not rd.fieldnames or any(f not in rd.fieldnames for f in need):
-            raise ReportError(f"{label}: {rel} lacks the columns {list(need)}")
-        seeds_known = "mismatch_seed" in rd.fieldnames
-        for r in rd:
-            try:
-                k = _okey(r["corner"], r["temperature_c"], r["vdd_v"])
-                idx, vcm, off = int(r["sample_index"]), float(r["vcm_v"]), float(r["offset_v"])
-            except (ValueError, KeyError, TypeError):
-                raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
-            if k not in ex["stats"]:
-                raise ReportError(f"{label}: {rel}: sample at unexpected grid point {fmt_point(*k)}")
-            if seeds_known:
-                seeds.setdefault((k[0], k[2], idx), {})[k[1]] = r["mismatch_seed"]
-            if (k, idx) in seen:
-                raise ReportError(f"{label}: {rel}: duplicate sample index {idx} at {fmt_point(*k)}")
-            if not math.isfinite(off) or abs(vcm - ex["vcm_of"][k[2]]) > 1e-6:
-                raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)} (non-finite offset or VCM "
-                                  f"{vcm:g} V, not the commanded {ex['vcm_of'][k[2]]:g} V)")
-            seen.add((k, idx))
-            by.setdefault(k, []).append(off)
+    seeds_known = "mismatch_seed" in fields
+    for r in rows:
+        try:
+            k = _okey(r["corner"], r["temperature_c"], r["vdd_v"])
+            idx, vcm, off = int(r["sample_index"]), float(r["vcm_v"]), float(r["offset_v"])
+        except (ValueError, KeyError, TypeError):
+            raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
+        reject_stray_sample(label, rel, k, idx, ex["stats"], seen)
+        if seeds_known:
+            seeds.setdefault((k[0], k[2], idx), {})[k[1]] = r["mismatch_seed"]
+        if not math.isfinite(off) or abs(vcm - ex["vcm_of"][k[2]]) > 1e-6:
+            raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)} (non-finite offset or VCM "
+                              f"{vcm:g} V, not the commanded {ex['vcm_of'][k[2]]:g} V)")
+        seen.add((k, idx))
+        by.setdefault(k, []).append(off)
     stats = {}
     for k in ex["order"]:
         vals = by.get(k, [])
@@ -288,7 +274,6 @@ DRIFT_RESOLVE_K = 2.0
 
 def _fin(x: float) -> float:
     """JSON-safe, byte-stable number: finite, rounded, no negative zero."""
-    import math
     if not math.isfinite(x):
         raise ReportError("derived offset drift: non-finite value")
     r = round(x, 6)
@@ -299,7 +284,6 @@ def _slope(ts: list, ms: list, ses: list) -> tuple:
     """Least-squares slope (uV/C) of mean offset vs T and its standard error propagated from the
     per-mean standard errors (independent points): slope = sum(w_i m_i), w_i = (T_i - Tbar) / Sxx,
     variance = sum(w_i^2 se_i^2)."""
-    import math
     tb = sum(ts) / len(ts)
     sxx = sum((t - tb) ** 2 for t in ts)
     w = [(t - tb) / sxx for t in ts]
@@ -314,7 +298,6 @@ def offset_drift_view(ex: dict, record: dict) -> dict:
     """Offset temperature drift and systematic / statistical split, derived offline from the
     per-sample statistics already cross-checked against the record (no simulation, no verdict, no
     bound). `record` is the selected record's source entry (path, sha256)."""
-    import math
     if not ex.get("grid") or "sample_stats" not in ex:
         return {"available": False,
                 "reason": "the selected offset record is not a full PVT grid (single temperature): "
@@ -448,7 +431,6 @@ _CM_COLS = ("mean", "sigma", "skew", "min", "p1", "p5", "lin3", "db3", "acm_mean
 
 
 def _cm_lin3(ad_mean: float, acm_mean: float, acm_sigma: float) -> float:
-    import math
     return ad_mean - 20 * math.log10(acm_mean + 3 * acm_sigma)
 
 
@@ -462,7 +444,6 @@ def cmrr_mc_stats(cmrr: list, acm: list, ad: list) -> dict:
     """The record's per-point statistics from per-sample CMRR (dB), Acm (V/V) and Ad (dB):
     sample sigma (n-1), skewness with the population sigma, linear-interpolated percentiles,
     mean |Acm| and its sample sigma (the driver's definitions)."""
-    import statistics
     n = len(cmrr)
     mean, sigma = statistics.fmean(cmrr), statistics.stdev(cmrr)
     sp = statistics.pstdev(cmrr)
@@ -628,39 +609,45 @@ def extract_cmrr_mc(text: str, label: str) -> dict:
             "limitations": lim}
 
 
+def _cm_fig_crosscheck(got: dict, rec_stats: dict, rec_worst: dict, cols, what: str, order, rel: str,
+                       label: str) -> None:
+    """Compare one figure's re-derived per-point statistics `got` with the record's `rec_stats`
+    column by column, then the four worst values with `rec_worst` (CMRR and PSRR share this)."""
+    for k in order:
+        rec = rec_stats[k]
+        bad = [c for c in cols if not _cm_close(c, rec[c], got[k][c])]
+        if bad:
+            raise ReportError(f"{label}: inconsistent summary at {fmt_point(*k)} ({what}): the record's "
+                              f"{', '.join(bad)} disagree(s) with the retained evidence {rel} (e.g. {bad[0]} "
+                              f"{rec[bad[0]]:g} vs {got[k][bad[0]]:g})")
+    w = _cm_worst(got, order)
+    for col in ("lin3", "db3", "min", "p5"):
+        if abs(rec_worst[col]["value"] - got[w[col]][col]) > _CM_TOL:
+            raise ReportError(f"{label}: the record's worst {col} for {what} disagrees with the retained "
+                              f"evidence {rel}")
+
+
 def cmrr_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
     """Re-derive every figure's per-point statistics, and the worst points, from the record's
     retained per-sample evidence (corners/<rid>/samples.csv), within display precision. Offline."""
-    import csv
-    import math
     rel = f"sim/cmrr-mc/corners/{rid}/samples.csv"
-    p = root / rel
-    if not p.is_file():
-        raise ReportError(f"{label}: retained per-sample evidence is missing: {rel} (the record's statistics cannot "
-                          "be cross-checked)")
     need = ["process", "temperature_c", "vdd_v", "sample_index", "valid"] + \
            [f"cmc_{q}_{s}" for _, _, s in CMRR_MC_FIGS for q in ("cmrr", "ad", "acm")]
+    p, _, rows = retained_rows(root, rel, need, label)
     by: dict = {}
     seen = set()
-    with p.open(newline="") as fh:
-        rd = csv.DictReader(fh)
-        if not rd.fieldnames or any(f not in rd.fieldnames for f in need):
-            raise ReportError(f"{label}: {rel} lacks the columns it needs")
-        for r in rd:
-            try:
-                k = _okey(r["process"], r["temperature_c"], r["vdd_v"])
-                idx, valid = int(r["sample_index"]), int(r["valid"])
-                vals = {(q, s): float(r[f"cmc_{q}_{s}"]) for _, _, s in CMRR_MC_FIGS for q in ("cmrr", "ad", "acm")}
-            except (ValueError, KeyError, TypeError):
-                raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
-            if k not in ex["order"]:
-                raise ReportError(f"{label}: {rel}: sample at unexpected grid point {fmt_point(*k)}")
-            if (k, idx) in seen:
-                raise ReportError(f"{label}: {rel}: duplicate sample index {idx} at {fmt_point(*k)}")
-            if valid != 1 or not all(math.isfinite(v) for v in vals.values()):
-                raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)}")
-            seen.add((k, idx))
-            by.setdefault(k, []).append(vals)
+    for r in rows:
+        try:
+            k = _okey(r["process"], r["temperature_c"], r["vdd_v"])
+            idx, valid = int(r["sample_index"]), int(r["valid"])
+            vals = {(q, s): float(r[f"cmc_{q}_{s}"]) for _, _, s in CMRR_MC_FIGS for q in ("cmrr", "ad", "acm")}
+        except (ValueError, KeyError, TypeError):
+            raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
+        reject_stray_sample(label, rel, k, idx, ex["order"], seen)
+        if valid != 1 or not all(math.isfinite(v) for v in vals.values()):
+            raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)}")
+        seen.add((k, idx))
+        by.setdefault(k, []).append(vals)
     for k in ex["order"]:
         if len(by.get(k, [])) != ex["n_per_point"]:
             raise ReportError(f"{label}: insufficient samples in {rel} at {fmt_point(*k)}: {len(by.get(k, []))}, the "
@@ -668,18 +655,7 @@ def cmrr_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
     for head, key, s in CMRR_MC_FIGS:
         got = {k: cmrr_mc_stats([v[("cmrr", s)] for v in by[k]], [v[("acm", s)] for v in by[k]],
                                 [v[("ad", s)] for v in by[k]]) for k in ex["order"]}
-        for k in ex["order"]:
-            rec = ex["stats"][key][k]
-            bad = [c for c in _CM_COLS if not _cm_close(c, rec[c], got[k][c])]
-            if bad:
-                raise ReportError(f"{label}: inconsistent summary at {fmt_point(*k)} ({head}): the record's "
-                                  f"{', '.join(bad)} disagree(s) with the retained evidence {rel} (e.g. {bad[0]} "
-                                  f"{rec[bad[0]]:g} vs {got[k][bad[0]]:g})")
-        w = _cm_worst(got, ex["order"])
-        for col in ("lin3", "db3", "min", "p5"):
-            if abs(ex["worst"][key][col]["value"] - got[w[col]][col]) > _CM_TOL:
-                raise ReportError(f"{label}: the record's worst {col} for {head} disagrees with the retained "
-                                  f"evidence {rel}")
+        _cm_fig_crosscheck(got, ex["stats"][key], ex["worst"][key], _CM_COLS, head, ex["order"], rel, label)
     return {"path": rel, "sha256": sha256_file(p), "samples": len(seen), "points": len(by)}
 
 
@@ -1053,55 +1029,43 @@ def psrr_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
     """Re-derive every side's and figure's per-point statistics, the worst points and the knee
     accounting from the record's retained per-sample evidence (corners/<rid>/samples.csv),
     within display precision. Offline."""
-    import csv
-    import math
     rel = f"sim/psrr-mc/corners/{rid}/samples.csv"
-    p = root / rel
-    if not p.is_file():
-        raise ReportError(f"{label}: retained per-sample evidence is missing: {rel} (the record's statistics cannot "
-                          "be cross-checked)")
     qs = [(r, q, s) for _, r, _ in PSRR_MC_SIDES for _, _, s in PSRR_MC_FIGS for q in ("psrr", "asup")]
     need = ["process", "temperature_c", "vdd_v", "sample_index", "valid", "knee_rails"] + \
            [f"pmc_{q}_{r}_{s}" for r, q, s in qs] + [f"pmc_ad_{s}" for _, _, s in PSRR_MC_FIGS] + \
            ["pmc_ad_b0"] + [f"pmc_{r}_aband0" for _, r, _ in PSRR_MC_SIDES]
     if ex.get("grid"):
         need += ["vcm_v"]  # issue #190: the grid record's CSV carries the commanded VCM per point
+    p, _, rows = retained_rows(root, rel, need, label)
     by: dict = {}
     seen = set()
     knee_csv = 0
-    with p.open(newline="") as fh:
-        rd = csv.DictReader(fh)
-        if not rd.fieldnames or any(f not in rd.fieldnames for f in need):
-            raise ReportError(f"{label}: {rel} lacks the columns it needs")
-        for r in rd:
-            try:
-                k = _okey(r["process"], r["temperature_c"], r["vdd_v"])
-                idx, valid = int(r["sample_index"]), int(r["valid"])
-                vals = {(q, rr, s): float(r[f"pmc_{q}_{rr}_{s}"]) for rr, q, s in qs}
-                vals.update({("ad", None, s): float(r[f"pmc_ad_{s}"]) for _, _, s in PSRR_MC_FIGS})
-            except (ValueError, KeyError, TypeError):
-                raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
-            if k not in ex["order"]:
-                raise ReportError(f"{label}: {rel}: sample at unexpected grid point {fmt_point(*k)}")
-            if ex.get("grid") and abs(float(r["vcm_v"]) - ex["vcm_of"][k[2]]) > 1e-6:
-                raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} carries VCM {float(r['vcm_v']):g} V, "
-                                  f"not the commanded {ex['vcm_of'][k[2]]:g} V (VCM = VDD/2)")
-            if (k, idx) in seen:
-                raise ReportError(f"{label}: {rel}: duplicate sample index {idx} at {fmt_point(*k)}")
-            if valid != 1 or not all(math.isfinite(v) for v in vals.values()):
-                raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)}")
-            seen.add((k, idx))
-            knees = [x for x in r["knee_rails"].replace(",", " ").split() if x]
-            knee_csv += len(knees)
-            try:
-                for kr in knees:
-                    # a knee sample's DC figure is its 0.1 Hz asymptote, not the band mean (the record's definition)
-                    a0 = float(r[f"pmc_{kr}_aband0"])
-                    vals[("psrr", kr, "dc")] = float(r["pmc_ad_b0"]) - 20 * math.log10(a0)
-                    vals[("asup", kr, "dc")] = a0
-            except (ValueError, KeyError, TypeError):
-                raise ReportError(f"{label}: {rel}: malformed knee sample {idx} at {fmt_point(*k)}") from None
-            by.setdefault(k, []).append(vals)
+    for r in rows:
+        try:
+            k = _okey(r["process"], r["temperature_c"], r["vdd_v"])
+            idx, valid = int(r["sample_index"]), int(r["valid"])
+            vals = {(q, rr, s): float(r[f"pmc_{q}_{rr}_{s}"]) for rr, q, s in qs}
+            vals.update({("ad", None, s): float(r[f"pmc_ad_{s}"]) for _, _, s in PSRR_MC_FIGS})
+        except (ValueError, KeyError, TypeError):
+            raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
+        reject_stray_sample(label, rel, k, idx, ex["order"], seen)
+        if ex.get("grid") and abs(float(r["vcm_v"]) - ex["vcm_of"][k[2]]) > 1e-6:
+            raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} carries VCM {float(r['vcm_v']):g} V, "
+                              f"not the commanded {ex['vcm_of'][k[2]]:g} V (VCM = VDD/2)")
+        if valid != 1 or not all(math.isfinite(v) for v in vals.values()):
+            raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)}")
+        seen.add((k, idx))
+        knees = [x for x in r["knee_rails"].replace(",", " ").split() if x]
+        knee_csv += len(knees)
+        try:
+            for kr in knees:
+                # a knee sample's DC figure is its 0.1 Hz asymptote, not the band mean (the record's definition)
+                a0 = float(r[f"pmc_{kr}_aband0"])
+                vals[("psrr", kr, "dc")] = float(r["pmc_ad_b0"]) - 20 * math.log10(a0)
+                vals[("asup", kr, "dc")] = a0
+        except (ValueError, KeyError, TypeError):
+            raise ReportError(f"{label}: {rel}: malformed knee sample {idx} at {fmt_point(*k)}") from None
+        by.setdefault(k, []).append(vals)
     for k in ex["order"]:
         if len(by.get(k, [])) != ex["n_per_point"]:
             raise ReportError(f"{label}: insufficient samples in {rel} at {fmt_point(*k)}: {len(by.get(k, []))}, the "
@@ -1114,18 +1078,8 @@ def psrr_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
             got = {k: cmrr_mc_stats([v[("psrr", rail, s)] for v in by[k]], [v[("asup", rail, s)] for v in by[k]],
                                     [v[("ad", None, s)] for v in by[k]]) for k in ex["order"]}
             sk = _pm_key(sname, key)
-            for k in ex["order"]:
-                rec = ex["stats"][sk][k]
-                bad = [c for c in PSRR_MC_COLS if not _cm_close(c, rec[c], got[k][c])]
-                if bad:
-                    raise ReportError(f"{label}: inconsistent summary at {fmt_point(*k)} ({sname} {head}): the "
-                                      f"record's {', '.join(bad)} disagree(s) with the retained evidence {rel} (e.g. "
-                                      f"{bad[0]} {rec[bad[0]]:g} vs {got[k][bad[0]]:g})")
-            w = _cm_worst(got, ex["order"])
-            for col in ("lin3", "db3", "min", "p5"):
-                if abs(ex["worst"][sk][col]["value"] - got[w[col]][col]) > _CM_TOL:
-                    raise ReportError(f"{label}: the record's worst {col} for {sname} {head} disagrees with the "
-                                      f"retained evidence {rel}")
+            _cm_fig_crosscheck(got, ex["stats"][sk], ex["worst"][sk], PSRR_MC_COLS, f"{sname} {head}", ex["order"],
+                               rel, label)
     return {"path": rel, "sha256": sha256_file(p), "samples": len(seen), "points": len(by)}
 
 
@@ -1282,53 +1236,40 @@ def gain_gbw_pm_mc_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dic
     (corners/<rid>/samples.csv) within the record's display precision, and re-count the below-bound
     samples against the record's stated bounds. Validates the identity (exactly the indices
     0..N-1 per corner, each once), the klt status and the finite valid metrics. Offline."""
-    import csv
-    import math
-    import statistics
     rel = f"sim/{GAIN_MC_EXP}/corners/{rid}/samples.csv"
-    p = root / rel
-    if not p.is_file():
-        raise ReportError(f"{label}: retained per-sample evidence is missing: {rel} (the record's statistics cannot "
-                          "be cross-checked)")
     need = ["process", "temperature_c", "vdd_v", "sample_index", "seed", "mismatch_seed", "process_seed",
             "klt_status", "valid", "reason"] + [col for _, col, _, _ in GAIN_MC_ROWS]
+    p, _, rows = retained_rows(root, rel, need, label)
     by: dict = {}
     idx_by: dict = {}
     seen = set()
-    with p.open(newline="") as fh:
-        rd = csv.DictReader(fh)
-        if not rd.fieldnames or any(f not in rd.fieldnames for f in need):
-            raise ReportError(f"{label}: {rel} lacks the columns it needs")
-        for r in rd:
-            try:
-                k = _okey(r["process"], r["temperature_c"], r["vdd_v"])
-                idx = int(r["sample_index"])
-                int(r["seed"]), int(r["mismatch_seed"]), int(r["process_seed"])
-                valid = int(r["valid"])
-                vals = {rk: float(r[col]) * scale for rk, col, scale, _ in GAIN_MC_ROWS}
-            except (ValueError, KeyError, TypeError):
-                raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
-            if k not in ex["order"]:
-                raise ReportError(f"{label}: {rel}: sample at unexpected grid point {fmt_point(*k)}")
-            if (k, idx) in seen:
-                raise ReportError(f"{label}: {rel}: duplicate sample index {idx} at {fmt_point(*k)}")
-            if not 0 <= idx < ex["n_per_point"]:
-                raise ReportError(f"{label}: {rel}: sample index {idx} at {fmt_point(*k)} is outside the declared "
-                                  f"identity 0..{ex['n_per_point'] - 1}")
-            if valid not in (0, 1):
-                raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} has invalid flag {valid}")
-            if valid == 1:
-                if r["klt_status"] != "pass":
-                    raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} is marked valid but its klt "
-                                      f"status is '{r['klt_status']}'")
-                if not all(math.isfinite(v) for v in vals.values()):
-                    raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} carries a non-finite metric")
-            elif not r["reason"].strip():
-                raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)} discloses no reason")
-            seen.add((k, idx))
-            idx_by.setdefault(k, set()).add(idx)
-            if valid == 1:
-                by.setdefault(k, []).append(vals)
+    for r in rows:
+        try:
+            k = _okey(r["process"], r["temperature_c"], r["vdd_v"])
+            idx = int(r["sample_index"])
+            int(r["seed"]), int(r["mismatch_seed"]), int(r["process_seed"])
+            valid = int(r["valid"])
+            vals = {rk: float(r[col]) * scale for rk, col, scale, _ in GAIN_MC_ROWS}
+        except (ValueError, KeyError, TypeError):
+            raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
+        reject_stray_sample(label, rel, k, idx, ex["order"], seen)
+        if not 0 <= idx < ex["n_per_point"]:
+            raise ReportError(f"{label}: {rel}: sample index {idx} at {fmt_point(*k)} is outside the declared "
+                              f"identity 0..{ex['n_per_point'] - 1}")
+        if valid not in (0, 1):
+            raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} has invalid flag {valid}")
+        if valid == 1:
+            if r["klt_status"] != "pass":
+                raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} is marked valid but its klt "
+                                  f"status is '{r['klt_status']}'")
+            if not all(math.isfinite(v) for v in vals.values()):
+                raise ReportError(f"{label}: {rel}: sample {idx} at {fmt_point(*k)} carries a non-finite metric")
+        elif not r["reason"].strip():
+            raise ReportError(f"{label}: {rel}: invalid sample {idx} at {fmt_point(*k)} discloses no reason")
+        seen.add((k, idx))
+        idx_by.setdefault(k, set()).add(idx)
+        if valid == 1:
+            by.setdefault(k, []).append(vals)
     for k in ex["order"]:
         missing = sorted(set(range(ex["n_per_point"])) - idx_by.get(k, set()))
         if missing:

@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from report_common import (
     ReportError, common_limitations, corner_sort_key, coverage_of, fmt_point, header_of, parse_provenance,
-    section, sha256_file, split_cells)
+    retained_rows, section, sha256_file, split_cells)
 
 
 # --------------------------------------------------------------------------
@@ -335,36 +335,28 @@ def _icmr_runs(samples: list, max_gap_mv: int, key: str) -> list:
 def icmr_crosscheck(root: Path, rid: str, ex: dict, label: str) -> dict:
     """Re-derive the record's per-point intervals, 1.20 V statuses and margins from its
     retained per-sample evidence (corners/<rid>/samples.csv). Offline; no simulator."""
-    import csv
     rel = f"sim/{ICMR_EXP}/corners/{rid}/samples.csv"
-    p = root / rel
-    if not p.is_file():
-        raise ReportError(f"{label}: retained per-point evidence is missing: {rel} (the record's intervals cannot "
-                          "be cross-checked)")
     need = ("process", "temp_c", "vdd_v", "vcm_v", "status", "status_strict", "gain_db", "min_margin_mv",
             "limiting_device")
+    p, _, rows = retained_rows(root, rel, need, label, kind="point", derives="intervals")
     by_pt: dict = {}
-    with p.open(newline="") as fh:
-        rd = csv.DictReader(fh)
-        if not rd.fieldnames or any(f not in rd.fieldnames for f in need):
-            raise ReportError(f"{label}: {rel} lacks the columns {list(need)}")
-        seen = set()
-        for r in rd:
-            try:
-                pt = (r["process"], str(int(float(r["temp_c"]))), f"{float(r['vdd_v']):.2f}")
-                vcm = _mv(r["vcm_v"])
-                s = {"vcm": vcm, "status": r["status"], "status_strict": r["status_strict"],
-                     "gain_db": float(r["gain_db"]) if r["gain_db"] else None,
-                     "margin_mv": float(r["min_margin_mv"]) if r["min_margin_mv"] else None,
-                     "device": r["limiting_device"].upper(), "tol_flag": bool((r.get("tolerance_flags") or "").strip())}
-            except (ValueError, KeyError):
-                raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
-            if (pt, vcm) in seen or s["status"] not in ("pass", "fail", "invalid"):
-                raise ReportError(f"{label}: {rel}: duplicate sample or unknown status at {fmt_point(*pt)} / VCM {_v(vcm)} V")
-            if s["status"] != "invalid" and (s["gain_db"] is None or s["margin_mv"] is None):
-                raise ReportError(f"{label}: {rel}: valid sample without gain/margin at {fmt_point(*pt)} / VCM {_v(vcm)} V")
-            seen.add((pt, vcm))
-            by_pt.setdefault(pt, []).append(s)
+    seen = set()
+    for r in rows:
+        try:
+            pt = (r["process"], str(int(float(r["temp_c"]))), f"{float(r['vdd_v']):.2f}")
+            vcm = _mv(r["vcm_v"])
+            s = {"vcm": vcm, "status": r["status"], "status_strict": r["status_strict"],
+                 "gain_db": float(r["gain_db"]) if r["gain_db"] else None,
+                 "margin_mv": float(r["min_margin_mv"]) if r["min_margin_mv"] else None,
+                 "device": r["limiting_device"].upper(), "tol_flag": bool((r.get("tolerance_flags") or "").strip())}
+        except (ValueError, KeyError, TypeError):
+            raise ReportError(f"{label}: {rel}: malformed sample row {dict(r)}") from None
+        if (pt, vcm) in seen or s["status"] not in ("pass", "fail", "invalid"):
+            raise ReportError(f"{label}: {rel}: duplicate sample or unknown status at {fmt_point(*pt)} / VCM {_v(vcm)} V")
+        if s["status"] != "invalid" and (s["gain_db"] is None or s["margin_mv"] is None):
+            raise ReportError(f"{label}: {rel}: valid sample without gain/margin at {fmt_point(*pt)} / VCM {_v(vcm)} V")
+        seen.add((pt, vcm))
+        by_pt.setdefault(pt, []).append(s)
     if set(by_pt) != set(ex["points"]):
         raise ReportError(f"{label}: {rel} covers {len(by_pt)} PVT points; the record's per-point table "
                           f"{len(ex['points'])} (or a different set)")
