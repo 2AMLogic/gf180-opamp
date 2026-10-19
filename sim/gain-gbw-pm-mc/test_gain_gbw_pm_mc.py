@@ -601,16 +601,20 @@ class SubmissionTests(unittest.TestCase):
 m._extract_real = m.extract
 
 
+def _evidence_listing():
+    return {d: sorted(x.name for x in (HERE / d).iterdir()) if (HERE / d).exists() else []
+            for d in ("records", "corners", "netlist-snapshots")}
+
+
+_EVIDENCE_AT_IMPORT = _evidence_listing()
+
+
 class NoRecordsTests(unittest.TestCase):
     def test_suite_writes_nothing_into_the_experiment(self):
-        # Issue #142 committed the one campaign record; the suite must add no other.
+        # Records are append-only evidence committed by campaigns; the suite must add none.
         self.assertFalse((HERE / "probes").exists(), "probes/ must not exist (probe writes nothing)")
-        for d, expect in (("records", {"20261011-072005-9c9b0f1.md"}),
-                          ("corners", {"20261011-072005-9c9b0f1"}),
-                          ("netlist-snapshots", {"20261011-072005-9c9b0f1.spice"})):
-            p = HERE / d
-            got = {x.name for x in p.iterdir()} if p.exists() else set()
-            self.assertEqual(got, expect, f"{d}/ must hold only the committed #142 evidence")
+        self.assertEqual(_evidence_listing(), _EVIDENCE_AT_IMPORT,
+                         "the suite must not write into records/, corners/ or netlist-snapshots/")
 
 
 if __name__ == "__main__":

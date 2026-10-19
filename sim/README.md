@@ -590,11 +590,25 @@ the same numbers as the `c6d73a3` run; nothing moved. Each report's `environment
 `not_checked`, as in earlier records on runner klt 0.7.0); the same line appears in other `20261018-*` records.
 This is a single experiment: it does not extend to the other fleet records, which stay `c6d73a3`-provenance until re-minted.
 
+*Two more `f6eeac7`-model results with the models staged (issue #240, 2026-10-18).* Both were submitted through
+`klt sim` (batch fleet) with `stage_model_inputs` set, and both reports show `worker_environment.pdk.models_staged: true`:
+
+| Experiment | Counterpart of | Record | Headline vs `c6d73a3` record |
+|---|---|---|---|
+| `gain-gbw-pm-mc` (5 corners x 300, seed 45, mismatch) | `20261011-072005-9c9b0f1` | `20261018-200352-119ceb4` | unchanged: `samples.csv` byte-identical (1500 samples), statistics table identical |
+| `cmrr` (45-point deterministic grid, dm and cm) | `20261010-163601-0127eb7` | `20261018-215233-119ceb4` | unchanged: all 45 `*.cmrr.dat` byte-identical, worst-case table identical |
+
+`harness.stage_client_models` now applies the option inside `run_klt_retrying`, so drivers that build their own
+request (sharded grids, controls) and call it directly also ship the client models, not only `submit_request`.
+Nothing moved beyond tolerance in these two either.
+
 No result moved beyond its tolerance so far, conditional on the paragraph above. The `20261018-*-517c6bb`
 set also holds a second, independent mint of the five `afc17a1` experiments (gain-gbw-pm, noise, cmrr,
 psrr, slew-swing-power); the studies and the ICMR record cite it, and it agrees with the `afc17a1` set,
 but it carries the same `c6d73a3` runner stamp. **Still open**: the 45-point
 `offset-mc --grid full` counterpart of the cited `20261010-185141-e4be1ac` (13500 units; the fleet job was
 Spot-reclaimed past `batch.interrupted_grace_s`, so no record was written and it was not run locally) and the
-`gain-gbw-pm-mc` and `psrr-mc` Monte Carlo campaigns (not run in this slice; `cmrr-mc` is re-minted above). `selection.json` and the characterization report
+`psrr-mc` Monte Carlo campaign (not run in this slice; `cmrr-mc` and `gain-gbw-pm-mc` are re-minted above). The staged-model
+`cmrr` and `gain-gbw-pm-mc` records are not selected yet: `selection.json`, the report and the signoff manifest regenerate
+once the remaining campaigns exist. `selection.json` and the characterization report
 keep selecting the `c6d73a3` records until the full set exists, so the report never mixes pins.

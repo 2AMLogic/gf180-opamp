@@ -184,6 +184,25 @@ class SubmitRequestTests(unittest.TestCase):
         self.assertGreaterEqual(wall, 0.0)
 
 
+class RunKltRetryingStagesModelsTests(unittest.TestCase):
+    def test_every_batch_submit_ships_the_client_models(self):
+        """Drivers that build their own request (sharded grids, controls) and call
+        `run_klt_retrying` directly must still stage the client's model files."""
+        sent = {}
+
+        def fake_run_klt(req, outdir, backend, workdir, env=None):
+            sent["req"] = req
+            return {}
+
+        orig = harness.run_klt
+        harness.run_klt = fake_run_klt
+        try:
+            harness.run_klt_retrying({"k": 1}, Path("/o"), "batch", Path("/w"), retries=0, wait_s=0.0)
+        finally:
+            harness.run_klt = orig
+        self.assertIs(sent["req"]["options"]["stage_model_inputs"], True)
+
+
 class McSnapshotTests(unittest.TestCase):
     REQ = {"netlist": "/a/b/tb.spice", "models": {"pdk_root": "/x", "corner": "tt"}}
 
