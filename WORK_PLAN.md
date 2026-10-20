@@ -58,7 +58,6 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-- **#62**: spec: ratify noise band/bound and offset 3-sigma bound via a decision record (DR-3 residuals e1, e2) *(architect)*
 - **#226**: Consolidate duplicated sw_stat_mismatch switch guard across four MC runners into sim/harness.py *(hermit)*
 
 ## Epics
@@ -77,6 +76,6 @@ _None._
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 4 |
-| Architect / Hermit proposals | 2 |
+| Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
