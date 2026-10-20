@@ -4,6 +4,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-20
 
+- **PR #269**: refactor(sim): share the MC mismatch-switch guard in harness
+- **Issue #226** (closed): Consolidate duplicated sw_stat_mismatch switch guard across four MC runners into sim/harness.py
 - **PR #267**: docs(spec): add noise/offset consumer-derived requirement basis (DR-0007 draft)
 
 ### 2026-10-19
