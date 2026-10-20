@@ -236,6 +236,14 @@ class GuardTests(unittest.TestCase):
         errs = m.guard_testbench(moved)
         self.assertTrue(any("precedes" in e for e in errs), errs)
 
+    def test_shared_switch_guard_cases(self):
+        # duplicate switch, and the switch hidden behind a standalone second line
+        errs = m.guard_testbench(self.tb + ".param sw_stat_mismatch=1\n")
+        self.assertTrue(any("exactly one" in e for e in errs), errs)
+        # global spread anywhere in the code, even off a .param line
+        errs = m.guard_testbench(self.tb + ".option sw_stat_global=1\n")
+        self.assertTrue(any("sw_stat_global" in e for e in errs), errs)
+
     def test_no_transistor_and_circuit_body(self):
         self.assertTrue(m.guard_testbench(self.tb + "M1 a b c d nfet_03v3 W=1u L=1u\n"))
         self.assertTrue(m.guard_testbench(self.tb + ".control\nrun\n.endc\n"))

@@ -104,9 +104,27 @@ control gain-gbw-pm-mc test_gain_gbw_pm_mc.py
 expect_fail gain-gbw-pm-mc test_gain_gbw_pm_mc.py gain-gbw-pm-mc/run_gain_gbw_pm_mc.py \
   "guard: circuit-identical-to-gain-bench check removed" \
   '    if rest != _code(gain):' '    if False:'
-expect_fail gain-gbw-pm-mc test_gain_gbw_pm_mc.py gain-gbw-pm-mc/run_gain_gbw_pm_mc.py \
+expect_fail gain-gbw-pm-mc test_gain_gbw_pm_mc.py harness.py \
   "guard: mismatch switch may precede the design.ngspice include" \
-  'if not inc or sw[0] < inc[0]:' 'if False:'
+  'elif sw and min(sw) < max(inc):' 'elif False:'
+# The shared mismatch-switch guard (issue #226) is exercised by every MC suite
+# and by its own pure tests in test_harness.py.
+expect_fail . test_harness.py harness.py \
+  "guard: duplicate mismatch switch accepted" \
+  'if len(sw) != 1:
+        errs.append(f"expected exactly one' 'if False:
+        errs.append(f"expected exactly one'
+expect_fail cmrr-mc test_cmrr_mc.py harness.py \
+  "guard: sw_stat_global no longer rejected (shared MC guard)" \
+  'if any(re.search(r"sw_stat_global", ln, re.I) for ln in code):' 'if False:'
+expect_fail psrr-mc test_psrr_mc.py harness.py \
+  "guard: mismatch switch may precede the design.ngspice include (shared MC guard)" \
+  'elif sw and min(sw) < max(inc):' 'elif False:'
+expect_fail offset-mc test_offset_mc.py harness.py \
+  "guard: duplicate mismatch switch accepted (shared MC guard)" \
+  'if len(sw) != 1:
+        errs.append(f"expected exactly one' 'if False:
+        errs.append(f"expected exactly one'
 expect_fail gain-gbw-pm-mc test_gain_gbw_pm_mc.py gain-gbw-pm-mc/run_gain_gbw_pm_mc.py \
   "accounting: failed/missing samples dropped from the failure count" \
   '        n_invalid = n_expected - n
