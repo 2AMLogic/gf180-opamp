@@ -53,8 +53,15 @@ ruling): `logical_lines` (the one `+`-join / comment-drop line splitter),
 `guard_testbench_core` (DUT + `design.ngspice` includes, no hand-declared
 MOSFET / PDK device, exactly one `Xdut`, circuit body) and `guard_dut_core`
 (the DUT is the committed export). The bench-specific checks -- Xdut port
-wiring, `sw_stat_mismatch` ordering, servo / load / bias lines, and the
-`.param` / `Ibias` substitution -- stay per-experiment.
+wiring, servo / load / bias lines, and the `.param` / `Ibias` substitution --
+stay per-experiment.
+
+Shared Monte Carlo mismatch-switch guard (issue #226, a bounded revision of
+the #105 boundary by operator ruling of 2026-10-19): `guard_mc_mismatch_switch`
+/ `mismatch_switch_lines`, called by the four MC runners (cmrr-mc, psrr-mc,
+offset-mc, gain-gbw-pm-mc) because they had drifted as hand copies. Only the
+common MC invariants live here; each runner keeps its wiring, circuit
+equivalence, parameter-key, switch-value, bias/load and control-run checks.
 """
 
 from __future__ import annotations
@@ -434,9 +441,12 @@ DUT_INCLUDE_NAME = "opamp_two_stage.dut.spice"
 
 # --------------------------------------------------------------------------
 # Generic source guards (issue #105): the bench must stay tied to the
-# committed design. Experiment-specific checks (Xdut port wiring, the
-# `sw_stat_mismatch` ordering, `.param` / `Ibias` substitution) stay in each
-# experiment; only the checks every bench shares live here.
+# committed design. Experiment-specific checks (Xdut port wiring, `.param` /
+# `Ibias` substitution) stay in each experiment; only the checks every bench
+# shares live here. The one narrower shared group is the Monte Carlo
+# mismatch-switch guard below (issue #226): common to the MC benches only, it
+# is never applied to the all-bench core and imposes no wiring, parameter-key,
+# switch-value, bias/load or control-run requirement.
 # --------------------------------------------------------------------------
 
 DEVICE_MODEL_RE = re.compile(
@@ -480,6 +490,52 @@ def guard_testbench_core(tb_text: str) -> list[str]:
     for ln in code:
         if re.match(r"\.(lib|temp|control|end)\b", ln, re.I):
             errs.append(f"testbench must be a circuit body; found `{ln.split()[0]}`")
+    return errs
+
+
+_MISMATCH_ASSIGN_RE = re.compile(r"(?<![\w.])sw_stat_mismatch\s*=", re.I)
+_DESIGN_INCLUDE_RE = re.compile(r"\.(?:include|inc)\s+['\"]?(?:[^'\"\s]*[/\\])?design\.ngspice(?![\w.])", re.I)
+
+
+def _strip_inline_comment(ln: str) -> str:
+    return ln.split(";", 1)[0].split(" $", 1)[0]
+
+
+def mismatch_switch_lines(code: list[str]) -> list[int]:
+    """Indices (into `code`, `logical_lines` output) of `.param` lines assigning
+    `sw_stat_mismatch`, one entry per assignment (a line assigning it twice
+    appears twice). The key may share a `.param` line with other keys; `;` /
+    ` $` trailing comments are ignored."""
+    hits: list[int] = []
+    for i, ln in enumerate(code):
+        ln = _strip_inline_comment(ln)
+        if re.match(r"\.param\s", ln, re.I):
+            hits.extend([i] * len(_MISMATCH_ASSIGN_RE.findall(ln)))
+    return hits
+
+
+def guard_mc_mismatch_switch(code: list[str]) -> list[str]:
+    """The Monte Carlo mismatch-switch invariants (issue #226; empty = ok).
+
+    `code` is `logical_lines` output of the bench. Exactly one
+    `sw_stat_mismatch` assignment (alone or among other keys on a `.param`
+    line) must exist and sit AFTER every `design.ngspice` include (the PDK
+    default 0 would otherwise win); the include may carry a path prefix or
+    use `.inc`. `sw_stat_global` must not appear (global spread is the
+    corners' job). The switch value, the other `.param` keys and the circuit
+    body are the calling runner's own checks.
+    """
+    errs: list[str] = []
+    sw = mismatch_switch_lines(code)
+    if len(sw) != 1:
+        errs.append(f"expected exactly one `sw_stat_mismatch` assignment, found {len(sw)}")
+    inc = [i for i, ln in enumerate(code) if _DESIGN_INCLUDE_RE.match(_strip_inline_comment(ln))]
+    if sw and not inc:
+        errs.append("no design.ngspice include to order the `sw_stat_mismatch` assignment after")
+    elif sw and min(sw) < max(inc):
+        errs.append("`sw_stat_mismatch` precedes the design.ngspice include (the PDK default 0 would win)")
+    if any(re.search(r"sw_stat_global", ln, re.I) for ln in code):
+        errs.append("testbench must not touch sw_stat_global (global spread is the corners' job)")
     return errs
 
 

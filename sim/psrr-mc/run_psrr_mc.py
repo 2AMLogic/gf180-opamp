@@ -94,6 +94,7 @@ from harness import (  # noqa: E402
     claim_record_paths,
     extract_mc_samples,
     find_pdk,
+    guard_mc_mismatch_switch,
     klt_version,
     load_dut_text,
     load_sibling,
@@ -249,12 +250,7 @@ def guard_testbench(text: str) -> list[str]:
             errs.append(f".param keys {keys} != {PARAM_KEYS}")
     except RuntimeError as exc:
         errs.append(str(exc))
-    pi = [i for i, ln in enumerate(code) if ln.lower().startswith(".param")]
-    ii = [i for i, ln in enumerate(code) if re.match(r"\.include\s+['\"]?design\.ngspice", ln, re.I)]
-    if pi and ii and pi[0] < ii[0]:
-        errs.append("the .param line precedes the design.ngspice include (the PDK default sw_stat_mismatch=0 would win)")
-    if re.search(r"sw_stat_global", "\n".join(code), re.I):
-        errs.append("testbench must not touch sw_stat_global (global spread is the corners' job)")
+    errs += guard_mc_mismatch_switch(code)
     return errs
 
 

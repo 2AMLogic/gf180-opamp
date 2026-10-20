@@ -150,6 +150,102 @@ class GuardCoreContinuationTests(unittest.TestCase):
         self.assertIn("CL vout 0 2p", cmrr.code_lines(WRAPPED_TB))
 
 
+class MismatchSwitchGuardTests(unittest.TestCase):
+    """`harness.guard_mc_mismatch_switch` (issue #226): the semantic contract
+    shared by the four MC runners. Pure text; no simulator, no PDK."""
+
+    INC = ".include 'design.ngspice'"
+    DUT = ".include 'opamp_two_stage.dut.spice'"
+
+    def check(self, *lines: str) -> list[str]:
+        return harness.guard_mc_mismatch_switch(harness.logical_lines("\n".join(lines)))
+
+    def test_valid_formats_pass(self):
+        sw = ".param sw_stat_mismatch=1"
+        for name, lines in {
+            "standalone": (self.INC, sw),
+            "standalone zero (control run)": (self.INC, ".param sw_stat_mismatch=0"),
+            "multi-key, switch last": (self.INC, ".param acp=0.5 rsv=1e9 sw_stat_mismatch=1"),
+            "multi-key, switch first": (self.INC, ".param sw_stat_mismatch=1 acp=0.5"),
+            "spaces around =": (self.INC, ".param sw_stat_mismatch = 1"),
+            "uppercase": (self.INC, ".PARAM SW_STAT_MISMATCH=1"),
+            "continuation": (self.INC, ".param acp=0.5", "+ sw_stat_mismatch=1"),
+            "continuation, indented": (self.INC, ".param acp=0.5", "   + sw_stat_mismatch=1"),
+            "comment lines": ("* sw_stat_mismatch=0 sw_stat_global", self.INC, "* note", sw),
+            "inline comment mention": (self.INC, ".param acp=0.5 sw_stat_mismatch=1 ; not sw_stat_mismatch=0"),
+            "double-quoted include": ('.include "design.ngspice"', sw),
+            "unquoted include": (".include design.ngspice", sw),
+            ".inc spelling": (".inc 'design.ngspice'", sw),
+            "path-prefixed include": (".include '/tmp/work/design.ngspice'", sw),
+            "windows path include": (".include 'C:\\work\\design.ngspice'", sw),
+            "other lines around": (self.DUT, self.INC, "Rl a b 1k", sw, "Rx c d 1k"),
+        }.items():
+            with self.subTest(name):
+                self.assertEqual(self.check(*lines), [])
+
+    def test_missing_switch_is_rejected(self):
+        for name, lines in {
+            "absent": (self.INC, ".param acp=0.5"),
+            "key without assignment": (self.INC, ".param sw_stat_mismatch"),
+            "only in a comment": (self.INC, "* .param sw_stat_mismatch=1"),
+            "only in an inline comment": (self.INC, ".param acp=1 ; sw_stat_mismatch=1"),
+            "not on a .param line": (self.INC, ".option sw_stat_mismatch=1"),
+            "longer key": (self.INC, ".param xsw_stat_mismatch=1"),
+        }.items():
+            with self.subTest(name):
+                self.assertTrue(any("exactly one" in e for e in self.check(*lines)), name)
+
+    def test_duplicate_switch_is_rejected(self):
+        for name, lines in {
+            "two lines": (self.INC, ".param sw_stat_mismatch=1", ".param sw_stat_mismatch=0"),
+            "same line twice": (self.INC, ".param sw_stat_mismatch=1 sw_stat_mismatch=0"),
+            "multi-key plus standalone": (self.INC, ".param a=1 sw_stat_mismatch=1", ".param sw_stat_mismatch=1"),
+            "continuation duplicate": (self.INC, ".param sw_stat_mismatch=1", "+ sw_stat_mismatch=0"),
+        }.items():
+            with self.subTest(name):
+                self.assertTrue(any("exactly one" in e for e in self.check(*lines)), name)
+
+    def test_misordered_switch_is_rejected(self):
+        sw = ".param sw_stat_mismatch=1"
+        for name, lines in {
+            "before include": (sw, self.INC),
+            "multi-key before include": (".param a=1 sw_stat_mismatch=1", self.INC),
+            "before path-prefixed include": (sw, ".include '/tmp/w/design.ngspice'"),
+            "between two design includes": (self.INC, sw, ".include 'x/design.ngspice'"),
+        }.items():
+            with self.subTest(name):
+                self.assertTrue(any("precedes" in e for e in self.check(*lines)), name)
+
+    def test_switch_without_any_design_include_is_rejected(self):
+        errs = self.check(".param sw_stat_mismatch=1", self.DUT)
+        self.assertTrue(any("no design.ngspice include" in e for e in errs), errs)
+        # a look-alike include is not the PDK design file
+        errs = self.check(".include 'mydesign.ngspice'", ".param sw_stat_mismatch=1")
+        self.assertTrue(any("no design.ngspice include" in e for e in errs), errs)
+
+    def test_global_variation_is_rejected(self):
+        sw = ".param sw_stat_mismatch=1"
+        for name, lines in {
+            "own .param line": (self.INC, sw, ".param sw_stat_global=1"),
+            "same line as the switch": (self.INC, ".param sw_stat_mismatch=1 sw_stat_global=1"),
+            "off value": (self.INC, sw, ".param sw_stat_global=0"),
+            "not on a .param line": (self.INC, sw, ".option sw_stat_global=1"),
+            "continuation": (self.INC, sw, ".param a=1", "+ sw_stat_global=1"),
+        }.items():
+            with self.subTest(name):
+                self.assertTrue(any("sw_stat_global" in e for e in self.check(*lines)), name)
+
+    def test_helper_does_not_police_experiment_specific_content(self):
+        """Value, other keys and the circuit body are the runner's job."""
+        self.assertEqual(self.check(self.INC, ".param sw_stat_mismatch=7 bogus=1", "Rweird a b 1"), [])
+
+    def test_mismatch_switch_lines_indexes_each_assignment(self):
+        code = harness.logical_lines(
+            "\n".join([self.INC, ".param a=1", "+ sw_stat_mismatch=1", "R a b 1", ".param sw_stat_mismatch=0"])
+        )
+        self.assertEqual(harness.mismatch_switch_lines(code), [1, 3])
+
+
 class ParsePrefixedScalarsTests(unittest.TestCase):
     def test_last_occurrence_wins_and_prefix_is_case_insensitive(self):
         log = "cmc_x = 1.0\ncmc_x   =  2.5e+00\nCMC_Y = 3\n"

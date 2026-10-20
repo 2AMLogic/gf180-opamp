@@ -98,6 +98,7 @@ from harness import (  # noqa: E402
     claim_record_paths,
     find_pdk,
     guard_dut_core,
+    guard_mc_mismatch_switch,
     guard_testbench_core,
     klt_version,
     load_dut_text,
@@ -207,8 +208,9 @@ def guard_testbench(tb_text: str) -> list[str]:
 
     The generic guards (`harness.guard_testbench_core`), plus: `Xdut` is a
     unity follower (vinn and vout on the same net) with the six opamp ports
-    wired as committed, and exactly one `.param sw_stat_mismatch` line sits
-    AFTER the design.ngspice include (otherwise the PDK default 0 would win).
+    wired as committed, and the shared mismatch-switch guard
+    (`harness.guard_mc_mismatch_switch`: one `sw_stat_mismatch` assignment,
+    AFTER the design.ngspice include, `sw_stat_global` untouched).
     """
     errs = guard_testbench_core(tb_text)
     code = logical_lines(tb_text)
@@ -227,14 +229,7 @@ def guard_testbench(tb_text: str) -> list[str]:
                 errs.append("Xdut is not a unity follower (vinn is not tied to vout)")
             if vinp != "vinp" or vss != "0" or vdd != "vdd" or ibias != "ibias":
                 errs.append(f"Xdut port wiring changed: {ln[:70]}")
-    sw = [i for i, ln in enumerate(code) if re.match(r"\.param\s+sw_stat_mismatch\b", ln, re.I)]
-    inc = [i for i, ln in enumerate(code) if re.match(r"\.include\s+['\"]?design\.ngspice", ln, re.I)]
-    if len(sw) != 1:
-        errs.append(f"expected exactly one `.param sw_stat_mismatch` line, found {len(sw)}")
-    elif inc and sw[0] < inc[0]:
-        errs.append("`.param sw_stat_mismatch` precedes the design.ngspice include (the PDK default 0 would win)")
-    if any(re.match(r"\.param\s+sw_stat_global\b", ln, re.I) for ln in code):
-        errs.append("testbench must not touch sw_stat_global (global spread is the corners' job)")
+    errs += guard_mc_mismatch_switch(code)
     return errs
 
 

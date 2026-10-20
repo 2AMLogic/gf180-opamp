@@ -76,9 +76,11 @@ from harness import (  # noqa: E402
     allocate_record_id,
     claim_record_paths,
     find_pdk,
+    guard_mc_mismatch_switch,
     klt_version,
     load_dut_text,
     logical_lines,
+    mismatch_switch_lines,
     load_sibling,
     ngspice_version,
     remote_of,
@@ -184,27 +186,21 @@ def guard_mc_testbench(text: str, gain_tb_text: str | None = None) -> list[str]:
     """Reasons `text` is no longer the gain bench plus the mismatch switch.
 
     The gain driver's source guard (DUT + PDK includes, no hand-declared
-    device, one `opamp_two_stage` instance, circuit body), plus: exactly one
-    `.param sw_stat_mismatch` line with value 0 or 1, AFTER the
-    `design.ngspice` include; `sw_stat_global` untouched; every other code
+    device, one `opamp_two_stage` instance, circuit body), plus: the shared
+    mismatch-switch guard (`harness.guard_mc_mismatch_switch`) with that one
+    `.param sw_stat_mismatch` line alone and valued 0 or 1; every other code
     line identical, in order, to the committed gain bench; the population's
     bias and load lines present.
     """
     gain = G.TESTBENCH.read_text() if gain_tb_text is None else gain_tb_text
     errs = list(G.guard_testbench(text))
     code = _code(text)
-    sw = [i for i, ln in enumerate(code) if re.match(r"\.param\s+sw_stat_mismatch\b", ln, re.I)]
-    if len(sw) != 1:
-        errs.append(f"expected exactly one `.param sw_stat_mismatch` line, found {len(sw)}")
-    else:
+    errs += guard_mc_mismatch_switch(code)
+    sw = mismatch_switch_lines(code)
+    if len(sw) == 1:
         m = _SWITCH_RE.match(code[sw[0]])
         if not m or m.group(1) not in ("0", "1"):
             errs.append(f"`{code[sw[0]]}`: the switch must be exactly sw_stat_mismatch=0 or =1")
-        inc = [i for i, ln in enumerate(code) if re.match(r"\.include\s+['\"]?[^'\"]*design\.ngspice", ln, re.I)]
-        if not inc or sw[0] < inc[0]:
-            errs.append("`.param sw_stat_mismatch` precedes the design.ngspice include (the PDK default 0 would win)")
-    if any(re.search(r"\bsw_stat_global\b", ln, re.I) for ln in code):
-        errs.append("testbench must not touch sw_stat_global (global spread is the corners' job)")
     rest = [ln for i, ln in enumerate(code) if i not in sw]
     if rest != _code(gain):
         errs.append("circuit differs from sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice "
