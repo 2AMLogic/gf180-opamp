@@ -490,6 +490,7 @@ class SubmissionTests(unittest.TestCase):
         self.base.mkdir()
         self.recs = det_records(self.t)
         self.calls = []
+        self.finalized = []
         tb = self.t / "tb.spice"
         tb.write_text("* tb\n")
         self.patches = [
@@ -513,7 +514,10 @@ class SubmissionTests(unittest.TestCase):
             return klt(req)
         a = args_for(revised_dut_sha256=REVISED_SHA, deterministic_record=DET_RECORD, **kw)
         err = io.StringIO()
+        # The artifact store needs a broker; the store itself is covered by sim/test_evidence_store.py.
         with mock.patch.object(harness, "run_klt_retrying", fake), mock.patch.object(m, "run_klt") as local, \
+                mock.patch.object(m, "claim_run_paths", harness.claim_record_paths), \
+                mock.patch.object(m, "finalize_run_evidence", self.finalized.append), \
                 contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
             rc = m.run_campaign(a, base=self.base, records_dir=self.recs)
         self.assertFalse(local.called, "a local klt run happened")
@@ -583,6 +587,7 @@ class SubmissionTests(unittest.TestCase):
                 "_extract_real"](rep, want, n, read_log=self.logs.__getitem__)):
             rc, err = self.run_campaign(klt)
         self.assertEqual(rc, 0, err)
+        self.assertEqual(len(self.finalized), 1)  # the corner bytes are handed to the artifact store
         files = self.written()
         rid = next(Path(f).stem for f in files if f.startswith("records/") and f.endswith(".md"))
         for need in (f"records/{rid}.md", f"netlist-snapshots/{rid}.spice", f"corners/{rid}/samples.csv",

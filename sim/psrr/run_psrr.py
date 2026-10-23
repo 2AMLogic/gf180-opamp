@@ -81,7 +81,8 @@ from harness import (  # noqa: E402
     Pdk,
     allocate_record_id,
     batch_block,
-    claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     find_pdk,
     klt_version,
     load_dut_text,
@@ -1184,7 +1185,7 @@ def run_passive_study(pdk: Pdk, args, *, runner=None, studies_fn=None, root: Pat
             study_problem_report(probs)
             return 2
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(root, record, plots=False)
+    paths = claim_run_paths(root, record, plots=False)
     ngspice, kver = ngspice_version(), klt_version()
     print(f"record {record}: PSRR passive-corner study ({scope}): {len(want)} cells x {len(MODES)} excitations = "
           f"{len(want) * len(MODES)} responses; split {args.partition_split}; PDK={pdk.path}; klt {kver}", flush=True)
@@ -1326,6 +1327,7 @@ def run_passive_study(pdk: Pdk, args, *, runner=None, studies_fn=None, root: Pat
             local_vs_grid=local_vs_grid)
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
 
     print(f"wrote {paths['record']}")
     for rail in RAILS:
@@ -1407,7 +1409,7 @@ def main(argv: list[str] | None = None) -> int:
 
     want = C.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record)
+    paths = claim_run_paths(HERE, record)
     ngspice, kver = ngspice_version(), klt_version()
     gdir = G.latest_gain_dir()
     print(f"record {record}: 3 excitations x {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
@@ -1502,6 +1504,7 @@ def main(argv: list[str] | None = None) -> int:
                           gdir=gdir, gdev=gdev, local_vs_grid=local_vs_grid, plots=plots, dut_sha=dut_sha)
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
 
     print(f"wrote {paths['record']}")
     for rail in RAILS:

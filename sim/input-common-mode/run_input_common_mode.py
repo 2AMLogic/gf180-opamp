@@ -101,7 +101,8 @@ from harness import (  # noqa: E402
     Pdk,
     allocate_record_id,
     batch_block,
-    claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     find_pdk,
     klt_version,
     load_dut_text,
@@ -1550,7 +1551,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record)
+    paths = claim_run_paths(HERE, record)
     ngspice, kver = ngspice_version(), klt_version()
     print(f"record {record}: PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
@@ -1658,6 +1659,7 @@ def run_all(args, pdk, record, stamp, paths, ngspice, kver, work: Path) -> int:
                       dut_sha=dut_sha, n_members=n_members, recheck_ok=recheck_ok)
     paths["record"].parent.mkdir(parents=True, exist_ok=True)
     paths["record"].write_text(md)
+    finalize_run_evidence(paths)
 
     h = headline(an)
     print(f"wrote {paths['record']}")

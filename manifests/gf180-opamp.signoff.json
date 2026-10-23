@@ -191,7 +191,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:9f7e648d426bc81c8aeb35113e600dfa8b52175a29a4b9db7c0005d83411c285",
+        "content_hash": "sha256:420563ba06c7e1478cd8d9b21b87461673b2af19c859e76ebae2e2131b662651",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -200,7 +200,7 @@
             "path": "manifests/attest/repo-hygiene.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:9f7e648d426bc81c8aeb35113e600dfa8b52175a29a4b9db7c0005d83411c285",
+          "content_hash": "sha256:420563ba06c7e1478cd8d9b21b87461673b2af19c859e76ebae2e2131b662651",
           "input_verified": true,
           "summary": "README (block, spec table link, reproduction), license and CI audited",
           "source": "manifests/attest/repo-hygiene.json"

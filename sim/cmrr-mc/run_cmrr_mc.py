@@ -79,7 +79,8 @@ from harness import (  # noqa: E402
     KltError,
     Pdk,
     allocate_record_id,
-    claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     extract_mc_samples,
     find_pdk,
     guard_mc_mismatch_switch,
@@ -959,7 +960,7 @@ def main(argv: list[str] | None = None) -> int:
     want = keys_of(CORNERS, temps, supplies)
     nominal = [k for k in keys_of(CORNERS, [27.0], [3.30])]
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record, plots=False)
+    paths = claim_run_paths(HERE, record, plots=False)
     ngspice, kver = ngspice_version(), klt_version()
     dut = load_dut_text()
     ctl_dut = imbalance_dut()
@@ -1035,6 +1036,7 @@ def main(argv: list[str] | None = None) -> int:
             walls=walls, samples=samples, stats=stats, off_rows=off_rows, off_probs=off_probs, proc_stats=proc_stats,
             imb_info=imb_info, imb_probs=imb_probs, link=link, mc_env=mc_env, dut_sha=_sha(dut),
             problems_none="yes"))
+        finalize_run_evidence(paths)
     print(f"record written: {paths['record'].relative_to(REPO_ROOT)}")
     return 0
 

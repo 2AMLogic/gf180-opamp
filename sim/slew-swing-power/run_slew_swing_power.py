@@ -91,6 +91,8 @@ from harness import (  # noqa: E402
     allocate_record_id,
     batch_block,
     claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     find_pdk,
     klt_version,
     load_dut_text,
@@ -1226,7 +1228,7 @@ def run_passive(pdk: Pdk, args, figs) -> int:
     want = pc.passive_expected_keys(points)
     assert len(want) == pc.SCOPE_CELLS[scope], (scope, len(want))
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record, plots=False)
+    paths = claim_run_paths(HERE, record, plots=False)
     ngspice = ngspice_version()
     kver = klt_version()
     print(f"record {record}: passive-corner study ({scope}), {len(want)} cells x {len(figs)} figures ({', '.join(figs)}), PDK={pdk.path}, klt {kver}")
@@ -1323,6 +1325,7 @@ def run_passive(pdk: Pdk, args, figs) -> int:
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
     print(f"wrote {paths['record']}")
     for f in figs:
         v = verdicts[f]

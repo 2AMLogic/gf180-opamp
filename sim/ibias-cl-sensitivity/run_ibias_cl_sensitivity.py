@@ -66,7 +66,8 @@ from harness import (  # noqa: E402
     Pdk,
     allocate_record_id,
     batch_block,
-    claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     find_pdk,
     klt_version,
     load_config_module,
@@ -435,7 +436,7 @@ def main(argv: list[str] | None = None) -> int:
         return smoke(pdk)
 
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record, plots=False)
+    paths = claim_run_paths(HERE, record, plots=False)
     recs = selected_records()
     refs = {
         "gain-gbw-pm": (REPO_ROOT / recs["gain-gbw-pm"]).read_text(),
@@ -521,6 +522,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
     print(f"wrote {paths['record']}")
     if ctrl_bad:
         print("CONTROL PROBLEMS:")

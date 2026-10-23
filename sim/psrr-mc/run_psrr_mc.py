@@ -91,7 +91,8 @@ from harness import (  # noqa: E402
     Pdk,
     allocate_record_id,
     batch_block,
-    claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     extract_mc_samples,
     find_pdk,
     guard_mc_mismatch_switch,
@@ -1440,7 +1441,7 @@ def run_grid(pdk: Pdk, args) -> int:
     want = G.expected_keys(CORNERS, TEMPS, SUPPLIES)
     n_units = len(keys) * MC_N
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record, plots=False)
+    paths = claim_run_paths(HERE, record, plots=False)
     ngspice, kver = ngspice_version(), klt_version()
     dut = load_dut_text()
     ctl_dut = imbalance_dut()
@@ -1545,6 +1546,7 @@ def run_grid(pdk: Pdk, args) -> int:
             samples=samples, stats=stats, off_rows=off_rows, off_probs=off_probs, proc_stats=proc_stats,
             imb_info=imb_info, imb_probs=imb_probs, link=link, mc_env=mc_env, dut_sha=_sha(dut),
             nominal_ref=nominal_reference(), resubmits=attempt))
+        finalize_run_evidence(paths)
     print(f"record written: {paths['record'].relative_to(REPO_ROOT)}")
     for r in grid_rows_of(stats):
         print(f"  {LABEL[r['rail']]} {r['fig']}: lin 3s {r['lin']:.2f} dB ({G.fmt_key(r['lin_at'])}), "
@@ -1638,7 +1640,7 @@ def main(argv: list[str] | None = None) -> int:
         return run_grid(pdk, args)
     want = G.expected_keys(CORNERS, TEMPS, SUPPLIES)
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record, plots=False)
+    paths = claim_run_paths(HERE, record, plots=False)
     ngspice, kver = ngspice_version(), klt_version()
     dut = load_dut_text()
     ctl_dut = imbalance_dut()
@@ -1710,6 +1712,7 @@ def main(argv: list[str] | None = None) -> int:
             samples=samples, stats=stats, off_rows=off_rows, off_probs=off_probs, proc_stats=proc_stats,
             imb_info=imb_info, imb_probs=imb_probs, link=link, mc_env=mc_env, dut_sha=_sha(dut),
             problems_none="yes"))
+        finalize_run_evidence(paths)
     print(f"record written: {paths['record'].relative_to(REPO_ROOT)}")
     for r in dr6_rows(stats):
         print(f"  {LABEL[r['rail']]} {r['fig']}: lin 3s {r['lin_3s']:.2f} dB ({G.fmt_key(r['lin_at'])}), "

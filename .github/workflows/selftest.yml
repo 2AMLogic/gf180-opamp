@@ -70,6 +70,10 @@ jobs:
             python3 sim/ci_evidence_append_only.py --before "$PUSH_BEFORE"
           fi
 
+      - name: Check evidence manifests name artifact-store objects, not bytes in git (issue #271)
+        # Stdlib only; needs neither klt nor the artifact broker.
+        run: python3 sim/ci_artifact_manifests.py
+
       - name: Install ngspice, Python deps and xschem build dependencies
         # xschem itself is deliberately NOT installed from apt (see XSCHEM_COMMIT).
         # Build deps mirror xschem's own CI at the pinned tag:

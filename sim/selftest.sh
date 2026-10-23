@@ -42,6 +42,11 @@ python3 test_characterize_wrapper.py
 echo "== sim: committed-evidence append-only guard unit tests (temp git repos, no simulator; issue #159) =="
 python3 test_evidence_append_only.py
 
+echo "== sim: artifact-store evidence writer + manifest checker (stub klt, no broker; issue #271) =="
+python3 test_evidence_store.py
+python3 test_ci_artifact_manifests.py
+python3 ci_artifact_manifests.py
+
 echo "== sim/gain-gbw-pm: extraction + source-guard tests (no simulator) =="
 python3 gain-gbw-pm/test_gain_gbw_pm.py
 

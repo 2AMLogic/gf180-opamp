@@ -237,7 +237,7 @@ class AppendOnly(unittest.TestCase):
             (base / "records").mkdir()
             (base / "records" / "R.md").write_text("x")
             with self.assertRaises(FileExistsError):
-                r.claim_record_paths(base, "R", plots=False)
+                harness.claim_record_paths(base, "R", plots=False)
 
 
 class RecordRender(unittest.TestCase):

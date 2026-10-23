@@ -74,7 +74,8 @@ from harness import (  # noqa: E402
     KltError,
     Pdk,
     allocate_record_id,
-    claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     find_pdk,
     guard_mc_mismatch_switch,
     klt_version,
@@ -796,7 +797,7 @@ def run_campaign(args, *, base: Path = HERE, records_dir: Path = GAIN_RECORDS) -
         return 2
     record, stamp = allocate_record_id(REPO_ROOT)
     try:
-        paths = claim_record_paths(base, record, plots=False)
+        paths = claim_run_paths(base, record, plots=False)
     except FileExistsError as exc:
         print(f"ERROR: {exc}; nothing submitted", file=sys.stderr)
         return 2
@@ -832,6 +833,7 @@ def run_campaign(args, *, base: Path = HERE, records_dir: Path = GAIN_RECORDS) -
             fh.write(build_record(record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, kver=kver, rep=rep,
                                   wall=wall, stats=stats, samples=samples, dut_sha=sha256_text(dut),
                                   det_record=args.deterministic_record))
+        finalize_run_evidence(paths)
     print(f"record written: {paths['record']}")
     return 0
 

@@ -799,6 +799,71 @@ def claim_record_paths(base: Path, record: str, *, plots: bool = True) -> dict[s
     return paths
 
 
+def _evidence_store():
+    """The sibling `evidence_store` module, importable however harness was loaded."""
+    here = str(Path(__file__).resolve().parent)
+    if here not in sys.path:
+        sys.path.insert(0, here)
+    import evidence_store
+
+    return evidence_store
+
+
+def _bench_of(base: Path) -> str:
+    """Manifest bench name for an experiment directory (`fixed-vcm` nested
+    under `gain-gbw-pm` -> `gain-gbw-pm-fixed-vcm`)."""
+    try:
+        return "-".join(base.resolve().relative_to(REPO_ROOT / "sim").parts) or base.name
+    except ValueError:
+        return base.name
+
+
+def claim_run_paths(base: Path, record: str, *, plots: bool = True) -> dict[str, Path]:
+    """`claim_record_paths` for a NEW run whose corner bytes go to the artifact store.
+
+    Fails closed first (no broker / no `klt artifact put` / broker refusing)
+    so no simulation time is spent on a run that could not be stored. The
+    returned `corners` path is git-ignored scratch under `sim/build/`, not
+    `<base>/corners/<record>`; the driver writes its record as before and then
+    calls `finalize_run_evidence`. A committed `corners/<record>` tree or an
+    existing manifest for the id is refused (append-only).
+    """
+    ES = _evidence_store()
+    paths = claim_record_paths(base, record, plots=plots)
+    bench = _bench_of(base)
+    if ES.manifest_path(REPO_ROOT, bench, record).exists():
+        raise FileExistsError(f"manifest for {bench} {record} already exists; evidence is append-only")
+    ES.preflight(REPO_ROOT)
+    scratch = REPO_ROOT / "sim" / "build" / f"{bench}-{record}"
+    if scratch.exists():
+        raise FileExistsError(f"{scratch} already exists; evidence is append-only")
+    paths["corners"] = scratch
+    return paths
+
+
+def finalize_run_evidence(paths: dict[str, Path]) -> Path:
+    """Store the run's scratch corner tree and append the manifest section to its record.
+
+    Call after the record is written. On any failure the record, snapshot and
+    plots this run wrote are removed (nothing committable is left), the
+    scratch bytes are kept, and the error is re-raised: a nonzero exit.
+    """
+    ES = _evidence_store()
+    record = paths["record"].stem
+    base = paths["record"].parent.parent  # <base>/records/<record>.md
+    bench = _bench_of(base)
+    try:
+        prefix = f"sim/{base.resolve().relative_to(REPO_ROOT / 'sim').as_posix()}/corners/{record}"
+        return ES.store_run(paths["corners"], prefix, repo_root=REPO_ROOT, bench=bench,
+                            rid=record, record_path=paths["record"])
+    except BaseException:
+        for key in ("record", "snapshot"):
+            paths[key].unlink(missing_ok=True)
+        if "plots" in paths:
+            shutil.rmtree(paths["plots"], ignore_errors=True)
+        raise
+
+
 # --------------------------------------------------------------------------
 # Monte Carlo statistics / extraction shared by the *-mc drivers (issue #153)
 # --------------------------------------------------------------------------
