@@ -2,6 +2,11 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-23
+
+- **PR #272**: feat(sim): store new run evidence in the artifact store, commit manifests
+- **Issue #271** (closed): Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
+
 ### 2026-10-20
 
 - **PR #269**: refactor(sim): share the MC mismatch-switch guard in harness

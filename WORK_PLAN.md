@@ -33,13 +33,13 @@ Human-approved issues ready for implementation (`loom:issue`).
 
 Issues currently being built (`loom:building`).
 
-- **#271**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
+- **#275**: ci: selftest 'Prove the selftest can fail' step cancelled at ~30m on docs-only PR #273
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#272**: feat(sim): store new run evidence in the artifact store, commit manifests
+- **#276**: ci: raise selftest job timeout to 45 minutes
 
 ## Approved (Awaiting Merge)
 
@@ -55,7 +55,7 @@ Issues carrying `loom:curated`.
 - **#98**: sim: CMRR mismatch Monte Carlo over the T/VDD grid (45 points x N=300) *(curated)*
 - **#190**: sim: extend PSRR mismatch characterization to the full temperature and supply grid *(curated)*
 - **#240**: Re-pin open_pdks to f6eeac7 via ciel, with a revision-checked PDK search, before minting layout evidence *(curated)*
-- **#271**: Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact) *(curated)*
+- **#275**: ci: selftest 'Prove the selftest can fail' step cancelled at ~30m on docs-only PR #273 *(curated)*
 
 ## Proposed (Architect / Hermit)
 
