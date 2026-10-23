@@ -44,7 +44,10 @@ jobs:
     # the image does NOT pin xschem precisely enough, so xschem is built from a
     # pinned upstream commit below instead of installed from apt.
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # 45 min, not 30: the apt install step alone has taken 18-28 min on slow
+    # runners (runs 39998954136, 39844399248), exhausting a 30 min budget and
+    # cancelling whichever step was running (issue #275).
+    timeout-minutes: 45
     steps:
       - name: Check out
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
