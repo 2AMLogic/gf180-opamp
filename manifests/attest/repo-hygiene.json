@@ -12,7 +12,7 @@
     ],
     "workflows": [
       {
-        "content_hash": "sha256:118b25b07fb2169b7985ab26591601486357194392a3019b95d591ba6bd4795e",
+        "content_hash": "sha256:cbb46ffcc8c0a9caa00a315802633e4be48b91430c7de6dfb79793299876e562",
         "path": ".github/workflows/selftest.yml"
       },
       {
