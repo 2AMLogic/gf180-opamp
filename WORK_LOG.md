@@ -4,6 +4,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-10-23
 
+- **PR #276**: ci: raise selftest job timeout to 60 minutes
+- **Issue #275** (closed): ci: selftest 'Prove the selftest can fail' step cancelled at ~30m on docs-only PR #273
 - **PR #272**: feat(sim): store new run evidence in the artifact store, commit manifests
 - **Issue #271** (closed): Adopt the common artifact store for sim evidence (manifests in git, bytes via klt artifact)
 
