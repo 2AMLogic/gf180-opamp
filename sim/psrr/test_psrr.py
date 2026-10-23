@@ -18,6 +18,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import numpy as np
 
@@ -554,7 +555,11 @@ class PassiveStudyEndToEnd(unittest.TestCase):
         root = d / "psrr"
         for sub in ("records", "corners", "netlist-snapshots"):
             (root / sub).mkdir(parents=True)
-        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+        # Fixture layout: the artifact store is covered by sim/test_evidence_store.py (and needs a broker).
+        import harness
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()), \
+                mock.patch.object(r, "claim_run_paths", harness.claim_record_paths), \
+                mock.patch.object(r, "finalize_run_evidence", lambda paths: None):
             code = r.run_passive_study(fake_pdk(d), study_args(**kw), runner=fake, studies_fn=fake_studies,
                                        root=root, gain_base=d / "no-gain", points_pvt=points)
         return code, root

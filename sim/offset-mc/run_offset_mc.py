@@ -95,7 +95,8 @@ from harness import (  # noqa: E402
     Pdk,
     allocate_record_id,
     batch_block,
-    claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     find_pdk,
     guard_dut_core,
     guard_mc_mismatch_switch,
@@ -1001,7 +1002,7 @@ def run_grid(pdk: Pdk, args) -> int:
     keys = grid_keys("full")
     n_units = len(keys) * MC_N
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record, plots=False)
+    paths = claim_run_paths(HERE, record, plots=False)
     ngspice, kver = ngspice_version(), klt_version()
     print(f"record {record}: {len(keys)} points x N={MC_N} = {n_units} units, seed {MC_SEED}, PDK={pdk.path}, klt {kver}",
           flush=True)
@@ -1082,6 +1083,7 @@ def run_grid(pdk: Pdk, args) -> int:
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
 
     print(f"wrote {paths['record']}")
     we = worst["extreme"]
@@ -1117,7 +1119,7 @@ def main(argv: list[str] | None = None) -> int:
         return run_grid(pdk, args)
 
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record, plots=False)
+    paths = claim_run_paths(HERE, record, plots=False)
     ngspice, kver = ngspice_version(), klt_version()
     n_units = len(CORNERS) * MC_N
     print(f"record {record}: {len(CORNERS)} corners x N={MC_N} = {n_units} units, seed {MC_SEED}, PDK={pdk.path}, klt {kver}")
@@ -1192,6 +1194,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
 
     print(f"wrote {paths['record']}")
     for p in CORNERS:
