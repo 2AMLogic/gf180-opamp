@@ -120,6 +120,22 @@ A legitimate correction needs one line in `sim/evidence_append_only_allowlist.tx
 `<exact path>  #<authorizing issue>` (malformed or issue-less entries fail).
 Run locally: `python3 sim/ci_evidence_append_only.py --base origin/main`.
 
+## Evidence bytes go to the artifact store (issue #271)
+
+New runs no longer commit `corners/<run-id>/`. Drivers claim a run with
+`harness.claim_run_paths` (which fails closed before any simulation if
+`$KLT_ARTIFACT_BROKER` is unset, `klt artifact put` is missing or the broker
+refuses), write their corner files to the git-ignored scratch path it returns
+(`sim/build/<bench>-<run-id>/`), write `records/<id>.md` and the netlist
+snapshot as before, and then call `harness.finalize_run_evidence`. That stores
+the scratch tree with `sim/evidence_store.py`, commits
+`manifests/artifacts/<bench>-<run-id>.manifest.json` and appends a "Stored
+evidence" table to the record. If the store fails, the record, snapshot and
+plots the run wrote are removed, the scratch bytes are kept, and the driver
+exits nonzero. `sim/ci_artifact_manifests.py` checks the manifests in CI (see
+[`manifests/artifacts/README.md`](../manifests/artifacts/README.md)); the
+append-only guard above still covers the committed records and snapshots.
+
 ## Shared harness module
 
 `harness.py` is the one master copy of the cross-experiment sim-harness

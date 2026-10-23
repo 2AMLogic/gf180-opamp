@@ -27,6 +27,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_overdrive_recovery as r  # noqa: E402
+import harness  # noqa: E402
 
 VDD = 3.3
 VCM = VDD / 2
@@ -622,11 +623,11 @@ class AppendOnlyTests(unittest.TestCase):
     def test_existing_record_paths_are_never_overwritten(self):
         with tempfile.TemporaryDirectory() as d:
             base = Path(d)
-            r.claim_record_paths(base, "rid-1")
+            harness.claim_record_paths(base, "rid-1")
             (base / "records").mkdir()
             (base / "records" / "rid-1.md").write_text("x")
             with self.assertRaises(FileExistsError):
-                r.claim_record_paths(base, "rid-1")
+                harness.claim_record_paths(base, "rid-1")
 
 
 if __name__ == "__main__":

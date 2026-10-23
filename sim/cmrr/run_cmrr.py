@@ -91,7 +91,8 @@ from harness import (  # noqa: E402
     Pdk,
     allocate_record_id,
     batch_block,
-    claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     find_pdk,
     klt_version,
     load_dut_text,
@@ -1367,7 +1368,7 @@ def main(argv: list[str] | None = None) -> int:
 
     want = expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record)
+    paths = claim_run_paths(HERE, record)
     ctl_snap = HERE / "netlist-snapshots" / f"{record}-controls.spice"
     if ctl_snap.exists():
         raise FileExistsError(f"{ctl_snap} already exists; evidence is append-only")
@@ -1467,6 +1468,7 @@ def main(argv: list[str] | None = None) -> int:
                           mdut_sha=mdut_sha)
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
 
     print(f"wrote {paths['record']}")
     for which, lbl in FIGURES:

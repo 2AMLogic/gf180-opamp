@@ -309,12 +309,12 @@ class AppendOnlyTests(unittest.TestCase):
     def test_existing_record_paths_are_never_overwritten(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            first = r.claim_record_paths(root, "20261009-000000-abcdef0")
+            first = harness.claim_record_paths(root, "20261009-000000-abcdef0")
             first["corners"].mkdir(parents=True)
             first["record"].parent.mkdir(parents=True, exist_ok=True)
             first["record"].write_text("old")
             with self.assertRaises(FileExistsError):
-                r.claim_record_paths(root, "20261009-000000-abcdef0")
+                harness.claim_record_paths(root, "20261009-000000-abcdef0")
             self.assertEqual(first["record"].read_text(), "old")
 
     def test_prior_provisional_records_are_retained(self):
@@ -325,7 +325,7 @@ class AppendOnlyTests(unittest.TestCase):
     def test_record_paths_without_plots(self):
         with tempfile.TemporaryDirectory() as d:
             root = Path(d)
-            with_plots = r.claim_record_paths(root, "rid")
+            with_plots = harness.claim_record_paths(root, "rid")
             self.assertEqual(list(with_plots), ["record", "plots", "snapshot", "corners"])
             self.assertEqual(list(harness.claim_record_paths(root, "rid", plots=False)), ["record", "snapshot", "corners"])
 
@@ -357,7 +357,7 @@ class SharedKltWrapperTests(unittest.TestCase):
         return calls
 
     def test_driver_uses_the_shared_helpers(self):
-        for name in ("KltError", "run_klt", "run_klt_retrying", "claim_record_paths", "klt_version",
+        for name in ("KltError", "run_klt", "run_klt_retrying", "claim_run_paths", "finalize_run_evidence", "klt_version",
                      "batch_block", "sanitise_report", "load_dut_text"):
             self.assertIs(getattr(r, name), getattr(harness, name), name)
 
@@ -652,20 +652,20 @@ class FixedVcmTests(unittest.TestCase):
 
     def test_fixed_mode_runs_smoke_before_submission_and_aborts_on_failure(self):
         calls = []
-        saved = (r.run_single, r.run_klt_retrying, r.allocate_record_id, r.claim_record_paths,
+        saved = (r.run_single, r.run_klt_retrying, r.allocate_record_id, r.claim_run_paths,
                  r.ngspice_version, r.klt_version)
         r.run_single = lambda *a, **k: (calls.append(("smoke", k.get("vcm_fixed"))),
                                         r.StudyRun("s", "d", None, [], error="boom"))[1]
         r.run_klt_retrying = lambda *a, **k: calls.append("submit")
         r.allocate_record_id = lambda root: ("20990101-000000-test", __import__("datetime").datetime(2099, 1, 1))
-        r.claim_record_paths = lambda base, rec, plots=True: {}
+        r.claim_run_paths = lambda base, rec, plots=True: {}
         r.ngspice_version = r.klt_version = lambda: "x"
         try:
             with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()):
                 rc = r.run_fixed_vcm(types.SimpleNamespace(path="p", variant="v", version="1", source="s"),
                                      types.SimpleNamespace(), 1.2)
         finally:
-            (r.run_single, r.run_klt_retrying, r.allocate_record_id, r.claim_record_paths,
+            (r.run_single, r.run_klt_retrying, r.allocate_record_id, r.claim_run_paths,
              r.ngspice_version, r.klt_version) = saved
         self.assertEqual(rc, 2)
         self.assertEqual(calls, [("smoke", 1.2)])  # grid never submitted
@@ -774,7 +774,7 @@ class FixedVcmTests(unittest.TestCase):
                                "supply_v": {"vdd": k[2], "vcm": 1.2}} for k in want]}
         names = ("run_single", "materialise", "batch_block", "run_klt_retrying", "analyse_ac_report",
                  "op_flags", "run_nominal_op", "load_dut_text", "latest_gain_dir", "allocate_record_id",
-                 "claim_record_paths", "ngspice_version", "klt_version")
+                 "claim_run_paths", "finalize_run_evidence", "ngspice_version", "klt_version")
         saved = {n: getattr(r, n) for n in names}
         with tempfile.TemporaryDirectory() as d:
             base = Path(d)
@@ -789,7 +789,8 @@ class FixedVcmTests(unittest.TestCase):
             r.load_dut_text = lambda: "dut"
             r.latest_gain_dir = lambda: None
             r.allocate_record_id = lambda root: ("20990101-000000-test", __import__("datetime").datetime(2099, 1, 1))
-            r.claim_record_paths = lambda b, rec, plots=True: {
+            r.finalize_run_evidence = lambda paths: None  # the store is covered by sim/test_evidence_store.py
+            r.claim_run_paths = lambda b, rec, plots=True: {
                 "record": base / "records" / f"{rec}.md", "snapshot": base / "snap" / f"{rec}.spice",
                 "corners": base / "corners" / rec}
             r.ngspice_version = r.klt_version = lambda: "x"

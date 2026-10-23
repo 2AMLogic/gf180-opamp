@@ -83,6 +83,8 @@ from harness import (  # noqa: E402
     allocate_record_id,
     batch_block,
     claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     find_pdk,
     guard_dut_core,
     guard_testbench_core,
@@ -1373,7 +1375,7 @@ def run_passive(pdk: Pdk, args) -> int:
     want = passive_expected_keys(points)
     assert len(want) == SCOPE_CELLS[scope], (scope, len(want))
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record, plots=False)
+    paths = claim_run_paths(HERE, record, plots=False)
     ngspice = ngspice_version()
     kver = klt_version()
     print(f"record {record}: passive-corner study ({scope}), {len(want)} cells, PDK={pdk.path}, klt {kver}")
@@ -1443,6 +1445,7 @@ def run_passive(pdk: Pdk, args) -> int:
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
     print(f"wrote {paths['record']}")
     return 0
 
@@ -1886,7 +1889,7 @@ def run_fixed_vcm(pdk: Pdk, args, vcm: float) -> int:
 
     want = expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(FIXED_VCM_DIR, record, plots=False)
+    paths = claim_run_paths(FIXED_VCM_DIR, record, plots=False)
     ngspice = ngspice_version()
     kver = klt_version()
     print(f"record {record}: fixed-VCM {vcm:g} V grid, {len(want)} points, PDK={pdk.path}, klt {kver}")
@@ -1981,6 +1984,7 @@ def run_fixed_vcm(pdk: Pdk, args, vcm: float) -> int:
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
     print(f"wrote {paths['record']}")
     if problems or any(k not in results or not results[k].valid for k in want):
         print("INCOMPLETE: failed/missing/invalid points are listed in the record", file=sys.stderr)

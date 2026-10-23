@@ -74,7 +74,8 @@ from harness import (  # noqa: E402
     Pdk,
     allocate_record_id,
     batch_block,
-    claim_record_paths,
+    claim_run_paths,
+    finalize_run_evidence,
     find_pdk,
     klt_version,
     load_dut_text,
@@ -788,7 +789,7 @@ def main(argv: list[str] | None = None) -> int:
 
     want = g.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
     record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_record_paths(HERE, record)  # fail early if this id was already used
+    paths = claim_run_paths(HERE, record)  # fail early if this id was already used
     ngspice = ngspice_version()
     kver = klt_version()
     print(f"record {record}: {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
@@ -854,6 +855,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         paths["record"].parent.mkdir(parents=True, exist_ok=True)
         paths["record"].write_text(md)
+        finalize_run_evidence(paths)
 
     print(f"wrote {paths['record']}")
     s = summarise(results)
