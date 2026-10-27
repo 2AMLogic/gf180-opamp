@@ -21,7 +21,7 @@ permissions:
   contents: read
 
 env:
-  SELFTEST_KLT_VERSION: "0.7.0"
+  SELFTEST_KLT_VERSION: "0.8.0"
   # open_pdks revision of the gf180mcu PDK (same hash sim/harness.py documents).
   # Must equal sim/harness.py PINNED_PDK_REV; sim/ci_prereqs.py fails otherwise.
   GF180_PDK_REV: "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
@@ -117,7 +117,9 @@ jobs:
           xschem --no_x -q --version | head -1
 
       - name: Install the selftest klt
-        run: pipx install "klayout-tools==${SELFTEST_KLT_VERSION}"
+        run: |
+          pipx install "klayout-tools==${SELFTEST_KLT_VERSION}"
+          klt --version
 
       - name: Cache the gf180mcu PDK
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830  # v4.3.0

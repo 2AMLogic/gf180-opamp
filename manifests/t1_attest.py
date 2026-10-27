@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Artifact-anchored attestations for signoff T1 items 1, 9 and 10 (issue #160).
 
-klt 0.7.0 accepts, for items 1, 2, 9 and 10, a `generic` envelope that declares
+klt 0.8.0 accepts, for items 1, 2, 9 and 10, a `generic` envelope that declares
 `t1_item`, names the audited artifact in `provenance.input.path` with its
 content hash, and is pinned by the same hash in the block manifest.  This
 script owns the three audited artifacts (inventories under manifests/attest/)

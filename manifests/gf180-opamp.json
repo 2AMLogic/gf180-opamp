@@ -6,7 +6,7 @@
       "file": "manifests/attest/item-1.evidence.json"
     },
     "10": {
-      "content_hash": "sha256:85a40e05ca948f866c35c4bcabe195a569a24753a272422ee9f2a722168f7034",
+      "content_hash": "sha256:71cacbeb6051bb736bd851a52aa06505dc3d1c6f473c02fc4d52961369d82cc2",
       "file": "manifests/attest/item-10.evidence.json"
     },
     "8": {
