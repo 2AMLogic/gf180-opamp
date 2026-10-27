@@ -57,7 +57,7 @@ campaign (item 6). There is still no layout (no `klt drc`/`lvs`/`pex`). The
 committed `sim/` Markdown records are narrative evidence and are not `klt`
 envelopes. An honest `unmet`/`no_evidence` row beats stale prose.
 
-**Pinned grader vs. the stricter policy.** The pinned klt 0.7.0 grader checks
+**Pinned grader vs. the stricter policy.** The pinned klt 0.8.0 grader checks
 mechanically: envelope kind (generic accepted for items 1, 2, 8, 9, 10; items 1, 2, 9 and 10 only in the artifact-anchored form), check status
 `pass`, and the `content_hash` pin, plus the per-item rules its grading
 ruleset carries (the record's `build.grading_ruleset_id`; rows the build
@@ -151,15 +151,15 @@ byte-comparison.
 ## Why the checklist is vendored
 
 `klt` bundles its own copy of `design-evidence-tiers.md`, but the klt release
-pinned in CI (**0.7.0**) now bundles the same document as the upstream
-`v0.7.0` tag (the vendored copy is byte-identical to the wheel's bundled
+pinned in CI (**0.8.0**) now bundles the same document as the upstream
+`v0.8.0` tag (the vendored copy is byte-identical to the wheel's bundled
 `klayout_tools/data/design-evidence-tiers.md`). It was vendored separately
 while the pin was 0.5.0, whose bundle predated the checklist's eleventh item —
 "**Power delivery (structural)**", added upstream in
 [klayout-tools#2025](https://github.com/2AMLogic/klayout-tools/pull/2025)
 commit `428951e` (2026-09-19) — and would have rendered only ten rows. The
-vendored copy is taken verbatim from klayout-tools at tag `v0.7.0` (commit
-`0e2362bd`, the commit the PyPI 0.7.0 release wheel reports in the record's
+vendored copy is taken verbatim from klayout-tools at tag `v0.8.0` (commit
+`c572046b`, the commit the PyPI 0.8.0 release wheel reports in the record's
 `build` block), pinned so that every report states which checklist
 revision graded it: the record quotes each item's text, so editing or
 re-vendoring the checklist changes the record and fails CI until the record
@@ -200,7 +200,7 @@ restated from the [upstream contract](https://github.com/2AMLogic/klayout-tools/
 
 ## Items 1, 9 and 10: investigated in issue #160
 
-Question: which envelope kind in klt 0.7.0 (`klt signoff --describe-grader`:
+Question: which envelope kind in klt 0.8.0 (`klt signoff --describe-grader`:
 `generic` -> items 1, 2, 8, 9, 10; `power` none; `erc`/`place-and-route` -> 11)
 can honestly back these rows? Answer: the **artifact-anchored `generic`
 envelope** (`t1_item`, `provenance.input.path` + `content_hash`, same hash pinned
@@ -245,7 +245,7 @@ filed generically as
 (no verb produces the item 1/9/10 envelopes). No item here ended as "no honest
 envelope exists", so no other gap issue was needed.
 
-- **Item 11 is graded by the 0.7.0 build** (`klt erc`/`lvs`/`place-and-route`
+- **Item 11 is graded by the 0.8.0 build** (`klt erc`/`lvs`/`place-and-route`
   supply evidence; the record reports `build_t1_item_count: 11`). Cite it only
   with an artifact that genuinely meets the vendored item-11 rules; the
   pre-0.7.0 caution (a build without the rules would grade a citation through
@@ -254,7 +254,7 @@ envelope exists", so no other gap issue was needed.
 
 ## The klt pin
 
-CI installs `klayout-tools==0.7.0` — the same code that produced the
+CI installs `klayout-tools==0.8.0` — the same code that produced the
 committed record, whose exit the byte-comparison holds. To bump the pin to a
 newer klayout-tools release: change it in `.github/workflows/signoff.yml`,
 re-vendor the checklist from the matching upstream tag (see above), regenerate

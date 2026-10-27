@@ -42,7 +42,9 @@ jobs:
           python3 manifests/test_t1_attest.py
 
       - name: Install the pinned klt
-        run: pipx install "klayout-tools==0.7.0"
+        run: |
+          pipx install "klayout-tools==0.8.0"
+          klt --version
 
       - name: Re-run the block signoff fresh
         run: |
