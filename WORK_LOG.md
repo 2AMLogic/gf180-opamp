@@ -2,6 +2,11 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-27
+
+- **PR #281**: chore(klt): bump pinned klayout-tools to 0.8.0 and regenerate signoff record
+- **Issue #280** (closed): Bump klayout-tools pin 0.7.0 → 0.8.0
+
 ### 2026-10-23
 
 - **PR #276**: ci: raise selftest job timeout to 60 minutes
