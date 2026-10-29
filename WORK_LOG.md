@@ -2,6 +2,10 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-29
+
+- **Issue #31** (closed): README: embed the fleet burndown chart (one line)
+
 ### 2026-10-27
 
 - **PR #281**: chore(klt): bump pinned klayout-tools to 0.8.0 and regenerate signoff record
