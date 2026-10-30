@@ -21,12 +21,10 @@ single process, no ngspice).
 
 | Item | Pinned identity |
 |---|---|
-| klayout-tools | `klt 0.7.0+g5e5b55992a7f` (a post-tag build, so `uvx --from klayout-tools==X` cannot reproduce it; `klt` must already be on PATH at this build) |
+| klayout-tools | `klt 0.8.0` (release; run from a throwaway env first on PATH, e.g. `uv venv V && uv pip install --python V/bin/python klayout-tools==0.8.0 && PATH=V/bin:$PATH layout/pilot/regen.sh`) |
 | PDK | `gf180mcuD`, `open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7` (`~/.ciel/gf180mcuD`) |
-| Foundry runset variant | `--variant=D` (5LM, metal_top 11K, MIM option B) |
-| Foundry DRC/LVS engine | system `klayout` binary, `KLayout 0.28.16` (what the PDK's `run_drc.py`/`run_lvs.py` shell out to) |
+| PDK variant | `gf180mcuD` (5LM, metal_top 11K, MIM option B), drawn and checked with klt's curated `gf180mcu` deck |
 | klayout python (labelling) | `klayout==0.30.12` via a throwaway `uv run --with` env |
-| runset CLI dep | `docopt==0.6.2` (same throwaway env) |
 
 Nothing is installed on the host. The PDK's metal stack was not previously
 pinned in this repo; `D` is chosen because the schematic's
@@ -61,7 +59,7 @@ Model and terminal facts verified here:
   tap/guard ring labelled `B`; the nfet ring ties to the p-substrate and the pfet
   ring to the n-well. Models extract as `nfet_03v3` / `pfet_03v3`; the 06V0/dualgate
   flavours are not drawn (3.3 V devices only).
-- **MIM**: both klt's extractor and the foundry LVS runset emit the device
+- **MIM**: klt's extractor emits the device
   terminals in the order (BOT, TOP) for the labelled plates, extracted as
   `cap_mim_2f0_m4m5_noshield` with `c_width`/`c_length` equal to the drawn
   plate. The PDK model is symmetric in its two terminals, so this does not change
@@ -76,19 +74,28 @@ Model and terminal facts verified here:
 
 ## Results (actual runs; `results.json` and `evidence/` hold the raw output)
 
-| Cell | Footprint um (not an area claim) | DRC, PDK runset | DRC, klt curated | LVS, klt | LVS, PDK runset |
-|---|---|---|---|---|---|
-| `pilot_nfet_mb1_m5` | 8.04 x 7.92 | **FAIL** (contact_OFFGRID) | clean | match | match |
-| `pilot_nfet_m1_m2` | 6.04 x 6.72 | **FAIL** (contact_OFFGRID) | clean | match | match |
-| `pilot_nfet_m7` | 33.84 x 7.92 | **FAIL** (contact_OFFGRID) | clean | match | match |
-| `pilot_pfet_m3_m4` | 6.04 x 7.92 | **FAIL** (contact_OFFGRID) | clean | match | match |
-| `pilot_pfet_m6` | 40.8 x 7.92 | **FAIL** (contact_OFFGRID) | clean | match | match |
-| `pilot_mim_cc` | 18.92 x 19.88 | **PASS** | clean | match | not run (see below) |
-| `pilot_rpoly_rz` | 22.84 x 2.0 | **FAIL** (SB.4, SB.10) | clean | match | match |
+| Cell | Footprint um (not an area claim) | DRC, klt curated | LVS, klt |
+|---|---|---|---|
+| `pilot_nfet_mb1_m5` | 8.04 x 7.92 | clean | match |
+| `pilot_nfet_m1_m2` | 6.04 x 6.72 | clean | match |
+| `pilot_nfet_m7` | 33.84 x 7.92 | clean | match |
+| `pilot_pfet_m3_m4` | 6.04 x 7.92 | clean | match |
+| `pilot_pfet_m6` | 40.8 x 7.92 | clean | match |
+| `pilot_mim_cc` | 18.92 x 19.88 | clean | match |
+| `pilot_rpoly_rz` | 23.04 x 2.44 | clean | match |
 
-- "DRC, PDK runset" is the GF180MCU `run_drc.py` main runset, flat, default
-  table set. Antenna and density are not enabled, which is another reason
-  nothing here is signoff.
+- "DRC, klt curated" is klt's curated `gf180mcu` deck only. It checks a subset
+  of the foundry rules (`rules_checked` / `rules_skipped` per cell in
+  `results.json`), so `clean` is not foundry DRC signoff; antenna and density
+  are not covered either.
+- Changes versus the `klt 0.7.0` evidence this replaces: every klt verdict is
+  unchanged (7 of 7 LVS `match` with the same `mismatch_count` per cell, 7 of 7
+  DRC `clean` with 0 violations). The curated deck now checks more rules per
+  cell (e.g. 30 vs 20 on the nfet cells), the generated MOS and MIM geometry is
+  identical per layer, and `pilot_rpoly_rz` is drawn larger (23.04 x 2.44 vs
+  22.84 x 2.0 um) with its device 0.1 um further along x. The earlier evidence
+  was generated against `open_pdks c6d73a35`; this run is at the pinned
+  `f6eeac7`.
 - klt LVS compares device parameters: W and L for MOS, C and A for the MIM
   (the PDK model carries no separate width/length parameter), L and W for the
   resistor. Negative controls (a deliberately wrong reference dimension) were
@@ -98,22 +105,26 @@ Model and terminal facts verified here:
 - The `klt lvs` warnings counted in `evidence/*.lvs.klt.json` are
   `topology` entries saying an unused device class has no counterpart; there
   are zero error-severity findings.
-- **MIM, PDK-runset LVS: not run.** The runset's comparer did not accept any
-  capacitor reference-card form tried (it read the reference's area and
-  perimeter as 0 and then reported the nets unmatched). This is unresolved; it is
-  recorded as inconclusive, not as pass or fail. klt's own LVS is the only LVS
-  verdict for this cell.
+### Historical: PDK-runset results (`klt 0.7.0` run, no longer regenerated)
 
-### Failures, causes, and filed tool gaps
+Until issue #282 this pilot also ran the PDK's `run_drc.py` / `run_lvs.py`
+(`--variant=D`, flat). Those scripts are not in the ciel install on the
+workers (`libs.tech/klayout/` holds only `tech/`) and klt does not drive them,
+so the regeneration now uses klt's curated deck only. The last results from
+that run, dated 2026-10, are kept here for the record and are not reproduced
+by `regen.sh`:
 
-- `contact_OFFGRID` on all five MOS cells: the guard-ring tap contacts
-  from `klt gen mos_array add_guard_ring` are off the 0.005 um grid. The same
-  device without the ring has none, but then the body is untied, so the ring
-  stays in the pilot. Filed as klayout-tools #2999.
-- `SB.4` and `SB.10` on the poly resistor: salicide-block spacing to contact
-  and poly extension beyond the block. Filed as klayout-tools #3000.
-- klt's curated `gf180mcu` DRC deck says `clean` on both classes of failure
-  because it has no rule for them. Filed as klayout-tools #3001.
+- PDK-runset DRC: the five MOS cells failed `contact_OFFGRID`, the poly
+  resistor failed `SB.4` and `SB.10`, the MIM passed.
+- PDK-runset LVS: match on the five MOS cells and the resistor; MIM not run
+  (the comparer read the reference's area and perimeter as 0 for every
+  capacitor card form tried).
+- Tool gaps filed from it: `contact_OFFGRID` from `klt gen mos_array
+  add_guard_ring` taps off the 0.005 um grid (klayout-tools #2999); `SB.4` /
+  `SB.10` salicide-block spacing and poly extension on the resistor
+  (klayout-tools #3000); the curated deck says `clean` on both because it has
+  no rule for them (klayout-tools #3001). Whether 0.8.0 changes the first two
+  is not known: the runset is no longer run here.
 
 No cell was edited by hand to make it pass, and no spec value was changed.
 
@@ -121,9 +132,9 @@ No cell was edited by hand to make it pass, and no spec value was changed.
 
 1. (#42 has landed; the cells above are regenerated from its values. Rerun
    `regen.sh` if `XCC`/`XRZ` change again.)
-2. Resolve or work around #2999 and #3000 (or hand-fix the contact grid and
-   SB geometry in a documented post step) until the PDK-runset DRC is clean on
-   every pilot cell, before any of them is composed.
+2. Re-check #2999 and #3000 (contact grid, salicide-block geometry) with a
+   foundry-equivalent DRC before any pilot cell is composed; the curated deck
+   cannot see them (#3001).
 3. Matching groups to place as units: the input pair `XM1/XM2` (common-centroid
    `diff_pair` or `mos_array` topology with dummies), the PMOS mirror
    `XM3/XM4`, and the bias mirror `XMB1/XM5/XM7` (ratio 1 : 1 : 6 by W, same L=2u).
@@ -139,7 +150,7 @@ No cell was edited by hand to make it pass, and no spec value was changed.
 - `cells.json`: cell table (schematic instances to cell names)
 - `regen.sh`, `tools/pilot.py`: the recipe
 - `gds/`: generated, labelled layouts
-- `ref/`: schematic-derived reference netlists (`*.klt.spice`, `*.foundry.spice`)
-- `extracted/`: extracted netlists (klt and PDK runset)
+- `ref/`: schematic-derived reference netlists (`*.klt.spice`)
+- `extracted/`: klt extracted netlists
 - `evidence/`: raw klt JSON (`gen`, `drc`, `extract`, `lvs` and the LVS requests)
-- `results.json`: per-cell summary, including the PDK-runset DRC rule counts
+- `results.json`: per-cell summary (klt curated DRC and klt LVS)

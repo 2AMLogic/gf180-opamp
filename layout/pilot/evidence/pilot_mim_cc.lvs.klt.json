@@ -1,7 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "engine": "klayout",
-  "layout": "../gds/pilot_mim_cc.gds",
+  "layout": {
+    "path": "layout/pilot/gds/pilot_mim_cc.gds",
+    "scope": "repo"
+  },
   "reference": "../ref/pilot_mim_cc.klt.spice",
   "top": "pilot_mim_cc",
   "reference_top": "PILOT_MIM_CC",
@@ -27,6 +30,8 @@
     },
     "power_connectivity": null,
     "anchor_top_level_pins": null,
+    "strict_top_level_pin_count": false,
+    "compare_mos_flavour": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -34,9 +39,11 @@
       "VGND",
       "VPWR",
       "VSS"
-    ]
+    ],
+    "finfet_bulk": null
   },
   "hints_applied": null,
+  "constant_nets_applied": null,
   "status": "match",
   "power_connectivity": {
     "status": "unchecked",
@@ -108,6 +115,18 @@
     "pfet",
     "bjt",
     "cap_mim_2f0_m4m5_noshield",
+    "cap_nmos_03v3",
+    "cap_nmos_03v3_dn",
+    "cap_pmos_03v3",
+    "cap_pmos_03v3_dn",
+    "cap_nmos_06v0",
+    "cap_nmos_06v0_dn",
+    "cap_pmos_06v0",
+    "cap_pmos_06v0_dn",
+    "cap_nmos_03v3_b",
+    "cap_pmos_03v3_b",
+    "cap_nmos_06v0_b",
+    "cap_pmos_06v0_b",
     "resistor",
     "diode_nd2ps_06v0",
     "diode_pd2nw_06v0"
@@ -116,17 +135,17 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "6f793d5572478ad667332760366c1348e9d9a3fa3056f9e8ef40010886fe865e",
+    "layout_sha256": "44b8c05f670ef0328abba2f0ea2d149b3e5e8731553c00cbcc51503776e3d875",
     "reference_sha256": "fc828d5316ff814ac344eabceda8938000187003af5379c70c3a58926ea50371",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.7.0+g5e5b55992a7f",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "gf180mcu",
-      "content_hash": "sha256:9babf6fd5d623fea50d380168ebf8f7c0f0f6e70eb7d89b221476dc47c7f6a85",
+      "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
       "released": true,
       "options": {
         "metal_top": "9K",
@@ -141,7 +160,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:6f793d5572478ad667332760366c1348e9d9a3fa3056f9e8ef40010886fe865e",
+      "content_hash": "sha256:44b8c05f670ef0328abba2f0ea2d149b3e5e8731553c00cbcc51503776e3d875",
       "role": "layout"
     },
     "klayout_version_mismatch": false
@@ -202,10 +221,14 @@
     {
       "category": "topology",
       "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'nfet'",
       "side": "layout",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "nfet"
+      },
       "property": null,
       "details": null,
       "circuit": null,
@@ -215,10 +238,14 @@
     {
       "category": "topology",
       "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'pfet'",
       "side": "layout",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "pfet"
+      },
       "property": null,
       "details": null,
       "circuit": null,
@@ -228,10 +255,14 @@
     {
       "category": "topology",
       "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'bjt'",
       "side": "layout",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "bjt"
+      },
       "property": null,
       "details": null,
       "circuit": null,
