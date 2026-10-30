@@ -1,7 +1,10 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "engine": "klayout",
-  "layout": "../gds/pilot_nfet_mb1_m5.gds",
+  "layout": {
+    "path": "layout/pilot/gds/pilot_nfet_mb1_m5.gds",
+    "scope": "repo"
+  },
   "reference": "../ref/pilot_nfet_mb1_m5.klt.spice",
   "top": "pilot_nfet_mb1_m5",
   "reference_top": "PILOT_NFET_MB1_M5",
@@ -27,6 +30,8 @@
     },
     "power_connectivity": null,
     "anchor_top_level_pins": null,
+    "strict_top_level_pin_count": false,
+    "compare_mos_flavour": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -34,9 +39,11 @@
       "VGND",
       "VPWR",
       "VSS"
-    ]
+    ],
+    "finfet_bulk": null
   },
   "hints_applied": null,
+  "constant_nets_applied": null,
   "status": "match",
   "power_connectivity": {
     "status": "unchecked",
@@ -86,6 +93,18 @@
     "pfet",
     "bjt",
     "cap_mim_2f0_m4m5_noshield",
+    "cap_nmos_03v3",
+    "cap_nmos_03v3_dn",
+    "cap_pmos_03v3",
+    "cap_pmos_03v3_dn",
+    "cap_nmos_06v0",
+    "cap_nmos_06v0_dn",
+    "cap_pmos_06v0",
+    "cap_pmos_06v0_dn",
+    "cap_nmos_03v3_b",
+    "cap_pmos_03v3_b",
+    "cap_nmos_06v0_b",
+    "cap_pmos_06v0_b",
     "resistor",
     "diode_nd2ps_06v0",
     "diode_pd2nw_06v0"
@@ -94,17 +113,17 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "5f012f9413c77513fd719a5c75ea4113a4c0c873e39e8d6ee34a7e4904ff3f0d",
+    "layout_sha256": "c066da57c83a4bedb9e9d8ac8c5fe1f1cbd65d6e2da21dc4cb503f313ab27c89",
     "reference_sha256": "0a035fc4857b77ba6055cb86dc9b8858fff43a10972b72f33d39374f844b4643",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.7.0+g5e5b55992a7f",
+    "klt_version": "0.8.0",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "gf180mcu",
-      "content_hash": "sha256:9babf6fd5d623fea50d380168ebf8f7c0f0f6e70eb7d89b221476dc47c7f6a85",
+      "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
       "released": true,
       "options": {
         "metal_top": "9K",
@@ -119,7 +138,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:5f012f9413c77513fd719a5c75ea4113a4c0c873e39e8d6ee34a7e4904ff3f0d",
+      "content_hash": "sha256:c066da57c83a4bedb9e9d8ac8c5fe1f1cbd65d6e2da21dc4cb503f313ab27c89",
       "role": "layout"
     },
     "klayout_version_mismatch": false
@@ -128,10 +147,14 @@
     {
       "category": "topology",
       "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'pfet'",
       "side": "layout",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "pfet"
+      },
       "property": null,
       "details": null,
       "circuit": null,
@@ -141,10 +164,14 @@
     {
       "category": "topology",
       "severity": "warning",
-      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'bjt'",
       "side": "layout",
       "net": null,
-      "device": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "bjt"
+      },
       "property": null,
       "details": null,
       "circuit": null,

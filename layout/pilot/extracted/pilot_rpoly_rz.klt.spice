@@ -5,6 +5,6 @@
 * pin B
 * pin vsubs
 .SUBCKT pilot_rpoly_rz A B vsubs
-* device instance $1 r0 *1 11.42,1 ppolyf_u_1k
+* device instance $1 r0 *1 11.52,1 ppolyf_u_1k
 X$1 A B vsubs ppolyf_u_1k r_length=22U r_width=2U
 .ENDS pilot_rpoly_rz
