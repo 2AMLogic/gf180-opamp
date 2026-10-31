@@ -2,6 +2,11 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-10-30
+
+- **PR #287**: fix(layout): regenerate pilot evidence under klt 0.8.0 on the curated gf180mcu deck
+- **Issue #282** (closed): Regenerate layout/pilot evidence under klt 0.8.0
+
 ### 2026-10-29
 
 - **Issue #31** (closed): README: embed the fleet burndown chart (one line)
