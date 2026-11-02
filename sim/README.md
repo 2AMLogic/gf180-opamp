@@ -661,9 +661,16 @@ isolation controls 95.746 -> 95.989 dB, 16.2141 -> 16.4033 MHz, PM 76.3 -> 77.6 
 point), no-Miller-cap control 36.175 -> 36.813 MHz; nominal local output-stage current 60.75 -> 62.97 uA;
 `slew-swing-power` local nominal control 266.3 -> 273.7 uW, 16.07 -> 16.15 V/us (same shift in the 27-cell study);
 `noise` records `fnoicor = unknown` instead of `0` and a model-parameter table in a different format. The
-`input-common-mode` re-mint was attempted on 2026-11-02 and wrote no record (a scan job outran the client; the fleet
-ceiling message asked for more shards), so it remains open, as do `selection.json`, the report and the signoff
-manifest, which keep the `c6d73a3` records until ICMR is re-minted (the report never mixes pins).
+first `input-common-mode` re-mint attempt on 2026-11-02 wrote no record (a scan job outran the client; the fleet
+ceiling message asked for more shards). It was re-run with each request sharded over 2 fleet jobs
+(`remote.hosts = 2`, `run_input_common_mode.py --hosts`, default `GRID_HOSTS = 2`) as
+`input-common-mode/records/20261102-223808-79ec73a.md`, counterpart of `20261010-164310-0127eb7`, with the client
+`f6eeac7` models staged (`environment.staged_model_inputs` in all four request reports; every unit passed, 6165 samples
+x 2 excitations). Unchanged: intersection [1.185, 2.705] V, 1.20 V meets at 45/45, worst gain at 1.20 V 94.22 dB.
+Nothing moved beyond tolerance. `selection.json`, the report and the signoff manifest still keep the `c6d73a3` records
+(the report never mixes pins): the full `f6eeac7` set now exists, but the report generator cross-checks each selected
+record against `sim/<bench>/corners/<run-id>/` bytes, which for runs since issue #271 live only in the artifact store
+that CI cannot reach, so the switch is blocked on that decision (see the pull request).
 
 No result moved beyond its tolerance so far, conditional on the paragraph above. The `20261018-*-517c6bb`
 set also holds a second, independent mint of the five `afc17a1` experiments (gain-gbw-pm, noise, cmrr,
