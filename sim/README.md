@@ -618,13 +618,22 @@ This is a single experiment: it does not extend to the other fleet records, whic
 request (sharded grids, controls) and call it directly also ship the client models, not only `submit_request`.
 Nothing moved beyond tolerance in these two either.
 
+*`psrr-mc` re-minted (issue #240, 2026-11-02).* The nominal campaign (5 corners x 300, seed 45, mismatch) was
+submitted through `klt sim` (batch fleet; `harness` sets `stage_model_inputs`) as
+`psrr-mc/records/20261102-164715-66ddda7.md`, counterpart of `20261011-145434-286b06c`. Unchanged: the sha256 of
+`samples.csv` (`c0f3ec85...`) and of the `imbalance`, `process-only` and `switch-off` control CSVs equal the
+`c6d73a3` record's, and the DR-6 comparison table is identical. The corner artifacts live in the artifact store (see
+`manifests/artifacts/psrr-mc-20261102-164715-66ddda7.manifest.json`), so `models_staged` in the grid reports was not
+re-inspected on disk in this slice. An earlier local `psrr-mc` run carried `models_staged: false` and was not committed.
+Nothing moved beyond tolerance.
+
 No result moved beyond its tolerance so far, conditional on the paragraph above. The `20261018-*-517c6bb`
 set also holds a second, independent mint of the five `afc17a1` experiments (gain-gbw-pm, noise, cmrr,
 psrr, slew-swing-power); the studies and the ICMR record cite it, and it agrees with the `afc17a1` set,
 but it carries the same `c6d73a3` runner stamp. **Still open**: the 45-point
 `offset-mc --grid full` counterpart of the cited `20261010-185141-e4be1ac` (13500 units; the fleet job was
 Spot-reclaimed past `batch.interrupted_grace_s`, so no record was written and it was not run locally) and the
-`psrr-mc` Monte Carlo campaign (not run in this slice; `cmrr-mc` and `gain-gbw-pm-mc` are re-minted above). The staged-model
+fleet single-experiment records (`models_staged: false`) still to be re-minted or justified (`psrr-mc`, `cmrr-mc` and `gain-gbw-pm-mc` are re-minted above). The staged-model
 `cmrr` and `gain-gbw-pm-mc` records are not selected yet: `selection.json`, the report and the signoff manifest regenerate
 once the remaining campaigns exist. `selection.json` and the characterization report
 keep selecting the `c6d73a3` records until the full set exists, so the report never mixes pins.
