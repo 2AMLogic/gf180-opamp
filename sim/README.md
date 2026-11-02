@@ -637,6 +637,34 @@ the first submit. The report's `environment.staged_model_inputs` lists the clien
 worst sigma (4.946 mV) and every per-point table equal it. Nothing moved beyond tolerance. Per-corner bytes are in the
 artifact store (`manifests/artifacts/offset-mc-20261102-180605-ce516ce.manifest.json`).
 
+*Single-experiment fleet records re-minted with the models staged (issue #240, 2026-11-02).* Nine records were minted
+on 2026-10-18 through `klt sim` (batch fleet; `harness` stages the client `f6eeac7` models) and their
+`models_staged: true` is in the grid reports; their corner bytes are in the artifact store (`manifests/artifacts/<bench>-<id>.manifest.json`):
+
+| Experiment | Counterpart of | New record | Graded grid headlines vs `c6d73a3` record |
+|---|---|---|---|
+| `gain-gbw-pm` | `20261010-161514-0127eb7` | `20261018-215225-119ceb4` | unchanged |
+| `noise` | `20261010-163507-0127eb7` | `20261018-215228-119ceb4` | unchanged |
+| `psrr` | `20261010-163854-0127eb7` | `20261018-215235-119ceb4` | unchanged |
+| `slew-swing-power` | `20261010-161852-0127eb7` | `20261018-215237-119ceb4` | unchanged |
+| `step-response` | `20261011-140956-cb03235` | `20261018-220328-119ceb4` | unchanged |
+| `gain-gbw-pm` passive 27 cells | `20261010-161720-0127eb7` | `20261018-220333-119ceb4` | unchanged |
+| `gain-gbw-pm` passive 405 cells | `20261011-042113-c635487` | `20261018-220338-119ceb4` | unchanged |
+| `slew-swing-power` passive 27 cells | `20261010-162823-0127eb7` | `20261018-220343-119ceb4` | unchanged |
+| `psrr` passive 405 cells | `20261011-102729-6612014` | `20261018-220353-119ceb4` | unchanged |
+
+Compared by diffing each record against its counterpart after dropping ids, dates, job ids and storage tables.
+**Values that differ** (all in local single-unit control sections, not in a graded grid headline; the new local units
+ran ngspice-42 where the old `gain-gbw-pm`/`slew-swing-power` records ran ngspice-46, so engine and model change are
+not separated here; no stated tolerance covers these controls and no spec row depends on them): `gain-gbw-pm` local
+isolation controls 95.746 -> 95.989 dB, 16.2141 -> 16.4033 MHz, PM 76.3 -> 77.6 deg (these now equal the grid's nominal
+point), no-Miller-cap control 36.175 -> 36.813 MHz; nominal local output-stage current 60.75 -> 62.97 uA;
+`slew-swing-power` local nominal control 266.3 -> 273.7 uW, 16.07 -> 16.15 V/us (same shift in the 27-cell study);
+`noise` records `fnoicor = unknown` instead of `0` and a model-parameter table in a different format. The
+`input-common-mode` re-mint was attempted on 2026-11-02 and wrote no record (a scan job outran the client; the fleet
+ceiling message asked for more shards), so it remains open, as do `selection.json`, the report and the signoff
+manifest, which keep the `c6d73a3` records until ICMR is re-minted (the report never mixes pins).
+
 No result moved beyond its tolerance so far, conditional on the paragraph above. The `20261018-*-517c6bb`
 set also holds a second, independent mint of the five `afc17a1` experiments (gain-gbw-pm, noise, cmrr,
 psrr, slew-swing-power); the studies and the ICMR record cite it, and it agrees with the `afc17a1` set,
