@@ -70,20 +70,6 @@
       "uri": "artifact:evidence/2AMLogic__gf180-opamp/58/58b74ebd7721c0322a34149b3d5d02bf09790c8cffb17537b009cf7481ee5973",
       "name": "sim/offset-mc/corners/20261102-180605-ce516ce/klt-report.json",
       "media_type": "application/json"
-    },
-    {
-      "sha256": "67932852d4984cf5c5ce5672b6ceb00d02f71f643852609fa546ccf5d4f72ea4",
-      "size": 1019240,
-      "kind": "evidence",
-      "producer": {
-        "tool": "klt",
-        "version": "0.8.1.dev1084+g7eebf2d2d867",
-        "loom.repo": "2AMLogic/gf180-opamp",
-        "commit": "ce516cea3fa41aecebd6a19bfe4fa2a4221823f4"
-      },
-      "uri": "artifact:evidence/2AMLogic__gf180-opamp/67/67932852d4984cf5c5ce5672b6ceb00d02f71f643852609fa546ccf5d4f72ea4",
-      "name": "sim/offset-mc/corners/20261102-180605-ce516ce/offset_samples.csv",
-      "media_type": "text/csv"
     }
   ]
 }
