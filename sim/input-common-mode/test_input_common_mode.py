@@ -140,6 +140,15 @@ class RequestTests(unittest.TestCase):
             for p in ("vds", "vdsat", "id"):
                 self.assertIn(f"@m.xdut.{d}.m0[{p}]", args)
 
+    def test_requests_are_sharded_over_fleet_jobs_only_when_asked(self):
+        pdk = m.Pdk(path=Path("/x/gf180mcuD"), variant="gf180mcuD", source="test")
+        pairs = [(3300, 1200)]
+        req = m.icmr_request(Path("/tmp/tb.spice"), pdk, "sf", m.TEMPS_C, pairs, hosts=m.GRID_HOSTS)
+        self.assertEqual(req["remote"], {"hosts": m.GRID_HOSTS})
+        self.assertGreater(m.GRID_HOSTS, 1)
+        self.assertNotIn("remote", m.icmr_request(Path("/tmp/tb.spice"), pdk, "sf", m.TEMPS_C, pairs))
+        self.assertNotIn("remote", m.icmr_request(Path("/tmp/tb.spice"), pdk, "sf", m.TEMPS_C, pairs, hosts=1))
+
 
 class MeasurementConfigTests(unittest.TestCase):
     """Issue #180: the runner and `measurement_config.py` read ONE source, so the
@@ -479,6 +488,7 @@ class KeepWorkCacheTests(unittest.TestCase):
             batch_retry_wait_s = 0
             batch_runner_version_check = None
             batch_capacity_wait_s = None
+            hosts = None
 
         saved = (m.C.materialise, m.icmr_request, m.run_klt_retrying)
         m.C.materialise = self._materialise
