@@ -69,7 +69,7 @@ the integrator. The density is the primary result; band rms is derived from it.
 ## Flicker-model audit (pinned PDK)
 
 The record repeats this audit, generated from the installed library. For
-gf180mcuD, open_pdks `c6d73a35…`, `sm141064.ngspice`:
+gf180mcuD, as audited under the historical open_pdks `c6d73a35…` (superseded by the pinned `f6eeac7`; see `sim/README.md` "PDK re-pin re-runs"), `sm141064.ngspice`:
 
 - `fnoimod = 1` (BSIM4 unified flicker model) on all `nfet_03v3` and
   `pfet_03v3` model cards (96 each); `ef` = 0.95 (n), 1.12 (p);

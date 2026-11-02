@@ -35,7 +35,7 @@ ratifying one is a separate decision.
   Sample sigma uses n−1; at N = 300 its relative standard error is ≈ 4 %.
   Skew and excess kurtosis are recorded per corner as a normality sanity check.
 
-## PDK mismatch-model audit (gf180mcuD, open_pdks `c6d73a35…`)
+## PDK mismatch-model audit (gf180mcuD, historical open_pdks `c6d73a35…`; pin is now `f6eeac7`)
 
 - Mismatch is gated by the model-level parameter **`sw_stat_mismatch`**
   (default 0 in `design.ngspice`), with global statistics gated separately by

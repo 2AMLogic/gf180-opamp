@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "sha256": "204a5d76c70bc8dbcaef8f6b6ea4f33a3cb0637e375c57641bec8307bb927bc8",
+      "size": 1035466,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1073+gbe5754378ff3",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "66ddda773d27d209a1c341deb57aa7dae65d9b15"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/20/204a5d76c70bc8dbcaef8f6b6ea4f33a3cb0637e375c57641bec8307bb927bc8",
+      "name": "sim/psrr-mc/corners/20261102-164715-66ddda7/klt-report.grid.json",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "53795c8df14a4a4a73bf6aad01409a2d7a95361224f0a76a908bdfe3939c6bfc",
+      "size": 218455,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1073+gbe5754378ff3",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "66ddda773d27d209a1c341deb57aa7dae65d9b15"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/53/53795c8df14a4a4a73bf6aad01409a2d7a95361224f0a76a908bdfe3939c6bfc",
+      "name": "sim/psrr-mc/corners/20261102-164715-66ddda7/klt-report.imbalance.json",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "ffcebcf3d225ac1f566c689b89167903718c92dee1674d82d2b78e3857a99bf6",
+      "size": 22234,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1073+gbe5754378ff3",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "66ddda773d27d209a1c341deb57aa7dae65d9b15"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/ff/ffcebcf3d225ac1f566c689b89167903718c92dee1674d82d2b78e3857a99bf6",
+      "name": "sim/psrr-mc/corners/20261102-164715-66ddda7/klt-report.process-only.json",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "755a6b7045ab3b432c6fbea59af7c41ce1bbc1f92234f765889b733c7408f925",
+      "size": 24137,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1073+gbe5754378ff3",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "66ddda773d27d209a1c341deb57aa7dae65d9b15"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/75/755a6b7045ab3b432c6fbea59af7c41ce1bbc1f92234f765889b733c7408f925",
+      "name": "sim/psrr-mc/corners/20261102-164715-66ddda7/klt-report.switch-off.json",
+      "media_type": "application/json"
+    }
+  ]
+}
