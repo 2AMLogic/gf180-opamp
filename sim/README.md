@@ -627,13 +627,21 @@ submitted through `klt sim` (batch fleet; `harness` sets `stage_model_inputs`) a
 re-inspected on disk in this slice. An earlier local `psrr-mc` run carried `models_staged: false` and was not committed.
 Nothing moved beyond tolerance.
 
+*`offset-mc --grid full` re-minted (issue #240, 2026-11-02).* The 45-point grid (13500 units, seed 45) was submitted
+through `klt sim` (batch fleet, `remote.hosts = 3` shards, `stage_model_inputs` set) as
+`offset-mc/records/20261102-180605-ce516ce.md`, counterpart of `20261010-185141-e4be1ac`; it finished in 1948 s on
+the first submit. The report's `environment.staged_model_inputs` lists the client's `sm141064.ngspice` /
+`sm141064.spice` (sha256 `f905b073...`) and `sm141064_mim.spice` (`9b85cd00...`), the same `f6eeac7` files as the
+`cmrr-mc` record, so this is a `f6eeac7`-model result. Unchanged: `offset_samples.csv` is **byte-identical** (sha256
+`67932852...`, 13500 rows) to the `c6d73a3` record's, and the worst 3-sigma offset (15.458 mV at typical / 27 C / 3.30 V),
+worst sigma (4.946 mV) and every per-point table equal it. Nothing moved beyond tolerance. Per-corner bytes are in the
+artifact store (`manifests/artifacts/offset-mc-20261102-180605-ce516ce.manifest.json`).
+
 No result moved beyond its tolerance so far, conditional on the paragraph above. The `20261018-*-517c6bb`
 set also holds a second, independent mint of the five `afc17a1` experiments (gain-gbw-pm, noise, cmrr,
 psrr, slew-swing-power); the studies and the ICMR record cite it, and it agrees with the `afc17a1` set,
-but it carries the same `c6d73a3` runner stamp. **Still open**: the 45-point
-`offset-mc --grid full` counterpart of the cited `20261010-185141-e4be1ac` (13500 units; the fleet job was
-Spot-reclaimed past `batch.interrupted_grace_s`, so no record was written and it was not run locally) and the
-fleet single-experiment records (`models_staged: false`) still to be re-minted or justified (`psrr-mc`, `cmrr-mc` and `gain-gbw-pm-mc` are re-minted above). The staged-model
+but it carries the same `c6d73a3` runner stamp. **Still open**: the
+fleet single-experiment records (`models_staged: false`) still to be re-minted or justified (`psrr-mc`, `cmrr-mc`, `gain-gbw-pm-mc` and `offset-mc --grid full` are re-minted above). The staged-model
 `cmrr` and `gain-gbw-pm-mc` records are not selected yet: `selection.json`, the report and the signoff manifest regenerate
 once the remaining campaigns exist. `selection.json` and the characterization report
 keep selecting the `c6d73a3` records until the full set exists, so the report never mixes pins.
