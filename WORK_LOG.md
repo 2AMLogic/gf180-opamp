@@ -2,6 +2,10 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-11-02
+
+- **PR #290**: sim: psrr-mc manifest names only objects not already tracked in git
+
 ### 2026-10-30
 
 - **PR #287**: fix(layout): regenerate pilot evidence under klt 0.8.0 on the curated gf180mcu deck
