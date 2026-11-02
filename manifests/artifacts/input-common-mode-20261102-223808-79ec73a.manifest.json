@@ -872,20 +872,6 @@
       "uri": "artifact:evidence/2AMLogic__gf180-opamp/70/70c42ba567ea91848a23c9ca1fc3a6eceb07f12aaf5b037000c73f9070dab437",
       "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/requests/scan-dm.request.json.gz",
       "media_type": "application/json"
-    },
-    {
-      "sha256": "671389fea0d5528e8c3f2f9decbc70868e3bdedd5ea746fcb22e64e744b7d313",
-      "size": 1619607,
-      "kind": "evidence",
-      "producer": {
-        "tool": "klt",
-        "version": "0.8.1.dev1124+g83a6073ff32a",
-        "loom.repo": "2AMLogic/gf180-opamp",
-        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
-      },
-      "uri": "artifact:evidence/2AMLogic__gf180-opamp/67/671389fea0d5528e8c3f2f9decbc70868e3bdedd5ea746fcb22e64e744b7d313",
-      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/samples.csv",
-      "media_type": "text/csv"
     }
   ]
 }
