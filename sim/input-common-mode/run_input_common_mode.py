@@ -107,6 +107,7 @@ from harness import (  # noqa: E402
     klt_version,
     load_dut_text,
     ngspice_version,
+    remote_jobs,
     remote_of,
     run_klt,
     run_klt_retrying,
@@ -129,6 +130,14 @@ TESTBENCH = HERE / "testbench" / "tb_input_common_mode.spice"
 CMRR_DIR = REPO_ROOT / "sim" / "cmrr"
 
 CORNERS = mc.CORNERS
+#: Fleet jobs (`request.remote.hosts`) each scan/refine request is sharded over.
+#: The fleet caps ONE job at 3600 s and a timed-out job returns no per-unit
+#: results (2AMLogic/klayout-tools#2833). The unsharded refine requests ran
+#: ~3170 s (record 20261018-012726-517c6bb) and a 2026-11-02 re-mint outran the
+#: client; two shards per request halve each job (~1600 s) while the two
+#: excitations still ask the shared fleet for only four concurrent instances.
+GRID_HOSTS = 2
+
 TEMPS_C = mc.TEMPS_C
 SUPPLIES_V = mc.SUPPLIES_V
 NOMINAL = G.NOMINAL
@@ -253,13 +262,14 @@ def paired_supply(pairs: list[tuple[int, int]]) -> dict:
 
 
 def icmr_request(netlist: Path, pdk: Pdk, processes: str | list[str], temps: list[float],
-                 pairs: list[tuple[int, int]], *, local: bool = False) -> dict:
+                 pairs: list[tuple[int, int]], *, local: bool = False, hosts: int | None = None) -> dict:
     """The process corner(s) x the temperatures x the paired (VDD, VCM) samples.
 
     Built from the gain bench's request (corner bundles, model library), with the
     paired supply axis, the low-frequency `.ac` grid, the operating-point print
     appended and no `.meas` cards (no fleet expression-measurement support is
-    needed). `local` pins the model library to the harness-resolved PDK root."""
+    needed). `local` pins the model library to the harness-resolved PDK root.
+    `hosts` > 1 shards the unit list over that many fleet jobs (`remote.hosts`)."""
     procs = [processes] if isinstance(processes, str) else list(processes)
     req = G.ac_request(netlist, pdk, procs, temps, [3.3])
     req["corners"]["supply_v"] = paired_supply(pairs)
@@ -267,6 +277,8 @@ def icmr_request(netlist: Path, pdk: Pdk, processes: str | list[str], temps: lis
     req["analysis"] = {"kind": "ac", "args": mc.ac_args()}
     if local:
         req["models"]["pdk_root"] = str(pdk.path.parent)
+    if hosts and hosts > 1:
+        req["remote"] = {"hosts": int(hosts)}
     return req
 
 
@@ -803,6 +815,29 @@ def netlist_fingerprint(netlist: Path) -> str:
     return h.hexdigest()
 
 
+def execution_lines(reports: dict[str, dict], walls: dict[str, float]) -> list[str]:
+    """Per-request execution lines. A sharded request (`remote.hosts` > 1) reports its
+    jobs under `environment.remote.fleet[]`, which the shared CMRR helper does not read."""
+    L = []
+    for tag, rep in reports.items():
+        jobs = remote_jobs(rep)
+        if len(jobs) <= 1:
+            L += C.execution_lines({tag: rep}, {tag: walls.get(tag, 0)})
+            continue
+        j0 = jobs[0]
+        env = rep.get("environment") or {}
+        staged = [x.get("name", "?") if isinstance(x, dict) else str(x)
+                  for x in (env.get("staged_model_inputs") or [])]
+        L.append(f"  - `{tag}`: {len(jobs)} fleet job(s) (`remote.hosts = {len(jobs)}`, contiguous shards merged by klt): "
+                 + ", ".join(f"`{j.get('job_id', j.get('job', '?'))}`" for j in jobs)
+                 + f"; {'Spot ' if j0.get('spot') else ''}{j0.get('instance_type', '')}, state `{j0.get('state')}`; "
+                 f"runner klt `{j0.get('runner_klt_version')}` vs client `{j0.get('client_klt_version')}`; "
+                 f"engine `{env.get('engine')} {env.get('engine_version')}`; "
+                 + (f"client models staged ({', '.join(staged)}); " if staged else "")
+                 + f"wall {walls.get(tag, 0):.0f} s")
+    return L
+
+
 def request_cache_key(req: dict, netlist: Path) -> str:
     """`--keep-work` cache key: the request minus its (path-only) `netlist`
     field, plus the content fingerprint of the netlist and its includes."""
@@ -836,7 +871,8 @@ def run_requests(plans: list[Plan], pdk: Pdk, work: Path, args, reqs_out: dict, 
 def _run_plan(p: Plan, pdk: Pdk, work: Path, args, reqs_out: dict, reports_out: dict, walls: dict) -> None:
     wd = work / p.name
     tb = C.materialise(wd, pdk, C.with_servo(MODES[p.mode]), testbench=TESTBENCH, guard=C.guard_testbench)
-    req = icmr_request(tb, pdk, p.processes, TEMPS_C, p.pairs)
+    req = icmr_request(tb, pdk, p.processes, TEMPS_C, p.pairs,
+                       hosts=GRID_HOSTS if args.hosts is None else args.hosts)
     req["batch"] = batch_block(args)
     cache = work / f"{p.name}.cached-report.json"
     rq = request_cache_key(req, tb)
@@ -1218,7 +1254,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
     add(f"- **Execution**: {len(plans)} `klt sim` corner requests ({n_scan} scan: one per excitation, crossing the "
         f"5 process corners x 3 temperatures with the paired VDD/VCM samples; {n_ref} refinement over {rounds} "
         "round(s), one per excitation per round). Per request:")
-    for ln in C.execution_lines(reports, walls):
+    for ln in execution_lines(reports, walls):
         add(ln)
     if REUSED:
         add(f"  - Reports of {', '.join(f'`{n}`' for n in sorted(REUSED))} were reused from the `--keep-work` cache: "
@@ -1463,6 +1499,8 @@ def add_args(ap: argparse.ArgumentParser) -> None:
                     help="re-submit up to N times when the batch submit is refused for fleet capacity "
                     "(never changes backend)")
     ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    ap.add_argument("--hosts", type=int, default=None,
+                    help=f"fleet jobs each request is sharded over (default {GRID_HOSTS})")
     ap.add_argument("--keep-work", type=Path, default=None,
                     help="use this directory as the work dir and keep it (never committed); an existing one is "
                     "reused, and a cached report for an identical request is not re-submitted")

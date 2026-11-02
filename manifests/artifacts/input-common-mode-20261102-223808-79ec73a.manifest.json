@@ -1,0 +1,877 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "sha256": "d002a95abb82febf2380fce47c441177682b24c56dd0563cfb2c823c1d34e521",
+      "size": 1371,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/d0/d002a95abb82febf2380fce47c441177682b24c56dd0563cfb2c823c1d34e521",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/iso-csv1e+07-cm.log"
+    },
+    {
+      "sha256": "d2d8bbe9e7a415759257e2435f3e2c38960c68b86abd0aecaa5e41de9a567db0",
+      "size": 1371,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/d2/d2d8bbe9e7a415759257e2435f3e2c38960c68b86abd0aecaa5e41de9a567db0",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/iso-csv1e+07-dm.log"
+    },
+    {
+      "sha256": "66c3f7cf5038b6e8ef69ab2a88b73cb858e56bfac82106232a5a8f947aca7226",
+      "size": 1371,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/66/66c3f7cf5038b6e8ef69ab2a88b73cb858e56bfac82106232a5a8f947aca7226",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/iso-csv1e+11-cm.log"
+    },
+    {
+      "sha256": "222e1eff3af33ae01d842a99e0bfdbe14b1bb2ebc229768a64bd51d182bde664",
+      "size": 1371,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/22/222e1eff3af33ae01d842a99e0bfdbe14b1bb2ebc229768a64bd51d182bde664",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/iso-csv1e+11-dm.log"
+    },
+    {
+      "sha256": "c26a4c7c3cbc1ae3d7f3491c8bd50655bff1621f50922392c3027326a5c62e7d",
+      "size": 1373,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/c2/c26a4c7c3cbc1ae3d7f3491c8bd50655bff1621f50922392c3027326a5c62e7d",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/iso-inadequate-cm.log"
+    },
+    {
+      "sha256": "f4dfdac6e6b4f2f5e1ffe7ef03fd320a06a07d5f5d57deb283ba928be1d00aec",
+      "size": 1373,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/f4/f4dfdac6e6b4f2f5e1ffe7ef03fd320a06a07d5f5d57deb283ba928be1d00aec",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/iso-inadequate-dm.log"
+    },
+    {
+      "sha256": "9c775a64381b31926f40cf95f6bb9235300465472c11c3675383d1cf77519ea7",
+      "size": 1366,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/9c/9c775a64381b31926f40cf95f6bb9235300465472c11c3675383d1cf77519ea7",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/nominal-cm.log"
+    },
+    {
+      "sha256": "fad8668c2e461f62fb5f4e388a4bc361b647cfd91ddf59e3193b26649b3c110c",
+      "size": 1366,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/fa/fad8668c2e461f62fb5f4e388a4bc361b647cfd91ddf59e3193b26649b3c110c",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/nominal-dm.log"
+    },
+    {
+      "sha256": "f054a71d5057d6ec2076740844ec024cd29b4cdf84b5a4eb94ca319ad10f9a74",
+      "size": 1369,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/f0/f054a71d5057d6ec2076740844ec024cd29b4cdf84b5a4eb94ca319ad10f9a74",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/unequal-cm-cm.log"
+    },
+    {
+      "sha256": "1b83a89a97acf556dcbadad74b10d7da2b91a32ac8ac389e034dc3d98cb5b78c",
+      "size": 1369,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/1b/1b83a89a97acf556dcbadad74b10d7da2b91a32ac8ac389e034dc3d98cb5b78c",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/controls/unequal-cm-dm.log"
+    },
+    {
+      "sha256": "551e6e2a67b4aa47c65454145828d95ccd84e7eaad7ca15afe8a617d3c499ae4",
+      "size": 342853,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/55/551e6e2a67b4aa47c65454145828d95ccd84e7eaad7ca15afe8a617d3c499ae4",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ff_-40c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "b3372b23bd693aba8690a585c8cfab7de87de6f7494f6689e88d1cd60bd00729",
+      "size": 381541,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/b3/b3372b23bd693aba8690a585c8cfab7de87de6f7494f6689e88d1cd60bd00729",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ff_-40c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "a13de661d6c0c5b284457aaa74f005c79e57698178ce5f7e063acefbcc3e107d",
+      "size": 402514,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/a1/a13de661d6c0c5b284457aaa74f005c79e57698178ce5f7e063acefbcc3e107d",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ff_-40c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "b7468ff77ff9ba463292a9a7218cf7614de7ebe1239142040d779c2e1e9d635d",
+      "size": 341353,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/b7/b7468ff77ff9ba463292a9a7218cf7614de7ebe1239142040d779c2e1e9d635d",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ff_125c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "e820848dcf9400c5da2792c17463819a97e918b32fac135feaf7ca34d7bf1acc",
+      "size": 379834,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/e8/e820848dcf9400c5da2792c17463819a97e918b32fac135feaf7ca34d7bf1acc",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ff_125c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "77971dd49bba35249277cbd0a56da9c149332ed621baaa722a008777071666d0",
+      "size": 402080,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/77/77971dd49bba35249277cbd0a56da9c149332ed621baaa722a008777071666d0",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ff_125c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "a0f0c7fbefb6d133127b93c29192e3c9d7e7d047b7b7601d0dd8e13928282870",
+      "size": 344587,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/a0/a0f0c7fbefb6d133127b93c29192e3c9d7e7d047b7b7601d0dd8e13928282870",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ff_27c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "b06a77134463ffd48fd7809fb324f2958b92736733ae6173abb38123b685d062",
+      "size": 382915,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/b0/b06a77134463ffd48fd7809fb324f2958b92736733ae6173abb38123b685d062",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ff_27c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "b631d54af99795fa7a62cd862e4bd69b85e4f6e3171be6d43f4bbcb217780ceb",
+      "size": 404415,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/b6/b631d54af99795fa7a62cd862e4bd69b85e4f6e3171be6d43f4bbcb217780ceb",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ff_27c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "873b67cd18b76ec94f11153e50c13b8a2386b6e3b1539b268cdda5258b8d8ba0",
+      "size": 343262,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/87/873b67cd18b76ec94f11153e50c13b8a2386b6e3b1539b268cdda5258b8d8ba0",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/fs_-40c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "045ae97c676cdcc3347ff547adde94b5ba47aee3bace9a60cc9390cf577ca557",
+      "size": 381467,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/04/045ae97c676cdcc3347ff547adde94b5ba47aee3bace9a60cc9390cf577ca557",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/fs_-40c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "b49501e9dca98e2ff7f82e5ad0248e514c2a39486740c3f0aee3a9f63e1391c8",
+      "size": 403025,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/b4/b49501e9dca98e2ff7f82e5ad0248e514c2a39486740c3f0aee3a9f63e1391c8",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/fs_-40c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "dcedc0bea2fb88f4eb5e2fc3844369db531b09dc38397aa9a35db9d4c7bd133d",
+      "size": 339615,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/dc/dcedc0bea2fb88f4eb5e2fc3844369db531b09dc38397aa9a35db9d4c7bd133d",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/fs_125c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "27c59d9685bf1af7edfff53b3a4baafb70bfd5b1a0a60938daa4e3872b27d927",
+      "size": 378620,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/27/27c59d9685bf1af7edfff53b3a4baafb70bfd5b1a0a60938daa4e3872b27d927",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/fs_125c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "74138ab85ab5296eaabbcfb439c884793141b990d84b6dc4c39528b096f51e11",
+      "size": 400740,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/74/74138ab85ab5296eaabbcfb439c884793141b990d84b6dc4c39528b096f51e11",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/fs_125c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "fe7a344698b7315eb4b0531194a1d3797ea23734f6dfefe6ee5ab08fa6d3eeb7",
+      "size": 342873,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/fe/fe7a344698b7315eb4b0531194a1d3797ea23734f6dfefe6ee5ab08fa6d3eeb7",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/fs_27c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "25ca7eded5e878ccfe4bed8fdb35bb85626893d26811c477bd1405374a3ef970",
+      "size": 381283,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/25/25ca7eded5e878ccfe4bed8fdb35bb85626893d26811c477bd1405374a3ef970",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/fs_27c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "18226f7cb0f5ddc3dd38e5c304298d729640927b51848c6cebd53f4a660c13d0",
+      "size": 403670,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/18/18226f7cb0f5ddc3dd38e5c304298d729640927b51848c6cebd53f4a660c13d0",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/fs_27c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "0f1ae6f6653e15ad96fdb1ec713b3e3e1bc27906be246f4ceafe09bc2e3388bc",
+      "size": 348182,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/0f/0f1ae6f6653e15ad96fdb1ec713b3e3e1bc27906be246f4ceafe09bc2e3388bc",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/sf_-40c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "cd1eb6671586351ac8d9f1c61d23ecfc70cba55ed22a9e09dd2b7d8d9be80bc2",
+      "size": 384586,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/cd/cd1eb6671586351ac8d9f1c61d23ecfc70cba55ed22a9e09dd2b7d8d9be80bc2",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/sf_-40c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "6151bd15621079977e3a5f8cef9bc6928ddab812653567c15089210f42fc9e10",
+      "size": 405188,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/61/6151bd15621079977e3a5f8cef9bc6928ddab812653567c15089210f42fc9e10",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/sf_-40c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "ecd73ee711907218dc5dba68b4149e6008877c551548b2246f1a66c32ba8d6b0",
+      "size": 346961,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/ec/ecd73ee711907218dc5dba68b4149e6008877c551548b2246f1a66c32ba8d6b0",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/sf_125c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "95fde126e7df7af51e256656f6b11a77be99fda0fcdcfcd196fe7b8d05c3e823",
+      "size": 383740,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/95/95fde126e7df7af51e256656f6b11a77be99fda0fcdcfcd196fe7b8d05c3e823",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/sf_125c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "f7349539ab6d246d8f2f09bd22ab9871e9c0da948ba45b01b2b0b31d2c1c6986",
+      "size": 405255,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/f7/f7349539ab6d246d8f2f09bd22ab9871e9c0da948ba45b01b2b0b31d2c1c6986",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/sf_125c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "837ad51563ef682654e74f71a5280f30b6b69d52ed08a6e2c18b466334fc34d1",
+      "size": 348600,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/83/837ad51563ef682654e74f71a5280f30b6b69d52ed08a6e2c18b466334fc34d1",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/sf_27c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "1ec43b59156d1011087f30d91d64dbd3515618c4b72415f77f734b184e691483",
+      "size": 385356,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/1e/1ec43b59156d1011087f30d91d64dbd3515618c4b72415f77f734b184e691483",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/sf_27c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "b142a5763c76e11c01b364d15a0e67e8f1ef3999d844b6b2420e9b76e8abe33a",
+      "size": 405857,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/b1/b142a5763c76e11c01b364d15a0e67e8f1ef3999d844b6b2420e9b76e8abe33a",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/sf_27c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "eb796900afa45a00f975f536bd45bccfc3c94182b26d66a5bdd50a429aa94c31",
+      "size": 349433,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/eb/eb796900afa45a00f975f536bd45bccfc3c94182b26d66a5bdd50a429aa94c31",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ss_-40c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "025120da1a8c843fda9c49df0b7090042b5656d3956083c9521890f5c1cafd84",
+      "size": 385996,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/02/025120da1a8c843fda9c49df0b7090042b5656d3956083c9521890f5c1cafd84",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ss_-40c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "77d61435b695cac3ae601018dc7c77554dc5f4e388fd7005a225e7374c13ff58",
+      "size": 406207,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/77/77d61435b695cac3ae601018dc7c77554dc5f4e388fd7005a225e7374c13ff58",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ss_-40c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "4d4f80722a6f05334fb4a1bfe539d1af9f05b06cdb160d250f5722cb00f47239",
+      "size": 346103,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/4d/4d4f80722a6f05334fb4a1bfe539d1af9f05b06cdb160d250f5722cb00f47239",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ss_125c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "7d749dc738a85eb3f1f100a5260b052f43b988c83b059c75609d0cfad43047aa",
+      "size": 383358,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/7d/7d749dc738a85eb3f1f100a5260b052f43b988c83b059c75609d0cfad43047aa",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ss_125c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "6dbeb576e31440cd6a3e6fcd1f42d2d91aa653f75f8d02e4f802110eb4e7160d",
+      "size": 405011,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/6d/6dbeb576e31440cd6a3e6fcd1f42d2d91aa653f75f8d02e4f802110eb4e7160d",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ss_125c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "1d3b3d3ebd5b9c3077c68890e36b75f79c2ed9ae2e83f05a162c0345280725d5",
+      "size": 346654,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/1d/1d3b3d3ebd5b9c3077c68890e36b75f79c2ed9ae2e83f05a162c0345280725d5",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ss_27c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "5ccc32f89e66e36fe389de526bdb3c171a586c6dd71f654a24c120b72284e907",
+      "size": 383564,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/5c/5ccc32f89e66e36fe389de526bdb3c171a586c6dd71f654a24c120b72284e907",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ss_27c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "db14493519bf947e8ef477429a3a0a04c6903bf93af8c18392b5d8e6178e3c64",
+      "size": 403497,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/db/db14493519bf947e8ef477429a3a0a04c6903bf93af8c18392b5d8e6178e3c64",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/ss_27c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "c1bc7f27b93b3819a6854e1032953dcf29627eddba615b33e12b8fcb686d8387",
+      "size": 345963,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/c1/c1bc7f27b93b3819a6854e1032953dcf29627eddba615b33e12b8fcb686d8387",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/typical_-40c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "daafd49625df678830a3e9759544bee006b782c050f2adcbe1455ffc440566be",
+      "size": 383698,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/da/daafd49625df678830a3e9759544bee006b782c050f2adcbe1455ffc440566be",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/typical_-40c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "2b2f157a7b646b9c5171cfdf8892d3a868ac3b04f217440695ac32e52ea30e36",
+      "size": 404329,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/2b/2b2f157a7b646b9c5171cfdf8892d3a868ac3b04f217440695ac32e52ea30e36",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/typical_-40c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "dcaf247e32b50b4c2e9af23eae3f5eafcbf64fbe4ede7eb5077826b56d183a69",
+      "size": 344179,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/dc/dcaf247e32b50b4c2e9af23eae3f5eafcbf64fbe4ede7eb5077826b56d183a69",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/typical_125c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "a6fc993809c9f9a2ac4d3c421c2473f430a5c2b228d9f1c1154eba04eb2ab9c4",
+      "size": 381573,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/a6/a6fc993809c9f9a2ac4d3c421c2473f430a5c2b228d9f1c1154eba04eb2ab9c4",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/typical_125c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "f183d677d644cd9f8680e9e1ea6278a29e9903e398f35429f7a5a5fc7eea786a",
+      "size": 404013,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/f1/f183d677d644cd9f8680e9e1ea6278a29e9903e398f35429f7a5a5fc7eea786a",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/typical_125c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "aa4739978af4c42c68df33713ad412b70f56522e5e51e9c06e6833c8bd1947db",
+      "size": 346285,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/aa/aa4739978af4c42c68df33713ad412b70f56522e5e51e9c06e6833c8bd1947db",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/typical_27c_2.97v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "a4c756936a4f9abf6831bc9418930308cc271cffa1fad59aa0a15464c9b89130",
+      "size": 383823,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/a4/a4c756936a4f9abf6831bc9418930308cc271cffa1fad59aa0a15464c9b89130",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/typical_27c_3.30v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "fce7d6f83b37a57672fe3d7f315ad066d483a7505d5328b82f2c370eea0cd9dc",
+      "size": 405698,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/fc/fce7d6f83b37a57672fe3d7f315ad066d483a7505d5328b82f2c370eea0cd9dc",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/data/typical_27c_3.63v.tar.gz",
+      "media_type": "application/x-tar"
+    },
+    {
+      "sha256": "b3d36a3b69584c40e0b5190a3d11b2b5c6b0b81cdd5f8770d17f5bff43c6b66d",
+      "size": 37170,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/b3/b3d36a3b69584c40e0b5190a3d11b2b5c6b0b81cdd5f8770d17f5bff43c6b66d",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/reports/refine1-cm.report.json.gz",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "394c9565894a6b78c8f8d97c41694b05addadc7c24e7217fee57e1fe6e0c08c3",
+      "size": 37230,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/39/394c9565894a6b78c8f8d97c41694b05addadc7c24e7217fee57e1fe6e0c08c3",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/reports/refine1-dm.report.json.gz",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "190f9d01c9bdc4ccaff60e5de19aa89584e89a84ee238e84e1176216b4c49b7c",
+      "size": 36078,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/19/190f9d01c9bdc4ccaff60e5de19aa89584e89a84ee238e84e1176216b4c49b7c",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/reports/scan-cm.report.json.gz",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "2163ae6c4147f969d4d5d8063adb1851d97151ce0756935b7eaeadb873b4301c",
+      "size": 36066,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/21/2163ae6c4147f969d4d5d8063adb1851d97151ce0756935b7eaeadb873b4301c",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/reports/scan-dm.report.json.gz",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "7c7dac9f6be1377d3f82b94611ef04f7fa0f168b2caa1bc536348921406abbc3",
+      "size": 753,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/7c/7c7dac9f6be1377d3f82b94611ef04f7fa0f168b2caa1bc536348921406abbc3",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/requests/refine1-cm.request.json.gz",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "d5d7a86303766e42d1e1c4401dfb071062f2d0c3c37f75ee4716732c41c31e5f",
+      "size": 753,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/d5/d5d7a86303766e42d1e1c4401dfb071062f2d0c3c37f75ee4716732c41c31e5f",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/requests/refine1-dm.request.json.gz",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "d3be75eaf11b1ccc70f5f5935ac139bcf05321d6bc4c93ab0a80d736c29fbfbb",
+      "size": 710,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/d3/d3be75eaf11b1ccc70f5f5935ac139bcf05321d6bc4c93ab0a80d736c29fbfbb",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/requests/scan-cm.request.json.gz",
+      "media_type": "application/json"
+    },
+    {
+      "sha256": "70c42ba567ea91848a23c9ca1fc3a6eceb07f12aaf5b037000c73f9070dab437",
+      "size": 710,
+      "kind": "evidence",
+      "producer": {
+        "tool": "klt",
+        "version": "0.8.1.dev1124+g83a6073ff32a",
+        "loom.repo": "2AMLogic/gf180-opamp",
+        "commit": "79ec73a4f34e97b1617055fdf1d55676e9ff4e40"
+      },
+      "uri": "artifact:evidence/2AMLogic__gf180-opamp/70/70c42ba567ea91848a23c9ca1fc3a6eceb07f12aaf5b037000c73f9070dab437",
+      "name": "sim/input-common-mode/corners/20261102-223808-79ec73a/requests/scan-dm.request.json.gz",
+      "media_type": "application/json"
+    }
+  ]
+}
