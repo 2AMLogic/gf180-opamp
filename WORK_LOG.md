@@ -4,6 +4,9 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-02
 
+- **PR #294**: sim: re-mint input-common-mode under f6eeac7 as sharded fleet requests
+- **PR #293**: sim: add f6eeac7 staged-model re-mints of the single-experiment fleet records
+- **PR #291**: sim: re-mint offset-mc full grid under open_pdks f6eeac7
 - **PR #290**: sim: psrr-mc manifest names only objects not already tracked in git
 
 ### 2026-10-30
