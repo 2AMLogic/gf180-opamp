@@ -1085,6 +1085,106 @@ def check_rederive(sub: Path, results: dict, *, rederive, same, suffix: str, lab
     return n_ok, n_all
 
 
+def meas(c: dict) -> dict:
+    """klt's own `.meas` values of corner `c`, keyed by measurement name."""
+    return {x["name"]: x.get("value") for x in c.get("measurements", [])}
+
+
+def analyse_points(report: dict, want: list, *, extract, crosscheck) -> tuple[dict, dict, list[str]]:
+    """Per-point metrics + artifacts from a klt report (`extract(vec)` ->
+    metrics, `crosscheck(key, vals, metrics)` -> problems); list of failure strings."""
+    g = _g()
+    problems: list[str] = []
+    results: dict = {}
+    arts: dict = {}
+    seen = index_corners(report, want, problems)
+    for k in want:
+        c = seen.get(k)
+        if c is None:
+            problems.append(f"missing result for {g.fmt_key(k)}")
+            continue
+        vec = read_raw(c, k, problems)
+        if vec is None:
+            continue
+        vals = meas(c)
+        m = extract(vec)
+        if m.valid:
+            problems += crosscheck(k, vals, m)
+        results[k] = m
+        arts[k] = {
+            "log": (c.get("artifacts") or {}).get("log"),
+            "deck": (c.get("artifacts") or {}).get("deck"),
+            "klt_meas": vals,
+        }
+    return results, arts, problems
+
+
+def rederive_dat(path: Path, header: str, extract):
+    """Re-run `extract` on a committed per-point `.dat` file (3 columns:
+    time, vout, vinp) whose comment block carries the `header` line."""
+    import numpy as np  # deferred: see save_point_data
+
+    names = None
+    for line in path.read_text().splitlines():
+        if not line.startswith("#"):
+            break
+        if line[1:].strip() == header:
+            names = header.split()
+    if names is None:
+        raise ValueError(f"{path}: no `{header}` column header")
+    d = np.loadtxt(path, ndmin=2)
+    if d.shape[1] != 3:
+        raise ValueError(f"{path}: {d.shape[1]} columns, expected 3")
+    return extract({"time": d[:, 0], "v(vout)": d[:, 1], "v(vinp)": d[:, 2]})
+
+
+def add_grid_args(ap, *, grid_help: str) -> None:
+    """The CLI shared by the single-grid transient runners."""
+    ap.add_argument("--smoke", action="store_true", help="one nominal point, local, no record")
+    ap.add_argument("--backend", help=grid_help)
+    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
+    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
+    ap.add_argument("--batch-submit-retries", type=int, default=0,
+                    help="re-submit up to N times when the batch submit is refused for fleet capacity (never changes backend)")
+    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+
+
+def smoke_run(pdk: Pdk, nominal, run_unit, print_point, *, prefix: str) -> int:
+    """`--smoke`: the nominal point only, local, no record."""
+    import tempfile
+
+    print(f"smoke test: {nominal} only, local, PDK={pdk.path}")
+    with tempfile.TemporaryDirectory(prefix=prefix) as scratch:
+        try:
+            m, _, problems = run_unit("smoke", pdk, Path(scratch), {})
+        except (KltError, RuntimeError) as exc:
+            print(f"SMOKE TEST FAILED: {exc}")
+            return 1
+    if not m.valid or problems:
+        print(f"SMOKE TEST FAILED: {m.reason or problems}")
+        return 1
+    print_point(m)
+    print("smoke test OK (measurement valid; this experiment records evidence, it judges nothing)")
+    return 0
+
+
+def snapshot_text(*, record: str, issue: int, req: dict, dut_text: str, tb_rel: str, tb_text: str,
+                  nominal_deck: str | None) -> str:
+    """The committed netlist snapshot: conditions, DUT, testbench, nominal deck."""
+    lines = [
+        f"* netlist snapshot for record {record} (issue #{issue})",
+        "* Reproduces the measured design: DUT contents, testbench, conditions.",
+        "* ---- conditions: klt sim request ----",
+    ]
+    lines += ["* " + ln for ln in json.dumps({k: v for k, v in req.items() if k != "netlist"}, indent=1).splitlines()]
+    lines += ["", "* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----",
+              dut_text, f"* ---- testbench: {tb_rel} (verbatim) ----", tb_text]
+    if nominal_deck:
+        lines += ["* ---- klt-generated deck of the nominal point ----"]
+        lines += ["* | " + ln for ln in Path(nominal_deck).read_text().splitlines()] + [""]
+    return "\n".join(lines)
+
+
 def copy_controls(ccdir: Path, ctrls: list, *, name=lambda c: c.name) -> None:
     """Copy each control run's log / deck into `ccdir` as `<name>.log|.cir`."""
     for c in ctrls:

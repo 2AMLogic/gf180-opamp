@@ -60,7 +60,6 @@ from __future__ import annotations
 
 import argparse
 import hashlib
-import json
 import math
 import sys
 import tempfile
@@ -97,9 +96,12 @@ from harness import (  # noqa: E402
     run_controls as _run_controls,
     check_rederive,
     copy_controls,
-    index_corners,
+    add_grid_args,
+    analyse_points,
+    rederive_dat,
+    smoke_run,
+    snapshot_text,
     persist_points,
-    read_raw,
 )
 
 # Shared DUT/testbench source guards, grid bookkeeping and request skeleton:
@@ -327,10 +329,6 @@ def extract_recovery(vec: dict[str, np.ndarray]) -> Metrics:
 # --------------------------------------------------------------------------
 
 
-def _meas(c: dict) -> dict:
-    return {x["name"]: x.get("value") for x in c.get("measurements", [])}
-
-
 def crosscheck(k: Key, vals: dict, m: Metrics) -> list[str]:
     """Compare ngspice's own `.meas` values with the rawfile extraction.
 
@@ -356,29 +354,7 @@ def crosscheck(k: Key, vals: dict, m: Metrics) -> list[str]:
 
 def analyse_report(report: dict, want: list[Key]) -> tuple[dict, dict, list[str]]:
     """Per-point metrics + artifacts from a klt report; list of failure strings."""
-    problems: list[str] = []
-    results: dict[Key, Metrics] = {}
-    arts: dict[Key, dict] = {}
-    seen = index_corners(report, want, problems)
-    for k in want:
-        c = seen.get(k)
-        if c is None:
-            problems.append(f"missing result for {g.fmt_key(k)}")
-            continue
-        vec = read_raw(c, k, problems)
-        if vec is None:
-            continue
-        vals = _meas(c)
-        m = extract_recovery(vec)
-        if m.valid:
-            problems += crosscheck(k, vals, m)
-        results[k] = m
-        arts[k] = {
-            "log": (c.get("artifacts") or {}).get("log"),
-            "deck": (c.get("artifacts") or {}).get("deck"),
-            "klt_meas": vals,
-        }
-    return results, arts, problems
+    return analyse_points(report, want, extract=extract_recovery, crosscheck=crosscheck)
 
 
 # --------------------------------------------------------------------------
@@ -394,18 +370,7 @@ def save_point_data(m: Metrics, path: Path) -> None:
 
 def rederive(path: Path) -> Metrics:
     """Re-run the extraction on a committed per-point data file."""
-    names = None
-    for line in path.read_text().splitlines():
-        if not line.startswith("#"):
-            break
-        if line[1:].strip() == DAT_HEADER:
-            names = DAT_HEADER.split()
-    if names is None:
-        raise ValueError(f"{path}: no `{DAT_HEADER}` column header")
-    d = np.loadtxt(path, ndmin=2)
-    if d.shape[1] != 3:
-        raise ValueError(f"{path}: {d.shape[1]} columns, expected 3")
-    return extract_recovery({"time": d[:, 0], "v(vout)": d[:, 1], "v(vinp)": d[:, 2]})
+    return rederive_dat(path, DAT_HEADER, extract_recovery)
 
 
 def same_result(a: Metrics, b: Metrics) -> bool:
@@ -740,30 +705,12 @@ def print_point(m: Metrics) -> None:
 
 
 def smoke(pdk: Pdk) -> int:
-    print(f"smoke test: {NOMINAL} only, local, PDK={pdk.path}")
-    with tempfile.TemporaryDirectory(prefix="overdrive-smoke-") as scratch:
-        try:
-            m, _, problems = run_unit("smoke", pdk, Path(scratch), {})
-        except (KltError, RuntimeError) as exc:
-            print(f"SMOKE TEST FAILED: {exc}")
-            return 1
-    if not m.valid or problems:
-        print(f"SMOKE TEST FAILED: {m.reason or problems}")
-        return 1
-    print_point(m)
-    print("smoke test OK (measurement valid; this experiment records evidence, it judges nothing)")
-    return 0
+    return smoke_run(pdk, NOMINAL, run_unit, print_point, prefix="overdrive-smoke-")
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--smoke", action="store_true", help="one nominal point, local, no record")
-    ap.add_argument("--backend", help="klt execution backend for the 45-point grid (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
-    ap.add_argument("--batch-submit-retries", type=int, default=0,
-                    help="re-submit up to N times when the batch submit is refused for fleet capacity (never changes backend)")
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_grid_args(ap, grid_help="klt execution backend for the 45-point grid (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     args = ap.parse_args(argv)
 
     pdk = find_pdk()
@@ -815,20 +762,11 @@ def main(argv: list[str] | None = None) -> int:
 
         dut_text = load_dut_text()
         dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()
-        lines = [
-            f"* netlist snapshot for record {record} (issue #183)",
-            "* Reproduces the measured design: DUT contents, testbench, conditions.",
-            "* ---- conditions: klt sim request ----",
-        ]
-        lines += ["* " + ln for ln in json.dumps({k: v for k, v in req.items() if k != "netlist"}, indent=1).splitlines()]
-        lines += ["", "* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----",
-                  dut_text, "* ---- testbench: sim/overdrive-recovery/testbench/tb_overdrive.spice (verbatim) ----", TESTBENCH.read_text()]
         a0 = arts.get(NOMINAL)
-        if a0 and a0["deck"]:
-            lines += ["* ---- klt-generated deck of the nominal point ----"]
-            lines += ["* | " + ln for ln in Path(a0["deck"]).read_text().splitlines()] + [""]
+        snap = snapshot_text(record=record, issue=183, req=req, dut_text=dut_text, tb_rel="sim/overdrive-recovery/testbench/tb_overdrive.spice",
+                             tb_text=TESTBENCH.read_text(), nominal_deck=a0["deck"] if a0 else None)
         paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
-        paths["snapshot"].write_text("\n".join(lines))
+        paths["snapshot"].write_text(snap)
 
         plots = build_plots(results, paths["plots"])
         md = build_record(
