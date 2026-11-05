@@ -237,7 +237,8 @@ def imbalance_dut() -> str:
 
 
 def request(netlist: Path, pdk: Pdk, corners, temps, supplies, *, n: int | None, seed: int = MC_SEED,
-            vary: str = MC_VARY, expr: tuple[str, ...] = (), local: bool = False) -> dict:
+            vary: str = MC_VARY, expr: tuple[str, ...] = (), local: bool = False,
+            seed_scope: str | None = None) -> dict:
     """The systematic bench's request shape (gain driver's corner bundles,
     vcm = VDD/2), the two-sweep tail appended to the analysis line, no
     rawfile (the figures are printed scalars), logs retained."""
@@ -247,6 +248,8 @@ def request(netlist: Path, pdk: Pdk, corners, temps, supplies, *, n: int | None,
     req["options"] = {"timeout_s": 300, "keep_artifacts": True, "waveforms": False}
     if n is not None:
         req["monte_carlo"] = {"n": int(n), "seed": int(seed), "vary": vary}
+        if seed_scope is not None:  # klt >= 0.9 (klayout-tools#2899); absent = klt's `per_corner` default
+            req["monte_carlo"]["seed_scope"] = seed_scope
     if local:
         req["models"]["pdk_root"] = str(pdk.path.parent)
     return req
@@ -513,8 +516,9 @@ def offset_mc_link(samples: dict[tuple, list[Sample]]) -> dict:
 
 
 def submit(tag: str, tb: Path, pdk: Pdk, corners, temps, supplies, n: int, args, work: Path, *,
-           vary: str = MC_VARY, expr: tuple[str, ...] = ()) -> tuple[dict, dict, float]:
-    req = request(tb, pdk, corners, temps, supplies, n=n, vary=vary, expr=expr)
+           vary: str = MC_VARY, expr: tuple[str, ...] = (),
+           seed_scope: str | None = None) -> tuple[dict, dict, float]:
+    req = request(tb, pdk, corners, temps, supplies, n=n, vary=vary, expr=expr, seed_scope=seed_scope)
     return submit_request(tag, req, args, work, units=len(corners) * len(temps) * len(supplies) * n)
 
 
@@ -734,6 +738,8 @@ def add_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--probe-seeds", action="store_true",
                     help="seed partition-invariance probe (issue #140): N=3 over 8 points, once as one request "
                          "and once as 8 separate requests")
+    ap.add_argument("--seed-scope", choices=["per_corner", "shared", "point"], default=None,
+                    help="monte_carlo.seed_scope for the seed probe (klt >= 0.9; default: omitted = per_corner)")
     ap.add_argument("--probe-expr", action="store_true",
                     help="probe: also declare one `expr` measurement (the klt 0.5.0 fleet runner rejects it)")
     ap.add_argument("--grid", choices=sorted(GRIDS), default="nominal")
@@ -885,11 +891,12 @@ def probe_seeds(pdk: Pdk, args) -> int:
         current = "together"
         try:
             reports[current], reqs[current], walls[current] = submit(
-                current, tb, pdk, SEEDPROBE_CORNERS, SEEDPROBE_TEMPS, SEEDPROBE_SUPPLIES, PROBE_N, args, work)
+                current, tb, pdk, SEEDPROBE_CORNERS, SEEDPROBE_TEMPS, SEEDPROBE_SUPPLIES, PROBE_N, args, work,
+                seed_scope=args.seed_scope)
             for k in all_keys:
                 current = f"sep.{k[0]}.{k[1]:g}C.{k[2]:.2f}V"
                 reports[current], reqs[current], walls[current] = submit(
-                    current, tb, pdk, [k[0]], [k[1]], [k[2]], PROBE_N, args, work)
+                    current, tb, pdk, [k[0]], [k[1]], [k[2]], PROBE_N, args, work, seed_scope=args.seed_scope)
         except KltError as exc:
             print(f"ERROR: probe request `{current}` could not be run; nothing recorded.\n{exc}", file=sys.stderr)
             return 2
@@ -921,6 +928,12 @@ def probe_seeds(pdk: Pdk, args) -> int:
          f"- **Requests**: `together` (all {len(all_keys)} points in one request) and {len(all_keys)} `sep.*` requests "
          "(one point each), submitted sequentially:"]
     L += [exec_line(t, reports[t], walls[t]) for t in reports]
+    echoed = sorted({str(((r.get("environment") or {}).get("monte_carlo") or {}).get("seed_scope"))
+                     for r in san.values()})
+    runners = sorted({str(((r.get("environment") or {}).get("remote") or {}).get("runner_klt_version"))
+                      for r in san.values()})
+    L += ["", f"- **Seed scope**: requested `{args.seed_scope or '(omitted; klt default per_corner)'}`; "
+              f"echoed by the runner: {', '.join(echoed)}; runner klt: {', '.join(runners)}"]
     L += ["", "## Result", "",
           f"- Samples compared: {len(rows)}; all three seeds identical: {nseed}/{len(rows)}.",
           f"- DC offset (the sampled devices' fingerprint) within 10 uV: "
