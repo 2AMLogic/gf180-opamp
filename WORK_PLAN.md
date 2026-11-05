@@ -57,7 +57,7 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-- **#297**: Consolidate duplicated runner skeleton in step-response and overdrive-recovery into harness *(hermit)*
+_None._
 
 ## Epics
 
@@ -75,6 +75,6 @@ _None._
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 3 |
-| Architect / Hermit proposals | 1 |
+| Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

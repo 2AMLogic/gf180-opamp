@@ -2,6 +2,11 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-11-04
+
+- **PR #299**: refactor(sim): hoist shared step-response/overdrive-recovery runner skeleton into harness
+- **Issue #297** (closed): Consolidate duplicated runner skeleton in step-response and overdrive-recovery into harness
+
 ### 2026-11-02
 
 - **PR #294**: sim: re-mint input-common-mode under f6eeac7 as sharded fleet requests
