@@ -111,12 +111,7 @@ def refinement_inputs() -> dict:
 
 
 def corner_inputs() -> dict:
-    return {
-        "process": list(CORNERS),
-        "passive_sections": list(PASSIVE_SECTIONS),
-        "temperature_c": [float(t) for t in TEMPS_C],
-        "supply_v": [float(v) for v in SUPPLIES_V],
-    }
+    return harness.corner_axes(CORNERS, PASSIVE_SECTIONS, TEMPS_C, SUPPLIES_V, vcm_rule=None)
 
 
 def inputs(texts: dict, retained: dict | None = None) -> dict:

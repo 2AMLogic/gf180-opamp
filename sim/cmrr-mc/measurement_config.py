@@ -202,13 +202,7 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
         "controls": {"switch_off_n": CONTROL_OFF_N, "process_only_n": CONTROL_PROC_N,
                      "imbalance_n": CONTROL_IMB_N, "mirror": list(CONTROL_MIRROR),
                      "point": {"temperature_c": float(TEMP_C), "supply_v": float(VDD_V)}},
-        "corners": {
-            "process": list(CORNERS),
-            "passive_sections": list(PASSIVE_SECTIONS),
-            "temperature_c": temps,
-            "supply_v": supplies,
-            "vcm_rule": "vdd/2",
-        },
+        "corners": harness.corner_axes(CORNERS, PASSIVE_SECTIONS, temps, supplies),
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},
     }
     if grid != "nominal":

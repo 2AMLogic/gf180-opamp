@@ -211,15 +211,8 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
     runner); it selects the grid only."""
     grid = grid_of(retained)
     temps, supplies, vcms = grid_axes(grid)
-    corners = {
-        "process": list(CORNERS),
-        "passive_sections": list(PASSIVE_SECTIONS),
-        "temperature_c": temps,
-        "supply_v": supplies,
-    }
-    if grid != "nominal":
-        corners["vcm_v"] = vcms
-    corners["vcm_rule"] = "vdd/2"
+    corners = harness.corner_axes(CORNERS, PASSIVE_SECTIONS, temps, supplies,
+                                  **({} if grid == "nominal" else {"vcm_v": vcms}))
     out = {
         "experiment": EXPERIMENT,
         "fingerprint_version": FINGERPRINT_VERSION,
