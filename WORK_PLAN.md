@@ -7,7 +7,7 @@ Current Loom label state. Tracking and blocked items do not constitute ready wor
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-_None._
+- **#307**: docs(spec): add DR-0008 preparation record for load-specific GBW/PM row
 
 ## Very Important
 
@@ -45,7 +45,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#307**: docs(spec): add DR-0008 preparation record for load-specific GBW/PM row
 
 ## Proposed
 
@@ -55,6 +55,7 @@ Issues carrying `loom:curated`.
 - **#140**: cmrr-mc: full grid as a single batch request exceeds the 3600 s fleet job limit *(curated)*
 - **#190**: sim: extend PSRR mismatch characterization to the full temperature and supply grid *(curated)*
 - **#240**: Re-pin open_pdks to f6eeac7 via ciel, with a revision-checked PDK search, before minting layout evidence *(curated)*
+- **#295**: Raise the unity-gain bandwidth target to >= 8 MHz for a type-III compensator load *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -68,14 +69,14 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 0 |
+| Operator merge-risk holds | 1 |
 | Very important | 1 |
 | Important | 3 |
 | Ready (`loom:issue`) | 0 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
-| Curated | 4 |
+| Approved PRs awaiting merge | 1 |
+| Curated | 5 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
