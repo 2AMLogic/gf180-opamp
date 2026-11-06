@@ -188,13 +188,7 @@ def inputs(bench_text: str) -> dict:
         "params": params(),
         "controls": {name: dict(ov) for name, _, ov in CONTROLS},
         "control_case": list(CONTROL_CASE),
-        "corners": {
-            "process": list(CORNERS),
-            "passive_sections": list(PASSIVE_SECTIONS),
-            "temperature_c": [float(t) for t in TEMPS_C],
-            "supply_v": [float(v) for v in SUPPLIES_V],
-            "vcm_rule": "vdd/2",
-        },
+        "corners": harness.corner_axes(CORNERS, PASSIVE_SECTIONS, TEMPS_C, SUPPLIES_V),
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},
     }
 

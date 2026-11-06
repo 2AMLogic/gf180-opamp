@@ -95,13 +95,7 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
             "mc_n": CONTROL_N,
             "imbalance": {"device": IMBALANCE_DEVICE, "from": IMBALANCE_W_FROM, "to": IMBALANCE_W_TO},
         },
-        "corners": {
-            "process": list(CORNERS),
-            "passive_sections": list(PASSIVE_SECTIONS),
-            "temperature_c": temps,
-            "supply_v": supplies,
-            "vcm_v": vcms,
-        },
+        "corners": harness.corner_axes(CORNERS, PASSIVE_SECTIONS, temps, supplies, vcm_rule=None, vcm_v=vcms),
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},
     }
     if grid != "nominal":

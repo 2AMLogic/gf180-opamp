@@ -70,13 +70,7 @@ def inputs(testbench_text: str, vcm_fixed_v: float | None = None) -> dict:
         "fingerprint_version": FINGERPRINT_VERSION,
         "bench": harness.canonical_bench_lines(testbench_text),
         "analysis": {"kind": "ac", "args": f"dec {AC_PPD:g} {AC_FSTART:g} {AC_FSTOP:g}"},
-        "corners": {
-            "process": list(CORNERS),
-            "passive_sections": list(PASSIVE_SECTIONS),
-            "temperature_c": [float(t) for t in TEMPS_C],
-            "supply_v": [float(v) for v in SUPPLIES_V],
-            "vcm_rule": vcm_rule(vcm_fixed_v),
-        },
+        "corners": harness.corner_axes(CORNERS, PASSIVE_SECTIONS, TEMPS_C, SUPPLIES_V, vcm_rule(vcm_fixed_v)),
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},
     }
 

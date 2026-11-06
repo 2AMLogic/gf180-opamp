@@ -254,6 +254,25 @@ def fingerprint_api(inputs_fn, covers, module_rel: str):
     return fingerprint, fingerprint_lines, inputs_section
 
 
+def corner_axes(corners, passive, temps, supplies, vcm_rule: str | None = "vdd/2", **extra) -> dict:
+    """The `corners` block of a `measurement_config.py`'s fingerprint inputs.
+
+    Axes are copied (temperatures and supplies as floats) so the result never
+    aliases the module constants. `vcm_rule=None` omits that key; `extra`
+    adds further keys (e.g. `vcm_v`). Key names feed the fingerprint.
+    """
+    out = {
+        "process": list(corners),
+        "passive_sections": list(passive),
+        "temperature_c": [float(t) for t in temps],
+        "supply_v": [float(v) for v in supplies],
+    }
+    if vcm_rule is not None:
+        out["vcm_rule"] = vcm_rule
+    out.update(extra)
+    return out
+
+
 DEFAULT_VARIANT = "gf180mcuD"
 # Pinned open_pdks revision of the gf180mcu PDK (full hash). CI's
 # GF180_PDK_REV must equal this; sim/ci_prereqs.py enforces it on the PDK

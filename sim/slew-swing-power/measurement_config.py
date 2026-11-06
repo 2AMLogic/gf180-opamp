@@ -149,13 +149,7 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
         "experiment": EXPERIMENT,
         "fingerprint_version": FINGERPRINT_VERSION,
         "figures": figs,
-        "corners": {
-            "process": list(CORNERS),
-            "passive_sections": list(PASSIVE_SECTIONS),
-            "temperature_c": [float(t) for t in TEMPS_C],
-            "supply_v": [float(v) for v in SUPPLIES_V],
-            "vcm_rule": "vdd/2",
-        },
+        "corners": harness.corner_axes(CORNERS, PASSIVE_SECTIONS, TEMPS_C, SUPPLIES_V),
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},
     }
 

@@ -108,13 +108,7 @@ def inputs(texts: dict, retained: dict | None = None) -> dict:
         "bench": harness.canonical_bench_lines(inject_mismatch(texts["bench"], 1)),
         "analysis": {"kind": "ac", "args": ac_args() + "\n" + analysis_tail()},
         "monte_carlo": {"n": MC_N, "seed": MC_SEED, "vary": MC_VARY, "model_switch": "sw_stat_mismatch"},
-        "corners": {
-            "process": list(CORNERS),
-            "passive_sections": list(PASSIVE_SECTIONS),
-            "temperature_c": [float(t) for t in TEMPS_C],
-            "supply_v": [float(v) for v in SUPPLIES_V],
-            "vcm_rule": _GAIN.vcm_rule(None),
-        },
+        "corners": harness.corner_axes(CORNERS, PASSIVE_SECTIONS, TEMPS_C, SUPPLIES_V, _GAIN.vcm_rule(None)),
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},
     }
 

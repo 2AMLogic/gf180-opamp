@@ -477,5 +477,47 @@ class MismatchRunnerParity(unittest.TestCase):
                 self.assertNotIn(word, blob, (exp, word))
 
 
+#: sha256[:16] of the canonical JSON of each module's `corners` block, recorded
+#: before the blocks were assembled by `harness.corner_axes` (issue #304). A
+#: change here moves every fingerprint of that experiment, so old records read stale.
+PINNED_CORNERS = {
+    ("cmrr", None): "f5f3ae919c496bef", ("cmrr", "full"): "f5f3ae919c496bef",
+    ("cmrr-mc", None): "d7f57df83aac3592", ("cmrr-mc", "full"): "f5f3ae919c496bef",
+    ("enable-acquisition", None): "f5f3ae919c496bef",
+    ("gain-gbw-pm", None): "f5f3ae919c496bef",
+    ("gain-gbw-pm-mc", None): "d7f57df83aac3592", ("gain-gbw-pm-mc", "full"): "d7f57df83aac3592",
+    ("input-common-mode", None): "32bbfafc661bce7f", ("input-common-mode", "full"): "32bbfafc661bce7f",
+    ("noise", None): "f5f3ae919c496bef", ("noise", "full"): "f5f3ae919c496bef",
+    ("offset-mc", None): "5786185948648dd1", ("offset-mc", "full"): "031253e5b39a96df",
+    ("overdrive-recovery", None): "f5f3ae919c496bef",
+    ("psrr", None): "f5f3ae919c496bef", ("psrr", "full"): "f5f3ae919c496bef",
+    ("psrr-mc", None): "d7f57df83aac3592", ("psrr-mc", "full"): "a8de12abb31510bf",
+    ("slew-swing-power", None): "f5f3ae919c496bef", ("slew-swing-power", "full"): "f5f3ae919c496bef",
+    ("step-response", None): "f5f3ae919c496bef",
+}
+
+
+class CornerAxes(unittest.TestCase):
+    def test_helper_shape(self):
+        out = harness.corner_axes(("a",), ("p",), (1, 2.5), [3], vcm_rule=None, vcm_v=[0.5])
+        self.assertEqual(out, {"process": ["a"], "passive_sections": ["p"], "temperature_c": [1.0, 2.5],
+                               "supply_v": [3.0], "vcm_v": [0.5]})
+        self.assertEqual(harness.corner_axes([], [], [], [])["vcm_rule"], "vdd/2")
+
+    def test_corner_blocks_are_pinned(self):
+        import hashlib
+        import inspect
+        for (exp, grid), want in PINNED_CORNERS.items():
+            with self.subTest(f"{exp}/{grid}"):
+                m = load(exp)
+                if "texts" in inspect.signature(m.inputs).parameters:
+                    t = texts(exp, m)
+                    inp = m.inputs(t, {"grid": grid}) if grid else m.inputs(t)
+                else:
+                    inp = m.inputs((REPO / m.TESTBENCH_REL).read_text())
+                got = hashlib.sha256(harness.fingerprint_json(inp["corners"]).encode()).hexdigest()[:16]
+                self.assertEqual(got, want)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
