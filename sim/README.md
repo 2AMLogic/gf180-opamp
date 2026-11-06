@@ -29,8 +29,8 @@ klt / ngspice / committed gain dataset) into failures; local runs without the
 variable still skip. `ci_regression_check.sh` then breaks a copy of a testbench source guard
 and an extraction in each simulator-free experiment (including
 `ibias-cl-sensitivity`) and in the shared `harness.py` and `passive_corners.py`
-modules (the latter via the slew-swing-power suite, as it has no suite of its
-own) on purpose, and requires the relevant unit suite to fail. The selftest also runs `report/spec_citation_check.py` (issue #112,
+modules (each via its own suite, `test_harness.py` and
+`test_passive_corners.py`) on purpose, and requires the relevant unit suite to fail. The selftest also runs `report/spec_citation_check.py` (issue #112,
 no simulator): every record cited in the Status column of
 `spec/target-spec.md` §2 must exist, and must be the record
 `report/selection.json` selects for that row's experiment unless its clause

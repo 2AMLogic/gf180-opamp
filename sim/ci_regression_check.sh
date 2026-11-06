@@ -9,8 +9,7 @@
 # and requires that experiment's unit suite to FAIL for each (after a control
 # run of the unmutated suite). Issue #131 adds the shared modules whose suites
 # are wired into selftest.sh: sim/harness.py (test_harness.py) and
-# sim/passive_corners.py (covered by the slew-swing-power suite; it has no
-# suite of its own). A green run of this script means the guard/extraction
+# sim/passive_corners.py (test_passive_corners.py). A green run of this script means the guard/extraction
 # tests have teeth. It does the
 # same for the spec-citation check (issue #112): one mutation of the checker
 # must fail its unit suite, and one stale citation in the scratch copy of
@@ -265,8 +264,9 @@ expect_fail ibias-cl-sensitivity test_ibias_cl_sensitivity.py ibias-cl-sensitivi
     return []'
 
 # Shared modules (issue #131). harness.py has its own suite (test_harness.py, in
-# the sim/ root). passive_corners.py has no suite of its own: its helpers are
-# exercised by the slew-swing-power suite, which is the one that must fail.
+# the sim/ root). passive_corners.py has its own suite
+# (test_passive_corners.py, also in the sim/ root); its helpers are also
+# exercised by the slew-swing-power suite, whose mutation is kept below.
 control . test_harness.py
 expect_fail . test_harness.py harness.py \
   "guard: stage_workdir ignores testbench guard errors" \
@@ -276,6 +276,13 @@ expect_fail . test_harness.py harness.py \
 expect_fail slew-swing-power test_slew_swing_power.py passive_corners.py \
   "extraction: worst passive level maps to the ff section" \
   '"worst": "ss"}' '"worst": "ff"}'
+control . test_passive_corners.py
+expect_fail . test_passive_corners.py passive_corners.py \
+  "extraction: full-scope cell count is off by one" \
+  '"full": 405}' '"full": 404}'
+expect_fail . test_passive_corners.py passive_corners.py \
+  "extraction: full-scope temperature set drops the cold corner" \
+  'FULL_TEMPS = (-40.0, 27.0, 125.0)' 'FULL_TEMPS = (27.0, 125.0)'
 
 # spec-citation check (issue #112): the checker's unit suite must catch a
 # disabled selected-record comparison, and the checker itself (run on the
