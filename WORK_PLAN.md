@@ -27,7 +27,7 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#295**: Raise the unity-gain bandwidth target to >= 8 MHz for a type-III compensator load
 
 ## In Progress
 
@@ -72,7 +72,7 @@ _None._
 | Operator merge-risk holds | 1 |
 | Very important | 1 |
 | Important | 3 |
-| Ready (`loom:issue`) | 0 |
+| Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 1 |
