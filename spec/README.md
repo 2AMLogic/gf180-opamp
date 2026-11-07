@@ -33,4 +33,9 @@ Target specification and decision records. Spec changes require a decision recor
   [`0007-noise-offset-requirement-basis.md`](decision-records/0007-noise-offset-requirement-basis.md)
   (**proposed preparation draft**, issue #62: consumer-derived noise/offset
   requirement basis and a bounded validation plan; proposes no number and
-  changes no row).
+  changes no row), and
+  [`0008-buck-compensation-load-gbw-pm-row.md`](decision-records/0008-buck-compensation-load-gbw-pm-row.md)
+  (**proposed preparation draft**, issue #295: states `gf180-buck`'s actual
+  type-III compensation load and a bounded validation bench for a
+  load-specific GBW/PM row; proposes no number and changes no row, the
+  10 MHz / 2 pF row is untouched).
