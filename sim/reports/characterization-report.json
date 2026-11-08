@@ -8,7 +8,8 @@
     "cmrr-mc: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "gain-gbw-pm-mc: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "input-common-mode: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
-    "ngspice versions differ: ngspice 42 <- gain-gbw-pm-mc (local), psrr-mc (local); ngspice 46 <- cmrr (local), cmrr (klt engine), cmrr-mc (local), cmrr-mc (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), gain-gbw-pm-mc (klt engine), input-common-mode (local), input-common-mode (klt engine), noise (local), offset-mc (local), psrr (local), psrr (klt engine), psrr-mc (klt engine), slew-swing-power (local), slew-swing-power (klt engine)",
+    "PDK revision differs between/within sources: c6d73a35f524 <- cmrr (recorded), cmrr-mc (recorded), gain-gbw-pm (recorded), gain-gbw-pm-mc (recorded), input-common-mode (recorded), noise (recorded), offset-mc (recorded), psrr (recorded), slew-swing-power (recorded); f6eeac7dad08 <- psrr-mc (recorded)",
+    "ngspice versions differ: ngspice 42 <- gain-gbw-pm-mc (local); ngspice 46 <- cmrr (local), cmrr (klt engine), cmrr-mc (local), cmrr-mc (klt engine), gain-gbw-pm (local), gain-gbw-pm (klt engine), gain-gbw-pm-mc (klt engine), input-common-mode (local), input-common-mode (klt engine), noise (local), offset-mc (local), psrr (local), psrr (klt engine), psrr-mc (local), psrr-mc (klt engine), slew-swing-power (local), slew-swing-power (klt engine)",
     "coverage differs between sources (see each row's coverage; e.g. the CMRR mismatch Monte Carlo record is 5 corner points at 27 C / 3.30 V while the AC rows are full 45-point grids)",
     "supplementary gain-gbw-pm-passive-corners: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
     "supplementary gain-gbw-pm-passive-corners-full: measurement-configuration freshness unknown (this record predates measurement fingerprinting); DUT freshness is checked, bench/analysis freshness is not",
@@ -24,7 +25,7 @@
     "noise": "sim/noise/records/20261010-163507-0127eb7.md",
     "offset-mc": "sim/offset-mc/records/20261010-185141-e4be1ac.md",
     "psrr": "sim/psrr/records/20261010-163854-0127eb7.md",
-    "psrr-mc": "sim/psrr-mc/records/20261011-145434-286b06c.md",
+    "psrr-mc": "sim/psrr-mc/records/20261108-220319-bb1a6a0.md",
     "slew-swing-power": "sim/slew-swing-power/records/20261010-161852-0127eb7.md"
   },
   "offset_drift": {
@@ -3266,138 +3267,138 @@
         },
         {
           "corner": null,
-          "label": "mismatch Monte Carlo population (information only, not graded; seed 45, vary \"mismatch\", 1500 samples)",
-          "value": "5 MOS corners (typical, ff, ss, fs, sf) x N=300 mismatch samples at 27 C, 3.30 V only (5 corner points)"
+          "label": "mismatch Monte Carlo population (information only, not graded; seed 45, vary \"mismatch\", 13500 samples)",
+          "value": "5 MOS corners (typical, ff, ss, fs, sf) x 3 T (-40, 27, 125 C) x 3 VDD (2.97, 3.30, 3.63 V) = 45 points, N=300 mismatch samples per point"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ DC plateau (0.1-1 Hz), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "93.71 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ DC plateau (0.1-1 Hz), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "90.85 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ DC plateau (0.1-1 Hz), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "87.43 dB"
+          "corner": "typical / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ DC plateau (0.1-1 Hz), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "78.28 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ 1 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "83.28 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ 1 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "81.52 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ 1 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "83.18 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ 1 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "81.50 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ 10 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "63.59 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ 10 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "61.90 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ 10 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "63.26 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ 10 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "61.63 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ 100 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "43.59 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ 100 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "41.90 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ 100 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "43.26 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ 100 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "41.63 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ 1 MHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "23.60 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ 1 MHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "21.90 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ 1 MHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "23.26 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ 1 MHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "21.63 dB"
         },
         {
-          "corner": "sf / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ at f_u (differential unity gain), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "0.68 dB"
+          "corner": "sf / -40 C / 2.97 V",
+          "label": "mismatch PSRR+ at f_u (differential unity gain), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avdd| + 3 sigma|Avdd|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "0.65 dB"
         },
         {
-          "corner": "sf / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ at f_u (differential unity gain), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "0.68 dB"
+          "corner": "sf / -40 C / 2.97 V",
+          "label": "mismatch PSRR+ at f_u (differential unity gain), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "0.65 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR+ sample minimum over all samples, DC plateau (empirical, N=300 per corner; information only)",
-          "value": "93.84 dB"
+          "corner": "fs / 125 C / 2.97 V",
+          "label": "mismatch PSRR+ sample minimum over all samples, DC plateau (empirical, N=300 per point; information only)",
+          "value": "90.53 dB"
         },
         {
-          "corner": "sf / 27 C / 3.30 V",
-          "label": "mismatch PSRR- DC plateau (0.1-1 Hz), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "82.59 dB"
+          "corner": "sf / -40 C / 2.97 V",
+          "label": "mismatch PSRR- DC plateau (0.1-1 Hz), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "77.57 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR- DC plateau (0.1-1 Hz), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "67.72 dB"
+          "corner": "ss / -40 C / 2.97 V",
+          "label": "mismatch PSRR- DC plateau (0.1-1 Hz), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "61.03 dB"
         },
         {
-          "corner": "sf / 27 C / 3.30 V",
-          "label": "mismatch PSRR- 1 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "82.57 dB"
+          "corner": "sf / -40 C / 2.97 V",
+          "label": "mismatch PSRR- 1 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "77.54 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR- 1 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "68.04 dB"
+          "corner": "fs / -40 C / 3.63 V",
+          "label": "mismatch PSRR- 1 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "62.02 dB"
         },
         {
-          "corner": "sf / 27 C / 3.30 V",
-          "label": "mismatch PSRR- 10 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "82.58 dB"
+          "corner": "sf / -40 C / 2.97 V",
+          "label": "mismatch PSRR- 10 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "77.55 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR- 10 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "71.38 dB"
+          "corner": "fs / -40 C / 2.97 V",
+          "label": "mismatch PSRR- 10 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "64.33 dB"
         },
         {
-          "corner": "sf / 27 C / 3.30 V",
-          "label": "mismatch PSRR- 100 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "82.84 dB"
+          "corner": "sf / -40 C / 2.97 V",
+          "label": "mismatch PSRR- 100 kHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "77.71 dB"
         },
         {
-          "corner": "ff / 27 C / 3.30 V",
-          "label": "mismatch PSRR- 100 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "80.17 dB"
+          "corner": "fs / -40 C / 2.97 V",
+          "label": "mismatch PSRR- 100 kHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "72.26 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR- 1 MHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "73.38 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR- 1 MHz, linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "72.40 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR- 1 MHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "73.39 dB"
+          "corner": "ss / 125 C / 2.97 V",
+          "label": "mismatch PSRR- 1 MHz, dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "72.43 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR- at f_u (differential unity gain), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "36.01 dB"
+          "corner": "ss / -40 C / 2.97 V",
+          "label": "mismatch PSRR- at f_u (differential unity gain), linear 3-sigma lowest (mean Ad - 20 log10(mean|Avss| + 3 sigma|Avss|)) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "34.68 dB"
         },
         {
-          "corner": "ss / 27 C / 3.30 V",
-          "label": "mismatch PSRR- at f_u (differential unity gain), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive, 5 MOS corners at 27 C / 3.30 V only, N=300 per corner; information only, not graded]",
-          "value": "36.00 dB"
+          "corner": "ss / -40 C / 2.97 V",
+          "label": "mismatch PSRR- at f_u (differential unity gain), dB 3-sigma lowest (mean - 3 sigma of the dB values) [mismatch-inclusive full PVT grid (45 points = 5 MOS corners x 3 T x 3 VDD, VCM = VDD/2), N=300 per point; information only, not graded]",
+          "value": "34.68 dB"
         },
         {
-          "corner": "sf / 27 C / 3.30 V",
-          "label": "mismatch PSRR- sample minimum over all samples, DC plateau (empirical, N=300 per corner; information only)",
-          "value": "79.46 dB"
+          "corner": "sf / -40 C / 2.97 V",
+          "label": "mismatch PSRR- sample minimum over all samples, DC plateau (empirical, N=300 per point; information only)",
+          "value": "75.20 dB"
         },
         {
           "corner": null,
@@ -3407,22 +3408,22 @@
         {
           "corner": null,
           "label": "mismatch controls: mirror-imbalance negative control, shift of mean |Avdd| at DC (PSRR+; information only)",
-          "value": "+0.6028 V/V (40.5 standard errors)"
+          "value": "+0.6157 V/V (40.5 standard errors)"
         },
         {
           "corner": null,
           "label": "mismatch controls: mirror-imbalance negative control, shift of mean |Avss| at DC (PSRR-; information only)",
-          "value": "+0.7145 V/V (6.7 standard errors)"
+          "value": "+0.6969 V/V (6.5 standard errors)"
         },
         {
           "corner": null,
           "label": "mismatch near-cancellation knee rails (DC figure = 0.1 Hz asymptote; information only)",
-          "value": "4 of 3000 sample rails"
+          "value": "87 of 27000 sample rails"
         },
         {
           "corner": null,
           "label": "mismatch per-point statistics re-derived from the retained samples (information only)",
-          "value": "1500 samples at 5 points agree with the record (sim/psrr-mc/corners/20261011-145434-286b06c/samples.csv, sha256 c0f3ec852f87226b)"
+          "value": "13500 samples at 45 points agree with the record (sim/psrr-mc/corners/20261108-220319-bb1a6a0/samples.csv, sha256 2516e09ecaf860ec)"
         }
       ],
       "key": "psrr",
@@ -3434,13 +3435,13 @@
         "PSRR-: Avss changes sign across the grid, so low-frequency PSRR- near the flip is a cancellation, not design margin; the worst-case figure is the one to use",
         "systematic figure of a perfectly matched schematic; mismatch-limited PSRR is not covered",
         "no ratified bound (DR-3 residual e4)",
-        "the mismatch-inclusive figures below come from the selected PSRR mismatch Monte Carlo record (20261011-145434-286b06c): 5 MOS corners x N=300 = 1500 samples, seed 45, vary \"mismatch\", 27 C / 3.30 V only. They are measured information, not graded, and are not combined with the systematic PVT figures: the systematic record covers T and VDD (matched devices), the Monte Carlo record covers mismatch (one T / VDD point)",
-        "temperature and supply are NOT sampled under mismatch: 27 C / 3.30 V only (the systematic psrr record covers T and VDD for matched devices only; its four Avss sign-flip points, all at 125 C, remain systematic-only)",
-        "MOS mismatch only; passives (RZ, CC) at typical with no passive mismatch, resistor and capacitor mismatch not modelled",
+        "the mismatch-inclusive figures below come from the selected PSRR mismatch Monte Carlo record (20261108-220319-bb1a6a0): 45 points x N=300 = 13500 samples over the full T/VDD grid (T -40, 27, 125 C; VDD 2.97, 3.30, 3.63 V; VCM = VDD/2), seed 45, vary \"mismatch\". They are measured information, not graded, and are not combined with the systematic PVT figures: the systematic record covers T and VDD for matched devices, this record covers mismatch, and no bound is proposed or judged at any point",
+        "the committed 27 C / 3.30 V mismatch record remains the only mismatch-inclusive evidence its spec row cites; this grid proposes nothing new",
+        "full PVT grid under mismatch: temperature and supply are sampled (VCM = VDD/2 at every supply), but the RZ/CC passives stay typical at every point and no passive mismatch is modelled",
         "N=300 cannot resolve a 0.135 % tail: neither the linear nor the dB 3-sigma figure is a sample statistic; the empirical minimum and percentiles are the normality cross-check",
-        "4 near-cancellation knee rail(s) (PSRR+ DC band non-flat but monotonically rising) are accepted with the 0.1 Hz asymptote as their DC figure",
+        "87 near-cancellation knee rail(s) (PSRR+ DC band non-flat but monotonically rising) are accepted with the 0.1 Hz asymptote as their DC figure",
         "supply rejection of the bias generator is excluded (the ideal 10 uA bias source carries no small-signal current)",
-        "mismatch Monte Carlo of the PSRR; no numeric bound proposed or judged here (DR-6 is proposed, not ratified)",
+        "mismatch Monte Carlo of the PSRR over the T/VDD grid; no numeric bound proposed, ratified or judged at any point (DR-6 is proposed, not ratified, and covers mismatch only at 27 C / 3.30 V)",
         "supplementary side study `sim/psrr/records/20261011-102729-6612014.md` (not a selected verdict record; outside this row's verdict and point count; 405 cells = 45 MOS/T/VDD points x RZ x CC, the full passive-by-PVT cross product) measures, as information only with no verdict (bound-free: the row's bound is proposed, not ratified): PSRR+ 1 kHz worst 81.02 dB at ss / 125 C / 2.97 V, RZ worst, CC worst (best 86.68 dB; worst over the 45 typical-passive cells 81.82 dB, so the passive spread moves the worst case by -0.80 dB; delta vs typical passives at matching PVT -0.805 .. +0.887 dB over 360 cells); PSRR+ 10 kHz worst 61.09 dB at ss / 125 C / 2.97 V, RZ worst, CC worst (best 66.77 dB; worst over the 45 typical-passive cells 61.90 dB, so the passive spread moves the worst case by -0.81 dB; delta vs typical passives at matching PVT -0.815 .. +0.899 dB over 360 cells); PSRR- 1 kHz worst 101.01 dB at ss / -40 C / 2.97 V, RZ best, CC worst (best 135.88 dB; worst over the 45 typical-passive cells 101.01 dB, so the passive spread moves the worst case by -0.00 dB; delta vs typical passives at matching PVT -0.625 .. +0.673 dB over 360 cells); PSRR- 10 kHz worst 100.88 dB at ss / -40 C / 2.97 V, RZ best, CC worst (best 116.24 dB; worst over the 45 typical-passive cells 100.90 dB, so the passive spread moves the worst case by -0.02 dB; delta vs typical passives at matching PVT -0.630 .. +0.679 dB over 360 cells)"
       ],
       "points_pass": null,
@@ -3450,12 +3451,12 @@
         "controls": {
           "imbalance": {
             "PSRR+": {
-              "shift_asup_vv": 0.6028,
-              "shift_se": 0.0149
+              "shift_asup_vv": 0.6157,
+              "shift_se": 0.0152
             },
             "PSRR-": {
-              "shift_asup_vv": 0.7145,
-              "shift_se": 0.107
+              "shift_asup_vv": 0.6969,
+              "shift_se": 0.108
             }
           },
           "process_only_offset_sigma_mv": 5.876,
@@ -3468,203 +3469,1708 @@
           "PSRR+": 0,
           "PSRR-": 0
         },
-        "knee_rails": 4,
+        "knee_rails": 87,
         "measurement_config": {
-          "fingerprint": "107ce74555af6baee8938d4ceea18e8675ac1b55786a07858d92248a81b322c3",
+          "fingerprint": "50df4ae2118a3f35963163be1c774cd91be4126d770a3cb0987af320db14cefb",
           "status": "current",
           "version": 1
         },
         "per_point": {
           "PSRR+ 100k": {
+            "ff / -40 C / 2.97 V": {
+              "db3": 45.33,
+              "lin3": 45.77,
+              "mean": 45.77,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 45.39,
+              "lin3": 45.83,
+              "mean": 45.84,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 45.45,
+              "lin3": 45.89,
+              "mean": 45.89,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 42.35,
+              "lin3": 42.63,
+              "mean": 42.64,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 42.38,
+              "lin3": 42.65,
+              "mean": 42.66,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 42.4,
+              "lin3": 42.68,
+              "mean": 42.68,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 43.94,
+              "lin3": 44.3,
+              "mean": 44.3,
+              "n": 300,
+              "sigma": 0.12
+            },
             "ff / 27 C / 3.30 V": {
-              "db3": 43.95,
-              "lin3": 44.32,
-              "mean": 44.32,
+              "db3": 43.98,
+              "lin3": 44.31,
+              "mean": 44.31,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 43.99,
+              "lin3": 44.36,
+              "mean": 44.36,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 45.2,
+              "lin3": 45.62,
+              "mean": 45.62,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 45.25,
+              "lin3": 45.66,
+              "mean": 45.66,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 45.3,
+              "lin3": 45.71,
+              "mean": 45.72,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 42.18,
+              "lin3": 42.45,
+              "mean": 42.45,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 42.2,
+              "lin3": 42.48,
+              "mean": 42.48,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 42.22,
+              "lin3": 42.5,
+              "mean": 42.51,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 43.76,
+              "lin3": 44.11,
+              "mean": 44.12,
               "n": 300,
               "sigma": 0.12
             },
             "fs / 27 C / 3.30 V": {
-              "db3": 43.81,
-              "lin3": 44.14,
-              "mean": 44.14,
+              "db3": 43.82,
+              "lin3": 44.15,
+              "mean": 44.15,
               "n": 300,
               "sigma": 0.11
             },
-            "sf / 27 C / 3.30 V": {
-              "db3": 43.42,
-              "lin3": 43.76,
-              "mean": 43.76,
+            "fs / 27 C / 3.63 V": {
+              "db3": 43.84,
+              "lin3": 44.18,
+              "mean": 44.18,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 44.8,
+              "lin3": 45.23,
+              "mean": 45.23,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 44.88,
+              "lin3": 45.28,
+              "mean": 45.29,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 44.91,
+              "lin3": 45.32,
+              "mean": 45.32,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 41.79,
+              "lin3": 42.07,
+              "mean": 42.07,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 41.83,
+              "lin3": 42.1,
+              "mean": 42.1,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 41.86,
+              "lin3": 42.13,
+              "mean": 42.13,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 43.38,
+              "lin3": 43.72,
+              "mean": 43.72,
               "n": 300,
               "sigma": 0.12
             },
+            "sf / 27 C / 3.30 V": {
+              "db3": 43.44,
+              "lin3": 43.78,
+              "mean": 43.78,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 43.48,
+              "lin3": 43.79,
+              "mean": 43.79,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 44.66,
+              "lin3": 45.06,
+              "mean": 45.06,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 44.75,
+              "lin3": 45.13,
+              "mean": 45.13,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 44.78,
+              "lin3": 45.16,
+              "mean": 45.16,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 41.63,
+              "lin3": 41.9,
+              "mean": 41.9,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 41.65,
+              "lin3": 41.92,
+              "mean": 41.92,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 41.7,
+              "lin3": 41.95,
+              "mean": 41.95,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 43.25,
+              "lin3": 43.56,
+              "mean": 43.56,
+              "n": 300,
+              "sigma": 0.1
+            },
             "ss / 27 C / 3.30 V": {
-              "db3": 43.26,
-              "lin3": 43.59,
-              "mean": 43.59,
+              "db3": 43.27,
+              "lin3": 43.6,
+              "mean": 43.6,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "ss / 27 C / 3.63 V": {
+              "db3": 43.33,
+              "lin3": 43.63,
+              "mean": 43.63,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 45.04,
+              "lin3": 45.43,
+              "mean": 45.43,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 45.07,
+              "lin3": 45.47,
+              "mean": 45.47,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 45.11,
+              "lin3": 45.53,
+              "mean": 45.53,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 41.98,
+              "lin3": 42.27,
+              "mean": 42.27,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 42.03,
+              "lin3": 42.3,
+              "mean": 42.3,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 42.05,
+              "lin3": 42.32,
+              "mean": 42.32,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 43.58,
+              "lin3": 43.92,
+              "mean": 43.92,
               "n": 300,
               "sigma": 0.11
             },
             "typical / 27 C / 3.30 V": {
-              "db3": 43.64,
+              "db3": 43.61,
               "lin3": 43.96,
               "mean": 43.96,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 43.67,
+              "lin3": 43.99,
+              "mean": 43.99,
               "n": 300,
               "sigma": 0.11
             }
           },
           "PSRR+ 10k": {
+            "ff / -40 C / 2.97 V": {
+              "db3": 65.33,
+              "lin3": 65.76,
+              "mean": 65.77,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 65.38,
+              "lin3": 65.83,
+              "mean": 65.83,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 65.45,
+              "lin3": 65.88,
+              "mean": 65.89,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 62.35,
+              "lin3": 62.63,
+              "mean": 62.63,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 62.38,
+              "lin3": 62.65,
+              "mean": 62.66,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 62.4,
+              "lin3": 62.68,
+              "mean": 62.68,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 63.94,
+              "lin3": 64.3,
+              "mean": 64.3,
+              "n": 300,
+              "sigma": 0.12
+            },
             "ff / 27 C / 3.30 V": {
-              "db3": 63.95,
+              "db3": 63.98,
               "lin3": 64.31,
-              "mean": 64.32,
+              "mean": 64.31,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 63.99,
+              "lin3": 64.36,
+              "mean": 64.36,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 65.19,
+              "lin3": 65.62,
+              "mean": 65.62,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 65.25,
+              "lin3": 65.66,
+              "mean": 65.66,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 65.29,
+              "lin3": 65.71,
+              "mean": 65.71,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 62.18,
+              "lin3": 62.45,
+              "mean": 62.45,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 62.2,
+              "lin3": 62.48,
+              "mean": 62.48,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 62.22,
+              "lin3": 62.5,
+              "mean": 62.51,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 63.76,
+              "lin3": 64.11,
+              "mean": 64.11,
               "n": 300,
               "sigma": 0.12
             },
             "fs / 27 C / 3.30 V": {
-              "db3": 63.81,
-              "lin3": 64.14,
-              "mean": 64.14,
+              "db3": 63.82,
+              "lin3": 64.15,
+              "mean": 64.15,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "fs / 27 C / 3.63 V": {
+              "db3": 63.84,
+              "lin3": 64.18,
+              "mean": 64.18,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 64.8,
+              "lin3": 65.23,
+              "mean": 65.23,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 64.88,
+              "lin3": 65.28,
+              "mean": 65.28,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 64.91,
+              "lin3": 65.32,
+              "mean": 65.32,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 61.79,
+              "lin3": 62.07,
+              "mean": 62.07,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 61.83,
+              "lin3": 62.1,
+              "mean": 62.1,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 61.86,
+              "lin3": 62.13,
+              "mean": 62.13,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 63.38,
+              "lin3": 63.72,
+              "mean": 63.72,
               "n": 300,
               "sigma": 0.11
             },
             "sf / 27 C / 3.30 V": {
-              "db3": 63.42,
-              "lin3": 63.76,
-              "mean": 63.76,
+              "db3": 63.44,
+              "lin3": 63.78,
+              "mean": 63.78,
               "n": 300,
-              "sigma": 0.12
+              "sigma": 0.11
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 63.48,
+              "lin3": 63.79,
+              "mean": 63.79,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 64.66,
+              "lin3": 65.06,
+              "mean": 65.06,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 64.75,
+              "lin3": 65.12,
+              "mean": 65.13,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 64.78,
+              "lin3": 65.16,
+              "mean": 65.16,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 61.63,
+              "lin3": 61.9,
+              "mean": 61.9,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 61.65,
+              "lin3": 61.92,
+              "mean": 61.92,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 61.7,
+              "lin3": 61.95,
+              "mean": 61.95,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 63.25,
+              "lin3": 63.56,
+              "mean": 63.56,
+              "n": 300,
+              "sigma": 0.1
             },
             "ss / 27 C / 3.30 V": {
-              "db3": 63.26,
-              "lin3": 63.59,
-              "mean": 63.59,
+              "db3": 63.27,
+              "lin3": 63.6,
+              "mean": 63.6,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "ss / 27 C / 3.63 V": {
+              "db3": 63.33,
+              "lin3": 63.63,
+              "mean": 63.63,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 65.03,
+              "lin3": 65.43,
+              "mean": 65.43,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 65.07,
+              "lin3": 65.47,
+              "mean": 65.47,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 65.11,
+              "lin3": 65.52,
+              "mean": 65.53,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 61.98,
+              "lin3": 62.27,
+              "mean": 62.27,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 62.03,
+              "lin3": 62.3,
+              "mean": 62.3,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 62.05,
+              "lin3": 62.32,
+              "mean": 62.32,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 63.58,
+              "lin3": 63.92,
+              "mean": 63.92,
               "n": 300,
               "sigma": 0.11
             },
             "typical / 27 C / 3.30 V": {
-              "db3": 63.64,
+              "db3": 63.61,
               "lin3": 63.96,
               "mean": 63.96,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 63.67,
+              "lin3": 63.99,
+              "mean": 63.99,
               "n": 300,
               "sigma": 0.11
             }
           },
           "PSRR+ 1k": {
+            "ff / -40 C / 2.97 V": {
+              "db3": 85.16,
+              "lin3": 85.51,
+              "mean": 85.6,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 85.26,
+              "lin3": 85.65,
+              "mean": 85.72,
+              "n": 300,
+              "sigma": 0.16
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 85.36,
+              "lin3": 85.75,
+              "mean": 85.81,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 82.27,
+              "lin3": 82.3,
+              "mean": 82.54,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 82.33,
+              "lin3": 82.41,
+              "mean": 82.59,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 82.38,
+              "lin3": 82.45,
+              "mean": 82.61,
+              "n": 300,
+              "sigma": 0.08
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 83.83,
+              "lin3": 83.94,
+              "mean": 84.16,
+              "n": 300,
+              "sigma": 0.11
+            },
             "ff / 27 C / 3.30 V": {
-              "db3": 83.88,
-              "lin3": 84.08,
+              "db3": 83.91,
+              "lin3": 84.06,
               "mean": 84.22,
               "n": 300,
+              "sigma": 0.1
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 83.96,
+              "lin3": 84.2,
+              "mean": 84.28,
+              "n": 300,
               "sigma": 0.11
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 84.97,
+              "lin3": 85.21,
+              "mean": 85.4,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 85.1,
+              "lin3": 85.42,
+              "mean": 85.51,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 85.17,
+              "lin3": 85.55,
+              "mean": 85.61,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 82.01,
+              "lin3": 82.02,
+              "mean": 82.36,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 82.11,
+              "lin3": 82.18,
+              "mean": 82.4,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 82.18,
+              "lin3": 82.29,
+              "mean": 82.45,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 83.54,
+              "lin3": 83.6,
+              "mean": 83.94,
+              "n": 300,
+              "sigma": 0.13
             },
             "fs / 27 C / 3.30 V": {
-              "db3": 83.71,
+              "db3": 83.72,
               "lin3": 83.84,
-              "mean": 84.03,
+              "mean": 84.04,
               "n": 300,
-              "sigma": 0.11
+              "sigma": 0.1
+            },
+            "fs / 27 C / 3.63 V": {
+              "db3": 83.79,
+              "lin3": 83.96,
+              "mean": 84.1,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 84.67,
+              "lin3": 85.01,
+              "mean": 85.09,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 84.79,
+              "lin3": 85.15,
+              "mean": 85.19,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 84.86,
+              "lin3": 85.24,
+              "mean": 85.27,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 81.73,
+              "lin3": 81.75,
+              "mean": 81.98,
+              "n": 300,
+              "sigma": 0.08
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 81.79,
+              "lin3": 81.85,
+              "mean": 82.03,
+              "n": 300,
+              "sigma": 0.08
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 81.83,
+              "lin3": 81.87,
+              "mean": 82.04,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 83.3,
+              "lin3": 83.4,
+              "mean": 83.6,
+              "n": 300,
+              "sigma": 0.1
             },
             "sf / 27 C / 3.30 V": {
-              "db3": 83.38,
+              "db3": 83.39,
               "lin3": 83.53,
-              "mean": 83.67,
+              "mean": 83.68,
               "n": 300,
               "sigma": 0.1
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 83.46,
+              "lin3": 83.63,
+              "mean": 83.73,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 84.48,
+              "lin3": 84.7,
+              "mean": 84.86,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 84.63,
+              "lin3": 84.91,
+              "mean": 84.99,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 84.7,
+              "lin3": 85.04,
+              "mean": 85.08,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 81.5,
+              "lin3": 81.52,
+              "mean": 81.8,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 81.57,
+              "lin3": 81.64,
+              "mean": 81.85,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 81.67,
+              "lin3": 81.73,
+              "mean": 81.89,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 83.05,
+              "lin3": 83.09,
+              "mean": 83.4,
+              "n": 300,
+              "sigma": 0.12
             },
             "ss / 27 C / 3.30 V": {
-              "db3": 83.18,
-              "lin3": 83.28,
-              "mean": 83.48,
+              "db3": 83.21,
+              "lin3": 83.31,
+              "mean": 83.5,
               "n": 300,
               "sigma": 0.1
             },
+            "ss / 27 C / 3.63 V": {
+              "db3": 83.29,
+              "lin3": 83.43,
+              "mean": 83.55,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 84.85,
+              "lin3": 85.12,
+              "mean": 85.25,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 84.94,
+              "lin3": 85.29,
+              "mean": 85.35,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 85.03,
+              "lin3": 85.41,
+              "mean": 85.45,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 81.88,
+              "lin3": 81.9,
+              "mean": 82.17,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 81.98,
+              "lin3": 82.05,
+              "mean": 82.23,
+              "n": 300,
+              "sigma": 0.08
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 82.02,
+              "lin3": 82.1,
+              "mean": 82.26,
+              "n": 300,
+              "sigma": 0.08
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 83.43,
+              "lin3": 83.53,
+              "mean": 83.78,
+              "n": 300,
+              "sigma": 0.12
+            },
             "typical / 27 C / 3.30 V": {
-              "db3": 83.55,
+              "db3": 83.54,
               "lin3": 83.69,
               "mean": 83.86,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 83.63,
+              "lin3": 83.82,
+              "mean": 83.92,
               "n": 300,
               "sigma": 0.1
             }
           },
           "PSRR+ 1m": {
+            "ff / -40 C / 2.97 V": {
+              "db3": 25.34,
+              "lin3": 25.77,
+              "mean": 25.77,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 25.39,
+              "lin3": 25.84,
+              "mean": 25.84,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 25.46,
+              "lin3": 25.89,
+              "mean": 25.89,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 22.35,
+              "lin3": 22.64,
+              "mean": 22.64,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 22.39,
+              "lin3": 22.66,
+              "mean": 22.66,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 22.4,
+              "lin3": 22.68,
+              "mean": 22.68,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 23.95,
+              "lin3": 24.3,
+              "mean": 24.3,
+              "n": 300,
+              "sigma": 0.12
+            },
             "ff / 27 C / 3.30 V": {
-              "db3": 23.96,
+              "db3": 23.99,
               "lin3": 24.32,
               "mean": 24.32,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 23.99,
+              "lin3": 24.36,
+              "mean": 24.36,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 25.2,
+              "lin3": 25.63,
+              "mean": 25.63,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 25.25,
+              "lin3": 25.67,
+              "mean": 25.67,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 25.3,
+              "lin3": 25.72,
+              "mean": 25.72,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 22.18,
+              "lin3": 22.45,
+              "mean": 22.45,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 22.21,
+              "lin3": 22.48,
+              "mean": 22.48,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 22.22,
+              "lin3": 22.51,
+              "mean": 22.51,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 23.77,
+              "lin3": 24.12,
+              "mean": 24.12,
               "n": 300,
               "sigma": 0.12
             },
             "fs / 27 C / 3.30 V": {
-              "db3": 23.82,
+              "db3": 23.83,
               "lin3": 24.15,
               "mean": 24.15,
               "n": 300,
               "sigma": 0.11
             },
-            "sf / 27 C / 3.30 V": {
-              "db3": 23.42,
-              "lin3": 23.77,
-              "mean": 23.77,
+            "fs / 27 C / 3.63 V": {
+              "db3": 23.84,
+              "lin3": 24.18,
+              "mean": 24.19,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 24.81,
+              "lin3": 25.24,
+              "mean": 25.24,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 24.88,
+              "lin3": 25.29,
+              "mean": 25.29,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 24.91,
+              "lin3": 25.33,
+              "mean": 25.33,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 21.79,
+              "lin3": 22.07,
+              "mean": 22.07,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 21.84,
+              "lin3": 22.1,
+              "mean": 22.1,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 21.86,
+              "lin3": 22.13,
+              "mean": 22.13,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 23.38,
+              "lin3": 23.73,
+              "mean": 23.73,
               "n": 300,
               "sigma": 0.12
             },
+            "sf / 27 C / 3.30 V": {
+              "db3": 23.45,
+              "lin3": 23.78,
+              "mean": 23.78,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 23.48,
+              "lin3": 23.8,
+              "mean": 23.8,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 24.67,
+              "lin3": 25.07,
+              "mean": 25.07,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 24.75,
+              "lin3": 25.13,
+              "mean": 25.13,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 24.78,
+              "lin3": 25.17,
+              "mean": 25.17,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 21.63,
+              "lin3": 21.9,
+              "mean": 21.91,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 21.65,
+              "lin3": 21.92,
+              "mean": 21.93,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 21.7,
+              "lin3": 21.95,
+              "mean": 21.96,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 23.25,
+              "lin3": 23.56,
+              "mean": 23.57,
+              "n": 300,
+              "sigma": 0.1
+            },
             "ss / 27 C / 3.30 V": {
-              "db3": 23.26,
+              "db3": 23.27,
               "lin3": 23.6,
               "mean": 23.6,
               "n": 300,
               "sigma": 0.11
             },
+            "ss / 27 C / 3.63 V": {
+              "db3": 23.34,
+              "lin3": 23.64,
+              "mean": 23.64,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 25.04,
+              "lin3": 25.44,
+              "mean": 25.44,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 25.08,
+              "lin3": 25.48,
+              "mean": 25.48,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 25.12,
+              "lin3": 25.53,
+              "mean": 25.53,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 21.98,
+              "lin3": 22.27,
+              "mean": 22.27,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 22.03,
+              "lin3": 22.3,
+              "mean": 22.3,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 22.05,
+              "lin3": 22.33,
+              "mean": 22.33,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 23.58,
+              "lin3": 23.93,
+              "mean": 23.93,
+              "n": 300,
+              "sigma": 0.11
+            },
             "typical / 27 C / 3.30 V": {
-              "db3": 23.64,
-              "lin3": 23.97,
-              "mean": 23.97,
+              "db3": 23.61,
+              "lin3": 23.96,
+              "mean": 23.96,
+              "n": 300,
+              "sigma": 0.12
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 23.67,
+              "lin3": 23.99,
+              "mean": 24.0,
               "n": 300,
               "sigma": 0.11
             }
           },
           "PSRR+ dc": {
-            "ff / 27 C / 3.30 V": {
-              "db3": 93.8,
-              "lin3": 95.99,
-              "mean": 101.47,
+            "ff / -40 C / 2.97 V": {
+              "db3": 97.61,
+              "lin3": 97.88,
+              "mean": 99.99,
               "n": 300,
-              "sigma": 2.56
+              "sigma": 0.79
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 99.51,
+              "lin3": 99.68,
+              "mean": 101.62,
+              "n": 300,
+              "sigma": 0.7
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 100.96,
+              "lin3": 101.24,
+              "mean": 103.51,
+              "n": 300,
+              "sigma": 0.85
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 78.43,
+              "lin3": 92.21,
+              "mean": 102.18,
+              "n": 300,
+              "sigma": 7.92
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 83.33,
+              "lin3": 93.53,
+              "mean": 103.22,
+              "n": 300,
+              "sigma": 6.63
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 82.78,
+              "lin3": 93.84,
+              "mean": 103.08,
+              "n": 300,
+              "sigma": 6.76
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 89.74,
+              "lin3": 93.9,
+              "mean": 100.28,
+              "n": 300,
+              "sigma": 3.51
+            },
+            "ff / 27 C / 3.30 V": {
+              "db3": 92.05,
+              "lin3": 95.66,
+              "mean": 101.7,
+              "n": 300,
+              "sigma": 3.22
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 96.39,
+              "lin3": 97.87,
+              "mean": 102.6,
+              "n": 300,
+              "sigma": 2.07
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 94.46,
+              "lin3": 95.28,
+              "mean": 98.6,
+              "n": 300,
+              "sigma": 1.38
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 97.54,
+              "lin3": 97.93,
+              "mean": 100.27,
+              "n": 300,
+              "sigma": 0.91
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 99.74,
+              "lin3": 99.92,
+              "mean": 101.84,
+              "n": 300,
+              "sigma": 0.7
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 78.92,
+              "lin3": 91.08,
+              "mean": 103.21,
+              "n": 300,
+              "sigma": 8.1
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 79.43,
+              "lin3": 92.59,
+              "mean": 103.44,
+              "n": 300,
+              "sigma": 8.01
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 80.21,
+              "lin3": 93.85,
+              "mean": 104.25,
+              "n": 300,
+              "sigma": 8.01
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 85.25,
+              "lin3": 91.94,
+              "mean": 99.42,
+              "n": 300,
+              "sigma": 4.72
             },
             "fs / 27 C / 3.30 V": {
-              "db3": 87.61,
-              "lin3": 94.41,
-              "mean": 101.12,
+              "db3": 88.79,
+              "lin3": 94.27,
+              "mean": 101.07,
               "n": 300,
-              "sigma": 4.5
+              "sigma": 4.09
+            },
+            "fs / 27 C / 3.63 V": {
+              "db3": 90.42,
+              "lin3": 95.82,
+              "mean": 102.5,
+              "n": 300,
+              "sigma": 4.03
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 97.39,
+              "lin3": 97.74,
+              "mean": 99.97,
+              "n": 300,
+              "sigma": 0.86
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 100.49,
+              "lin3": 100.58,
+              "mean": 101.75,
+              "n": 300,
+              "sigma": 0.42
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 102.92,
+              "lin3": 103.05,
+              "mean": 104.22,
+              "n": 300,
+              "sigma": 0.43
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 78.76,
+              "lin3": 91.78,
+              "mean": 102.16,
+              "n": 300,
+              "sigma": 7.8
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 82.96,
+              "lin3": 93.02,
+              "mean": 102.02,
+              "n": 300,
+              "sigma": 6.35
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 88.11,
+              "lin3": 93.24,
+              "mean": 100.74,
+              "n": 300,
+              "sigma": 4.21
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 89.13,
+              "lin3": 93.73,
+              "mean": 100.34,
+              "n": 300,
+              "sigma": 3.74
             },
             "sf / 27 C / 3.30 V": {
-              "db3": 89.77,
-              "lin3": 95.2,
-              "mean": 101.63,
+              "db3": 92.11,
+              "lin3": 95.06,
+              "mean": 101.11,
               "n": 300,
-              "sigma": 3.95
+              "sigma": 3.0
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 93.85,
+              "lin3": 96.89,
+              "mean": 102.79,
+              "n": 300,
+              "sigma": 2.98
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 94.5,
+              "lin3": 95.27,
+              "mean": 98.48,
+              "n": 300,
+              "sigma": 1.33
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 97.35,
+              "lin3": 97.75,
+              "mean": 100.27,
+              "n": 300,
+              "sigma": 0.97
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 100.4,
+              "lin3": 100.6,
+              "mean": 102.16,
+              "n": 300,
+              "sigma": 0.59
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 79.43,
+              "lin3": 90.85,
+              "mean": 101.42,
+              "n": 300,
+              "sigma": 7.33
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 79.35,
+              "lin3": 92.35,
+              "mean": 102.81,
+              "n": 300,
+              "sigma": 7.82
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 80.9,
+              "lin3": 93.18,
+              "mean": 103.26,
+              "n": 300,
+              "sigma": 7.45
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 85.78,
+              "lin3": 91.85,
+              "mean": 99.25,
+              "n": 300,
+              "sigma": 4.49
             },
             "ss / 27 C / 3.30 V": {
-              "db3": 87.43,
-              "lin3": 93.71,
-              "mean": 100.83,
+              "db3": 88.69,
+              "lin3": 94.0,
+              "mean": 101.16,
               "n": 300,
-              "sigma": 4.47
+              "sigma": 4.16
+            },
+            "ss / 27 C / 3.63 V": {
+              "db3": 91.04,
+              "lin3": 95.69,
+              "mean": 101.89,
+              "n": 300,
+              "sigma": 3.62
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 95.92,
+              "lin3": 96.44,
+              "mean": 99.27,
+              "n": 300,
+              "sigma": 1.12
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 98.8,
+              "lin3": 99.05,
+              "mean": 100.98,
+              "n": 300,
+              "sigma": 0.73
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 101.69,
+              "lin3": 101.74,
+              "mean": 102.89,
+              "n": 300,
+              "sigma": 0.4
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 78.28,
+              "lin3": 91.33,
+              "mean": 102.28,
+              "n": 300,
+              "sigma": 8.0
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 80.3,
+              "lin3": 93.09,
+              "mean": 102.94,
+              "n": 300,
+              "sigma": 7.55
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 84.12,
+              "lin3": 93.65,
+              "mean": 102.93,
+              "n": 300,
+              "sigma": 6.27
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 89.22,
+              "lin3": 93.14,
+              "mean": 99.82,
+              "n": 300,
+              "sigma": 3.53
             },
             "typical / 27 C / 3.30 V": {
-              "db3": 91.04,
-              "lin3": 94.78,
-              "mean": 101.09,
+              "db3": 87.09,
+              "lin3": 94.71,
+              "mean": 101.54,
               "n": 300,
-              "sigma": 3.35
+              "sigma": 4.82
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 91.12,
+              "lin3": 96.78,
+              "mean": 102.81,
+              "n": 300,
+              "sigma": 3.9
             }
           },
           "PSRR+ fu": {
+            "ff / -40 C / 2.97 V": {
+              "db3": 0.71,
+              "lin3": 0.71,
+              "mean": 0.81,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 0.71,
+              "lin3": 0.71,
+              "mean": 0.82,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 0.72,
+              "lin3": 0.72,
+              "mean": 0.82,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 0.79,
+              "lin3": 0.79,
+              "mean": 0.83,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 0.78,
+              "lin3": 0.78,
+              "mean": 0.83,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 0.78,
+              "lin3": 0.78,
+              "mean": 0.83,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 0.73,
+              "lin3": 0.73,
+              "mean": 0.78,
+              "n": 300,
+              "sigma": 0.02
+            },
             "ff / 27 C / 3.30 V": {
               "db3": 0.73,
               "lin3": 0.73,
               "mean": 0.78,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 0.72,
+              "lin3": 0.72,
+              "mean": 0.78,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 0.83,
+              "lin3": 0.83,
+              "mean": 0.93,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 0.83,
+              "lin3": 0.83,
+              "mean": 0.94,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 0.83,
+              "lin3": 0.83,
+              "mean": 0.94,
+              "n": 300,
+              "sigma": 0.04
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 0.87,
+              "lin3": 0.87,
+              "mean": 0.91,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 0.87,
+              "lin3": 0.87,
+              "mean": 0.91,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 0.87,
+              "lin3": 0.87,
+              "mean": 0.91,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 0.83,
+              "lin3": 0.83,
+              "mean": 0.89,
               "n": 300,
               "sigma": 0.02
             },
@@ -3675,10 +5181,122 @@
               "n": 300,
               "sigma": 0.02
             },
+            "fs / 27 C / 3.63 V": {
+              "db3": 0.83,
+              "lin3": 0.83,
+              "mean": 0.89,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 0.65,
+              "lin3": 0.65,
+              "mean": 0.73,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 0.66,
+              "lin3": 0.66,
+              "mean": 0.74,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 0.66,
+              "lin3": 0.66,
+              "mean": 0.74,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 0.74,
+              "lin3": 0.74,
+              "mean": 0.78,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 0.74,
+              "lin3": 0.74,
+              "mean": 0.78,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 0.74,
+              "lin3": 0.74,
+              "mean": 0.77,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 0.68,
+              "lin3": 0.68,
+              "mean": 0.73,
+              "n": 300,
+              "sigma": 0.02
+            },
             "sf / 27 C / 3.30 V": {
               "db3": 0.68,
               "lin3": 0.68,
               "mean": 0.73,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 0.68,
+              "lin3": 0.68,
+              "mean": 0.73,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 0.77,
+              "lin3": 0.77,
+              "mean": 0.85,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 0.77,
+              "lin3": 0.77,
+              "mean": 0.86,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 0.77,
+              "lin3": 0.77,
+              "mean": 0.86,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 0.82,
+              "lin3": 0.82,
+              "mean": 0.86,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 0.82,
+              "lin3": 0.82,
+              "mean": 0.86,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 0.83,
+              "lin3": 0.83,
+              "mean": 0.86,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 0.78,
+              "lin3": 0.78,
+              "mean": 0.83,
               "n": 300,
               "sigma": 0.02
             },
@@ -3689,7 +5307,70 @@
               "n": 300,
               "sigma": 0.02
             },
+            "ss / 27 C / 3.63 V": {
+              "db3": 0.78,
+              "lin3": 0.78,
+              "mean": 0.83,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 0.75,
+              "lin3": 0.75,
+              "mean": 0.83,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 0.74,
+              "lin3": 0.74,
+              "mean": 0.83,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 0.74,
+              "lin3": 0.74,
+              "mean": 0.84,
+              "n": 300,
+              "sigma": 0.03
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 0.8,
+              "lin3": 0.8,
+              "mean": 0.84,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 0.8,
+              "lin3": 0.8,
+              "mean": 0.84,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 0.8,
+              "lin3": 0.8,
+              "mean": 0.84,
+              "n": 300,
+              "sigma": 0.01
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 0.75,
+              "lin3": 0.75,
+              "mean": 0.81,
+              "n": 300,
+              "sigma": 0.02
+            },
             "typical / 27 C / 3.30 V": {
+              "db3": 0.75,
+              "lin3": 0.75,
+              "mean": 0.81,
+              "n": 300,
+              "sigma": 0.02
+            },
+            "typical / 27 C / 3.63 V": {
               "db3": 0.76,
               "lin3": 0.76,
               "mean": 0.81,
@@ -3698,472 +5379,2167 @@
             }
           },
           "PSRR- 100k": {
+            "ff / -40 C / 2.97 V": {
+              "db3": 72.8,
+              "lin3": 78.05,
+              "mean": 89.53,
+              "n": 300,
+              "sigma": 5.58
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 74.75,
+              "lin3": 79.78,
+              "mean": 90.0,
+              "n": 300,
+              "sigma": 5.08
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 74.55,
+              "lin3": 79.47,
+              "mean": 89.52,
+              "n": 300,
+              "sigma": 4.99
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 88.34,
+              "lin3": 88.87,
+              "mean": 93.61,
+              "n": 300,
+              "sigma": 1.76
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 88.83,
+              "lin3": 89.43,
+              "mean": 93.88,
+              "n": 300,
+              "sigma": 1.68
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 88.66,
+              "lin3": 89.2,
+              "mean": 93.96,
+              "n": 300,
+              "sigma": 1.77
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 79.24,
+              "lin3": 82.17,
+              "mean": 91.74,
+              "n": 300,
+              "sigma": 4.17
+            },
             "ff / 27 C / 3.30 V": {
-              "db3": 80.17,
-              "lin3": 83.09,
-              "mean": 92.1,
+              "db3": 80.12,
+              "lin3": 82.81,
+              "mean": 92.0,
+              "n": 300,
+              "sigma": 3.96
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 81.67,
+              "lin3": 84.14,
+              "mean": 92.16,
+              "n": 300,
+              "sigma": 3.5
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 72.26,
+              "lin3": 77.92,
+              "mean": 88.93,
+              "n": 300,
+              "sigma": 5.56
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 74.66,
+              "lin3": 79.31,
+              "mean": 89.81,
+              "n": 300,
+              "sigma": 5.05
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 75.29,
+              "lin3": 79.72,
+              "mean": 90.52,
+              "n": 300,
+              "sigma": 5.08
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 88.32,
+              "lin3": 88.6,
+              "mean": 93.23,
+              "n": 300,
+              "sigma": 1.64
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 88.58,
+              "lin3": 88.97,
+              "mean": 93.47,
+              "n": 300,
+              "sigma": 1.63
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 88.33,
+              "lin3": 88.78,
+              "mean": 93.43,
+              "n": 300,
+              "sigma": 1.7
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 80.58,
+              "lin3": 83.19,
+              "mean": 91.33,
+              "n": 300,
+              "sigma": 3.58
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 80.39,
+              "lin3": 82.97,
+              "mean": 91.61,
+              "n": 300,
+              "sigma": 3.74
+            },
+            "fs / 27 C / 3.63 V": {
+              "db3": 80.4,
+              "lin3": 82.94,
+              "mean": 91.89,
+              "n": 300,
+              "sigma": 3.83
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 72.36,
+              "lin3": 77.71,
+              "mean": 88.96,
+              "n": 300,
+              "sigma": 5.53
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 73.49,
+              "lin3": 78.77,
+              "mean": 90.04,
+              "n": 300,
+              "sigma": 5.52
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 73.48,
+              "lin3": 78.62,
+              "mean": 89.26,
+              "n": 300,
+              "sigma": 5.26
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 88.06,
+              "lin3": 88.54,
+              "mean": 93.58,
+              "n": 300,
+              "sigma": 1.84
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 89.08,
+              "lin3": 89.44,
+              "mean": 93.89,
+              "n": 300,
+              "sigma": 1.6
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 88.72,
+              "lin3": 88.99,
+              "mean": 93.92,
+              "n": 300,
+              "sigma": 1.73
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 79.68,
+              "lin3": 82.51,
+              "mean": 91.38,
+              "n": 300,
+              "sigma": 3.9
+            },
+            "sf / 27 C / 3.30 V": {
+              "db3": 79.89,
+              "lin3": 82.84,
+              "mean": 91.82,
               "n": 300,
               "sigma": 3.98
             },
-            "fs / 27 C / 3.30 V": {
-              "db3": 80.66,
-              "lin3": 83.19,
-              "mean": 91.73,
+            "sf / 27 C / 3.63 V": {
+              "db3": 80.7,
+              "lin3": 83.42,
+              "mean": 92.2,
               "n": 300,
-              "sigma": 3.69
+              "sigma": 3.83
             },
-            "sf / 27 C / 3.30 V": {
-              "db3": 80.24,
-              "lin3": 82.84,
-              "mean": 91.64,
+            "ss / -40 C / 2.97 V": {
+              "db3": 72.92,
+              "lin3": 78.09,
+              "mean": 88.97,
               "n": 300,
-              "sigma": 3.8
+              "sigma": 5.35
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 74.9,
+              "lin3": 79.17,
+              "mean": 89.43,
+              "n": 300,
+              "sigma": 4.84
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 74.28,
+              "lin3": 79.22,
+              "mean": 89.65,
+              "n": 300,
+              "sigma": 5.12
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 88.05,
+              "lin3": 88.49,
+              "mean": 93.04,
+              "n": 300,
+              "sigma": 1.66
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 88.51,
+              "lin3": 88.89,
+              "mean": 93.26,
+              "n": 300,
+              "sigma": 1.59
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 89.33,
+              "lin3": 89.52,
+              "mean": 93.57,
+              "n": 300,
+              "sigma": 1.41
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 79.13,
+              "lin3": 81.98,
+              "mean": 91.18,
+              "n": 300,
+              "sigma": 4.02
             },
             "ss / 27 C / 3.30 V": {
-              "db3": 80.41,
-              "lin3": 83.0,
-              "mean": 91.42,
+              "db3": 80.55,
+              "lin3": 82.93,
+              "mean": 91.48,
               "n": 300,
-              "sigma": 3.67
+              "sigma": 3.64
+            },
+            "ss / 27 C / 3.63 V": {
+              "db3": 81.36,
+              "lin3": 83.3,
+              "mean": 92.12,
+              "n": 300,
+              "sigma": 3.59
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 73.53,
+              "lin3": 78.38,
+              "mean": 88.98,
+              "n": 300,
+              "sigma": 5.15
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 74.53,
+              "lin3": 79.3,
+              "mean": 89.78,
+              "n": 300,
+              "sigma": 5.08
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 74.09,
+              "lin3": 78.98,
+              "mean": 89.58,
+              "n": 300,
+              "sigma": 5.16
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 88.52,
+              "lin3": 88.93,
+              "mean": 93.42,
+              "n": 300,
+              "sigma": 1.63
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 88.87,
+              "lin3": 89.28,
+              "mean": 93.69,
+              "n": 300,
+              "sigma": 1.61
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 88.66,
+              "lin3": 89.12,
+              "mean": 93.66,
+              "n": 300,
+              "sigma": 1.67
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 80.12,
+              "lin3": 82.86,
+              "mean": 91.68,
+              "n": 300,
+              "sigma": 3.85
             },
             "typical / 27 C / 3.30 V": {
-              "db3": 80.47,
-              "lin3": 82.9,
-              "mean": 91.58,
+              "db3": 80.29,
+              "lin3": 82.82,
+              "mean": 91.52,
               "n": 300,
-              "sigma": 3.7
+              "sigma": 3.74
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 80.48,
+              "lin3": 83.08,
+              "mean": 91.77,
+              "n": 300,
+              "sigma": 3.76
             }
           },
           "PSRR- 10k": {
-            "ff / 27 C / 3.30 V": {
-              "db3": 71.39,
-              "lin3": 82.79,
-              "mean": 96.34,
+            "ff / -40 C / 2.97 V": {
+              "db3": 65.05,
+              "lin3": 77.88,
+              "mean": 92.0,
               "n": 300,
-              "sigma": 8.32
+              "sigma": 8.98
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 67.02,
+              "lin3": 79.55,
+              "mean": 92.41,
+              "n": 300,
+              "sigma": 8.46
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 68.26,
+              "lin3": 79.28,
+              "mean": 91.46,
+              "n": 300,
+              "sigma": 7.73
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 80.98,
+              "lin3": 89.15,
+              "mean": 101.16,
+              "n": 300,
+              "sigma": 6.72
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 80.76,
+              "lin3": 89.64,
+              "mean": 101.54,
+              "n": 300,
+              "sigma": 6.93
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 80.48,
+              "lin3": 89.42,
+              "mean": 101.89,
+              "n": 300,
+              "sigma": 7.14
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 71.27,
+              "lin3": 81.93,
+              "mean": 95.69,
+              "n": 300,
+              "sigma": 8.14
+            },
+            "ff / 27 C / 3.30 V": {
+              "db3": 71.37,
+              "lin3": 82.55,
+              "mean": 96.08,
+              "n": 300,
+              "sigma": 8.24
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 73.33,
+              "lin3": 83.88,
+              "mean": 95.91,
+              "n": 300,
+              "sigma": 7.53
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 64.33,
+              "lin3": 77.71,
+              "mean": 91.47,
+              "n": 300,
+              "sigma": 9.05
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 67.24,
+              "lin3": 79.09,
+              "mean": 92.38,
+              "n": 300,
+              "sigma": 8.38
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 65.64,
+              "lin3": 79.47,
+              "mean": 93.91,
+              "n": 300,
+              "sigma": 9.42
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 81.58,
+              "lin3": 89.17,
+              "mean": 101.24,
+              "n": 300,
+              "sigma": 6.55
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 81.32,
+              "lin3": 89.44,
+              "mean": 101.96,
+              "n": 300,
+              "sigma": 6.88
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 80.57,
+              "lin3": 89.09,
+              "mean": 101.4,
+              "n": 300,
+              "sigma": 6.94
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 71.58,
+              "lin3": 82.89,
+              "mean": 95.34,
+              "n": 300,
+              "sigma": 7.92
             },
             "fs / 27 C / 3.30 V": {
-              "db3": 71.89,
-              "lin3": 82.89,
-              "mean": 96.01,
+              "db3": 72.27,
+              "lin3": 82.7,
+              "mean": 95.66,
               "n": 300,
-              "sigma": 8.04
+              "sigma": 7.8
+            },
+            "fs / 27 C / 3.63 V": {
+              "db3": 71.91,
+              "lin3": 82.65,
+              "mean": 96.38,
+              "n": 300,
+              "sigma": 8.16
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 64.98,
+              "lin3": 77.55,
+              "mean": 91.2,
+              "n": 300,
+              "sigma": 8.74
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 65.35,
+              "lin3": 78.56,
+              "mean": 92.88,
+              "n": 300,
+              "sigma": 9.18
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 65.4,
+              "lin3": 78.42,
+              "mean": 91.6,
+              "n": 300,
+              "sigma": 8.74
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 80.67,
+              "lin3": 89.0,
+              "mean": 101.94,
+              "n": 300,
+              "sigma": 7.09
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 81.69,
+              "lin3": 90.03,
+              "mean": 102.49,
+              "n": 300,
+              "sigma": 6.93
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 81.47,
+              "lin3": 89.55,
+              "mean": 102.53,
+              "n": 300,
+              "sigma": 7.02
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 72.05,
+              "lin3": 82.27,
+              "mean": 94.93,
+              "n": 300,
+              "sigma": 7.63
             },
             "sf / 27 C / 3.30 V": {
-              "db3": 71.96,
-              "lin3": 82.58,
-              "mean": 95.39,
+              "db3": 71.7,
+              "lin3": 82.56,
+              "mean": 95.95,
               "n": 300,
-              "sigma": 7.81
+              "sigma": 8.08
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 71.23,
+              "lin3": 83.08,
+              "mean": 96.86,
+              "n": 300,
+              "sigma": 8.54
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 65.07,
+              "lin3": 77.91,
+              "mean": 91.48,
+              "n": 300,
+              "sigma": 8.8
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 67.49,
+              "lin3": 78.99,
+              "mean": 91.76,
+              "n": 300,
+              "sigma": 8.09
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 65.49,
+              "lin3": 78.97,
+              "mean": 92.54,
+              "n": 300,
+              "sigma": 9.01
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 80.98,
+              "lin3": 89.1,
+              "mean": 101.24,
+              "n": 300,
+              "sigma": 6.75
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 81.8,
+              "lin3": 89.6,
+              "mean": 101.67,
+              "n": 300,
+              "sigma": 6.62
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 83.1,
+              "lin3": 90.35,
+              "mean": 102.71,
+              "n": 300,
+              "sigma": 6.54
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 70.66,
+              "lin3": 81.77,
+              "mean": 95.29,
+              "n": 300,
+              "sigma": 8.21
             },
             "ss / 27 C / 3.30 V": {
-              "db3": 71.38,
-              "lin3": 82.72,
-              "mean": 95.68,
+              "db3": 71.63,
+              "lin3": 82.67,
+              "mean": 95.7,
+              "n": 300,
+              "sigma": 8.02
+            },
+            "ss / 27 C / 3.63 V": {
+              "db3": 71.88,
+              "lin3": 83.07,
+              "mean": 97.28,
+              "n": 300,
+              "sigma": 8.47
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 66.78,
+              "lin3": 78.22,
+              "mean": 91.09,
               "n": 300,
               "sigma": 8.1
             },
+            "typical / -40 C / 3.30 V": {
+              "db3": 67.09,
+              "lin3": 79.09,
+              "mean": 92.24,
+              "n": 300,
+              "sigma": 8.38
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 67.58,
+              "lin3": 78.78,
+              "mean": 91.83,
+              "n": 300,
+              "sigma": 8.08
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 81.68,
+              "lin3": 89.53,
+              "mean": 101.55,
+              "n": 300,
+              "sigma": 6.62
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 81.18,
+              "lin3": 89.72,
+              "mean": 102.43,
+              "n": 300,
+              "sigma": 7.08
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 81.07,
+              "lin3": 89.57,
+              "mean": 101.99,
+              "n": 300,
+              "sigma": 6.97
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 71.09,
+              "lin3": 82.58,
+              "mean": 96.04,
+              "n": 300,
+              "sigma": 8.32
+            },
             "typical / 27 C / 3.30 V": {
-              "db3": 72.4,
-              "lin3": 82.68,
+              "db3": 71.88,
+              "lin3": 82.56,
               "mean": 95.35,
               "n": 300,
-              "sigma": 7.65
+              "sigma": 7.82
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 71.19,
+              "lin3": 82.78,
+              "mean": 96.02,
+              "n": 300,
+              "sigma": 8.28
             }
           },
           "PSRR- 1k": {
+            "ff / -40 C / 2.97 V": {
+              "db3": 63.07,
+              "lin3": 77.87,
+              "mean": 92.27,
+              "n": 300,
+              "sigma": 9.73
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 64.59,
+              "lin3": 79.54,
+              "mean": 92.7,
+              "n": 300,
+              "sigma": 9.37
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 67.07,
+              "lin3": 79.28,
+              "mean": 91.61,
+              "n": 300,
+              "sigma": 8.18
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 77.88,
+              "lin3": 89.09,
+              "mean": 101.92,
+              "n": 300,
+              "sigma": 8.01
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 75.91,
+              "lin3": 89.55,
+              "mean": 102.61,
+              "n": 300,
+              "sigma": 8.9
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 74.8,
+              "lin3": 89.33,
+              "mean": 103.14,
+              "n": 300,
+              "sigma": 9.45
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 69.02,
+              "lin3": 81.91,
+              "mean": 96.07,
+              "n": 300,
+              "sigma": 9.02
+            },
             "ff / 27 C / 3.30 V": {
-              "db3": 68.74,
-              "lin3": 82.77,
-              "mean": 96.79,
+              "db3": 68.79,
+              "lin3": 82.53,
+              "mean": 96.51,
+              "n": 300,
+              "sigma": 9.24
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 70.72,
+              "lin3": 83.86,
+              "mean": 96.29,
+              "n": 300,
+              "sigma": 8.52
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 62.37,
+              "lin3": 77.7,
+              "mean": 91.74,
+              "n": 300,
+              "sigma": 9.79
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 65.59,
+              "lin3": 79.09,
+              "mean": 92.6,
+              "n": 300,
+              "sigma": 9.0
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 62.02,
+              "lin3": 79.46,
+              "mean": 94.46,
+              "n": 300,
+              "sigma": 10.81
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 76.66,
+              "lin3": 89.1,
+              "mean": 102.29,
+              "n": 300,
+              "sigma": 8.54
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 75.49,
+              "lin3": 89.35,
+              "mean": 103.29,
+              "n": 300,
+              "sigma": 9.27
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 73.48,
+              "lin3": 88.99,
+              "mean": 102.85,
+              "n": 300,
+              "sigma": 9.79
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 68.78,
+              "lin3": 82.87,
+              "mean": 95.78,
+              "n": 300,
+              "sigma": 9.0
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 70.09,
+              "lin3": 82.68,
+              "mean": 96.02,
+              "n": 300,
+              "sigma": 8.64
+            },
+            "fs / 27 C / 3.63 V": {
+              "db3": 68.83,
+              "lin3": 82.63,
+              "mean": 96.88,
               "n": 300,
               "sigma": 9.35
             },
-            "fs / 27 C / 3.30 V": {
-              "db3": 68.74,
-              "lin3": 82.87,
-              "mean": 96.52,
+            "sf / -40 C / 2.97 V": {
+              "db3": 63.12,
+              "lin3": 77.54,
+              "mean": 91.43,
               "n": 300,
-              "sigma": 9.26
+              "sigma": 9.44
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 63.4,
+              "lin3": 78.55,
+              "mean": 93.16,
+              "n": 300,
+              "sigma": 9.92
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 62.83,
+              "lin3": 78.41,
+              "mean": 91.92,
+              "n": 300,
+              "sigma": 9.69
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 75.63,
+              "lin3": 88.92,
+              "mean": 103.14,
+              "n": 300,
+              "sigma": 9.17
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 76.5,
+              "lin3": 89.94,
+              "mean": 103.77,
+              "n": 300,
+              "sigma": 9.09
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 75.99,
+              "lin3": 89.47,
+              "mean": 103.86,
+              "n": 300,
+              "sigma": 9.29
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 70.49,
+              "lin3": 82.26,
+              "mean": 95.19,
+              "n": 300,
+              "sigma": 8.23
             },
             "sf / 27 C / 3.30 V": {
-              "db3": 69.95,
-              "lin3": 82.57,
-              "mean": 95.71,
+              "db3": 69.67,
+              "lin3": 82.54,
+              "mean": 96.3,
               "n": 300,
-              "sigma": 8.59
+              "sigma": 8.88
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 67.41,
+              "lin3": 83.06,
+              "mean": 97.5,
+              "n": 300,
+              "sigma": 10.03
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 62.34,
+              "lin3": 77.9,
+              "mean": 91.81,
+              "n": 300,
+              "sigma": 9.83
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 64.66,
+              "lin3": 78.99,
+              "mean": 92.09,
+              "n": 300,
+              "sigma": 9.14
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 62.79,
+              "lin3": 78.96,
+              "mean": 92.92,
+              "n": 300,
+              "sigma": 10.04
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 75.64,
+              "lin3": 89.02,
+              "mean": 102.41,
+              "n": 300,
+              "sigma": 8.92
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 75.52,
+              "lin3": 89.51,
+              "mean": 103.0,
+              "n": 300,
+              "sigma": 9.16
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 77.68,
+              "lin3": 90.26,
+              "mean": 104.05,
+              "n": 300,
+              "sigma": 8.79
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 67.39,
+              "lin3": 81.75,
+              "mean": 95.8,
+              "n": 300,
+              "sigma": 9.47
             },
             "ss / 27 C / 3.30 V": {
-              "db3": 68.04,
-              "lin3": 82.7,
-              "mean": 96.2,
+              "db3": 67.17,
+              "lin3": 82.65,
+              "mean": 96.34,
               "n": 300,
-              "sigma": 9.39
+              "sigma": 9.72
+            },
+            "ss / 27 C / 3.63 V": {
+              "db3": 68.11,
+              "lin3": 83.04,
+              "mean": 97.98,
+              "n": 300,
+              "sigma": 9.96
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 66.03,
+              "lin3": 78.21,
+              "mean": 91.21,
+              "n": 300,
+              "sigma": 8.39
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 64.87,
+              "lin3": 79.08,
+              "mean": 92.51,
+              "n": 300,
+              "sigma": 9.21
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 66.31,
+              "lin3": 78.78,
+              "mean": 92.0,
+              "n": 300,
+              "sigma": 8.56
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 76.66,
+              "lin3": 89.45,
+              "mean": 102.66,
+              "n": 300,
+              "sigma": 8.67
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 74.85,
+              "lin3": 89.62,
+              "mean": 103.95,
+              "n": 300,
+              "sigma": 9.7
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 75.33,
+              "lin3": 89.48,
+              "mean": 103.31,
+              "n": 300,
+              "sigma": 9.33
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 67.05,
+              "lin3": 82.55,
+              "mean": 96.66,
+              "n": 300,
+              "sigma": 9.87
             },
             "typical / 27 C / 3.30 V": {
-              "db3": 70.3,
-              "lin3": 82.67,
-              "mean": 95.69,
+              "db3": 69.22,
+              "lin3": 82.54,
+              "mean": 95.74,
               "n": 300,
-              "sigma": 8.46
+              "sigma": 8.84
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 67.73,
+              "lin3": 82.75,
+              "mean": 96.57,
+              "n": 300,
+              "sigma": 9.61
             }
           },
           "PSRR- 1m": {
+            "ff / -40 C / 2.97 V": {
+              "db3": 74.6,
+              "lin3": 74.57,
+              "mean": 77.19,
+              "n": 300,
+              "sigma": 0.86
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 75.51,
+              "lin3": 75.51,
+              "mean": 77.49,
+              "n": 300,
+              "sigma": 0.66
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 75.42,
+              "lin3": 75.42,
+              "mean": 77.47,
+              "n": 300,
+              "sigma": 0.68
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 73.93,
+              "lin3": 73.89,
+              "mean": 74.68,
+              "n": 300,
+              "sigma": 0.25
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 74.2,
+              "lin3": 74.17,
+              "mean": 74.95,
+              "n": 300,
+              "sigma": 0.25
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 74.29,
+              "lin3": 74.22,
+              "mean": 75.04,
+              "n": 300,
+              "sigma": 0.25
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 74.74,
+              "lin3": 74.69,
+              "mean": 76.2,
+              "n": 300,
+              "sigma": 0.49
+            },
             "ff / 27 C / 3.30 V": {
-              "db3": 75.06,
-              "lin3": 75.02,
-              "mean": 76.42,
+              "db3": 74.96,
+              "lin3": 74.94,
+              "mean": 76.41,
+              "n": 300,
+              "sigma": 0.48
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 75.17,
+              "lin3": 75.13,
+              "mean": 76.49,
+              "n": 300,
+              "sigma": 0.44
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 74.03,
+              "lin3": 74.05,
+              "mean": 76.55,
+              "n": 300,
+              "sigma": 0.84
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 74.76,
+              "lin3": 74.68,
+              "mean": 76.77,
+              "n": 300,
+              "sigma": 0.67
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 75.0,
+              "lin3": 74.94,
+              "mean": 76.89,
+              "n": 300,
+              "sigma": 0.63
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 73.17,
+              "lin3": 73.14,
+              "mean": 73.93,
+              "n": 300,
+              "sigma": 0.25
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 73.4,
+              "lin3": 73.37,
+              "mean": 74.14,
+              "n": 300,
+              "sigma": 0.25
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 73.57,
+              "lin3": 73.53,
+              "mean": 74.29,
+              "n": 300,
+              "sigma": 0.24
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 74.06,
+              "lin3": 74.05,
+              "mean": 75.49,
+              "n": 300,
+              "sigma": 0.48
+            },
+            "fs / 27 C / 3.30 V": {
+              "db3": 74.33,
+              "lin3": 74.31,
+              "mean": 75.7,
               "n": 300,
               "sigma": 0.45
             },
-            "fs / 27 C / 3.30 V": {
-              "db3": 74.43,
-              "lin3": 74.39,
-              "mean": 75.71,
+            "fs / 27 C / 3.63 V": {
+              "db3": 74.53,
+              "lin3": 74.47,
+              "mean": 75.78,
               "n": 300,
-              "sigma": 0.43
+              "sigma": 0.42
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 73.85,
+              "lin3": 73.84,
+              "mean": 76.79,
+              "n": 300,
+              "sigma": 0.98
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 74.5,
+              "lin3": 74.51,
+              "mean": 76.99,
+              "n": 300,
+              "sigma": 0.83
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 74.47,
+              "lin3": 74.46,
+              "mean": 76.99,
+              "n": 300,
+              "sigma": 0.84
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 73.16,
+              "lin3": 73.11,
+              "mean": 73.96,
+              "n": 300,
+              "sigma": 0.27
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 73.39,
+              "lin3": 73.35,
+              "mean": 74.17,
+              "n": 300,
+              "sigma": 0.26
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 73.45,
+              "lin3": 73.4,
+              "mean": 74.28,
+              "n": 300,
+              "sigma": 0.28
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 73.9,
+              "lin3": 73.87,
+              "mean": 75.69,
+              "n": 300,
+              "sigma": 0.6
             },
             "sf / 27 C / 3.30 V": {
-              "db3": 74.18,
-              "lin3": 74.14,
-              "mean": 75.89,
+              "db3": 74.08,
+              "lin3": 74.08,
+              "mean": 75.8,
               "n": 300,
-              "sigma": 0.57
+              "sigma": 0.58
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 74.45,
+              "lin3": 74.42,
+              "mean": 75.96,
+              "n": 300,
+              "sigma": 0.5
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 73.27,
+              "lin3": 73.33,
+              "mean": 76.1,
+              "n": 300,
+              "sigma": 0.94
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 73.84,
+              "lin3": 73.86,
+              "mean": 76.35,
+              "n": 300,
+              "sigma": 0.84
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 74.14,
+              "lin3": 74.17,
+              "mean": 76.38,
+              "n": 300,
+              "sigma": 0.75
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 72.43,
+              "lin3": 72.4,
+              "mean": 73.17,
+              "n": 300,
+              "sigma": 0.25
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 72.58,
+              "lin3": 72.56,
+              "mean": 73.35,
+              "n": 300,
+              "sigma": 0.26
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 72.81,
+              "lin3": 72.76,
+              "mean": 73.51,
+              "n": 300,
+              "sigma": 0.23
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 73.04,
+              "lin3": 73.09,
+              "mean": 74.93,
+              "n": 300,
+              "sigma": 0.63
             },
             "ss / 27 C / 3.30 V": {
-              "db3": 73.39,
-              "lin3": 73.38,
-              "mean": 75.08,
+              "db3": 73.47,
+              "lin3": 73.48,
+              "mean": 75.12,
               "n": 300,
-              "sigma": 0.56
+              "sigma": 0.55
+            },
+            "ss / 27 C / 3.63 V": {
+              "db3": 73.72,
+              "lin3": 73.71,
+              "mean": 75.17,
+              "n": 300,
+              "sigma": 0.48
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 73.99,
+              "lin3": 74.02,
+              "mean": 76.67,
+              "n": 300,
+              "sigma": 0.89
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 74.85,
+              "lin3": 74.85,
+              "mean": 76.9,
+              "n": 300,
+              "sigma": 0.68
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 74.75,
+              "lin3": 74.7,
+              "mean": 76.91,
+              "n": 300,
+              "sigma": 0.72
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 73.17,
+              "lin3": 73.12,
+              "mean": 73.93,
+              "n": 300,
+              "sigma": 0.25
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 73.43,
+              "lin3": 73.41,
+              "mean": 74.18,
+              "n": 300,
+              "sigma": 0.25
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 73.46,
+              "lin3": 73.43,
+              "mean": 74.26,
+              "n": 300,
+              "sigma": 0.27
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 74.04,
+              "lin3": 74.02,
+              "mean": 75.59,
+              "n": 300,
+              "sigma": 0.52
             },
             "typical / 27 C / 3.30 V": {
-              "db3": 74.13,
-              "lin3": 74.13,
-              "mean": 75.74,
+              "db3": 74.25,
+              "lin3": 74.2,
+              "mean": 75.8,
               "n": 300,
-              "sigma": 0.54
+              "sigma": 0.52
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 74.47,
+              "lin3": 74.46,
+              "mean": 75.86,
+              "n": 300,
+              "sigma": 0.46
             }
           },
           "PSRR- dc": {
-            "ff / 27 C / 3.30 V": {
-              "db3": 68.57,
-              "lin3": 82.76,
-              "mean": 96.81,
+            "ff / -40 C / 2.97 V": {
+              "db3": 62.99,
+              "lin3": 77.92,
+              "mean": 92.28,
               "n": 300,
-              "sigma": 9.41
+              "sigma": 9.76
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 64.31,
+              "lin3": 79.53,
+              "mean": 92.72,
+              "n": 300,
+              "sigma": 9.47
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 67.01,
+              "lin3": 79.27,
+              "mean": 91.61,
+              "n": 300,
+              "sigma": 8.2
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 77.21,
+              "lin3": 89.12,
+              "mean": 101.98,
+              "n": 300,
+              "sigma": 8.26
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 74.82,
+              "lin3": 89.5,
+              "mean": 102.71,
+              "n": 300,
+              "sigma": 9.3
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 73.68,
+              "lin3": 89.34,
+              "mean": 103.27,
+              "n": 300,
+              "sigma": 9.86
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 68.87,
+              "lin3": 81.9,
+              "mean": 96.08,
+              "n": 300,
+              "sigma": 9.07
+            },
+            "ff / 27 C / 3.30 V": {
+              "db3": 68.68,
+              "lin3": 82.57,
+              "mean": 96.53,
+              "n": 300,
+              "sigma": 9.28
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 70.57,
+              "lin3": 83.89,
+              "mean": 96.31,
+              "n": 300,
+              "sigma": 8.58
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 62.18,
+              "lin3": 77.73,
+              "mean": 91.76,
+              "n": 300,
+              "sigma": 9.86
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 65.5,
+              "lin3": 79.12,
+              "mean": 92.61,
+              "n": 300,
+              "sigma": 9.04
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 61.71,
+              "lin3": 79.49,
+              "mean": 94.49,
+              "n": 300,
+              "sigma": 10.93
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 75.77,
+              "lin3": 89.12,
+              "mean": 102.38,
+              "n": 300,
+              "sigma": 8.87
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 73.65,
+              "lin3": 89.38,
+              "mean": 103.48,
+              "n": 300,
+              "sigma": 9.94
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 71.04,
+              "lin3": 88.95,
+              "mean": 103.11,
+              "n": 300,
+              "sigma": 10.69
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 68.63,
+              "lin3": 82.89,
+              "mean": 95.8,
+              "n": 300,
+              "sigma": 9.06
             },
             "fs / 27 C / 3.30 V": {
-              "db3": 68.51,
-              "lin3": 82.86,
-              "mean": 96.54,
+              "db3": 69.95,
+              "lin3": 82.68,
+              "mean": 96.03,
               "n": 300,
-              "sigma": 9.34
+              "sigma": 8.7
+            },
+            "fs / 27 C / 3.63 V": {
+              "db3": 67.01,
+              "lin3": 82.61,
+              "mean": 97.01,
+              "n": 300,
+              "sigma": 10.0
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 62.96,
+              "lin3": 77.57,
+              "mean": 91.45,
+              "n": 300,
+              "sigma": 9.5
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 63.23,
+              "lin3": 78.56,
+              "mean": 93.18,
+              "n": 300,
+              "sigma": 9.98
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 62.58,
+              "lin3": 78.41,
+              "mean": 91.94,
+              "n": 300,
+              "sigma": 9.79
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 74.65,
+              "lin3": 88.96,
+              "mean": 103.25,
+              "n": 300,
+              "sigma": 9.53
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 75.91,
+              "lin3": 89.99,
+              "mean": 103.85,
+              "n": 300,
+              "sigma": 9.31
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 74.7,
+              "lin3": 89.52,
+              "mean": 104.0,
+              "n": 300,
+              "sigma": 9.77
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 70.42,
+              "lin3": 82.34,
+              "mean": 95.19,
+              "n": 300,
+              "sigma": 8.26
             },
             "sf / 27 C / 3.30 V": {
-              "db3": 69.83,
-              "lin3": 82.59,
-              "mean": 95.73,
+              "db3": 69.55,
+              "lin3": 82.56,
+              "mean": 96.31,
               "n": 300,
-              "sigma": 8.63
+              "sigma": 8.92
+            },
+            "sf / 27 C / 3.63 V": {
+              "db3": 66.58,
+              "lin3": 83.04,
+              "mean": 97.57,
+              "n": 300,
+              "sigma": 10.33
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 61.03,
+              "lin3": 77.92,
+              "mean": 91.9,
+              "n": 300,
+              "sigma": 10.29
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 64.36,
+              "lin3": 79.02,
+              "mean": 92.11,
+              "n": 300,
+              "sigma": 9.25
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 62.62,
+              "lin3": 78.96,
+              "mean": 92.93,
+              "n": 300,
+              "sigma": 10.11
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 74.4,
+              "lin3": 89.07,
+              "mean": 102.54,
+              "n": 300,
+              "sigma": 9.38
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 73.23,
+              "lin3": 89.53,
+              "mean": 103.23,
+              "n": 300,
+              "sigma": 10.0
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 76.5,
+              "lin3": 90.27,
+              "mean": 104.18,
+              "n": 300,
+              "sigma": 9.23
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 66.79,
+              "lin3": 81.78,
+              "mean": 95.85,
+              "n": 300,
+              "sigma": 9.68
             },
             "ss / 27 C / 3.30 V": {
-              "db3": 67.72,
-              "lin3": 82.74,
-              "mean": 96.24,
+              "db3": 66.3,
+              "lin3": 82.66,
+              "mean": 96.42,
               "n": 300,
-              "sigma": 9.51
+              "sigma": 10.04
+            },
+            "ss / 27 C / 3.63 V": {
+              "db3": 67.54,
+              "lin3": 83.03,
+              "mean": 98.04,
+              "n": 300,
+              "sigma": 10.17
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 66.02,
+              "lin3": 78.25,
+              "mean": 91.21,
+              "n": 300,
+              "sigma": 8.4
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 64.68,
+              "lin3": 79.07,
+              "mean": 92.53,
+              "n": 300,
+              "sigma": 9.28
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 66.2,
+              "lin3": 78.83,
+              "mean": 92.0,
+              "n": 300,
+              "sigma": 8.6
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 76.24,
+              "lin3": 89.49,
+              "mean": 102.72,
+              "n": 300,
+              "sigma": 8.83
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 73.23,
+              "lin3": 89.62,
+              "mean": 104.13,
+              "n": 300,
+              "sigma": 10.3
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 73.97,
+              "lin3": 89.49,
+              "mean": 103.45,
+              "n": 300,
+              "sigma": 9.83
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 62.61,
+              "lin3": 82.57,
+              "mean": 96.97,
+              "n": 300,
+              "sigma": 11.45
             },
             "typical / 27 C / 3.30 V": {
-              "db3": 70.22,
-              "lin3": 82.7,
-              "mean": 95.7,
+              "db3": 68.92,
+              "lin3": 82.56,
+              "mean": 95.77,
               "n": 300,
-              "sigma": 8.49
+              "sigma": 8.95
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 67.22,
+              "lin3": 82.72,
+              "mean": 96.62,
+              "n": 300,
+              "sigma": 9.8
             }
           },
           "PSRR- fu": {
-            "ff / 27 C / 3.30 V": {
-              "db3": 38.44,
-              "lin3": 38.45,
-              "mean": 38.77,
+            "ff / -40 C / 2.97 V": {
+              "db3": 37.04,
+              "lin3": 37.05,
+              "mean": 37.52,
+              "n": 300,
+              "sigma": 0.16
+            },
+            "ff / -40 C / 3.30 V": {
+              "db3": 37.23,
+              "lin3": 37.24,
+              "mean": 37.71,
+              "n": 300,
+              "sigma": 0.16
+            },
+            "ff / -40 C / 3.63 V": {
+              "db3": 37.44,
+              "lin3": 37.45,
+              "mean": 37.9,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "ff / 125 C / 2.97 V": {
+              "db3": 38.86,
+              "lin3": 38.86,
+              "mean": 39.08,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "ff / 125 C / 3.30 V": {
+              "db3": 39.13,
+              "lin3": 39.12,
+              "mean": 39.34,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "ff / 125 C / 3.63 V": {
+              "db3": 39.34,
+              "lin3": 39.34,
+              "mean": 39.55,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "ff / 27 C / 2.97 V": {
+              "db3": 38.19,
+              "lin3": 38.2,
+              "mean": 38.52,
               "n": 300,
               "sigma": 0.11
             },
+            "ff / 27 C / 3.30 V": {
+              "db3": 38.47,
+              "lin3": 38.48,
+              "mean": 38.77,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "ff / 27 C / 3.63 V": {
+              "db3": 38.64,
+              "lin3": 38.65,
+              "mean": 38.97,
+              "n": 300,
+              "sigma": 0.11
+            },
+            "fs / -40 C / 2.97 V": {
+              "db3": 36.26,
+              "lin3": 36.26,
+              "mean": 36.68,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.30 V": {
+              "db3": 36.48,
+              "lin3": 36.49,
+              "mean": 36.9,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / -40 C / 3.63 V": {
+              "db3": 36.66,
+              "lin3": 36.66,
+              "mean": 37.06,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "fs / 125 C / 2.97 V": {
+              "db3": 37.97,
+              "lin3": 37.97,
+              "mean": 38.17,
+              "n": 300,
+              "sigma": 0.06
+            },
+            "fs / 125 C / 3.30 V": {
+              "db3": 38.2,
+              "lin3": 38.2,
+              "mean": 38.4,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "fs / 125 C / 3.63 V": {
+              "db3": 38.4,
+              "lin3": 38.4,
+              "mean": 38.61,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "fs / 27 C / 2.97 V": {
+              "db3": 37.33,
+              "lin3": 37.32,
+              "mean": 37.63,
+              "n": 300,
+              "sigma": 0.1
+            },
             "fs / 27 C / 3.30 V": {
-              "db3": 37.58,
+              "db3": 37.57,
               "lin3": 37.57,
-              "mean": 37.86,
+              "mean": 37.85,
               "n": 300,
               "sigma": 0.09
+            },
+            "fs / 27 C / 3.63 V": {
+              "db3": 37.75,
+              "lin3": 37.75,
+              "mean": 38.05,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "sf / -40 C / 2.97 V": {
+              "db3": 35.28,
+              "lin3": 35.29,
+              "mean": 35.77,
+              "n": 300,
+              "sigma": 0.16
+            },
+            "sf / -40 C / 3.30 V": {
+              "db3": 35.56,
+              "lin3": 35.57,
+              "mean": 36.01,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "sf / -40 C / 3.63 V": {
+              "db3": 35.74,
+              "lin3": 35.75,
+              "mean": 36.19,
+              "n": 300,
+              "sigma": 0.15
+            },
+            "sf / 125 C / 2.97 V": {
+              "db3": 37.18,
+              "lin3": 37.18,
+              "mean": 37.4,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "sf / 125 C / 3.30 V": {
+              "db3": 37.44,
+              "lin3": 37.44,
+              "mean": 37.64,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "sf / 125 C / 3.63 V": {
+              "db3": 37.62,
+              "lin3": 37.62,
+              "mean": 37.83,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "sf / 27 C / 2.97 V": {
+              "db3": 36.51,
+              "lin3": 36.51,
+              "mean": 36.82,
+              "n": 300,
+              "sigma": 0.1
             },
             "sf / 27 C / 3.30 V": {
               "db3": 36.76,
               "lin3": 36.75,
-              "mean": 37.07,
+              "mean": 37.05,
               "n": 300,
               "sigma": 0.1
             },
+            "sf / 27 C / 3.63 V": {
+              "db3": 36.97,
+              "lin3": 36.97,
+              "mean": 37.25,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "ss / -40 C / 2.97 V": {
+              "db3": 34.68,
+              "lin3": 34.68,
+              "mean": 35.1,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "ss / -40 C / 3.30 V": {
+              "db3": 34.95,
+              "lin3": 34.95,
+              "mean": 35.34,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / -40 C / 3.63 V": {
+              "db3": 35.13,
+              "lin3": 35.13,
+              "mean": 35.52,
+              "n": 300,
+              "sigma": 0.13
+            },
+            "ss / 125 C / 2.97 V": {
+              "db3": 36.4,
+              "lin3": 36.4,
+              "mean": 36.61,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "ss / 125 C / 3.30 V": {
+              "db3": 36.66,
+              "lin3": 36.65,
+              "mean": 36.86,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "ss / 125 C / 3.63 V": {
+              "db3": 36.85,
+              "lin3": 36.85,
+              "mean": 37.04,
+              "n": 300,
+              "sigma": 0.06
+            },
+            "ss / 27 C / 2.97 V": {
+              "db3": 35.77,
+              "lin3": 35.77,
+              "mean": 36.04,
+              "n": 300,
+              "sigma": 0.09
+            },
             "ss / 27 C / 3.30 V": {
-              "db3": 36.0,
+              "db3": 36.01,
               "lin3": 36.01,
               "mean": 36.3,
               "n": 300,
               "sigma": 0.1
             },
+            "ss / 27 C / 3.63 V": {
+              "db3": 36.21,
+              "lin3": 36.22,
+              "mean": 36.48,
+              "n": 300,
+              "sigma": 0.09
+            },
+            "typical / -40 C / 2.97 V": {
+              "db3": 35.78,
+              "lin3": 35.79,
+              "mean": 36.2,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "typical / -40 C / 3.30 V": {
+              "db3": 36.01,
+              "lin3": 36.01,
+              "mean": 36.43,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "typical / -40 C / 3.63 V": {
+              "db3": 36.16,
+              "lin3": 36.16,
+              "mean": 36.58,
+              "n": 300,
+              "sigma": 0.14
+            },
+            "typical / 125 C / 2.97 V": {
+              "db3": 37.53,
+              "lin3": 37.54,
+              "mean": 37.76,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "typical / 125 C / 3.30 V": {
+              "db3": 37.78,
+              "lin3": 37.78,
+              "mean": 37.98,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "typical / 125 C / 3.63 V": {
+              "db3": 37.98,
+              "lin3": 37.97,
+              "mean": 38.18,
+              "n": 300,
+              "sigma": 0.07
+            },
+            "typical / 27 C / 2.97 V": {
+              "db3": 36.9,
+              "lin3": 36.9,
+              "mean": 37.2,
+              "n": 300,
+              "sigma": 0.1
+            },
             "typical / 27 C / 3.30 V": {
-              "db3": 37.15,
-              "lin3": 37.14,
-              "mean": 37.42,
+              "db3": 37.13,
+              "lin3": 37.12,
+              "mean": 37.43,
+              "n": 300,
+              "sigma": 0.1
+            },
+            "typical / 27 C / 3.63 V": {
+              "db3": 37.33,
+              "lin3": 37.32,
+              "mean": 37.61,
               "n": 300,
               "sigma": 0.09
             }
           }
         },
         "population": {
+          "grid": true,
           "n_per_point": 300,
+          "passives": "typical at every point",
           "processes": [
-            "typical",
             "ff",
-            "ss",
             "fs",
-            "sf"
+            "sf",
+            "ss",
+            "typical"
           ],
-          "samples": 1500,
+          "samples": 13500,
           "seed": 45,
-          "temperature_and_supply_sampled": false,
-          "temperature_c": "27",
+          "supplies_v": [
+            "2.97",
+            "3.30",
+            "3.63"
+          ],
+          "temperature_and_supply_sampled": true,
+          "temps_c": [
+            "-40",
+            "27",
+            "125"
+          ],
           "vary": "mismatch",
-          "vdd_v": "3.30"
+          "vcm_of": {
+            "2.97": 1.485,
+            "3.30": 1.65,
+            "3.63": 1.815
+          }
         },
         "retained_evidence": {
-          "path": "sim/psrr-mc/corners/20261011-145434-286b06c/samples.csv",
-          "points": 5,
-          "samples": 1500,
-          "sha256": "c0f3ec852f87226b91224b5cc00cddee1dc5dbd3ae2556236b5fe451ac4e86b4"
+          "path": "sim/psrr-mc/corners/20261108-220319-bb1a6a0/samples.csv",
+          "points": 45,
+          "samples": 13500,
+          "sha256": "2516e09ecaf860ec4f4e91793b6f6a80c5b91c262de5abb247a149d3f2bb2ea6"
         },
-        "scope": "27 C / 3.30 V only",
+        "scope": "the full T/VDD grid (-40, 27, 125 C x 2.97, 3.30, 3.63 V); the RZ/CC passives stay typical at every point",
         "source": {
           "experiment": "psrr-mc",
-          "path": "sim/psrr-mc/records/20261011-145434-286b06c.md",
-          "record_id": "20261011-145434-286b06c",
-          "sha256": "19cc8de044b0fda168f2e7ce977a0ce10ce90eea80caa8f57f27d6f76c08538c"
+          "path": "sim/psrr-mc/records/20261108-220319-bb1a6a0.md",
+          "record_id": "20261108-220319-bb1a6a0",
+          "sha256": "11a90e38831221aced03615f6c29652b232926b09d0144f1caef7d166a52ee94"
         },
         "worst_per_figure": {
           "PSRR+ 100k": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 43.26
+              "at": "ss / 125 C / 2.97 V",
+              "value": 41.63
             },
             "lin3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 43.59
+              "at": "ss / 125 C / 2.97 V",
+              "value": 41.9
             },
             "min": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 43.22
+              "at": "ss / 125 C / 3.30 V",
+              "value": 41.62
             },
             "p5": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 43.41
+              "at": "ss / 125 C / 2.97 V",
+              "value": 41.74
             }
           },
           "PSRR+ 10k": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 63.26
+              "at": "ss / 125 C / 2.97 V",
+              "value": 61.63
             },
             "lin3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 63.59
+              "at": "ss / 125 C / 2.97 V",
+              "value": 61.9
             },
             "min": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 63.22
+              "at": "ss / 125 C / 3.30 V",
+              "value": 61.62
             },
             "p5": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 63.41
+              "at": "ss / 125 C / 2.97 V",
+              "value": 61.74
             }
           },
           "PSRR+ 1k": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 83.18
+              "at": "ss / 125 C / 2.97 V",
+              "value": 81.5
             },
             "lin3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 83.28
+              "at": "ss / 125 C / 2.97 V",
+              "value": 81.52
             },
             "min": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 83.17
+              "at": "ss / 125 C / 2.97 V",
+              "value": 81.39
             },
             "p5": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 83.33
+              "at": "ss / 125 C / 2.97 V",
+              "value": 81.63
             }
           },
           "PSRR+ 1m": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 23.26
+              "at": "ss / 125 C / 2.97 V",
+              "value": 21.63
             },
             "lin3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 23.6
+              "at": "ss / 125 C / 2.97 V",
+              "value": 21.9
             },
             "min": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 23.22
+              "at": "ss / 125 C / 3.30 V",
+              "value": 21.62
             },
             "p5": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 23.41
+              "at": "ss / 125 C / 2.97 V",
+              "value": 21.75
             }
           },
           "PSRR+ dc": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 87.43
+              "at": "typical / 125 C / 2.97 V",
+              "value": 78.28
             },
             "lin3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 93.71
+              "at": "ss / 125 C / 2.97 V",
+              "value": 90.85
             },
             "min": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 93.84
+              "at": "fs / 125 C / 2.97 V",
+              "value": 90.53
             },
             "p5": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 95.97
+              "at": "ss / 125 C / 2.97 V",
+              "value": 93.26
             }
           },
           "PSRR+ fu": {
             "db3": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 0.68
+              "at": "sf / -40 C / 2.97 V",
+              "value": 0.65
             },
             "lin3": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 0.68
+              "at": "sf / -40 C / 2.97 V",
+              "value": 0.65
             },
             "min": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 0.69
+              "at": "sf / -40 C / 2.97 V",
+              "value": 0.63
             },
             "p5": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 0.7
+              "at": "sf / -40 C / 3.63 V",
+              "value": 0.69
             }
           },
           "PSRR- 100k": {
             "db3": {
-              "at": "ff / 27 C / 3.30 V",
-              "value": 80.17
+              "at": "fs / -40 C / 2.97 V",
+              "value": 72.26
             },
             "lin3": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 82.84
+              "at": "sf / -40 C / 2.97 V",
+              "value": 77.71
             },
             "min": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 79.34
+              "at": "sf / -40 C / 2.97 V",
+              "value": 75.19
             },
             "p5": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 84.73
+              "at": "ff / -40 C / 2.97 V",
+              "value": 79.91
             }
           },
           "PSRR- 10k": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 71.38
+              "at": "fs / -40 C / 2.97 V",
+              "value": 64.33
             },
             "lin3": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 82.58
+              "at": "sf / -40 C / 2.97 V",
+              "value": 77.55
             },
             "min": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 79.46
+              "at": "sf / -40 C / 2.97 V",
+              "value": 75.2
             },
             "p5": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 84.93
+              "at": "ff / -40 C / 2.97 V",
+              "value": 80.0
             }
           },
           "PSRR- 1k": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 68.04
+              "at": "fs / -40 C / 3.63 V",
+              "value": 62.02
             },
             "lin3": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 82.57
+              "at": "sf / -40 C / 2.97 V",
+              "value": 77.54
             },
             "min": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 79.46
+              "at": "sf / -40 C / 2.97 V",
+              "value": 75.2
             },
             "p5": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 84.93
+              "at": "ff / -40 C / 2.97 V",
+              "value": 80.0
             }
           },
           "PSRR- 1m": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 73.39
+              "at": "ss / 125 C / 2.97 V",
+              "value": 72.43
             },
             "lin3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 73.38
+              "at": "ss / 125 C / 2.97 V",
+              "value": 72.4
             },
             "min": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 73.23
+              "at": "ss / -40 C / 2.97 V",
+              "value": 72.15
             },
             "p5": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 74.04
+              "at": "ss / 125 C / 2.97 V",
+              "value": 72.77
             }
           },
           "PSRR- dc": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 67.72
+              "at": "ss / -40 C / 2.97 V",
+              "value": 61.03
             },
             "lin3": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 82.59
+              "at": "sf / -40 C / 2.97 V",
+              "value": 77.57
             },
             "min": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 79.46
+              "at": "sf / -40 C / 2.97 V",
+              "value": 75.2
             },
             "p5": {
-              "at": "sf / 27 C / 3.30 V",
-              "value": 84.93
+              "at": "ff / -40 C / 2.97 V",
+              "value": 80.0
             }
           },
           "PSRR- fu": {
             "db3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 36.0
+              "at": "ss / -40 C / 2.97 V",
+              "value": 34.68
             },
             "lin3": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 36.01
+              "at": "ss / -40 C / 2.97 V",
+              "value": 34.68
             },
             "min": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 36.06
+              "at": "ss / -40 C / 2.97 V",
+              "value": 34.74
             },
             "p5": {
-              "at": "ss / 27 C / 3.30 V",
-              "value": 36.14
+              "at": "ss / -40 C / 2.97 V",
+              "value": 34.89
             }
           }
         }
@@ -5154,25 +8530,25 @@
       "backend": "aws-batch-fleet",
       "dut_sha256": "33b58dac62c747de",
       "fleet_runner_mismatch": true,
-      "klt_client": "0.7.0+g122d607d5c52",
+      "klt_client": "0.9.2.dev299+ge5ccedae13f0",
       "measurement_config": {
-        "fingerprint": "107ce74555af6baee8938d4ceea18e8675ac1b55786a07858d92248a81b322c3",
+        "fingerprint": "50df4ae2118a3f35963163be1c774cd91be4126d770a3cb0987af320db14cefb",
         "status": "current",
         "version": 1
       },
       "ngspice_engine": "46",
-      "ngspice_local": "42",
-      "path": "sim/psrr-mc/records/20261011-145434-286b06c.md",
+      "ngspice_local": "46",
+      "path": "sim/psrr-mc/records/20261108-220319-bb1a6a0.md",
       "pdk_client_resolved": null,
-      "pdk_open_pdks": "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-      "record_id": "20261011-145434-286b06c",
+      "pdk_open_pdks": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
+      "record_id": "20261108-220319-bb1a6a0",
       "retained_evidence": {
-        "path": "sim/psrr-mc/corners/20261011-145434-286b06c/samples.csv",
-        "points": 5,
-        "samples": 1500,
-        "sha256": "c0f3ec852f87226b91224b5cc00cddee1dc5dbd3ae2556236b5fe451ac4e86b4"
+        "path": "sim/psrr-mc/corners/20261108-220319-bb1a6a0/samples.csv",
+        "points": 45,
+        "samples": 13500,
+        "sha256": "2516e09ecaf860ec4f4e91793b6f6a80c5b91c262de5abb247a149d3f2bb2ea6"
       },
-      "sha256": "19cc8de044b0fda168f2e7ce977a0ce10ce90eea80caa8f57f27d6f76c08538c"
+      "sha256": "11a90e38831221aced03615f6c29652b232926b09d0144f1caef7d166a52ee94"
     },
     "slew-swing-power": {
       "backend": "aws-batch-fleet",

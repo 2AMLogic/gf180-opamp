@@ -1018,7 +1018,11 @@ def _psrr_mc_grid_tv(text: str, label: str, stats: dict, order: list, temps, sup
                 pts = [k for k in order if k[1] == tk[0] and k[2] == tk[1]]
                 kk = min(pts, key=lambda k: stats[_pm_key(sname, key)][k]["lin3"])
                 cell = got.get(tk)
-                if cell is None or cell[1] != kk[0] or abs(cell[0] - stats[_pm_key(sname, key)][kk]["lin3"]) > _CM_TOL:
+                # The per-point table is printed to two decimals, so corners tied within display precision
+                # may legitimately be named by the writer's full-precision minimum: accept any such tie.
+                lo = stats[_pm_key(sname, key)][kk]["lin3"]
+                tied = {k[0] for k in pts if stats[_pm_key(sname, key)][k]["lin3"] - lo <= _CM_TOL}
+                if cell is None or cell[1] not in tied or abs(cell[0] - lo) > _CM_TOL:
                     raise ReportError(f"{label}: T x VDD table '{head}' at {tk[0]} C / {tk[1]} V "
                                       f"({'missing' if cell is None else f'{cell[0]:.2f} ({cell[1]})'}) disagrees "
                                       f"with its own per-point table "
