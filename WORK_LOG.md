@@ -2,6 +2,13 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-11-06
+
+- **PR #305**: refactor(sim): hoist corner-axes dict into harness.corner_axes
+- **PR #303**: test(sim): run passive-corner suite in selftest and add mutation check
+- **Issue #304** (closed): Hoist the repeated corner-axes dict in sim/*/measurement_config.py into harness
+- **Issue #302** (closed): Run sim/test_passive_corners.py in selftest.sh and give passive_corners.py its own teeth check
+
 ### 2026-11-04
 
 - **PR #299**: refactor(sim): hoist shared step-response/overdrive-recovery runner skeleton into harness
