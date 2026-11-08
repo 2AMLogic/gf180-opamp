@@ -7,9 +7,12 @@
   a bounded validation bench, sets no number until simulated (as
   [0007](0007-noise-offset-requirement-basis.md) did), and brings any re-size
   and any re-opened ratified row back for ratification.* It changes no row,
-  bound, tag or condition of `spec/target-spec.md`, authorizes no simulation,
-  fleet submission or spend, and changes no circuit. Approving the PR that
-  carries it ratifies **only** the staging and rules below, never a number.
+  bound, tag or condition of `spec/target-spec.md` and changes no circuit.
+  Approving the PR that carries it ratifies **only** the staging and rules
+  below, never a number, and authorizes exactly one thing beyond them: the
+  single local Stage A probe of §4 (typical / 27 °C / 3.30 V, one unit, no
+  fleet, no spend). It authorizes no other simulation, no fleet submission and
+  no spend; Stage B needs a separate approval.
 - **Date**: 2026-11-06
 - **Decided by**: Builder agent, issue #295 (preparation). The operator's
   approval of the carrying PR is the only act that could make any part of this
@@ -82,8 +85,15 @@ execution, not assumed).
    frequencies that set the loop. The same output stage was sized for CL only.
 2. **The relevant gain condition is the noise gain, not unity-gain GBW into
    CL.** At high frequency `1/β ≈ 1 + Zf/(Zi ‖ Rbot)` with `Zi ≈ Rtop ‖ R3`
-   (≈ 200 Ω): `1 + 4.55 kΩ / (≈196 Ω) ≈ 24` (hand arithmetic, ≈ 27 dB). The
-   amplifier's open-loop gain must clear that, with margin, out to the
+   (Rtop ‖ R3 ‖ Rbot ≈ 192 Ω): `1 + 4.55 kΩ / (≈192 Ω) ≈ 24.7` (hand
+   arithmetic, ≈ 28 dB). This is the **plateau** value, valid roughly between
+   fp1 and fp2 (about 1 MHz); at the 150 kHz crossover the noise gain is only
+   about 5, and it falls toward 1 near `1/(2π·192 Ω·C2)` ≈ 23 MHz. Above fp2
+   `1/β` and Aol both fall at 20 dB/dec, so loop gain inside the compensator
+   is roughly flat near GBW / 23 MHz, below 1 at GBW of 10–12 MHz; `Gc_real`
+   should therefore depart from `Gc_ideal` above about 1 MHz (Stage B
+   quantity 1 is the test). The amplifier's open-loop gain must clear the
+   noise gain, with margin, out to the
    compensator's fp1/fp2 (1 MHz) and the loop's crossover, in *this* load. A
    GBW figure into 2 pF does not say where Aol(f) crosses `1/β` into 4–5 kΩ.
    This is a hypothesis for §4 to test, not a finding.
@@ -130,19 +140,62 @@ evidence is new, append-only records.
 
 ### Stage A — single probe, local, no fleet
 
-One `ngspice -b` operating point plus one `.ac` at **typical / 27 °C / 3.30 V**
-(a single unit, which the host rules allow locally): the committed
-`opamp_two_stage` netlist (consumed through `subckt_from_export()` like the
-existing benches, no transistor declared in the testbench) in the **exact §2.1
-network**, VREF/`FBN` at 0.6 V, `ibias` 10 µA. Report: whether the input pair
-conducts at VCM = 0.6 V and the operating-point regions of `XM1`/`XM2`/`XM5`;
-Aol(f) into the real load; the open-loop crossing of `1/β`. **Stop rule:** if
-the amplifier is not in a valid operating region at 0.6 V, stop; Stage B is not
-run on an invalid point, and the result is reported as the finding (§5).
+One `ngspice -b` run at **typical / 27 °C / 3.30 V** (a single unit, which the
+host rules allow locally): the committed `opamp_two_stage` netlist (consumed
+through `subckt_from_export()` like the existing benches, no transistor
+declared in the testbench) in the **exact §2.1 network**, VREF/`FBN` at 0.6 V,
+`ibias` 10 µA. Report: whether the input pair conducts at VCM = 0.6 V and the
+operating-point regions of `XM1`/`XM2`/`XM5`; Aol(f) into the real load; the
+open-loop crossing of `1/β`.
+
+**DC operating-point method (Stages A and B).** The §2.1 network has no DC
+feedback around the amplifier (`C1`, `C2` and `C3` all block DC), so a plain
+`.op` leaves the high-gain amplifier open loop and `VC` on a rail. The bench
+therefore separates two questions and answers each without depending on the
+other's closure:
+
+1. **Region check (closure-independent).** `VC` is forced by an ideal DC
+   source at the bias level below, `VOUT` at 1.8 V, `VREF` at 0.6 V, and
+   `.op` reports the regions and currents of `XM1`/`XM2`/`XM5`. The input
+   pair and tail do not depend on `VC`, so this answers the 0.6 V
+   common-mode question with no loop to close.
+2. **Small-signal bench (DC-closed, AC-open).** A huge inductor `Lfb` (1e9 H)
+   in series with a DC source `Vset` = `VC_bias − VREF` from `VC` to `FBN`
+   servos the amplifier to the bias point at DC (`FBN` = `VREF`, `VC` =
+   `VC_bias`) while being open at every swept frequency, the technique of
+   `sim/gain-gbw-pm/README.md` § "Measurement technique". `VOUT` is an ideal
+   source: 1.8 V DC, AC ground. The 1 V AC stimulus sits on `vinp`. Aol(f) is
+   `v(VC) / (v(vinp) − v(FBN))` using the actual differential phasor, with
+   the §2.1 network as the amplifier's real load. `1/β(f)` is `v(VC) / v(FBN)`
+   from the passive network alone (ideal AC source on `VC`, amplifier
+   removed, `VOUT` AC ground); the crossing is where `|Aol|` meets `|1/β|`.
+   The isolation study of that README is repeated (`Lfb` ∈ {1e8, 1e9, 1e10}
+   with the same tolerances, plus a deliberately inadequate small `Lfb` that
+   the plateau check must reject).
+
+**`VC_bias`** is the consumer's steady-state `VC` for the 1.8 V output within
+its 0.613 V p-p ramp window (item C3). Until the consumer confirms it, it is
+recorded as "assumed" and the bench reports the result at the assumed value
+and at ±0.15 V around it, so the finding does not hinge on one guess.
+
+**Bench fault versus finding.** The stop rule below applies only to a
+result the closure did not cause. A result is a **bench fault, not a finding**,
+and is not routed into §5 item 3, if the servo does not converge, the `Lfb`
+isolation study or plateau check fails, or the small-signal bench reports an
+invalid region that the closure-independent region check (1) does not
+reproduce. It is a **finding** only when the region check (1) itself shows the
+pair or tail out of saturation or not conducting at VCM = 0.6 V. A bench fault
+is fixed and re-run under this approval, and reported as such.
+
+**Stop rule:** if the region check shows the amplifier is not in a valid
+operating region at 0.6 V, stop; Stage B is not run on an invalid point, and
+the result is reported as the finding (§5).
 
 ### Stage B — the real load across the existing PVT grid (batch)
 
-Only if Stage A shows the amplifier operating.
+Only if Stage A shows the amplifier operating. The DC operating-point method
+of Stage A (region check, `Lfb` + `Vset` servo, `VC_bias`, the bench-fault rule)
+applies unchanged at every one of the 45 points.
 
 | Item | Proposal |
 |---|---|
@@ -163,7 +216,8 @@ named-not-opened.
 
 ### Approval gate
 
-Stage A is a single local probe and may proceed with this PR's approval. Stage B runs
+Approving this PR authorizes the Stage A probe (single local unit, typical /
+27 °C / 3.30 V, including its bench-fault re-runs) and nothing else. Stage B runs
 only after a separate operator approval that cites this record's PR, the
 answers to C1–C4 (or their recorded "assumed" status) and the pre-submit
 estimate. This record is not that approval.
@@ -188,14 +242,18 @@ estimate. This record is not that approval.
    [0001](0001-topology-and-cl.md).
 4. **If the target is out of this repo's scope**, the record says so, and the
    consumer records its own decision per its DR-0004 §4; it is not forced onto
-   this block.
+   this block. A consumer-side change to the common mode (for example a
+   higher reference with a rescaled divider, putting VCM inside the proposed
+   ICMR and clear of its measured low edge) is equally a valid outcome; it is
+   the consumer's decision, and this block takes no position on it.
 5. **Unset stays unset.** Without Stage B results the row remains unopened and
    the consumer's verdict is `unknown`, not `meets` and not `fails`.
 
 ## 6. What this record does not do
 
 - It proposes no GBW, PM or other numeric value and changes no row.
-- It does not run or authorize Stage B, any fleet submission or spend.
+- It authorizes only the single local Stage A probe (§4); it does not run
+  or authorize Stage B, any fleet submission or spend.
 - It does not re-open any ratified row; it names what a later record would
   have to re-open if a re-size is needed.
 - It does not alter historical records, evidence, CL = 2 pF, PVT scope, the
