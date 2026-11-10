@@ -1,0 +1,30 @@
+* tb_ac.spice -- Stage A step 2: small-signal bench, DC-closed / AC-open
+* (spec/decision-records/0008, section 4 "DC operating-point method" item 2).
+*
+* The amplifier drives the REAL consumer load (consumer_load.inc) plus the
+* PWM-comparator input. A huge inductor Lfb in series with a DC source Vset =
+* VC_bias - VREF from VC to FBN servos the amplifier to the bias point at DC
+* (FBN = VREF, VC = VC_bias) and is open at every swept frequency (technique
+* of sim/gain-gbw-pm/README.md "Measurement technique"). The buck output node
+* is an ideal 1.8 V source (AC ground). The 1 V AC stimulus sits on vinp.
+* Aol(f) = v(vc) / (v(vinp) - v(fbn)), the ACTUAL differential phasor.
+*
+* The `.param` line is rewritten by the driver ONLY for the isolation study
+* (lfb) and the VC_bias +-0.15 V runs (vcb).
+* The DUT is the committed export; no transistor is declared here.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+.include 'consumer_load.inc'
+
+.param lfb=1e9 vcb=1.40 vref=0.6 vbuck=1.8
+
+Vdd vdd 0 dc 3.3
+Ibias vdd ibias dc 10u
+Vref vinp 0 dc {vref} ac 1
+Vbuck vbuck 0 dc {vbuck}
+Xdut vdd 0 vinp fbn vc ibias opamp_two_stage
+Xload vbuck fbn vc ea_load
+Xpwm vc pwm_in
+Lfb vc nset {lfb}
+Vset nset fbn dc {vcb - vref}
