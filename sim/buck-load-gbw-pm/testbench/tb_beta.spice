@@ -1,0 +1,13 @@
+* tb_beta.spice -- Stage A step 2b: 1/beta(f) from the passive network ALONE
+* (spec/decision-records/0008, section 4). The amplifier is removed; an ideal
+* AC source drives VC, the buck output node is AC ground, and beta = v(fbn) /
+* v(vc), so 1/beta = v(vc) / v(fbn). The amplifier's own input capacitance on
+* FBN is not in this bench (it is inside Aol's measurement); the difference is
+* femtofarad-class against the 35.7 pF of C2 and is stated in the record.
+
+.include 'design.ngspice'
+.include 'consumer_load.inc'
+
+Vbuck vbuck 0 dc 0
+Vtest vc 0 dc 0 ac 1
+Xload vbuck fbn vc ea_load

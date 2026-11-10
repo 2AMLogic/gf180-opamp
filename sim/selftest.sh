@@ -53,6 +53,9 @@ python3 ci_artifact_manifests.py
 echo "== sim/gain-gbw-pm: extraction + source-guard tests (no simulator) =="
 python3 gain-gbw-pm/test_gain_gbw_pm.py
 
+echo "== sim/buck-load-gbw-pm: Stage A classification tests (no simulator) =="
+python3 buck-load-gbw-pm/test_stage_a.py
+
 echo "== sim/gain-gbw-pm: smoke test (typical, 27C, 3.30 V, one local point) =="
 python3 gain-gbw-pm/run_gain_gbw_pm.py --smoke
 
