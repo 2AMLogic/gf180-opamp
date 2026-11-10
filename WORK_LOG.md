@@ -2,6 +2,11 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-11-10
+
+- **PR #312**: sim: Stage A probe of the op-amp into the gf180-buck compensation load
+- **PR #307**: docs(spec): add DR-0008 preparation record for load-specific GBW/PM row
+
 ### 2026-11-06
 
 - **PR #305**: refactor(sim): hoist corner-axes dict into harness.corner_axes
