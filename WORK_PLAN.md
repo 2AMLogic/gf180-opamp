@@ -58,7 +58,7 @@ Issues carrying `loom:curated`.
 
 ## Proposed (Architect / Hermit)
 
-_None._
+- **#313**: Remove Loom guard/sweep orchestration docs and scripts from the opamp repo (~945 LOC) *(hermit)*
 
 ## Epics
 
@@ -76,6 +76,6 @@ _None._
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 4 |
-| Architect / Hermit proposals | 0 |
+| Architect / Hermit proposals | 1 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
