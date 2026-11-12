@@ -1,0 +1,32 @@
+* gf180-opamp Stage A (issue #295, DR-0008 section 4)
+.lib '/home/ubuntu/.ciel/gf180mcuD/libs.tech/ngspice/sm141064.ngspice' typical
+.lib '/home/ubuntu/.ciel/gf180mcuD/libs.tech/ngspice/sm141064.ngspice' res_typical
+.lib '/home/ubuntu/.ciel/gf180mcuD/libs.tech/ngspice/sm141064.ngspice' mimcap_typical
+.temp 27
+
+* tb_sweep_open.spice -- Stage A re-run (issue #295): open-loop output behaviour
+* with BOTH inputs at the same swept common mode `dc vin` 0 -> 1.5 V and a small
+* differential offset `vd` (inverting input = Vin, non-inverting = Vin + vd).
+* No DC feedback: the output goes where the input stage and offset send it. The
+* PWM-comparator gate approximation is on VC. DUT is the committed export.
+
+.include '/tmp/buck-stage-a-4shji_tq/design.ngspice'
+.include '/tmp/buck-stage-a-4shji_tq/opamp_two_stage.dut.spice'
+.include '/tmp/buck-stage-a-4shji_tq/consumer_load.inc'
+
+.param vd=0.001
+
+Vdd vdd 0 dc 3.3
+Ibias vdd ibias dc 10u
+Vin fbn 0 dc 0
+Vinp vinp fbn dc {vd}
+Xdut vdd 0 vinp fbn vc ibias opamp_two_stage
+Xpwm vc pwm_in
+
+
+.control
+dc vin 0 1.5 0.05
+option numdgt=7
+wrdata /tmp/buck-stage-a-4shji_tq/sweep_open_vd1mV.dat v(vc) v(xdut.tail)
+.endc
+.end

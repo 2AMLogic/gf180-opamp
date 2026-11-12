@@ -150,5 +150,52 @@ class Guards(unittest.TestCase):
         self.assertTrue(S.guard_load_inc(S.LOAD_INC.read_text().replace("R2 fbn z 4.55k", "R2 fbn z 5k")))
 
 
+class Cm1p5(unittest.TestCase):
+    def tearDown(self):
+        S.configure(0.6)
+
+    def test_default_is_original_case(self):
+        self.assertEqual((S.CFG["vcm"], S.CFG["rbot"], S.CFG["sweep"]), (0.6, "5k", False))
+
+    def test_cm1p5_selects_new_load_and_sweep(self):
+        S.configure(1.5)
+        self.assertEqual((S.CFG["rbot"], S.CFG["sweep"]), ("50k", True))
+        self.assertEqual(S.guard_load_inc(S.CFG["load"].read_text(), "50k"), [])
+
+    def test_unsupported_vcm_rejected(self):
+        with self.assertRaises(ValueError):
+            S.configure(1.0)
+
+    def test_load_guard_is_per_case(self):
+        new = S.LOAD_INC_CM1P5.read_text()
+        self.assertTrue(S.guard_load_inc(new, "5k"))  # 50k load fails the 0.6 V expectation
+        self.assertTrue(S.guard_load_inc(S.LOAD_INC.read_text(), "50k"))
+
+    def test_new_load_other_values_unchanged(self):
+        errs = S.guard_load_inc(S.LOAD_INC_CM1P5.read_text().replace("C1 z vc 1.75n", "C1 z vc 2n"), "50k")
+        self.assertEqual(len(errs), 1)
+        self.assertIn(": c1 is", errs[0])
+
+    def test_sweep_benches_guarded(self):
+        self.assertEqual(S.guard_tb(S.TB_SWEEP_FOLLOWER.read_text(), name="f"), [])
+        self.assertEqual(S.guard_tb(S.TB_SWEEP_OPEN.read_text(), name="o"), [])
+
+
+class Sweep(unittest.TestCase):
+    def test_parse_wrdata(self):
+        txt = "0 1 0 2\n0.5 3 0.5 4\n"
+        x, cols = S.parse_wrdata(txt, 2)
+        self.assertEqual(list(x), [0.0, 0.5])
+        self.assertEqual(list(cols[1]), [2.0, 4.0])
+
+    def test_parse_wrdata_wrong_width(self):
+        with self.assertRaises(ValueError):
+            S.parse_wrdata("0 1 0 2\n", 3)
+
+    def test_rail_flags(self):
+        got = S.rail_flags(np.array([0.0, 0.5, 3.25, float("nan")]))
+        self.assertEqual(got, ["low", "ok", "high", "undefined"])
+
+
 if __name__ == "__main__":
     unittest.main()

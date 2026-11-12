@@ -9,6 +9,16 @@ the ratified 10 MHz / 2 pF row.** Stage B (the 45-point batch) needs a separate
 operator approval and is not run here; this driver uses no `klt sim` batch and no
 fleet — it is a short sequential list of single local `ngspice -b` units.
 
+## 1.50 V re-run (`--vcm 1.5`)
+
+After the consumer raised its error-amplifier common mode (gf180-buck#131 /
+PR #132, DR 0008: VREF = FBN = 1.50 V, Rbot 5 kΩ → 50 kΩ), `run_stage_a.py --vcm 1.5`
+re-runs Stage A on `testbench/consumer_load_cm1p5.inc` (provenance sha inside) and adds a
+static DC input sweep (`tb_sweep_follower.spice`, `tb_sweep_open.spice`) for the
+consumer's below-ICMR output-behaviour question. The default (`--vcm 0.6`) still
+reproduces the original record's case; records are append-only and a re-run mints a
+new id. Still one corner, local, no fleet, no row.
+
 ## Files
 
 - `testbench/consumer_load.inc` — the consumer network (`gf180-buck`
