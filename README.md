@@ -139,18 +139,6 @@ The experiments `sim/characterize.sh` does not drive (for example `sim/cmrr-mc/`
 their own commands in their READMEs. The testbench inventory behind signoff T1 item 9 is
 [`manifests/attest/testbench-inventory.json`](manifests/attest/testbench-inventory.json).
 
-## Orchestration notes
-
-Sweep coordinators that need a main-clean baseline should follow
-[`docs/sweep-baseline.md`](docs/sweep-baseline.md): it covers the unique
-scratch path outside the repository, the snapshot and baseline commands,
-retention, cleanup and what happens if the baseline goes missing. The recipe
-is checked by
-[`scripts/test-sweep-baseline.sh`](scripts/test-sweep-baseline.sh).
-
-The guard-confinement evidence package and its upstream handoff status are
-in [`docs/guard-confinement-handoff.md`](docs/guard-confinement-handoff.md).
-
 ## License
 
 Apache-2.0.
