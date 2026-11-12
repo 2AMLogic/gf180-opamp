@@ -1,0 +1,181 @@
+* Stage A snapshot 20261112-230854-c12a109 (issue #295): everything needed to reproduce the bench
+
+*==== consumer_load_cm1p5.inc (staged as consumer_load.inc) ====
+* consumer_load_cm1p5.inc -- the gf180-buck error-amplifier load at the NEW
+* error-amplifier common mode (1.50 V), for the Stage A re-run of issue #295.
+*
+* SOURCE (read-only): 2AMLogic/gf180-buck PR #132 (closes gf180-buck#131), merge
+*   commit 003fe17f85ca35fc63c3f9835404b2aa8135951a, decision record
+*   spec/decision-records/0008-ea-input-common-mode.md section 4: Vref = FBN =
+*   1.50 V at DC; "Rtop/Rbot 10 kOhm / 50 kOhm (was 5 kOhm)" with every
+*   compensator value unchanged (R2 4.55k, R3 204, C1 1.75n, C2 35.7p, C3 780p).
+*   The consumer's design/netlists/compensator.spice at that sha still shows
+*   Rbot 5k (the DR says it edits no netlist), so the DR text is the source of
+*   Rbot = 50k, not the netlist. Consumer numbers are its analysis, not measured.
+*   Buck output node: 1.50 V * (1 + 10k/50k) = 1.80 V, unchanged.
+*   The 0.6 V network stays in consumer_load.inc (its record is untouched).
+*
+* A changed consumer netlist reopens DR-0008 section 2.1; it is not silently
+* followed. Re-read the source before re-running (record states the sha).
+
+.subckt ea_load vbuck fbn vc
+Rtop vbuck fbn 10k
+R3 vbuck x 204
+C3 x fbn 780p
+Rbot fbn 0 50k
+R2 fbn z 4.55k
+C1 z vc 1.75n
+C2 fbn vc 35.7p
+.ends ea_load
+
+* PWM-comparator input on VC (DR-0008 item C3, consumer has not confirmed a
+* value). The consumer's pwm_comp.spice XCPM1 (nfet_03v3 L=1u W=8u, gate = VC)
+* is the only thing VC drives there. Its drain/source/bulk are tied to ground
+* here, so this is the gate-channel + overlap capacitance of the device at the
+* VC bias, an APPROXIMATION of the comparator input (in the real circuit D is a
+* diode-connected PMOS node and S the tail node). Status: assumed.
+.subckt pwm_in vc
+XCPM1 0 vc 0 0 nfet_03v3 L=1u W=8u nf=1 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)' ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+.ends pwm_in
+
+*==== tb_region.spice ====
+* tb_region.spice -- Stage A step 1: CLOSURE-INDEPENDENT region check
+* (spec/decision-records/0008, section 4 "DC operating-point method" item 1).
+*
+* No loop to close: VC is forced by an ideal source at the bias level, FBN
+* (the amplifier's inverting input) and VREF (non-inverting) both at 0.6 V, the
+* common mode the consumer applies. `.op` then reports the regions and
+* currents of XM1/XM2/XM5 (input pair and tail do not depend on VC). The
+* consumer network is not instantiated: FBN and VC are forced, so it would be
+* inert at DC. The DUT is the committed export via `opamp_two_stage.dut.spice`.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param vcb=1.40 vref=0.6
+
+Vdd vdd 0 dc 3.3
+Ibias vdd ibias dc 10u
+Vref vinp 0 dc {vref}
+Vfbn fbn 0 dc {vref}
+Vvc vc 0 dc {vcb}
+Xdut vdd 0 vinp fbn vc ibias opamp_two_stage
+
+*==== tb_ac.spice ====
+* tb_ac.spice -- Stage A step 2: small-signal bench, DC-closed / AC-open
+* (spec/decision-records/0008, section 4 "DC operating-point method" item 2).
+*
+* The amplifier drives the REAL consumer load (consumer_load.inc) plus the
+* PWM-comparator input. A huge inductor Lfb in series with a DC source Vset =
+* VC_bias - VREF from VC to FBN servos the amplifier to the bias point at DC
+* (FBN = VREF, VC = VC_bias) and is open at every swept frequency (technique
+* of sim/gain-gbw-pm/README.md "Measurement technique"). The buck output node
+* is an ideal 1.8 V source (AC ground). The 1 V AC stimulus sits on vinp.
+* Aol(f) = v(vc) / (v(vinp) - v(fbn)), the ACTUAL differential phasor.
+*
+* The `.param` line is rewritten by the driver ONLY for the isolation study
+* (lfb) and the VC_bias +-0.15 V runs (vcb).
+* The DUT is the committed export; no transistor is declared here.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+.include 'consumer_load.inc'
+
+.param lfb=1e9 vcb=1.40 vref=0.6 vbuck=1.8
+
+Vdd vdd 0 dc 3.3
+Ibias vdd ibias dc 10u
+Vref vinp 0 dc {vref} ac 1
+Vbuck vbuck 0 dc {vbuck}
+Xdut vdd 0 vinp fbn vc ibias opamp_two_stage
+Xload vbuck fbn vc ea_load
+Xpwm vc pwm_in
+Lfb vc nset {lfb}
+Vset nset fbn dc {vcb - vref}
+
+*==== tb_beta.spice ====
+* tb_beta.spice -- Stage A step 2b: 1/beta(f) from the passive network ALONE
+* (spec/decision-records/0008, section 4). The amplifier is removed; an ideal
+* AC source drives VC, the buck output node is AC ground, and beta = v(fbn) /
+* v(vc), so 1/beta = v(vc) / v(fbn). The amplifier's own input capacitance on
+* FBN is not in this bench (it is inside Aol's measurement); the difference is
+* femtofarad-class against the 35.7 pF of C2 and is stated in the record.
+
+.include 'design.ngspice'
+.include 'consumer_load.inc'
+
+Vbuck vbuck 0 dc 0
+Vtest vc 0 dc 0 ac 1
+Xload vbuck fbn vc ea_load
+
+*==== tb_sweep_follower.spice ====
+* tb_sweep_follower.spice -- Stage A re-run (issue #295): output behaviour when
+* both inputs are below / across the 1.20 V proposed ICMR floor.
+*
+* Unity-gain follower (VC tied to the inverting input FBN by a 0 V source), the
+* non-inverting input swept 0 -> 1.5 V by `dc vin`. This is the DC-closed
+* configuration that keeps the amplifier's output defined at every input level;
+* it is NOT the consumer's type-III network (its C1/C2 are open at DC, so the
+* consumer loop has no DC feedback path through the amplifier). The PWM-comparator
+* gate approximation is on VC. DUT is the committed export; no transistor here.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+.include 'consumer_load.inc'
+
+Vdd vdd 0 dc 3.3
+Ibias vdd ibias dc 10u
+Vin vinp 0 dc 0
+Vfb vc fbn dc 0
+Xdut vdd 0 vinp fbn vc ibias opamp_two_stage
+Xpwm vc pwm_in
+
+*==== tb_sweep_open.spice ====
+* tb_sweep_open.spice -- Stage A re-run (issue #295): open-loop output behaviour
+* with BOTH inputs at the same swept common mode `dc vin` 0 -> 1.5 V and a small
+* differential offset `vd` (inverting input = Vin, non-inverting = Vin + vd).
+* No DC feedback: the output goes where the input stage and offset send it. The
+* PWM-comparator gate approximation is on VC. DUT is the committed export.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+.include 'consumer_load.inc'
+
+.param vd=0
+
+Vdd vdd 0 dc 3.3
+Ibias vdd ibias dc 10u
+Vin fbn 0 dc 0
+Vinp vinp fbn dc {vd}
+Xdut vdd 0 vinp fbn vc ibias opamp_two_stage
+Xpwm vc pwm_in
+
+*==== DUT (committed export through subckt_from_export) ====
+** sch_path: /home/ubuntu/GitHub/gf180-opamp/.loom/worktrees/issue-42/design/opamp_two_stage.sch
+.subckt opamp_two_stage vdd vss vinp vinn vout ibias
+
+*.iopin vdd
+*.iopin vss
+*.iopin vinp
+*.iopin vinn
+*.iopin vout
+*.iopin ibias
+XMB1 ibias ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM5 tail ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM1 n1 vinn tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM2 n2 vinp tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM4 n2 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM6 vout n2 vdd vdd pfet_03v3 L=1u W=72u nf=24 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM7 vout ibias vss vss nfet_03v3 L=2u W=36u nf=12 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XCC n2 nz cap_mim_2f0_m4m5_noshield c_width=16.8u c_length=16.8u m=1
+XRZ vout nz vss ppolyf_u_1k r_width=2u r_length=22u m=1
+.ends

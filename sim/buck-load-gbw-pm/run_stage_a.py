@@ -55,6 +55,9 @@ from check_dc_op import DEVICES, PARAMS, VDS_MARGIN_V  # noqa: E402
 
 TB_DIR = HERE / "testbench"
 LOAD_INC = TB_DIR / "consumer_load.inc"
+LOAD_INC_CM1P5 = TB_DIR / "consumer_load_cm1p5.inc"
+TB_SWEEP_FOLLOWER = TB_DIR / "tb_sweep_follower.spice"
+TB_SWEEP_OPEN = TB_DIR / "tb_sweep_open.spice"
 TB_REGION = TB_DIR / "tb_region.spice"
 TB_AC = TB_DIR / "tb_ac.spice"
 TB_BETA = TB_DIR / "tb_beta.spice"
@@ -87,6 +90,38 @@ POLARITY_TOL_DEG = 10.0
 MIN_POINTS = 20
 SPOT_FREQS_HZ = (1e3, 2e4, 1.5e5, 1e6, 2e6, 1e7, 1e8)
 
+#: Run configuration. Defaults reproduce the 0.6 V record of 20261110-084324-e8a2a7b;
+#: `configure()` (the --vcm flag) switches to the consumer's new common mode.
+CFG = {
+    "vcm": 0.6, "rbot": "5k", "load": LOAD_INC, "sweep": False,
+    "load_note": ("`2AMLogic/gf180-buck` `design/netlists/compensator.spice`, read 2026-11-10 at "
+                  "main `b671d9e38321873caa9574f553d05473844c8bfc`; equal to DR-0008 §2.1 (guarded by the runner)"),
+}
+CM1P5_LOAD_NOTE = ("`2AMLogic/gf180-buck` PR #132 (closes gf180-buck#131), merge commit "
+                   "`003fe17f85ca35fc63c3f9835404b2aa8135951a`, `spec/decision-records/0008-ea-input-common-mode.md` §4: "
+                   "VREF = FBN = 1.50 V, Rtop/Rbot = 10 kΩ / 50 kΩ (was 5 kΩ), every compensator value unchanged "
+                   "(the consumer's `compensator.spice` at that sha still shows 5 kΩ; the DR text is the source). "
+                   "Guarded by the runner; `testbench/consumer_load_cm1p5.inc`")
+SWEEP_STEP_V, SWEEP_MAX_V = 0.05, 1.5
+SWEEP_OFFSETS_V = (-1e-3, 0.0, 1e-3)
+RAIL_MARGIN_V = 0.10
+
+
+def vcm_s() -> str:
+    return f"{CFG['vcm']:g} V"
+
+
+def configure(vcm: float) -> None:
+    """Select the common-mode case. 0.6 V = the original record's network;
+    1.5 V = the consumer's DR 0008 (gf180-buck) network plus the input sweep."""
+    if abs(vcm - 0.6) < 1e-9:
+        CFG.update(vcm=0.6, rbot="5k", load=LOAD_INC, sweep=False)
+    elif abs(vcm - 1.5) < 1e-9:
+        CFG.update(vcm=1.5, rbot="50k", load=LOAD_INC_CM1P5, sweep=True, load_note=CM1P5_LOAD_NOTE)
+    else:
+        raise ValueError("--vcm must be 0.6 (original record) or 1.5 (consumer DR 0008 of gf180-buck)")
+
+
 ERROR_RE = re.compile(
     r"(^|\W)(error|fatal|singular matrix|no convergence|doAnalyses: TRAN|aborted|"
     r"timestep too small|trouble with)",
@@ -100,8 +135,9 @@ TB_PARAM_RE = re.compile(r"^\.param\s+lfb=\S+\s+vcb=\S+\s+vref=\S+\s+vbuck=\S+\s
 CONSUMER_ITEMS = (
     ("C1", "EA supply is the 3.3 V control rail with the +-10 % band",
      "assumed: 3.30 V only (Stage A is one corner); the band is Stage B's axis"),
-    ("C2", "EA reference/feedback node at ~0.6 V in every mode incl. start-up",
-     "assumed: VREF = FBN = 0.6 V as in gf180-buck design/compensator.md; no soft-start VCM sweep"),
+    ("C2", "EA reference/feedback node at the stated common mode in every mode incl. start-up",
+     "assumed: VREF = FBN = {vcm} as stated by the consumer ({src}); the start-up ramp is covered only by "
+     "the DC input sweep (static, not a transient)"),
     ("C3", "PWM-comparator input capacitance on VC and the VC swing/bias needed",
      f"assumed: VC_bias = {VC_BIAS_ASSUMED:.2f} V (derivation in the record); comparator input "
      "approximated by the gate of the consumer's XCPM1 (consumer_load.inc)"),
@@ -149,11 +185,11 @@ def guard_tb(text: str, *, name: str, need_dut: bool = True) -> list[str]:
     return errs
 
 
-def guard_load_inc(text: str) -> list[str]:
+def guard_load_inc(text: str, rbot: str = "5k") -> list[str]:
     """The consumer network must be exactly the DR-0008 section 2.1 values."""
     want = {
         "rtop": ("vbuck", "fbn", "10k"), "r3": ("vbuck", "x", "204"),
-        "c3": ("x", "fbn", "780p"), "rbot": ("fbn", "0", "5k"),
+        "c3": ("x", "fbn", "780p"), "rbot": ("fbn", "0", rbot),
         "r2": ("fbn", "z", "4.55k"), "c1": ("z", "vc", "1.75n"),
         "c2": ("fbn", "vc", "35.7p"),
     }
@@ -162,7 +198,7 @@ def guard_load_inc(text: str) -> list[str]:
         t = ln.split()
         if t[0].lower() in want:
             got[t[0].lower()] = tuple(t[1:4])
-    errs = [f"consumer_load.inc: {k} is {got.get(k)}, DR-0008 section 2.1 says {v}"
+    errs = [f"{CFG['load'].name}: {k} is {got.get(k)}, DR-0008 section 2.1 says {v}"
             for k, v in want.items() if got.get(k) != v]
     return errs
 
@@ -192,8 +228,8 @@ def stage(work: Path, pdk: Pdk) -> None:
     if errs:
         raise RuntimeError("DUT guard failed:\n  " + "\n  ".join(errs))
     (work / DUT_INCLUDE_NAME).write_text(dut)
-    inc = LOAD_INC.read_text()
-    errs = guard_load_inc(inc)
+    inc = CFG["load"].read_text()
+    errs = guard_load_inc(inc, CFG["rbot"])
     if errs:
         raise RuntimeError("; ".join(errs))
     (work / "consumer_load.inc").write_text(inc)
@@ -410,7 +446,7 @@ def classify(*, region_valid: bool, servo_ok: bool, iso_problems: list[str],
     """Bench fault versus finding, exactly DR-0008 section 4.
 
     FINDING only when the closure-independent region check itself shows the pair
-    or tail not valid at VCM = 0.6 V. BENCH FAULT (not a finding, not routed
+    or tail not valid at the run's VCM. BENCH FAULT (not a finding, not routed
     into section 5 item 3) when the servo does not converge, the isolation
     study or plateau check fails, or the small-signal bench reports an invalid
     region the region check does not reproduce."""
@@ -430,12 +466,12 @@ def classify(*, region_valid: bool, servo_ok: bool, iso_problems: list[str],
     return dict(kind="valid", stop=False, faults=[])
 
 
-def route(kind: str) -> str:
+def route(kind: str, vcm: float = 0.6) -> str:
     """DR-0008 section 5, mechanically."""
     if kind == "finding":
         return ("Section 5 item 3 / the Stage A stop rule: the amplifier is not in a valid operating "
-                "region at VCM = 0.6 V. Stage B is NOT run on an invalid point. The later record "
-                "names the re-size (or an input-stage change for a 0.6 V common mode) and which "
+                f"region at VCM = {vcm:g} V. Stage B is NOT run on an invalid point. The later record "
+                f"names the re-size (or an input-stage change for a {vcm:g} V common mode) and which "
                 "ratified rows it re-opens; item 4 (a consumer-side common-mode change) is equally "
                 "valid and is the consumer's decision. Nothing here edits the table. The consumer's "
                 "verdict stays `unknown` (item 5) until the later record.")
@@ -472,7 +508,7 @@ def op_control() -> list[str]:
 
 
 def run_region(work: Path, pdk: Pdk, vc: float, name: str) -> RegionRun:
-    body = tb_body(TB_REGION, work, vcb=vc)
+    body = tb_body(TB_REGION, work, vcb=vc, vref=CFG["vcm"])
     log, _ = run_ngspice(wrap_deck(body, pdk, op_control()), work, name)
     vals = parse_values(log)
     errs = log_errors(log)
@@ -524,7 +560,7 @@ class AcRun:
 
 def run_ac(work: Path, pdk: Pdk, name: str, lfb: float, vc: float, beta: np.ndarray | None,
            freq_beta: np.ndarray | None) -> AcRun:
-    body = tb_body(TB_AC, work, lfb=lfb, vcb=vc)
+    body = tb_body(TB_AC, work, lfb=lfb, vcb=vc, vref=CFG["vcm"])
     raw = work / f"{name}.raw"
     log, _ = run_ngspice(wrap_deck(body, pdk, ac_control(raw, "v(vc) v(vinp) v(fbn)")), work, name)
     vals = parse_values(log)
@@ -572,6 +608,83 @@ def save_dat(path: Path, header: str, freq: np.ndarray, **cols: np.ndarray) -> N
 
 
 # --------------------------------------------------------------------------
+# DC input sweep (consumer question: both inputs below the 1.20 V ICMR floor)
+# --------------------------------------------------------------------------
+
+#: Voltages only. Device-parameter accessors (`@m...[id]`) are NOT updated per point by `dc` in
+#: ngspice (a first attempt printed one constant value for every point), so no currents are reported.
+SWEEP_VECTORS = ("v(vc)", "v(xdut.tail)")
+
+
+@dataclass
+class SweepRun:
+    name: str
+    ok_run: bool
+    note: str
+    vin: np.ndarray | None = None
+    cols: dict[str, np.ndarray] | None = None
+
+
+def parse_wrdata(text: str, nvec: int) -> tuple[np.ndarray, list[np.ndarray]]:
+    """ngspice `wrdata` writes (x, y) column pairs per vector, one row per point."""
+    rows = [ln.split() for ln in text.splitlines() if ln.strip()]
+    arr = np.array([[float(x) for x in r] for r in rows])
+    if arr.ndim != 2 or arr.shape[1] != 2 * nvec:
+        raise ValueError(f"wrdata has shape {arr.shape}, want (*, {2 * nvec})")
+    return arr[:, 0], [arr[:, 2 * i + 1] for i in range(nvec)]
+
+
+def rail_flags(vc: np.ndarray, vdd: float = VDD, margin: float = RAIL_MARGIN_V) -> list[str]:
+    """'low' / 'high' / 'ok' per point: within `margin` of a rail or not. NaN is 'undefined'."""
+    out = []
+    for v in vc:
+        if not math.isfinite(v):
+            out.append("undefined")
+        elif v < margin:
+            out.append("low")
+        elif v > vdd - margin:
+            out.append("high")
+        else:
+            out.append("ok")
+    return out
+
+
+def run_sweep(work: Path, pdk: Pdk, tb: Path, name: str, **params) -> SweepRun:
+    body = tb_body(tb, work, **params)
+    dat = work / f"{name}.dat"
+    control = [f"dc vin 0 {SWEEP_MAX_V:g} {SWEEP_STEP_V:g}", "option numdgt=7",
+               f"wrdata {dat} " + " ".join(SWEEP_VECTORS)]
+    log, _ = run_ngspice(wrap_deck(body, pdk, control), work, name)
+    errs = log_errors(log)
+    if errs or not dat.exists():
+        return SweepRun(name, False, "no result: " + ("; ".join(errs[:2]) or "no data file written"))
+    try:
+        vin, cols = parse_wrdata(dat.read_text(), len(SWEEP_VECTORS))
+    except ValueError as exc:
+        return SweepRun(name, False, f"unparseable wrdata: {exc}")
+    return SweepRun(name, True, "", vin, dict(zip(SWEEP_VECTORS, cols)))
+
+
+def sweep_table(r: SweepRun, every: int = 2) -> list[str]:
+    rows = ["| Vin (V) | v(vc) (V) | rail | tail (V) |", "|---|---|---|---|"]
+    flags = rail_flags(r.cols["v(vc)"])
+    for i in range(0, len(r.vin), every):
+        c = r.cols
+        rows.append(f"| {r.vin[i]:.2f} | {c['v(vc)'][i]:.4f} | {flags[i]} | {c['v(xdut.tail)'][i]:.4f} |")
+    return rows
+
+
+def sweep_summary(r: SweepRun) -> str:
+    vc = r.cols["v(vc)"]
+    fl = rail_flags(vc)
+    low = [f"{v:.2f}" for v, f in zip(r.vin, fl) if f != "ok"]
+    below = r.vin < 1.20 - 1e-9
+    return (f"v(vc) over the sweep: min {np.nanmin(vc):.4f} V, max {np.nanmax(vc):.4f} V; points within "
+            f"{RAIL_MARGIN_V:g} V of a rail (0 / {VDD:g} V): "
+            + (", ".join(low) if low else "none") + f"; points below 1.20 V: {int(below.sum())} of {len(r.vin)}")
+
+
+# --------------------------------------------------------------------------
 # Record
 # --------------------------------------------------------------------------
 
@@ -599,7 +712,7 @@ def region_table(ops: dict[str, DevOp], only: tuple[str, ...] | None = None) -> 
 def build_record(*, record: str, stamp: datetime, pdk: Pdk, regions: list[RegionRun],
                  nominal: AcRun | None, vc_runs: list[AcRun], iso: dict[float, AcRun],
                  iso_problems: list[str], cls: dict, beta_errs: list[str], argv: list[str],
-                 sha: str) -> str:
+                 sha: str, sweeps: list[SweepRun] | None = None) -> str:
     L: list[str] = []
     a = L.append
     nom_vc = VC_BIAS_ASSUMED
@@ -612,8 +725,10 @@ def build_record(*, record: str, stamp: datetime, pdk: Pdk, regions: list[Region
       f"ibias 10 µA ideal, one corner, local `ngspice -b` units (no `klt sim` batch, no fleet)")
     a(f"- **PDK**: {pdk.variant} (open_pdks {pdk.version}, via {pdk.source}); **ngspice**: {ngspice_version()}")
     a(f"- **Command**: `python3 sim/buck-load-gbw-pm/run_stage_a.py {' '.join(argv)}`".rstrip())
-    a("- **Consumer load of record**: `2AMLogic/gf180-buck` `design/netlists/compensator.spice`, read 2026-11-10 at "
-      "main `b671d9e38321873caa9574f553d05473844c8bfc`; equal to DR-0008 §2.1 (guarded by the runner)")
+    a(f"- **Common mode / Rbot**: VREF = FBN = {vcm_s()}, Rbot = {CFG['rbot']}"
+      + ("" if CFG["vcm"] == 0.6 else "; this supersedes the 0.6 V case of record `20261110-084324-e8a2a7b` "
+         "(untouched, append-only)"))
+    a(f"- **Consumer load of record**: {CFG['load_note']}")
     a("")
     a("> Every number below is a **simulated output at one corner, pre-layout, ideal consumer passives**. "
       "It sets **no GBW/PM row**, relaxes nothing, and the ratified 10 MHz / 2 pF row is untouched. "
@@ -622,7 +737,7 @@ def build_record(*, record: str, stamp: datetime, pdk: Pdk, regions: list[Region
     a("## Verdict of this probe")
     a("")
     kind = cls["kind"]
-    label = {"finding": "FINDING — invalid operating region at VCM = 0.6 V (stop rule applies)",
+    label = {"finding": f"FINDING — invalid operating region at VCM = {vcm_s()} (stop rule applies)",
              "bench-fault": "BENCH FAULT — not a finding; fix and re-run under the same approval",
              "valid": "Region check valid; no bench fault"}[kind]
     a(f"**{label}**")
@@ -632,21 +747,23 @@ def build_record(*, record: str, stamp: datetime, pdk: Pdk, regions: list[Region
     a("")
     if kind == "finding":
         a("**Caveat on §2–§3 (read before quoting any number):** the closure-independent region check shows the "
-          "input pair OFF (about 0.16 µA per device against a ~5 µA design) and the tail XM5 in triode at "
-          "VCM = 0.6 V, and the small-signal bench sits at the same invalid point (its own operating point is "
+          f"input pair or tail not on and saturated at VCM = {vcm_s()} (§1 tabulates which), and the small-signal "
+          "bench sits at the same invalid point (its own operating point is "
           "tabulated in §2). Its Aol(f), crossings and loop margins therefore describe a degraded, sub-threshold "
           "amplifier, **not** this design's capability; they are reported because Stage A asks for them, are "
           "insensitive to `VC_bias` here, and are **not** a basis for any GBW/PM number or a verdict on the "
           "consumer's loop (DR-0008 §4 stop rule, §5 item 5).")
         a("")
-    a("**Routing (DR-0008 §5, mechanical):** " + route(kind))
+    a("**Routing (DR-0008 §5, mechanical):** " + route(kind, CFG["vcm"]))
     a("")
     a("## C1–C4 status (DR-0008 §3)")
     a("")
     a("| # | Item | Status in this record |")
     a("|---|---|---|")
+    src = ("gf180-buck design/compensator.md" if CFG["vcm"] == 0.6
+           else "gf180-buck PR #132, DR 0008 §3")
     for c, item, status in CONSUMER_ITEMS:
-        a(f"| {c} | {item} | {status} |")
+        a(f"| {c} | {item} | {status.format(vcm=vcm_s(), src=src) if '{vcm}' in status else status} |")
     a("")
     a(f"`VC_bias` = {nom_vc:.2f} V **(assumed)**: duty = 1.8 V / 5 V (Vin 5 V nominal, gf180-buck "
       f"`design/compensator.md`) = 0.36; ramp 1.18–1.80 V (0.613 V p-p, gf180-buck `design/README.md` osc_ramp "
@@ -654,7 +771,7 @@ def build_record(*, record: str, stamp: datetime, pdk: Pdk, regions: list[Region
     a("")
     a("## 1. Region check (closure-independent)")
     a("")
-    a("`VC` forced by an ideal source, `VREF` = `FBN` = 0.6 V, `.op` (bench `tb_region.spice`). XM1/XM2/XM5 do not "
+    a(f"`VC` forced by an ideal source, `VREF` = `FBN` = {vcm_s()}, `.op` (bench `tb_region.spice`). XM1/XM2/XM5 do not "
       "depend on `VC`; regions use `design/check_dc_op.py`'s definition (on = |Vgs| > |Vth|; "
       f"saturated = |Vds| ≥ |Vdsat| + {VDS_MARGIN_V * 1e3:g} mV).")
     a("")
@@ -672,7 +789,7 @@ def build_record(*, record: str, stamp: datetime, pdk: Pdk, regions: list[Region
             a(f"- ngspice: `{e}`")
         a("")
     a("The pair + tail rows (XM1, XM2, XM5) are the Stage A question: whether the input pair conducts at "
-      "VCM = 0.6 V against the proposed ICMR of DR-0005 (1.20 V ≤ VCM ≤ 2.70 V). Rows for the other devices at the "
+      f"VCM = {vcm_s()} against the proposed ICMR of DR-0005 (1.20 V ≤ VCM ≤ 2.70 V). Rows for the other devices at the "
       "first VC level are shown for completeness and depend on the forced `VC`.")
     a("")
     a("## 2. Small-signal bench (DC-closed, AC-open)")
@@ -745,9 +862,47 @@ def build_record(*, record: str, stamp: datetime, pdk: Pdk, regions: list[Region
     if beta_errs:
         a("1/β run reported: " + "; ".join(f"`{e}`" for e in beta_errs[:3]))
         a("")
-    a("## 4. Limits of this record")
+    if sweeps:
+        a("## 4. DC input sweep: output behaviour with both inputs below / across the 1.20 V ICMR floor")
+        a("")
+        a("Consumer question (gf180-buck#131 / PR #132): the reference ramps 0 → 1.5 V in ~250 µs, about 80 % of it "
+          "below the 1.20 V proposed ICMR; is the amplifier's output defined and non-railing there, or not defined? "
+          f"This is a **static DC sweep** (`dc vin 0 {SWEEP_MAX_V:g} {SWEEP_STEP_V:g}`, typical / 27 °C / 3.30 V, one "
+          "local unit per bench), not a transient: it says nothing about the 250 µs dynamics. Rows every "
+          f"{2 * SWEEP_STEP_V:g} V; `rail` = within {RAIL_MARGIN_V:g} V of 0 or {VDD:g} V. It reports numbers only: "
+          "no limit, no row, no verdict on the consumer.")
+        a("")
+        for r in sweeps:
+            a(f"### {r.name}")
+            a("")
+            if not r.ok_run:
+                a(f"No result: {r.note}")
+                a("")
+                continue
+            a(sweep_summary(r))
+            a("")
+            a("\n".join(sweep_table(r)))
+            a("")
+        a("- Voltages only: the tail node `v(xdut.tail)` shows where the input pair's common source sits (it follows "
+          "the input and sits at ~0 V while the input is low); device currents are not reported because ngspice does not update device-parameter accessors "
+          "per `dc` point.")
+        a("- In the follower, a `low` flag at Vin ≤ 0.15 V is the output equal to its own near-0 V input (not a "
+          "fault by itself); the open-loop rows show the railing.")
+        a("- `follower`: VC tied to the inverting input (DC-closed). It is NOT the consumer's type-III network; that "
+          "network has no DC feedback through the amplifier (C1, C2 open), so the consumer's own DC output is set by "
+          "its other paths.")
+        a("- `open vd=…`: no feedback, both inputs at the swept level, differential offset `vd`: where the output "
+          "goes for a small input difference of either sign when the input stage is cut off or conducting.")
+        a("")
+        lim = "## 5. Limits of this record"
+    else:
+        lim = "## 4. Limits of this record"
+    a(lim)
     a("")
     a("- One corner (typical / 27 °C / 3.30 V): no PVT statement of any kind. Stage B is not run and is not approved here.")
+    if CFG["vcm"] != 0.6:
+        a("- The 1.50 V common-mode margin to the true (measured) low ICMR edge across corners is not established here: "
+          "that is Stage B / a later record.")
     a("- Consumer passives are ideal and typical; the PWM-comparator input is an approximation (C3 assumed); "
       "the amplifier's own input capacitance on `FBN` is inside Aol but not in the passive 1/β run (femtofarad-class "
       "against C2 = 35.7 pF).")
@@ -761,8 +916,9 @@ def build_record(*, record: str, stamp: datetime, pdk: Pdk, regions: list[Region
 
 def build_snapshot(record: str, pdk: Pdk) -> str:
     parts = [f"* Stage A snapshot {record} (issue #295): everything needed to reproduce the bench",
-             "", "*==== consumer_load.inc ====", LOAD_INC.read_text()]
-    for t in (TB_REGION, TB_AC, TB_BETA):
+             "", f"*==== {CFG['load'].name} (staged as consumer_load.inc) ====", CFG["load"].read_text()]
+    benches = (TB_REGION, TB_AC, TB_BETA) + ((TB_SWEEP_FOLLOWER, TB_SWEEP_OPEN) if CFG["sweep"] else ())
+    for t in benches:
         parts += [f"*==== {t.name} ====", t.read_text()]
     parts += ["*==== DUT (committed export through subckt_from_export) ====", load_dut_text()]
     return "\n".join(parts)
@@ -781,7 +937,7 @@ def plots(out: Path, nominal: AcRun) -> list[str]:
     ax.semilogx(nominal.freq, res["db_aol"], label="|Aol| into the real load")
     ax.semilogx(nominal.freq, res["db_invb"], label="|1/β|")
     ax.set_xlabel("Hz"); ax.set_ylabel("dB"); ax.grid(True, which="both", alpha=.3); ax.legend()
-    ax.set_title("Stage A, typical / 27 C / 3.30 V, VC_bias 1.40 V (assumed)")
+    ax.set_title(f"Stage A, typical / 27 C / 3.30 V, VCM {CFG['vcm']:g} V, VC_bias 1.40 V (assumed)")
     p = out / "aol_vs_invbeta.png"
     fig.savefig(p, dpi=110, bbox_inches="tight")
     plt.close(fig)
@@ -798,7 +954,7 @@ def smoke(pdk: Pdk) -> int:
         work = Path(scratch)
         stage(work, pdk)
         rr = run_region(work, pdk, VC_BIAS_ASSUMED, "region")
-        print(f"smoke: region check {'valid' if rr.valid else 'NOT valid'} at VCM = 0.6 V")
+        print(f"smoke: region check {'valid' if rr.valid else 'NOT valid'} at VCM = {vcm_s()}")
         for r_ in rr.reasons:
             print("  -", r_)
         return 0 if rr.ok_run else 1
@@ -807,7 +963,15 @@ def smoke(pdk: Pdk) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--smoke", action="store_true", help="region check only; writes nothing")
+    ap.add_argument("--vcm", type=float, default=0.6,
+                    help="EA common mode: 0.6 (default, the original record's network) or 1.5 "
+                         "(gf180-buck DR 0008: Rbot 50k; also runs the DC input sweep)")
     args = ap.parse_args(argv)
+    try:
+        configure(args.vcm)
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 2
     if shutil.which("ngspice") is None:
         print("ngspice not found", file=sys.stderr)
         return 2
@@ -831,6 +995,15 @@ def main(argv: list[str] | None = None) -> int:
             iso[lfb] = run_ac(work, pdk, f"ac_lfb{lfb:g}", lfb, VC_BIAS_ASSUMED, beta, freq_b)
         iso_problems = isolation_verdict({k: v.result for k, v in iso.items()})
 
+        sweeps: list[SweepRun] = []
+        if CFG["sweep"]:
+            sweeps.append(run_sweep(work, pdk, TB_SWEEP_FOLLOWER, "sweep_follower"))
+            for vd in SWEEP_OFFSETS_V:
+                sweeps.append(run_sweep(work, pdk, TB_SWEEP_OPEN, f"sweep_open_vd{vd * 1e3:g}mV", vd=vd))
+            for r in sweeps:
+                r.name = {"sweep_follower": "follower (VC tied to inverting input)"}.get(
+                    r.name, r.name.replace("sweep_open_vd", "open loop, vd = ").replace("mV", " mV"))
+
         servo_ok = all(r.ok_run for r in (nominal, *vc_runs))
         plateau_ok = all(r.result and r.result["plateau"]["ok"] for r in (nominal, *vc_runs))
         region_valid = regions[0].valid
@@ -841,6 +1014,12 @@ def main(argv: list[str] | None = None) -> int:
                        plateau_ok=plateau_ok,
                        ac_region_reproduces=(ac_region_valid == region_valid) or not servo_ok)
 
+        bad_sweeps = [r.name for r in sweeps if not r.ok_run]
+        if bad_sweeps:
+            cls["faults"].append("DC input sweep failed: " + ", ".join(bad_sweeps))
+            if cls["kind"] == "valid":
+                cls["kind"] = "bench-fault"
+
         for p in ("corners", "plots"):
             paths[p].mkdir(parents=True, exist_ok=True)
         for r in (nominal, *vc_runs, *[v for k, v in iso.items() if k != LFB_NOMINAL]):
@@ -848,7 +1027,7 @@ def main(argv: list[str] | None = None) -> int:
                 save_dat(paths["corners"] / f"{r.name}.dat", f"{record} {r.name}: Aol=v(vc)/(v(vinp)-v(fbn)), "
                          f"Lfb={r.lfb:g} VC_bias={r.vc:g}", r.freq, aol=r.aol)
         save_dat(paths["corners"] / "beta.dat", f"{record}: beta=v(fbn)/v(vc), passive network alone", freq_b, beta=beta)
-        for f in work.glob("*.log"):
+        for f in (*work.glob("*.log"), *work.glob("sweep_*.dat")):
             shutil.copyfile(f, paths["corners"] / f.name)
         for f in work.glob("*.cir"):
             shutil.copyfile(f, paths["corners"] / f.name)
@@ -858,7 +1037,8 @@ def main(argv: list[str] | None = None) -> int:
         from harness import git_short_sha
         md = build_record(record=record, stamp=stamp, pdk=pdk, regions=regions, nominal=nominal,
                           vc_runs=vc_runs, iso=iso, iso_problems=iso_problems, cls=cls,
-                          beta_errs=beta_errs, argv=sys.argv[1:], sha=git_short_sha(REPO_ROOT))
+                          beta_errs=beta_errs, argv=sys.argv[1:], sha=git_short_sha(REPO_ROOT),
+                          sweeps=sweeps)
         paths["record"].write_text(md)
 
     print(f"record: {paths['record'].relative_to(REPO_ROOT)}")
