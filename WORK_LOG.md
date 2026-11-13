@@ -2,6 +2,12 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+### 2026-11-12
+
+- **PR #317**: docs: remove Loom guard/sweep material transferred upstream
+- **PR #316**: feat(sim): Stage A re-run at 1.50 V consumer common mode with DC input sweep
+- **Issue #313** (closed): Remove Loom guard/sweep orchestration docs and scripts from the opamp repo (~945 LOC)
+
 ### 2026-11-10
 
 - **PR #312**: sim: Stage A probe of the op-amp into the gf180-buck compensation load
