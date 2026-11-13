@@ -55,10 +55,11 @@ Issues carrying `loom:curated`.
 - **#140**: cmrr-mc: full grid as a single batch request exceeds the 3600 s fleet job limit *(curated)*
 - **#190**: sim: extend PSRR mismatch characterization to the full temperature and supply grid *(curated)*
 - **#240**: Re-pin open_pdks to f6eeac7 via ciel, with a revision-checked PDK search, before minting layout evidence *(curated)*
+- **#295**: Raise the unity-gain bandwidth target to >= 8 MHz for a type-III compensator load *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#313**: Remove Loom guard/sweep orchestration docs and scripts from the opamp repo (~945 LOC) *(hermit)*
+_None._
 
 ## Epics
 
@@ -75,7 +76,7 @@ _None._
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 4 |
-| Architect / Hermit proposals | 1 |
+| Curated | 5 |
+| Architect / Hermit proposals | 0 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
