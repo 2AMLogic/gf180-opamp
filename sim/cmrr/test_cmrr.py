@@ -374,16 +374,6 @@ class RequestAndMaterialiseTests(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             r.mutate_instance(base, "XM3", "W", "7u", "8u")
 
-    def test_records_are_append_only(self):
-        with tempfile.TemporaryDirectory() as d:
-            base = Path(d)
-            paths = r.G.claim_record_paths(base, "20990101-000000-abcdef0")
-            paths["record"].parent.mkdir(parents=True)
-            paths["record"].write_text("x")
-            with self.assertRaises(FileExistsError):
-                r.G.claim_record_paths(base, "20990101-000000-abcdef0")
-            r.G.claim_record_paths(base, "20990101-000001-abcdef0")  # a fresh id is fine
-
 
 class SimTests(unittest.TestCase):
     """Local nominal single units (never the grid)."""

@@ -355,5 +355,71 @@ class FindPdkSearchOrderTests(unittest.TestCase):
         self.assertIn(harness.PINNED_PDK_REV, str(cm.exception))
 
 
+class ClaimRecordPathsTests(unittest.TestCase):
+    """`claim_record_paths` — the append-only guard over `sim/` evidence.
+
+    One copy of this contract lives here, in the module that tests
+    `sim/harness.py`, rather than being restated per bench (issue #324). The
+    guard refuses a re-claim when ANY of the paths it hands out already
+    exists, so each guarded kind is exercised under both `plots` settings.
+    """
+
+    RECORD = "20261009-000000-abcdef0"
+    #: Every path kind `claim_record_paths` guards (`sim/harness.py`).
+    KINDS = ("record", "plots", "snapshot", "corners")
+    #: The kinds that are directories; the rest are files.
+    DIR_KINDS = ("plots", "corners")
+
+    def _base(self) -> Path:
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        return Path(tmp.name)
+
+    def _occupy(self, target: Path, kind: str) -> None:
+        if kind in self.DIR_KINDS:
+            target.mkdir(parents=True)
+        else:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("old")
+
+    def test_a_fresh_claim_is_accepted_and_writes_nothing(self):
+        for plots in (True, False):
+            with self.subTest(plots=plots):
+                base = self._base()
+                paths = harness.claim_record_paths(base, self.RECORD, plots=plots)
+                self.assertEqual("plots" in paths, plots)
+                self.assertFalse(any(p.exists() for p in paths.values()))
+                # A claim is a reservation, not a write: it stays repeatable
+                # until something is actually committed underneath it.
+                harness.claim_record_paths(base, self.RECORD, plots=plots)
+
+    def test_any_existing_guarded_path_refuses_the_reclaim(self):
+        for plots in (True, False):
+            for kind in self.KINDS:
+                if kind == "plots" and not plots:
+                    continue  # not handed out, so there is nothing to guard
+                with self.subTest(plots=plots, kind=kind):
+                    base = self._base()
+                    target = harness.claim_record_paths(base, self.RECORD, plots=plots)[kind]
+                    self._occupy(target, kind)
+                    with self.assertRaises(FileExistsError) as cm:
+                        harness.claim_record_paths(base, self.RECORD, plots=plots)
+                    self.assertIn(str(target), str(cm.exception))
+                    self.assertIn("evidence is append-only", str(cm.exception))
+                    if kind not in self.DIR_KINDS:
+                        # The refusal leaves the existing evidence untouched.
+                        self.assertEqual(target.read_text(), "old")
+
+    def test_a_fresh_record_id_is_still_accepted(self):
+        base = self._base()
+        taken = harness.claim_record_paths(base, self.RECORD)
+        self._occupy(taken["record"], "record")
+        with self.assertRaises(FileExistsError):
+            harness.claim_record_paths(base, self.RECORD)
+        fresh = harness.claim_record_paths(base, "20261009-000001-abcdef0")
+        self.assertNotEqual(fresh["record"], taken["record"])
+        self.assertEqual(taken["record"].read_text(), "old")
+
+
 if __name__ == "__main__":
     unittest.main()
