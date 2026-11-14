@@ -89,6 +89,7 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    add_common_args,
     allocate_record_id,
     batch_block,
     claim_run_paths,
@@ -1274,22 +1275,6 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
 # --------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------
-
-
-def add_common_args(ap: argparse.ArgumentParser) -> None:
-    ap.add_argument("--smoke", action="store_true", help="nominal point, local, no record")
-    ap.add_argument("--backend", help="klt execution backend for the 45-point grids "
-                    "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None,
-                    help="forward batch.runner_version_check (only meaningful on the batch backend)")
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None, help="forward batch.capacity_wait_s")
-    ap.add_argument("--batch-submit-retries", type=int, default=0,
-                    help="re-submit up to N times when the batch submit is refused for fleet capacity "
-                    "(never changes backend)")
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
-    ap.add_argument("--keep-work", type=Path, default=None,
-                    help="use this (new) directory as the work dir and keep it: grid reports, rawfiles and logs "
-                    "survive a failed validation for diagnosis (never committed)")
 
 
 def run_grid_modes(pdk, work, args, modes: dict[str, dict], *, testbench=TESTBENCH, guard=guard_testbench):

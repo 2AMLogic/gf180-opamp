@@ -1372,7 +1372,7 @@ def smoke(pdk: Pdk) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    C.add_common_args(ap)
+    harness.add_common_args(ap)
     ap.add_argument("--passive-corners", action="store_true",
                     help="opt-in (issue #155): standalone RZ x CC passive-corner PSRR study instead of the grid "
                     "record; requires --passive-scope full")

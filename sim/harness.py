@@ -1157,15 +1157,42 @@ def rederive_dat(path: Path, header: str, extract):
     return extract({"time": d[:, 0], "v(vout)": d[:, 1], "v(vinp)": d[:, 2]})
 
 
+def add_batch_args(ap, *, backend_help: str) -> None:
+    """The `--backend` / `batch.*` CLI shared by every grid runner.
+
+    Flag names and dests are the contract `batch_block()` and
+    `run_klt_retrying` read; the parsed defaults must not change."""
+    ap.add_argument("--backend", help=backend_help)
+    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None,
+                    help="forward batch.runner_version_check (only meaningful on the batch backend)")
+    ap.add_argument("--batch-capacity-wait-s", type=float, default=None,
+                    help="forward batch.capacity_wait_s: wait this long for fleet capacity "
+                    "instead of failing the submit immediately")
+    ap.add_argument("--batch-submit-retries", type=int, default=0,
+                    help="re-submit up to N times when the batch submit is refused for fleet "
+                    "capacity / the shared concurrency cap (never changes backend)")
+    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0,
+                    help="seconds between re-submits when --batch-submit-retries retries a "
+                    "refused submit")
+
+
 def add_grid_args(ap, *, grid_help: str) -> None:
     """The CLI shared by the single-grid transient runners."""
     ap.add_argument("--smoke", action="store_true", help="one nominal point, local, no record")
-    ap.add_argument("--backend", help=grid_help)
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
-    ap.add_argument("--batch-submit-retries", type=int, default=0,
-                    help="re-submit up to N times when the batch submit is refused for fleet capacity (never changes backend)")
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help=grid_help)
+
+
+def add_common_args(ap) -> None:
+    """The cmrr/psrr bench CLI: `add_batch_args` plus the two bench-specific flags.
+
+    Hoisted out of run_cmrr.py so psrr stops loading a sibling driver to reach
+    a CLI helper."""
+    ap.add_argument("--smoke", action="store_true", help="nominal point, local, no record")
+    add_batch_args(ap, backend_help="klt execution backend for the 45-point grids "
+                   "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
+    ap.add_argument("--keep-work", type=Path, default=None,
+                    help="use this (new) directory as the work dir and keep it: grid reports, rawfiles and logs "
+                    "survive a failed validation for diagnosis (never committed)")
 
 
 def smoke_run(pdk: Pdk, nominal, run_unit, print_point, *, prefix: str) -> int:

@@ -100,6 +100,7 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    add_batch_args,
     allocate_record_id,
     batch_block,
     find_pdk,
@@ -911,16 +912,8 @@ def smoke(pdk: Pdk) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--smoke", action="store_true", help="one nominal point, local, no record")
-    ap.add_argument("--backend", help="klt execution backend for the 45-point grid "
-                    "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None,
-                    help="forward batch.runner_version_check (only meaningful on the batch backend)")
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None,
-                    help="forward batch.capacity_wait_s")
-    ap.add_argument("--batch-submit-retries", type=int, default=0,
-                    help="re-submit up to N times when the batch submit is refused for fleet capacity "
-                    "(never changes backend)")
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help="klt execution backend for the 45-point grid "
+                   "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     args = ap.parse_args(argv)
 
     pdk = find_pdk()
