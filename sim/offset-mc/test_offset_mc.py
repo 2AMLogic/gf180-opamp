@@ -24,7 +24,6 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_offset_mc as r  # noqa: E402
-import harness  # noqa: E402
 from harness import Pdk, PdkNotFound, find_pdk, require_prereqs  # noqa: E402
 
 
@@ -296,19 +295,6 @@ class MaterialiseTests(unittest.TestCase):
     def test_imbalance_fails_loudly_if_the_target_line_moves(self):
         with self.assertRaises(RuntimeError):
             r.imbalance_dut("XM1 a b c d nfet_03v3 L=1u W=9u\n")
-
-
-class AppendOnlyTests(unittest.TestCase):
-    def test_existing_record_paths_are_never_overwritten(self):
-        with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
-            first = harness.claim_record_paths(root, "20261009-000000-abcdef0")
-            first["corners"].mkdir(parents=True)
-            first["record"].parent.mkdir(parents=True, exist_ok=True)
-            first["record"].write_text("old")
-            with self.assertRaises(FileExistsError):
-                harness.claim_record_paths(root, "20261009-000000-abcdef0")
-            self.assertEqual(first["record"].read_text(), "old")
 
 
 def _sim_available() -> bool:

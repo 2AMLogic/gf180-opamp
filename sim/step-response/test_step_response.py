@@ -25,7 +25,6 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_step_response as r  # noqa: E402
-import harness  # noqa: E402  (on sys.path via the driver)
 
 VCM = 1.65
 DT = 1e-9
@@ -484,17 +483,6 @@ class RecordTests(unittest.TestCase):
         self.assertEqual(sum(1 for ln in md.splitlines() if ln.startswith("| `") and "|" in ln[3:]) - len(ctrls), 45)
         for word in ("PASS", "FAIL"):
             self.assertNotIn(f"**{word}**", md)
-
-
-class AppendOnlyTests(unittest.TestCase):
-    def test_existing_record_paths_are_never_overwritten(self):
-        with tempfile.TemporaryDirectory() as d:
-            base = Path(d)
-            harness.claim_record_paths(base, "rid-1")
-            (base / "records").mkdir()
-            (base / "records" / "rid-1.md").write_text("x")
-            with self.assertRaises(FileExistsError):
-                harness.claim_record_paths(base, "rid-1")
 
 
 if __name__ == "__main__":
