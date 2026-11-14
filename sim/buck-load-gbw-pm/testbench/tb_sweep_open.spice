@@ -1,0 +1,18 @@
+* tb_sweep_open.spice -- Stage A re-run (issue #295): open-loop output behaviour
+* with BOTH inputs at the same swept common mode `dc vin` 0 -> 1.5 V and a small
+* differential offset `vd` (inverting input = Vin, non-inverting = Vin + vd).
+* No DC feedback: the output goes where the input stage and offset send it. The
+* PWM-comparator gate approximation is on VC. DUT is the committed export.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+.include 'consumer_load.inc'
+
+.param vd=0
+
+Vdd vdd 0 dc 3.3
+Ibias vdd ibias dc 10u
+Vin fbn 0 dc 0
+Vinp vinp fbn dc {vd}
+Xdut vdd 0 vinp fbn vc ibias opamp_two_stage
+Xpwm vc pwm_in

@@ -1,0 +1,21 @@
+* tb_region.spice -- Stage A step 1: CLOSURE-INDEPENDENT region check
+* (spec/decision-records/0008, section 4 "DC operating-point method" item 1).
+*
+* No loop to close: VC is forced by an ideal source at the bias level, FBN
+* (the amplifier's inverting input) and VREF (non-inverting) both at 0.6 V, the
+* common mode the consumer applies. `.op` then reports the regions and
+* currents of XM1/XM2/XM5 (input pair and tail do not depend on VC). The
+* consumer network is not instantiated: FBN and VC are forced, so it would be
+* inert at DC. The DUT is the committed export via `opamp_two_stage.dut.spice`.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+
+.param vcb=1.40 vref=0.6
+
+Vdd vdd 0 dc 3.3
+Ibias vdd ibias dc 10u
+Vref vinp 0 dc {vref}
+Vfbn fbn 0 dc {vref}
+Vvc vc 0 dc {vcb}
+Xdut vdd 0 vinp fbn vc ibias opamp_two_stage

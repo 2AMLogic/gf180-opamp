@@ -1,0 +1,27 @@
+* gf180-opamp Stage A (issue #295, DR-0008 section 4)
+.lib '/home/ubuntu/.ciel/gf180mcuD/libs.tech/ngspice/sm141064.ngspice' typical
+.lib '/home/ubuntu/.ciel/gf180mcuD/libs.tech/ngspice/sm141064.ngspice' res_typical
+.lib '/home/ubuntu/.ciel/gf180mcuD/libs.tech/ngspice/sm141064.ngspice' mimcap_typical
+.temp 27
+
+* tb_beta.spice -- Stage A step 2b: 1/beta(f) from the passive network ALONE
+* (spec/decision-records/0008, section 4). The amplifier is removed; an ideal
+* AC source drives VC, the buck output node is AC ground, and beta = v(fbn) /
+* v(vc), so 1/beta = v(vc) / v(fbn). The amplifier's own input capacitance on
+* FBN is not in this bench (it is inside Aol's measurement); the difference is
+* femtofarad-class against the 35.7 pF of C2 and is stated in the record.
+
+.include '/tmp/buck-stage-a-su7snklm/design.ngspice'
+.include '/tmp/buck-stage-a-su7snklm/consumer_load.inc'
+
+Vbuck vbuck 0 dc 0
+Vtest vc 0 dc 0 ac 1
+Xload vbuck fbn vc ea_load
+
+
+.control
+ac dec 20 0.1 1e+09
+set filetype=ascii
+write /tmp/buck-stage-a-su7snklm/beta.raw v(vc) v(fbn)
+.endc
+.end

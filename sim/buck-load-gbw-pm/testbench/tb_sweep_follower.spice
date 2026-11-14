@@ -1,0 +1,20 @@
+* tb_sweep_follower.spice -- Stage A re-run (issue #295): output behaviour when
+* both inputs are below / across the 1.20 V proposed ICMR floor.
+*
+* Unity-gain follower (VC tied to the inverting input FBN by a 0 V source), the
+* non-inverting input swept 0 -> 1.5 V by `dc vin`. This is the DC-closed
+* configuration that keeps the amplifier's output defined at every input level;
+* it is NOT the consumer's type-III network (its C1/C2 are open at DC, so the
+* consumer loop has no DC feedback path through the amplifier). The PWM-comparator
+* gate approximation is on VC. DUT is the committed export; no transistor here.
+
+.include 'design.ngspice'
+.include 'opamp_two_stage.dut.spice'
+.include 'consumer_load.inc'
+
+Vdd vdd 0 dc 3.3
+Ibias vdd ibias dc 10u
+Vin vinp 0 dc 0
+Vfb vc fbn dc 0
+Xdut vdd 0 vinp fbn vc ibias opamp_two_stage
+Xpwm vc pwm_in

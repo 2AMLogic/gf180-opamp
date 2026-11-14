@@ -1,0 +1,81 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * gf180-opamp stage a (issue #295, dr-0008 section 4)
+
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 1
+v(xdut.tail) = 5.281534e-01
+v(xdut.n1) = 2.304557e+00
+v(xdut.n2) = 2.301820e+00
+v(xdut.nz) = 1.399988e+00
+v(vc) = 1.399988e+00
+v(fbn) = 1.499988e+00
+v(vinp) = 1.500000e+00
+@m.xdut.xm1.m0[id] = 4.963631e-06
+@m.xdut.xm1.m0[vgs] = 9.718329e-01
+@m.xdut.xm1.m0[vds] = 1.776400e+00
+@m.xdut.xm1.m0[vth] = 8.632547e-01
+@m.xdut.xm1.m0[vdsat] = 1.468904e-01
+@m.xdut.xm1.m0[gm] = 5.846814e-05
+@m.xdut.xm1.m0[gds] = 1.448375e-07
+@m.xdut.xm2.m0[id] = 4.963936e-06
+@m.xdut.xm2.m0[vgs] = 9.718449e-01
+@m.xdut.xm2.m0[vds] = 1.773663e+00
+@m.xdut.xm2.m0[vth] = 8.632547e-01
+@m.xdut.xm2.m0[vdsat] = 1.468989e-01
+@m.xdut.xm2.m0[gm] = 5.847026e-05
+@m.xdut.xm2.m0[gds] = 1.448962e-07
+@m.xdut.xm3.m0[id] = 4.963720e-06
+@m.xdut.xm3.m0[vgs] = 9.954422e-01
+@m.xdut.xm3.m0[vds] = 9.954412e-01
+@m.xdut.xm3.m0[vth] = 7.827597e-01
+@m.xdut.xm3.m0[vdsat] = 1.927600e-01
+@m.xdut.xm3.m0[gm] = 4.002604e-05
+@m.xdut.xm3.m0[gds] = 1.109748e-07
+@m.xdut.xm4.m0[id] = 4.964023e-06
+@m.xdut.xm4.m0[vgs] = 9.954422e-01
+@m.xdut.xm4.m0[vds] = 9.981780e-01
+@m.xdut.xm4.m0[vth] = 7.827597e-01
+@m.xdut.xm4.m0[vdsat] = 1.927600e-01
+@m.xdut.xm4.m0[gm] = 4.002846e-05
+@m.xdut.xm4.m0[gds] = 1.107392e-07
+@m.xdut.xm5.m0[id] = 9.927565e-06
+@m.xdut.xm5.m0[vgs] = 8.741546e-01
+@m.xdut.xm5.m0[vds] = 5.281492e-01
+@m.xdut.xm5.m0[vth] = 6.679418e-01
+@m.xdut.xm5.m0[vdsat] = 1.973666e-01
+@m.xdut.xm5.m0[gm] = 8.031271e-05
+@m.xdut.xm5.m0[gds] = 2.536829e-07
+@m.xdut.xm6.m0[id] = 6.274042e-05
+@m.xdut.xm6.m0[vgs] = 9.981790e-01
+@m.xdut.xm6.m0[vds] = 1.900010e+00
+@m.xdut.xm6.m0[vth] = 7.839364e-01
+@m.xdut.xm6.m0[vdsat] = 1.940491e-01
+@m.xdut.xm6.m0[gm] = 5.052225e-04
+@m.xdut.xm6.m0[gds] = 8.331172e-07
+@m.xdut.xm7.m0[id] = 6.274185e-05
+@m.xdut.xm7.m0[vgs] = 8.741545e-01
+@m.xdut.xm7.m0[vds] = 1.399984e+00
+@m.xdut.xm7.m0[vth] = 6.692488e-01
+@m.xdut.xm7.m0[vdsat] = 1.987184e-01
+@m.xdut.xm7.m0[gm] = 5.072487e-04
+@m.xdut.xm7.m0[gds] = 9.388999e-07
+@m.xdut.xmb1.m0[id] = 9.999999e-06
+@m.xdut.xmb1.m0[vgs] = 8.741546e-01
+@m.xdut.xmb1.m0[vds] = 8.741525e-01
+@m.xdut.xmb1.m0[vth] = 6.679418e-01
+@m.xdut.xmb1.m0[vdsat] = 1.973665e-01
+@m.xdut.xmb1.m0[gm] = 8.080375e-05
+@m.xdut.xmb1.m0[gds] = 1.826715e-07
+Doing analysis at TEMP = 27.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+
+No. of Data Rows : 201
+ASCII raw file "/tmp/buck-stage-a-4shji_tq/ac_lfb10000.raw"
+Note: Simulation executed from .control section 

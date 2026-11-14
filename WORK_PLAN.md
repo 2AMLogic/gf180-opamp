@@ -7,7 +7,7 @@ Current Loom label state. Tracking and blocked items do not constitute ready wor
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-- **#307**: docs(spec): add DR-0008 preparation record for load-specific GBW/PM row
+_None._
 
 ## Very Important
 
@@ -27,13 +27,13 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#295**: Raise the unity-gain bandwidth target to >= 8 MHz for a type-III compensator load
+_None._
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#190**: sim: extend PSRR mismatch characterization to the full temperature and supply grid
 
 ## PRs Awaiting Review
 
@@ -45,7 +45,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#307**: docs(spec): add DR-0008 preparation record for load-specific GBW/PM row
+_None._
 
 ## Proposed
 
@@ -69,13 +69,13 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
+| Operator merge-risk holds | 0 |
 | Very important | 1 |
 | Important | 3 |
-| Ready (`loom:issue`) | 1 |
-| In Progress (`loom:building`) | 0 |
+| Ready (`loom:issue`) | 0 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
+| Approved PRs awaiting merge | 0 |
 | Curated | 5 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
