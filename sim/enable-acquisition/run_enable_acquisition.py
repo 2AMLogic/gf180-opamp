@@ -979,7 +979,7 @@ def pilot(pdk: Pdk) -> int:
     return 0
 
 
-def _run_grid(req: dict, label: str, work: Path, args, retries_ok: bool = True) -> dict:
+def _run_grid(req: dict, work: Path, args) -> dict:
     return run_klt_retrying(req, work / "out", args.backend, work, retries=args.batch_submit_retries,
                             wait_s=args.batch_retry_wait_s)
 
@@ -1023,7 +1023,7 @@ def main(argv: list[str] | None = None) -> int:
         req = make_reference_request(tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V)
         req["batch"] = batch_block(args)
         try:
-            ref_report = _run_grid(req, "reference", work / "reference", args)
+            ref_report = _run_grid(req, work / "reference", args)
         except KltError as exc:
             return fail(f"the 45-point reference request could not be run: {str(exc)[-600:]}")
         refs, ref_arts, problems = analyse_reference(ref_report, want)
@@ -1042,7 +1042,7 @@ def main(argv: list[str] | None = None) -> int:
             req = make_request(tbp, pdk, sched, CORNERS, TEMPS_C, SUPPLIES_V)
             req["batch"] = batch_block(args)
             try:
-                rep = _run_grid(req, f"{scenario}/{ramp}", work / f"{scenario}-{ramp}", args)
+                rep = _run_grid(req, work / f"{scenario}-{ramp}", args)
             except KltError as exc:
                 return fail(f"the {scenario}/{ramp} 45-point klt request could not be run: {str(exc)[-600:]}")
             results, arts, problems = analyse_report(rep, want, sched, refs)
@@ -1070,7 +1070,7 @@ def main(argv: list[str] | None = None) -> int:
             req = make_request(tbl, pdk, lsched, procs, temps, sups)
             req["batch"] = batch_block(args)
             try:
-                rep = _run_grid(req, "long", work / f"long-{scenario}-{ramp}", args)
+                rep = _run_grid(req, work / f"long-{scenario}-{ramp}", args)
             except KltError as exc:
                 return fail(f"the long-window follow-up {scenario}/{ramp} could not be run: {str(exc)[-600:]}")
             wantl = g.expected_keys(procs, temps, sups)

@@ -349,7 +349,7 @@ class RequestAndMaterialiseTests(unittest.TestCase):
         try:
             pdk = find_pdk()
         except PdkNotFound:
-            skip_or_fail(self, "PDK not available")
+            skip_or_fail("PDK not available")
         with tempfile.TemporaryDirectory() as d:
             tb = r.materialise(Path(d), pdk, r.with_servo(r.MODES["cm"]))
             got = tb.read_text().splitlines()
@@ -391,11 +391,11 @@ class SimTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if shutil.which("klt") is None or shutil.which("ngspice") is None:
-            skip_or_fail(cls, "klt/ngspice not available")
+            skip_or_fail("klt/ngspice not available")
         try:
             cls.pdk = find_pdk()
         except PdkNotFound:
-            skip_or_fail(cls, "gf180mcu PDK not available")
+            skip_or_fail("gf180mcu PDK not available")
 
     def test_nominal_pair_is_valid_with_equal_drive(self):
         with tempfile.TemporaryDirectory() as d:

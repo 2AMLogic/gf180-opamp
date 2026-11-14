@@ -130,10 +130,6 @@ ROWS = tuple((rid, label, attr, bound, unit) for rid, label, attr, bound, unit i
 DIFF_EXC_TOL_V = 1e-6
 
 
-class GateError(RuntimeError):
-    """A full-campaign request refused before anything is claimed or submitted."""
-
-
 def campaign_gate(pin: str | None, det_record: str | None, *, current_sha: str,
                   pre_sha: str = PRE_REDESIGN_DUT_SHA256, records_dir: Path = GAIN_RECORDS) -> list[str]:
     """Reasons the full N=300 campaign may NOT be submitted (empty = go).

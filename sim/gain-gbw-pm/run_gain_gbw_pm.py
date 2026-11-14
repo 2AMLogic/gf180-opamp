@@ -864,7 +864,7 @@ def run_studies(pdk: Pdk, work: Path) -> tuple[list[StudyRun], list[StudyRun]]:
     return iso, controls
 
 
-def study_failures(iso: list[StudyRun], controls: list[StudyRun], nominal: Metrics | None) -> list[str]:
+def study_failures(iso: list[StudyRun], controls: list[StudyRun]) -> list[str]:
     """Reasons the supporting studies do NOT behave as the method requires."""
     bad: list[str] = []
     stable = [r for r in iso if r.name != "isolation-inadequate"]
@@ -2125,7 +2125,7 @@ def main(argv: list[str] | None = None) -> int:
         nominal_op = run_nominal_op(pdk, work)
         iso, controls = run_studies(pdk, work)
         verdicts = judge(results)
-        study_bad = study_failures(iso, controls, results.get(NOMINAL))
+        study_bad = study_failures(iso, controls)
 
         corners_dir = HERE / "corners" / record
         corners_dir.mkdir(parents=True, exist_ok=False)
