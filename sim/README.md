@@ -445,6 +445,18 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   (five corners × N = 300, all validity gates and controls passing; every
   mismatch-inclusive statistic at or above the DR-6 proposed bounds — worst
   PSRR− lin 3σ 82.59 dB at DC, PSRR+ 63.59 dB at 10 kHz, both vs 60/50 dB).
+  The `--grid full` campaign (issue #190) is committed beside it as
+  [`20261108-220319-bb1a6a0`](psrr-mc/records/20261108-220319-bb1a6a0.md)
+  (the same five corners × T −40 / 27 / 125 °C × VDD 2.97 / 3.30 / 3.63 V
+  with VCM = VDD/2 and typical passives everywhere = 45 points × N = 300 =
+  13 500 samples, seed 45, one `klt sim` request over eight fleet jobs on klt
+  client `0.9.2.dev299`; worst PSRR+ lin 3σ 61.90 dB at 10 kHz and PSRR−
+  77.57 dB at DC, every statistic at or above the DR-6 proposed bounds and
+  ungraded). That grid record is **not** selected by the characterization
+  report: its per-sample `samples.csv` is manifest-only (artifact store),
+  while the report's cross-check re-reads `corners/<record>/samples.csv` from
+  the checkout (2AMLogic/klayout-tools#5591), so `selection.json` keeps the
+  nominal record.
   The N=3 fleet probe `20261010-234232-efa5c81` remains as capability
   evidence.
 - [`slew-swing-power/`](slew-swing-power/README.md) — slew rate (unity-gain
@@ -680,3 +692,17 @@ fleet single-experiment records (`models_staged: false`) still to be re-minted o
 `cmrr` and `gain-gbw-pm-mc` records are not selected yet: `selection.json`, the report and the signoff manifest regenerate
 once the remaining campaigns exist. `selection.json` and the characterization report
 keep selecting the `c6d73a3` records until the full set exists, so the report never mixes pins.
+
+*`psrr-mc --grid full` first minted (issue #190, 2026-11-08).* The 45-point MOS x T x VDD mismatch grid
+(45 points x N = 300 = 13500 units, seed 45, mismatch, typical passives at every point) was submitted through
+`klt sim` (batch fleet, `remote.hosts = 8` shards, klt client `0.9.2.dev299+ge5ccedae13f0`) as
+`psrr-mc/records/20261108-220319-bb1a6a0.md`. It is a **new** campaign, not a re-mint, so there is no counterpart
+record to compare it against for movement; its header carries the `f6eeac7` revision and explains how the switch-off
+control, which reproduces the committed systematic record `20261010-163854-0127eb7` to 0.0000 dB over DC-1 MHz on
+identical grid samples, ties the fleet runner's model library to that pin. All 45 points returned exactly N = 300
+valid samples, and its three control CSVs came out byte-identical to the nominal `psrr-mc` record's (already tracked
+in git, so the evidence manifest does not re-list them). It is **not** selected: `f6eeac7` is in
+`PENDING_PDK_PINS`, so `--latest` skips the record, and its per-sample bytes are in the artifact store
+(`manifests/artifacts/psrr-mc-20261108-220319-bb1a6a0.manifest.json`), which the report's `samples.csv` cross-check
+cannot reach in a clean CI checkout (2AMLogic/klayout-tools#5591). `selection.json` and the characterization report
+keep the nominal record `20261011-145434-286b06c` for the PSRR mismatch evidence.

@@ -116,8 +116,9 @@ Passives stay **typical at every point** (`res_typical`, `mimcap_typical`;
 no passive corner, no passive mismatch): the grid is MOS-mismatch × PVT.
 The same controls run at typical / 27 °C / 3.30 V.
 
-The request is sharded over `request.remote.hosts = 6` fleet jobs: one job is
-capped at 3600 s and a timed-out job returns no per-unit results
+The request is sharded over `request.remote.hosts = 8` fleet jobs
+(`GRID_HOSTS` in `run_psrr_mc.py`): one job is capped at 3600 s and a
+timed-out job returns no per-unit results
 (2AMLogic/klayout-tools#2833). The shard count is sized from a measured
 per-unit time, not assumed: the three-sweep deck (three 201-point AC sweeps
 per sample) measured **0.749 s/unit** on the fleet (issue #190 pilot: 300
@@ -135,8 +136,39 @@ sharding changes no sample's value. A shard whose launch the fleet refuses
 re-submits the whole request through `klt sim` (never locally), up to
 `--batch-submit-retries` times.
 
-**Status: no grid record is committed yet.** Two full-campaign attempts
-(2026-10-12) left no record, as designed. The first completed the grid
+**Status: the grid record `20261108-220319-bb1a6a0` is committed**
+([`records/20261108-220319-bb1a6a0.md`](records/20261108-220319-bb1a6a0.md),
+2026-11-08). It ran as ONE `klt sim` request from klt client
+`0.9.2.dev299+ge5ccedae13f0` over **eight fleet jobs** (`remote.hosts = 8`,
+Spot c7i.8xlarge, 182 s wall), and every one of the 45 points contributed
+exactly N = 300 valid samples — 13 500 in all, none dropped, duplicated or
+mis-keyed. The controls ran at typical / 27 °C / 3.30 V and are in the record:
+**switch-off PASS** (spread exactly zero; max deviation from the committed
+systematic record `20261010-163854-0127eb7` 0.0000 dB over DC–1 MHz and
+≤ 0.004 dB at f_u), **mirror imbalance PASS** (mean |Asupply| at DC rose by
+more than 3 standard errors on both rails — +0.616 V/V against a 0.0152
+standard error on PSRR+, +0.697 against 0.108 on PSRR− — and the linear 3σ
+figure fell on both), and **process-only** recorded as measured, not as a
+criterion. Every statistic is at or above the DR-6 proposed bounds and left
+**ungraded**; the worst in the record are PSRR+ linear 3σ 61.90 dB at 10 kHz
+(ss / 125 °C / 2.97 V) and PSRR− 77.57 dB at DC (sf / −40 °C / 2.97 V).
+
+**The grid record's per-sample evidence is manifest-only.** Its
+`corners/20261108-220319-bb1a6a0/` bytes — `samples.csv` and the four
+sanitised klt reports, 5 objects / 23 600 354 B — are in the fleet artifact
+store rather than in git, listed by
+`manifests/artifacts/psrr-mc-20261108-220319-bb1a6a0.manifest.json`
+(fetch one with `klt artifact get <manifest>#<name>`, verify them all with
+`klt artifact verify <manifest>`). The three control CSVs came out
+byte-identical to the nominal record's, which git already tracks, so the
+manifest does not name them. Because the report's cross-check re-reads
+`corners/<rid>/samples.csv` from the checkout, the grid record is committed as
+evidence only and is **not** selected by the characterization report
+(2AMLogic/klayout-tools#5591); `sim/report/selection.json` still cites the
+nominal record `20261011-145434-286b06c`.
+
+Two earlier full-campaign attempts (2026-10-12) left no record, as designed —
+the history that sized the shard count at 8. The first completed the grid
 request (about 1 h) but the fleet then refused the 300-unit imbalance control
 for 11 consecutive retries (`8 instance(s) already running + 1 requested
 exceeds BATCH_MAX_CONCURRENT_INSTANCES=8`, the cap being shared with other
@@ -145,8 +177,8 @@ grid result, held only in the temporary work dir, was discarded. The driver
 now runs the three small controls first (so a saturated fleet costs minutes,
 not the grid). The second attempt passed all controls, then only 2 of the 8
 grid shards returned in 3 h; the other six never completed and the run was
-stopped by hand. Re-run `--grid full` when the shared fleet has 8 free
-slots; use `--keep-work DIR` to keep the raw reports.
+stopped by hand. A re-run needs 8 free slots on the shared fleet; use
+`--keep-work DIR` to keep the raw reports.
 
 Every point must contribute exactly N = 300 distinct valid samples, and the
 record's floor/knee accounting must agree with its samples, or nothing is

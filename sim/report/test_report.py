@@ -1920,8 +1920,10 @@ class PsrrMismatchRecord(unittest.TestCase):
             self.build(m)
 
     def test_committed_selection_and_row(self):
-        # no 45-point grid record is committed yet (issue #190 fleet campaign outstanding), so the
-        # nominal record is still the selected one
+        # the 45-point grid record 20261108-220319-bb1a6a0 (issue #190) IS committed, but the nominal
+        # record is the selected one deliberately: the grid record's per-sample samples.csv is
+        # manifest-only (artifact store) and psrr_mc_crosscheck re-reads it from the checkout, so
+        # selecting it would fail --check in a clean CI tree (2AMLogic/klayout-tools#5591)
         sel = json.loads(MANIFEST.read_text())["experiments"]
         self.assertEqual(sel["psrr-mc"], PMC_MD)
         rep = cr.build(REPO, cr.load_manifest(MANIFEST))
