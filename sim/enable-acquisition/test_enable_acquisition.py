@@ -756,13 +756,13 @@ class FingerprintTests(unittest.TestCase):
             self.assertEqual(getattr(r, n), getattr(r.mc, n), n)
         self.assertEqual(r.BAND_FRAC, 0.01)
         self.assertIs(r.CORNERS, r.mc.CORNERS)
-        self.assertTrue(r.mc.TESTBENCH_REL.endswith(r.TESTBENCH.name))
-        keys = r.mc.inputs(r.TESTBENCH.read_text())["params"]
+        self.assertTrue(r.mc.TESTBENCHES_REL["bench"].endswith(r.TESTBENCH.name))
+        keys = r.mc.inputs({"bench": r.TESTBENCH.read_text()})["params"]
         for n in ("band_frac", "drift_frac", "min_dwell_frac", "ref_window", "init_max_v", "window_t"):
             self.assertIn(n, keys)
 
     def test_request_is_what_the_fingerprint_hashes(self):
-        inp = r.mc.inputs(r.TESTBENCH.read_text())
+        inp = r.mc.inputs({"bench": r.TESTBENCH.read_text()})
         for scenario, ramp in r.mc.cases():
             sched = r.mc.schedule(scenario, ramp)
             req = r.make_request(Path("/x/tb.spice"), self.PDK, sched, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
@@ -774,13 +774,13 @@ class FingerprintTests(unittest.TestCase):
                              * len(req["corners"]["supply_v"]["vdd"]), 45)
 
     def test_fingerprint_changes_with_the_bench_and_the_schedule(self):
-        a = r.mc.fingerprint(r.TESTBENCH.read_text())
-        b = r.mc.fingerprint(r.TESTBENCH.read_text().replace("CL vout 0 2p", "CL vout 0 3p"))
+        a = r.mc.fingerprint({"bench": r.TESTBENCH.read_text()})
+        b = r.mc.fingerprint({"bench": r.TESTBENCH.read_text().replace("CL vout 0 2p", "CL vout 0 3p")})
         self.assertNotEqual(a, b)
         old = r.mc.GAP_T
         try:
             r.mc.GAP_T = old * 2
-            c = r.mc.fingerprint(r.TESTBENCH.read_text())
+            c = r.mc.fingerprint({"bench": r.TESTBENCH.read_text()})
         finally:
             r.mc.GAP_T = old
         self.assertNotEqual(a, c)

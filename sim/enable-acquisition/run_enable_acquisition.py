@@ -767,7 +767,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_descs, case_re
         + (" exactly." if not bad else "; **MISMATCH** at " + "; ".join(bad[:6]) + " (driver exits non-zero)."))
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (wrapper-normalised, device body verbatim; "
         f"normalised sha256 `{dut_sha}`), snapshotted in full in `netlist-snapshots/{record}.spice`")
-    for ln in mc.fingerprint_lines(TESTBENCH.read_text()):
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
         add(ln)
     add("- **Corner matrix run**:")
     add(f"  - Process (MOS): {', '.join(CORNERS)}")
@@ -904,7 +904,7 @@ def build_record(*, record, stamp, pdk, ngspice, klt_ver, backend_descs, case_re
         for x in ctrl_bad:
             add(f"- {x}")
     add("")
-    L.extend(mc.inputs_section(TESTBENCH.read_text()))
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}))
     add("## Plots")
     add("")
     for p in plots:

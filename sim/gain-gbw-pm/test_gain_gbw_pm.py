@@ -566,7 +566,7 @@ class MeasurementFingerprint(unittest.TestCase):
     TB = r.TESTBENCH.read_text()
 
     def fp(self, text=None):
-        return r.mc.fingerprint(self.TB if text is None else text)
+        return r.mc.fingerprint({"bench": self.TB if text is None else text})
 
     def test_driver_uses_the_fingerprinted_constants(self):
         self.assertIs(r.CORNERS, r.mc.CORNERS)
@@ -586,7 +586,7 @@ class MeasurementFingerprint(unittest.TestCase):
 
     def test_inputs_are_json_and_record_embeds_them(self):
         import json
-        lines = r.mc.fingerprint_lines(self.TB) + r.mc.inputs_section(self.TB)
+        lines = r.mc.fingerprint_lines({"bench": self.TB}) + r.mc.inputs_section({"bench": self.TB})
         blob = "\n".join(lines)
         self.assertIn(self.fp(), blob)
         body = blob.split("```json\n", 1)[1].split("\n```", 1)[0]
@@ -679,12 +679,12 @@ class FixedVcmTests(unittest.TestCase):
     def test_fingerprint_default_unchanged_fixed_distinct_and_recorded(self):
         import json
         mc = r.mc
-        self.assertEqual(mc.inputs(self.TB)["corners"]["vcm_rule"], "vdd/2")
-        self.assertEqual(mc.fingerprint(self.TB), mc.fingerprint(self.TB, None))
-        self.assertNotEqual(mc.fingerprint(self.TB), mc.fingerprint(self.TB, 1.2))
-        self.assertNotEqual(mc.fingerprint(self.TB, 1.2), mc.fingerprint(self.TB, 1.25))
-        self.assertEqual(mc.inputs(self.TB, 1.2)["corners"]["vcm_rule"], "fixed:1.2")
-        blob = "\n".join(mc.fingerprint_lines(self.TB, 1.2) + mc.inputs_section(self.TB, 1.2))
+        self.assertEqual(mc.inputs({"bench": self.TB})["corners"]["vcm_rule"], "vdd/2")
+        self.assertEqual(mc.fingerprint({"bench": self.TB}), mc.fingerprint({"bench": self.TB}, vcm_fixed_v=None))
+        self.assertNotEqual(mc.fingerprint({"bench": self.TB}), mc.fingerprint({"bench": self.TB}, vcm_fixed_v=1.2))
+        self.assertNotEqual(mc.fingerprint({"bench": self.TB}, vcm_fixed_v=1.2), mc.fingerprint({"bench": self.TB}, vcm_fixed_v=1.25))
+        self.assertEqual(mc.inputs({"bench": self.TB}, vcm_fixed_v=1.2)["corners"]["vcm_rule"], "fixed:1.2")
+        blob = "\n".join(mc.fingerprint_lines({"bench": self.TB}, vcm_fixed_v=1.2) + mc.inputs_section({"bench": self.TB}, vcm_fixed_v=1.2))
         body = blob.split("```json\n", 1)[1].split("\n```", 1)[0]
         self.assertEqual(json.loads(body)["corners"]["vcm_rule"], "fixed:1.2")
 
@@ -725,9 +725,9 @@ class FixedVcmTests(unittest.TestCase):
     def test_generated_record_retains_inputs_that_rehash_to_the_header(self):
         head, rehash, inp = self.rehash_record(self._record())
         self.assertEqual(head, rehash)
-        self.assertEqual(head, r.mc.fingerprint(self.TB, 1.2))
+        self.assertEqual(head, r.mc.fingerprint({"bench": self.TB}, vcm_fixed_v=1.2))
         self.assertEqual(inp["corners"]["vcm_rule"], "fixed:1.2")
-        self.assertNotEqual(head, r.mc.fingerprint(self.TB))  # never the VDD/2 fingerprint
+        self.assertNotEqual(head, r.mc.fingerprint({"bench": self.TB}))  # never the VDD/2 fingerprint
 
     def test_recompute_from_committed_record(self):
         """`--recompute-fixed-vcm` supersedes the committed record without a simulator:

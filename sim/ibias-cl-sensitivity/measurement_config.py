@@ -23,7 +23,7 @@ _SSP = harness.load_config_module(HERE.parent / "slew-swing-power" / "measuremen
 EXPERIMENT = "ibias-cl-sensitivity"
 FINGERPRINT_VERSION = harness.FINGERPRINT_VERSION
 MODULE_REL = "sim/ibias-cl-sensitivity/measurement_config.py"
-BENCHES_REL = {
+TESTBENCHES_REL = {
     "ac": "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice",
     "power": "sim/slew-swing-power/testbench/tb_power.spice",
     "slew": "sim/slew-swing-power/testbench/tb_slew.spice",
@@ -58,8 +58,13 @@ POINT_NAMES = {
 FIGS = ("ac", "power", "slew")
 
 
-def inputs(texts: dict) -> dict:
-    """Effective measurement inputs as a JSON-serialisable dict. `texts`: figure -> bench text."""
+def inputs(texts: dict, retained: dict | None = None) -> dict:
+    """Effective measurement inputs as a JSON-serialisable dict.
+
+    `texts` maps TESTBENCHES_REL keys (the figures) to bench text. `retained`
+    (the record's stored inputs) is unused here; it exists so every experiment
+    shares one signature (slew/swing/power selects figures from it).
+    """
     return {
         "experiment": EXPERIMENT,
         "fingerprint_version": FINGERPRINT_VERSION,
