@@ -124,6 +124,53 @@ def rows_by_key(rep):
     return {r["key"]: r for r in rep["rows"]}
 
 
+class ScratchRootTest(unittest.TestCase):
+    """Base fixture: a throw-away copy of the committed records + spec, per test.
+
+    Collapsed from twelve hand-copied fixtures (issue #343); the copies had
+    already drifted apart on how strictly `edit` checked its anchor, the same
+    failure mode `sim/README.md` records for the bench runners under issue #30.
+    """
+
+    def setUp(self):
+        self._t = tempfile.TemporaryDirectory()
+        self.root = make_root(Path(self._t.name))
+
+    def tearDown(self):
+        self._t.cleanup()
+
+    def build(self, m=None, **kw):
+        return cr.build(self.root, m or manifest(), **kw)
+
+    def rejects(self, rx, m=None, **kw):
+        with self.assertRaisesRegex(cr.ReportError, rx):
+            self.build(m, **kw)
+
+    def edit(self, rel, old, new, count=1):
+        """Rewrite exactly `count` occurrences of `old` in the scratch record `rel`.
+
+        The anchor must occur exactly `count` times -- never merely "at least
+        once". A pattern that matched more places than the caller meant to
+        rewrite would otherwise leave the rest silently unmutated and the test
+        would still pass (issue #343 step 3).
+        """
+        p = self.root / rel
+        t = p.read_text()
+        self.assertEqual(t.count(old), count, f"{rel}: {old!r} must occur exactly {count}x, found {t.count(old)}")
+        p.write_text(t.replace(old, new, count))
+
+
+class SupplementaryStudyTest(ScratchRootTest):
+    """A bound-free supplementary study selected by a single manifest key."""
+
+    KEY: str  # subclass sets its `supplementary` manifest key
+
+    def without(self):
+        m = manifest()
+        m["supplementary"].pop(self.KEY)
+        return m
+
+
 class CommittedReport(unittest.TestCase):
     def test_deterministic_and_golden(self):
         a = cr.generate(REPO, MANIFEST)
@@ -409,23 +456,7 @@ def fingerprint_record(root: Path, rec: str) -> None:
     p.write_text(text)
 
 
-class Mutations(unittest.TestCase):
-    def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def build(self, m=None):
-        return cr.build(self.root, m or manifest())
-
-    def edit(self, rel, old, new, count=1):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, count))
-
+class Mutations(ScratchRootTest):
     def test_unmodified_copy_matches_committed(self):
         self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
 
@@ -617,8 +648,8 @@ class Mutations(unittest.TestCase):
         self.assertFalse(out.exists())
 
     def test_pdk_mismatch_is_flagged_not_fatal(self):
-        self.edit("sim/noise/records/20261010-163507-0127eb7.md", "c6d73a35f524070e85faff4a6a9eef49553ebc2b",
-                  "a" * 40)
+        self.edit("sim/noise/records/20261010-163507-0127eb7.md",
+                  "(open_pdks `c6d73a35f524070e85faff4a6a9eef49553ebc2b", f"(open_pdks `{'a' * 40}")
         rep = self.build()
         self.assertTrue(any("PDK revision differs" in l for l in rep["limitations"]))
 
@@ -802,24 +833,14 @@ class Mutations(unittest.TestCase):
 
 
 
-class MeasurementConfigFreshness(unittest.TestCase):
+class MeasurementConfigFreshness(ScratchRootTest):
     """Issue #85: measurement-configuration fingerprint alongside DUT identity."""
 
     def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
+        super().setUp()
         self.gain = json.loads(MANIFEST.read_text())["experiments"]["gain-gbw-pm"]
         self.rec = Path(self.gain).stem
         self.m = manifest()
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def edit(self, rel, old, new):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, 1))
 
     def stamped(self):
         fingerprint_record(self.root, self.rec)
@@ -1020,7 +1041,7 @@ CLEAN_CASES = [
 ]
 
 
-class MigratedExperimentFreshness(unittest.TestCase):
+class MigratedExperimentFreshness(ScratchRootTest):
     """Issue #89: noise, offset MC, CMRR, PSRR and slew/swing/power join the
     measurement-configuration gate."""
 
@@ -1028,24 +1049,14 @@ class MigratedExperimentFreshness(unittest.TestCase):
     SWING_REC = "sim/slew-swing-power/records/" + SWING_REC + ".md"
 
     def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
+        super().setUp()
         self.sel = json.loads(MANIFEST.read_text())["experiments"]
         self.m = manifest()
-
-    def tearDown(self):
-        self._t.cleanup()
 
     def fresh(self):
         """A pristine scratch root (for subTest loops that mutate it)."""
         self._t.cleanup()
         self.setUp()
-
-    def edit(self, rel, old, new):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertEqual(t.count(old), 1, f"{rel}: {old!r} must occur exactly once")
-        p.write_text(t.replace(old, new, 1))
 
     def stamp(self, exp):
         stamp_record(self.root, exp, self.sel[exp])
@@ -1232,33 +1243,13 @@ class MigratedExperimentFreshness(unittest.TestCase):
         self.assertTrue(any("archival report only" in l and "figures.slew.bench" in l for l in rep["limitations"]))
 
 
-class OffsetGridRecord(unittest.TestCase):
+class OffsetGridRecord(ScratchRootTest):
     """Issue #120: the committed full-PVT offset Monte Carlo record (issue #106) is selected,
     validated point by point and cross-checked against its retained samples; the nominal
     format stays supported; the row stays measured-no-bound (spec issue #62 owns the bound)."""
 
     WORST_ROW = "| typical | 27 | 3.30 | 300 | -0.619 | 4.946 | 14.839 | 15.458 | -11.254 | +12.615 | +0.12 | -0.59 |"
     OTHER_ROW = "| ff | 125 | 3.63 | 300 | +0.275 | 4.832 | 14.497 | 14.772 | -12.374 | +11.787 | -0.06 | -0.38 |"
-
-    def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def edit(self, rel, old, new, count=1):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, count))
-
-    def build(self, m=None):
-        return cr.build(self.root, m or manifest())
-
-    def rejects(self, rx, m=None):
-        with self.assertRaisesRegex(cr.ReportError, rx):
-            self.build(m)
 
     # ---- the committed row ----
 
@@ -1663,33 +1654,13 @@ class OffsetDriftView(unittest.TestCase):
             self.assertIn("Not available", cr.render_md(rep))
 
 
-class CmrrMismatchRecord(unittest.TestCase):
+class CmrrMismatchRecord(ScratchRootTest):
     """Issue #124: the committed CMRR mismatch Monte Carlo record (issue #61) is selected, re-derived
     from its own tables and its retained samples, and shown beside (never merged with) the
     systematic PVT figures of the proposed CMRR row. No verdict, no worst value."""
 
     DC_TYP = "| typical / 27 C / 3.30 V | 300 | 96.06 | 9.07 | +1.45 | 80.81 | 82.54 | 84.94 | **82.71** |"
-    DC_FF = "| ff / 27 C / 3.30 V | 300 | 96.53 | 8.96 | +1.10 |"
-
-    def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def edit(self, rel, old, new, count=1):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, count))
-
-    def build(self, m=None):
-        return cr.build(self.root, m or manifest())
-
-    def rejects(self, rx, m=None):
-        with self.assertRaisesRegex(cr.ReportError, rx):
-            self.build(m)
+    DC_FF = "| ff / 27 C / 3.30 V | 300 | 96.53 | 8.96 | +1.10 | 81.42 | 83.26 | 85.67 | **83.01** |"
 
     # ---- the committed row ----
 
@@ -1764,9 +1735,6 @@ class CmrrMismatchRecord(unittest.TestCase):
         self.assertTrue(any("this report does not ingest that record" in l for l in r["limitations"]))
         self.assertTrue(any(l.startswith("no record selected for cmrr-mc") for l in rep["limitations"]))
 
-    def test_unmodified_copy_matches_committed(self):
-        self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
-
     # ---- the record's own summaries ----
 
     def test_altered_lin3s_cell_rejected(self):
@@ -1795,7 +1763,7 @@ class CmrrMismatchRecord(unittest.TestCase):
     # ---- population ----
 
     def test_malformed_sample_count_rejected(self):
-        self.edit(CMC_MD, "| typical / 27 C / 3.30 V | 300 | 96.06 |", "| typical / 27 C / 3.30 V | 299 | 96.06 |")
+        self.edit(CMC_MD, self.DC_TYP, self.DC_TYP.replace("| 300 |", "| 299 |"))
         self.rejects(r"insufficient samples at typical / 27 C / 3\.30 V under '### DC plateau.*N=299")
 
     def test_duplicate_point_rejected(self):
@@ -1891,33 +1859,13 @@ class CmrrMismatchRecord(unittest.TestCase):
         self.assertEqual(cr.main(base), 1)
 
 
-class PsrrMismatchRecord(unittest.TestCase):
+class PsrrMismatchRecord(ScratchRootTest):
     """Issue #182: the committed PSRR mismatch Monte Carlo record (issue #99) is selected, re-derived
     from its own tables and its retained samples, and shown beside (never merged with) the systematic
     PVT figures of the proposed PSRR row. No verdict, no worst value."""
 
     P_DC_TYP = "| typical / 27 C / 3.30 V | 300 | 101.09 | 3.35 | +1.80 | 94.79 | 95.43 | 97.11 | **94.78** | 91.04 |"
     P_DC_FF = "| ff / 27 C / 3.30 V | 300 | 101.47 |"
-
-    def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def edit(self, rel, old, new, count=1):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, count))
-
-    def build(self, m=None):
-        return cr.build(self.root, m or manifest())
-
-    def rejects(self, rx, m=None):
-        with self.assertRaisesRegex(cr.ReportError, rx):
-            self.build(m)
 
     def test_committed_selection_and_row(self):
         # the 45-point grid record 20261108-220319-bb1a6a0 (issue #190) IS committed, but the nominal
@@ -1974,9 +1922,6 @@ class PsrrMismatchRecord(unittest.TestCase):
         self.assertEqual(r["status"], "proposed-not-graded")
         self.assertNotIn("psrr_mc", r)
         self.assertNotIn("psrr-mc", rep["sources"])
-
-    def test_unmodified_copy_matches_committed(self):
-        self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
 
     def test_altered_lin3s_cell_rejected(self):
         self.edit(PMC_MD, self.P_DC_TYP, self.P_DC_TYP.replace("**94.78**", "**95.78**"))
@@ -2118,7 +2063,7 @@ class PsrrGridDisplayTiedCorner(unittest.TestCase):
                                 self.ORDER, self.TEMPS, self.SUPS)
 
 
-class GainGbwPmMismatchRecord(unittest.TestCase):
+class GainGbwPmMismatchRecord(ScratchRootTest):
     """Issue #172: the committed gain/GBW/PM mismatch Monte Carlo record (issue #129) is selected,
     re-derived from its retained samples, and shown beside (never merged with) the deterministic
     graded AC rows. No verdict, no worst value, no yield claim."""
@@ -2131,28 +2076,8 @@ class GainGbwPmMismatchRecord(unittest.TestCase):
     SAMPLE0 = "typical,27,3.30,0,1240223581,1073930998,250201949,pass,1,,96.01688145891897"
     SAMPLE1 = "typical,27,3.30,1,1176304945,1947764510,250201949,pass,1,,95.98895491623537"
 
-    def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def edit(self, rel, old, new, count=1):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, count))
-
     def edit_csv(self, old, new, count=1):
         self.edit(GMC_CSV, old, new, count)
-
-    def build(self, m=None):
-        return cr.build(self.root, m or manifest())
-
-    def rejects(self, rx, m=None):
-        with self.assertRaisesRegex(cr.ReportError, rx):
-            self.build(m)
 
     # ---- the committed rows ----
 
@@ -2217,9 +2142,6 @@ class GainGbwPmMismatchRecord(unittest.TestCase):
         self.assertIn("mean 15.451 MHz, sigma 0.225 MHz, mean - 3 sigma 14.776 MHz", md)
         self.assertIn("samples.csv, sha256 ", md)
         self.assertIn("| gain-gbw-pm-mc |", md)
-
-    def test_unmodified_copy_matches_committed(self):
-        self.assertEqual(cr.render_json(self.build()), cr.generate(REPO, MANIFEST)[1])
 
     def test_absent_selection_still_builds(self):
         rep = self.build(manifest(gain_gbw_pm_mc=None))
@@ -2436,32 +2358,16 @@ class GainGbwPmMismatchRecord(unittest.TestCase):
                          GMC_REC)
 
     def test_mixed_dut_names_gain_gbw_pm_mc(self):
-        self.edit(GMC_MD, "33b58dac62c747de", "0123456789abcdef")
+        self.edit(GMC_MD, "sha256 `33b58dac62c747de", "sha256 `0123456789abcdef")
         self.rejects(r"different DUT versions .*0123456789abcdef: gain-gbw-pm-mc")
 
 
-class ICMREvidence(unittest.TestCase):
+class ICMREvidence(ScratchRootTest):
     """Issue #90: the committed ICMR record is selected, extracted and cross-checked against its
     retained per-sample evidence, and attached to the proposed row without grading it."""
 
     PT = "ss / -40 C / 2.97 V"
     NEW = "29991231-235959-0000000"
-
-    def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def edit(self, rel, old, new, count=1):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, count))
-
-    def build(self, m=None):
-        return cr.build(self.root, m or manifest())
 
     # ---- the committed row ----
 
@@ -2740,7 +2646,7 @@ class ICMREvidence(unittest.TestCase):
         self.assertNotIn(str(self.root), first.decode())
 
 
-class SupplementaryPassiveStudies(unittest.TestCase):
+class SupplementaryPassiveStudies(ScratchRootTest):
     """Issue #121: the explicitly selected passive-corner side studies are hashed, parsed and
     checked, and their observations are derived from their tables -- outside every verdict."""
 
@@ -2749,26 +2655,6 @@ class SupplementaryPassiveStudies(unittest.TestCase):
     PFULL = "psrr-passive-corners-full"  # issue #173 (bound-free)
     STEP = "step-response-follower"  # issue #198 (bound-free, no rows; own test class below)
     ALL_KEYS = {GKEY, SKEY, GFULL, SFULL, PFULL, STEP}
-
-    def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def build(self, m=None, **kw):
-        return cr.build(self.root, m or manifest(), **kw)
-
-    def edit(self, rel, old, new, count=1):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, count))
-
-    def rejects(self, rx, m=None, **kw):
-        with self.assertRaisesRegex(cr.ReportError, rx):
-            self.build(m, **kw)
 
     def sup(self, **over):
         m = manifest()
@@ -3027,7 +2913,7 @@ class SupplementaryPassiveStudies(unittest.TestCase):
         self.assertEqual(json.loads(mp.read_text()), json.loads(MANIFEST.read_text()))
 
 
-class PsrrFullPassiveStudy(unittest.TestCase):
+class PsrrFullPassiveStudy(SupplementaryStudyTest):
     """Issue #173: the full 405-cell PSRR RZ x CC study (issue #155) is explicitly selected, hashed
     and re-derived from its retained curves as BOUND-FREE information attached to the PSRR row:
     no verdict while DR-6 is proposed, primary selection / graded counts / bounds unchanged."""
@@ -3036,31 +2922,6 @@ class PsrrFullPassiveStudy(unittest.TestCase):
     WORST_10K = "| PSRR+ 10 kHz | **61.09** | ss / 125 C / 2.97 V / RZ worst / CC worst |"
     CELL = "| typical / -40 C / 2.97 V / RZ typical / CC best | 86.11 | 66.32 | 104.83 | 104.64 | +0.897 | +0.032 |"
     BINDING_DAT = f"{PSRR_STUDY_DIR}/ss__r-worst__c-worst_125c_2.97v.psrr.dat"
-
-    def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def build(self, m=None, **kw):
-        return cr.build(self.root, m or manifest(), **kw)
-
-    def edit(self, rel, old, new, count=1):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, count))
-
-    def rejects(self, rx, m=None, **kw):
-        with self.assertRaisesRegex(cr.ReportError, rx):
-            self.build(m, **kw)
-
-    def without(self):
-        m = manifest()
-        m["supplementary"].pop(self.KEY)
-        return m
 
     # ---- positive: selected, hashed, displayed ----
     def test_explicitly_selected_beside_the_unchanged_primary_record(self):
@@ -3374,38 +3235,13 @@ class StepExtractionHelpers(unittest.TestCase):
         self.assertGreater(e["overshoot_pct"], 0.0)
 
 
-class StepResponseFollowerStudy(unittest.TestCase):
+class StepResponseFollowerStudy(SupplementaryStudyTest):
     """Issue #198: the follower step-response record is explicitly selected, hashed and
     re-derived offline from its retained per-point transients as UNGRADED evidence with no
     spec row at all: primary selection / ratified counts / verdicts unchanged, not-settled
     results explicit, pre-retune DUT and changed configuration rejected."""
 
     KEY = "step-response-follower"
-
-    def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
-
-    def tearDown(self):
-        self._t.cleanup()
-
-    def build(self, m=None, **kw):
-        return cr.build(self.root, m or manifest(), **kw)
-
-    def edit(self, rel, old, new, count=1):
-        p = self.root / rel
-        t = p.read_text()
-        self.assertIn(old, t)
-        p.write_text(t.replace(old, new, count))
-
-    def rejects(self, rx, m=None, **kw):
-        with self.assertRaisesRegex(cr.ReportError, rx):
-            self.build(m, **kw)
-
-    def without(self):
-        m = manifest()
-        m["supplementary"].pop(self.KEY)
-        return m
 
     def not_settled_root(self):
         """A consistent record+evidence pair whose worst result is NOT SETTLED: +200 uV held on
@@ -3711,19 +3547,15 @@ class StepResponseFollowerStudy(unittest.TestCase):
         self.assertEqual(before, {p: p.read_bytes() for p in before})
 
 
-class AtomicPublication(unittest.TestCase):
+class AtomicPublication(ScratchRootTest):
     """Issue #147: a failed candidate leaves the published bundle byte-identical."""
 
     def setUp(self):
-        self._t = tempfile.TemporaryDirectory()
-        self.root = make_root(Path(self._t.name))
+        super().setUp()
         self.mp = self.root / "sel.json"
         self.mp.write_text(MANIFEST.read_text())
         self.out = self.root / "o"
         self.args = ["--root", str(self.root), "--manifest", str(self.mp), "--out-dir", str(self.out)]
-
-    def tearDown(self):
-        self._t.cleanup()
 
     def run_main(self, extra):
         import contextlib
