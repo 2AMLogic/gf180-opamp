@@ -20,8 +20,12 @@ sys.path.insert(0, str(HERE))
 
 import harness  # noqa: E402
 
-EXPERIMENTS = ("noise", "offset-mc", "cmrr", "cmrr-mc", "psrr", "psrr-mc", "gain-gbw-pm-mc", "slew-swing-power",
-               "input-common-mode")
+#: Every experiment with a measurement-configuration module. All of them share
+#: the one interface (`TESTBENCHES_REL` + `inputs(texts, retained)`, issue #325),
+#: so all of them are held to the contract and completeness tests below.
+EXPERIMENTS = ("noise", "offset-mc", "cmrr", "cmrr-mc", "psrr", "psrr-mc", "gain-gbw-pm", "gain-gbw-pm-mc",
+               "slew-swing-power", "input-common-mode", "step-response", "enable-acquisition",
+               "overdrive-recovery", "ibias-cl-sensitivity")
 
 #: Public constants that deliberately do NOT enter the fingerprint (identity
 #: or cosmetic). Anything else a config module defines must move its inputs.
@@ -36,6 +40,29 @@ NOT_FINGERPRINTED = {
     "OP_TAIL": "derived from DEVICES (covered through it)",
     "CONTROLS": "names/descriptions are cosmetic; the Ibias overrides are asserted in test_control_ibias_moves",
     "SIM_SOURCE": "name of the swept source, restated inside SIM_ARGS",
+    # --- brought under the contract by issue #325 ---
+    "VCM_FIXED_CONSUMER_V": "documented reference value for the opt-in --vcm-fixed mode; the common-mode "
+                            "policy that is measured enters through corners.vcm_rule",
+    "GBW_MIN_HZ": "the ratified GBW bound, quoted in the record's window-vs-tau disclosure only; it sizes "
+                  "no bench parameter, analysis card or axis (no runner derives a timing constant from it)",
+    "SCENARIO_DESC": "prose describing each scenario; the schedules themselves are in analysis.per_schedule",
+    "POINT_NAMES": "display labels for the corner tuples; the tuples enter through POINTS",
+    "NOMINAL": "folded into POINTS at import (covered through it)",
+    "PM_BINDING": "folded into POINTS at import (covered through it)",
+    "GBW_BINDING": "folded into POINTS at import (covered through it)",
+    "POWER_BINDING": "folded into POINTS at import (covered through it)",
+    "SLEW_BINDING": "folded into POINTS at import (covered through it)",
+}
+
+#: `(experiment, constant) -> replacement`, for constants whose fingerprint is
+#: real but whose generic `perturb()` value the module legitimately rejects
+#: (a time pushed past `NEVER_T`, a name that indexes a sibling mapping). The
+#: constant is still exercised -- the fingerprint must move for these too.
+PERTURB_OVERRIDE = {
+    ("enable-acquisition", "LEAD_T"): 2e-6,  # perturb()'s +1 s would outrun NEVER_T
+    ("enable-acquisition", "GAP_T"): 3e-6,  # likewise
+    ("enable-acquisition", "SCENARIOS"): ("simultaneous", "supply-first"),  # a name must stay a known scenario
+    ("ibias-cl-sensitivity", "FIGS"): ("ac", "power"),  # a figure must stay a key of POINTS
 }
 
 
@@ -72,6 +99,30 @@ def perturb(v):
 
 
 class Contract(unittest.TestCase):
+    def test_every_config_module_is_covered(self):
+        """EXPERIMENTS is the whole set, not a prefix of it (issue #325).
+
+        The four-shape drift this unified was only possible because a module
+        could sit in `MEASUREMENT_CONFIG` -- its records' freshness checked --
+        while never appearing here, so neither the contract nor the
+        completeness test below ever saw it.
+        """
+        on_disk = sorted(d.name for d in HERE.iterdir() if (d / "measurement_config.py").is_file())
+        self.assertEqual(sorted(EXPERIMENTS), on_disk)
+
+    def test_one_interface_shape(self):
+        """Every module takes `inputs(texts, retained, ...)` over `TESTBENCHES_REL`."""
+        import inspect
+        for exp in EXPERIMENTS:
+            with self.subTest(exp):
+                m = load(exp)
+                self.assertIsInstance(m.TESTBENCHES_REL, dict, exp)
+                for k, rel in m.TESTBENCHES_REL.items():
+                    self.assertIsInstance(k, str)
+                    self.assertIsInstance(rel, str)
+                params = list(inspect.signature(m.inputs).parameters)
+                self.assertEqual(params[:2], ["texts", "retained"], exp)
+
     def test_module_contract(self):
         for exp in EXPERIMENTS:
             with self.subTest(exp):
@@ -114,7 +165,7 @@ class Completeness(unittest.TestCase):
                     continue
                 with self.subTest(f"{exp}.{n}"):
                     old = getattr(m, n)
-                    setattr(m, n, perturb(old))
+                    setattr(m, n, PERTURB_OVERRIDE.get((exp, n), perturb(old)))
                     try:
                         self.assertNotEqual(m.fingerprint(t), base,
                                             f"{exp}: {n} is configuration but is missing from the fingerprint")
@@ -506,15 +557,11 @@ class CornerAxes(unittest.TestCase):
 
     def test_corner_blocks_are_pinned(self):
         import hashlib
-        import inspect
         for (exp, grid), want in PINNED_CORNERS.items():
             with self.subTest(f"{exp}/{grid}"):
                 m = load(exp)
-                if "texts" in inspect.signature(m.inputs).parameters:
-                    t = texts(exp, m)
-                    inp = m.inputs(t, {"grid": grid}) if grid else m.inputs(t)
-                else:
-                    inp = m.inputs((REPO / m.TESTBENCH_REL).read_text())
+                t = texts(exp, m)
+                inp = m.inputs(t, {"grid": grid}) if grid else m.inputs(t)
                 got = hashlib.sha256(harness.fingerprint_json(inp["corners"]).encode()).hexdigest()[:16]
                 self.assertEqual(got, want)
 

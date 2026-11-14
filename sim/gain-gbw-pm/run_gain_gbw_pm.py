@@ -1012,7 +1012,7 @@ def build_record(
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (wrapper-normalised, device body "
         f"verbatim; normalised sha256 `{dut_sha}`), snapshotted in full in "
         f"`netlist-snapshots/{record}.spice`")
-    for ln in mc.fingerprint_lines(TESTBENCH.read_text()):
+    for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
         add(ln)
     add("- **Corner matrix run**:")
     add(f"  - Process (MOS): {', '.join(CORNERS)}")
@@ -1177,7 +1177,7 @@ def build_record(
             add(f"- {s}")
         add("")
 
-    L.extend(mc.inputs_section(TESTBENCH.read_text()))
+    L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}))
 
     add("## Plots")
     add("")
@@ -1640,7 +1640,7 @@ def build_fixed_vcm_record(
         add(f"  - operating-point request FAILED (no local fallback): {op_error}")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (wrapper-normalised, device body verbatim; normalised "
         f"sha256 `{dut_sha}`), snapshotted in `netlist-snapshots/{data_id}.spice`")
-    for ln in mc.fingerprint_lines(tb_text, vcm):
+    for ln in mc.fingerprint_lines({"bench": tb_text}, vcm_fixed_v=vcm):
         add(ln)
     add("- **Source guards**: the committed testbench and DUT passed `guard_testbench` / `guard_dut` before every "
         "simulation (no transistor declared in the bench; every export device present once); the committed "
@@ -1740,7 +1740,7 @@ def build_fixed_vcm_record(
     add("- An ICMR endpoint check (`sim/input-common-mode/`) does not substitute for this dynamic evidence, and a "
         "single VCM point is not a VCM sweep.")
     add("")
-    L.extend(mc.inputs_section(tb_text, vcm))
+    L.extend(mc.inputs_section({"bench": tb_text}, vcm_fixed_v=vcm))
     add("## Artifacts")
     add("")
     add(f"- Runner: `sim/gain-gbw-pm/run_gain_gbw_pm.py --vcm-fixed {vcm:g}`; tests: `sim/gain-gbw-pm/test_gain_gbw_pm.py`")
@@ -1797,7 +1797,7 @@ def recompute_fixed_vcm(source: str, *, root: Path = FIXED_VCM_DIR, now=None) ->
     tb_text = snapshot_testbench((root / "netlist-snapshots" / f"{source}.spice").read_text())
     old_fp = _record_field(old_md, r"^- \*\*Measurement fingerprint\*\*: version \S+, sha256 `([0-9a-f]{64})`",
                            "Measurement fingerprint").group(1)
-    if mc.fingerprint(tb_text, vcm) != old_fp:
+    if mc.fingerprint({"bench": tb_text}, vcm_fixed_v=vcm) != old_fp:
         raise ValueError(f"{source}: the snapshot testbench at VCM {vcm:g} does not rehash to the recorded "
                          f"fingerprint {old_fp}")
 

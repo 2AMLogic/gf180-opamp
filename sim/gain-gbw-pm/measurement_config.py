@@ -12,13 +12,21 @@ workspace paths, backend / retry / scheduling options, and the extraction code
 (an extraction-only fix does not need a new simulation). The DUT is covered by
 its own hash (issue #75), not here.
 
-Extension contract for the other experiments (migrated in issue #89; see
-`sim/noise/measurement_config.py` for the multi-bench form): give each
-experiment a stdlib `measurement_config.py` exposing `EXPERIMENT`,
-`FINGERPRINT_VERSION`, `TESTBENCHES_REL` and `inputs(texts, retained)`,
-record the line `- **Measurement fingerprint**: ...` plus the inputs block in
-its records (see `harness.fingerprint_header_lines`), and add it to
-`MEASUREMENT_CONFIG` in `sim/report/characterization_report.py`. Records
+Extension contract, shared by every experiment (issue #89, unified in issue
+#325 -- this module is itself an example; `sim/slew-swing-power/measurement_config.py`
+shows a multi-bench one): give each experiment a stdlib
+`measurement_config.py` exposing `EXPERIMENT`, `FINGERPRINT_VERSION`,
+`MODULE_REL`, `TESTBENCHES_REL` (bench name -> repo-relative path) and
+`inputs(texts, retained=None)`, where `texts` maps those same bench names to
+bench text and `retained` is the record's own stored inputs (unused unless the
+experiment selects from them, as slew/swing/power does). Build the
+`fingerprint` / `fingerprint_lines` / `inputs_section` trio with
+`harness.fingerprint_api`, record the line `- **Measurement fingerprint**: ...`
+plus the inputs block in its records (see `harness.fingerprint_header_lines`),
+add the module to `EXPERIMENTS` in `sim/test_measurement_config.py`, and add it
+to `MEASUREMENT_CONFIG` in `sim/report/characterization_report.py`. An
+experiment may add further keyword-only configuration after `retained` (this
+module's `vcm_fixed_v`); the first two parameters are the contract. Records
 without the line are reported as measurement-configuration freshness unknown.
 """
 
@@ -34,7 +42,7 @@ import harness  # noqa: E402
 EXPERIMENT = "gain-gbw-pm"
 FINGERPRINT_VERSION = harness.FINGERPRINT_VERSION
 MODULE_REL = "sim/gain-gbw-pm/measurement_config.py"
-TESTBENCH_REL = "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice"
+TESTBENCHES_REL = {"bench": "sim/gain-gbw-pm/testbench/tb_gain_gbw_pm.spice"}
 
 #: MOS corners; each is bundled with the SAME typical resistor and MIM
 #: capacitor sections (see the driver's passive-section policy).
@@ -59,16 +67,19 @@ def vcm_rule(vcm_fixed_v: float | None = None) -> str:
     return "vdd/2" if vcm_fixed_v is None else f"fixed:{float(vcm_fixed_v):g}"
 
 
-def inputs(testbench_text: str, vcm_fixed_v: float | None = None) -> dict:
+def inputs(texts: dict, retained: dict | None = None, vcm_fixed_v: float | None = None) -> dict:
     """The effective measurement inputs, as a JSON-serialisable dict.
 
-    `vcm_fixed_v=None` (the default VDD/2 policy) yields exactly the inputs --
-    and fingerprint -- of every existing record.
+    `texts` maps TESTBENCHES_REL keys to bench text. `retained` (the record's
+    stored inputs) is unused here; it exists so every experiment shares one
+    signature (slew/swing/power selects figures from it). `vcm_fixed_v=None`
+    (the default VDD/2 policy) yields exactly the inputs -- and fingerprint --
+    of every existing record.
     """
     return {
         "experiment": EXPERIMENT,
         "fingerprint_version": FINGERPRINT_VERSION,
-        "bench": harness.canonical_bench_lines(testbench_text),
+        "bench": harness.canonical_bench_lines(texts["bench"]),
         "analysis": {"kind": "ac", "args": f"dec {AC_PPD:g} {AC_FSTART:g} {AC_FSTOP:g}"},
         "corners": harness.corner_axes(CORNERS, PASSIVE_SECTIONS, TEMPS_C, SUPPLIES_V, vcm_rule(vcm_fixed_v)),
         "models": {"pdk_variant": harness.DEFAULT_VARIANT, "lib": MODEL_LIB},

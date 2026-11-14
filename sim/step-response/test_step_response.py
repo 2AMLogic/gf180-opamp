@@ -434,10 +434,10 @@ class FingerprintTests(unittest.TestCase):
             self.assertEqual(getattr(r, n), getattr(r.mc, n), n)
         self.assertEqual(r.SETTLE_BANDS, (0.01, 0.001))
         self.assertIs(r.CORNERS, r.mc.CORNERS)
-        self.assertTrue(r.mc.TESTBENCH_REL.endswith(r.TESTBENCH.name))
+        self.assertTrue(r.mc.TESTBENCHES_REL["bench"].endswith(r.TESTBENCH.name))
 
     def test_request_is_what_the_fingerprint_hashes(self):
-        inp = r.mc.inputs(r.TESTBENCH.read_text())
+        inp = r.mc.inputs({"bench": r.TESTBENCH.read_text()})
         req = r.make_request(Path("/x/tb.spice"), self.PDK, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
         self.assertEqual(req["analysis"], {"kind": inp["analysis"]["kind"], "args": inp["analysis"]["args"]})
         self.assertEqual(req["measurements"], inp["analysis"]["measurements"])
@@ -447,8 +447,8 @@ class FingerprintTests(unittest.TestCase):
         self.assertEqual(req["corners"]["supply_v"]["vcm"], [round(v / 2, 6) for v in r.SUPPLIES_V])
 
     def test_fingerprint_changes_with_the_bench(self):
-        a = r.mc.fingerprint(r.TESTBENCH.read_text())
-        b = r.mc.fingerprint(r.TESTBENCH.read_text().replace("CL vout 0 2p", "CL vout 0 3p"))
+        a = r.mc.fingerprint({"bench": r.TESTBENCH.read_text()})
+        b = r.mc.fingerprint({"bench": r.TESTBENCH.read_text().replace("CL vout 0 2p", "CL vout 0 3p")})
         self.assertNotEqual(a, b)
 
 

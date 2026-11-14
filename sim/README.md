@@ -270,12 +270,17 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   needs no new simulation. Records
   written before the migration, and every older record, are reported as
   "measurement-configuration freshness unknown" (per source, per row and in
-  the report limitations), never as current. To migrate a further experiment,
-  give it a `measurement_config.py` exposing `EXPERIMENT`,
-  `FINGERPRINT_VERSION`, `TESTBENCHES_REL` and `inputs(texts, retained)` (see
-  `noise/measurement_config.py`), emit the header line and inputs block from
-  its driver (`harness.fingerprint_header_lines` /
-  `fingerprint_inputs_section`), and register it in `MEASUREMENT_CONFIG`.
+  the report limitations), never as current. Every
+  `measurement_config.py` now exposes the same interface (issue #325 finished
+  the migration and removed the single-bench adapters). To add a further
+  experiment, give it a `measurement_config.py` exposing `EXPERIMENT`,
+  `FINGERPRINT_VERSION`, `MODULE_REL`, `TESTBENCHES_REL` and
+  `inputs(texts, retained)` (see `noise/measurement_config.py`), emit the
+  header line and inputs block from its driver
+  (`harness.fingerprint_header_lines` / `fingerprint_inputs_section`), add it
+  to `EXPERIMENTS` in `test_measurement_config.py` (enforced: the contract and
+  completeness tests must see every module on disk), and register it in
+  `MEASUREMENT_CONFIG`.
   Historical
   records are never edited and no historical fingerprint is fabricated.
 - CMRR-MC and gain/GBW/PM-MC (issue #197) are registered in `MEASUREMENT_CONFIG`

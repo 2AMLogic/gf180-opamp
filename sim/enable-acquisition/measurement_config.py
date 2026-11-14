@@ -31,7 +31,7 @@ _GAIN = harness.load_config_module(HERE.parent / "gain-gbw-pm" / "measurement_co
 
 EXPERIMENT = "enable-acquisition"
 FINGERPRINT_VERSION = harness.FINGERPRINT_VERSION
-TESTBENCH_REL = "sim/enable-acquisition/testbench/tb_enable.spice"
+TESTBENCHES_REL = {"bench": "sim/enable-acquisition/testbench/tb_enable.spice"}
 MODULE_REL = "sim/enable-acquisition/measurement_config.py"
 
 CORNERS = _GAIN.CORNERS
@@ -177,12 +177,17 @@ def schedules_dump() -> dict:
     return out
 
 
-def inputs(bench_text: str) -> dict:
-    """The effective measurement inputs, as a JSON-serialisable dict."""
+def inputs(texts: dict, retained: dict | None = None) -> dict:
+    """The effective measurement inputs, as a JSON-serialisable dict.
+
+    `texts` maps TESTBENCHES_REL keys to bench text. `retained` (the record's
+    stored inputs) is unused here; it exists so every experiment shares one
+    signature (slew/swing/power selects figures from it).
+    """
     return {
         "experiment": EXPERIMENT,
         "fingerprint_version": FINGERPRINT_VERSION,
-        "bench": harness.canonical_bench_lines(bench_text),
+        "bench": harness.canonical_bench_lines(texts["bench"]),
         "analysis": {"kind": "tran", "per_schedule": schedules_dump(),
                      "measurements": {f"{s}/{r}": measurements(schedule(s, r)) for s, r in cases()}},
         "params": params(),

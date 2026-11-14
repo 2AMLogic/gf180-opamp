@@ -505,7 +505,7 @@ def main(argv: list[str] | None = None) -> int:
             lines += ["* " + ln for ln in json.dumps({k: v for k, v in req.items() if k != "netlist"}, indent=1).splitlines()]
         lines += ["", "* ---- DUT (wrapper-normalised) ----", dut_text]
         for fig, p in BENCH.items():
-            lines += [f"* ---- testbench: {mc.BENCHES_REL[fig]} (verbatim; Ibias / CL lines substituted per request) ----", p.read_text(), ""]
+            lines += [f"* ---- testbench: {mc.TESTBENCHES_REL[fig]} (verbatim; Ibias / CL lines substituted per request) ----", p.read_text(), ""]
         paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
         paths["snapshot"].write_text("\n".join(lines))
 
