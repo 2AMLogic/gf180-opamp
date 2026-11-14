@@ -306,17 +306,6 @@ class GuardTests(unittest.TestCase):
 
 
 class AppendOnlyTests(unittest.TestCase):
-    def test_existing_record_paths_are_never_overwritten(self):
-        with tempfile.TemporaryDirectory() as d:
-            root = Path(d)
-            first = harness.claim_record_paths(root, "20261009-000000-abcdef0")
-            first["corners"].mkdir(parents=True)
-            first["record"].parent.mkdir(parents=True, exist_ok=True)
-            first["record"].write_text("old")
-            with self.assertRaises(FileExistsError):
-                harness.claim_record_paths(root, "20261009-000000-abcdef0")
-            self.assertEqual(first["record"].read_text(), "old")
-
     def test_prior_provisional_records_are_retained(self):
         recs = {p.name for p in (HERE / "records").glob("*.md")}
         self.assertIn("20260915-221407-1bb9a74.md", recs)

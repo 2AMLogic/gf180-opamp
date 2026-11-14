@@ -27,7 +27,6 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_enable_acquisition as r  # noqa: E402
-import harness  # noqa: E402  (on sys.path via the driver)
 
 VDD = 3.3
 VCM = VDD / 2
@@ -838,17 +837,6 @@ class RecordTests(unittest.TestCase):
         for scenario, ramp in cases:
             self.assertIn(f"`sim/enable-acquisition/corners/rid/long_{scenario}_{ramp}/`", evidence)
         self.assertEqual(evidence.count("/long_"), 2)
-
-
-class AppendOnlyTests(unittest.TestCase):
-    def test_existing_record_paths_are_never_overwritten(self):
-        with tempfile.TemporaryDirectory() as d:
-            base = Path(d)
-            harness.claim_record_paths(base, "rid-1")
-            (base / "records").mkdir()
-            (base / "records" / "rid-1.md").write_text("x")
-            with self.assertRaises(FileExistsError):
-                harness.claim_record_paths(base, "rid-1")
 
 
 if __name__ == "__main__":

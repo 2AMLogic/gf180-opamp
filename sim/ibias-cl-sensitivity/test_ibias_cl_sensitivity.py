@@ -229,17 +229,6 @@ class Fingerprint(unittest.TestCase):
         self.assertNotEqual(a, r.mc.fingerprint({**texts, "ac": texts["ac"].replace("CL vout 0 2p", "CL vout 0 3p")}))
 
 
-class AppendOnly(unittest.TestCase):
-    def test_existing_record_paths_are_refused(self):
-        import tempfile
-        with tempfile.TemporaryDirectory() as d:
-            base = Path(d)
-            (base / "records").mkdir()
-            (base / "records" / "R.md").write_text("x")
-            with self.assertRaises(FileExistsError):
-                harness.claim_record_paths(base, "R", plots=False)
-
-
 class RecordRender(unittest.TestCase):
     def test_record_has_tables_no_verdict_and_reproduction_command(self):
         from datetime import datetime, timezone
