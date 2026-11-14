@@ -682,7 +682,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:3d8d78f1691c5ac62835a00264b1c4cc684670a602625589c72947a869516bc9",
+      "content_hash": "sha256:6408ce91f8b09dd88799190b8b9976f5c74a293b601fe9a7a4389d2ff87a97b2",
       "role": "layout"
     },
     "klayout_version_mismatch": false
