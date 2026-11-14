@@ -1,0 +1,835 @@
+{
+  "schema_version": 4,
+  "file": {
+    "path": "layout/first_stage/gds/first_stage.gds",
+    "scope": "repo"
+  },
+  "deck": "gf180mcu",
+  "top": "first_stage",
+  "dbu_um": 0.0005,
+  "netlist_path": "extracted/first_stage.klt.spice",
+  "netlist_sha256": "31e43c3dae750060a76848828f493e8b65f40f134753b50812924370498f8868",
+  "netlist_normalized_sha256": "c4e2916230351b2ba56460a91fdb349787fdd3406aa95d7a6ba5d513ba7c402d",
+  "status": "extracted",
+  "device_count": 10,
+  "net_count": 29,
+  "pin_count": 4,
+  "device_counts": {
+    "nfet": 6,
+    "pfet": 4
+  },
+  "dummy_devices_dropped": 0,
+  "ignored_layers": [],
+  "device_recognition_only_layers": [],
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "bjt",
+    "cap_mim_2f0_m4m5_noshield",
+    "cap_nmos_03v3",
+    "cap_nmos_03v3_dn",
+    "cap_pmos_03v3",
+    "cap_pmos_03v3_dn",
+    "cap_nmos_06v0",
+    "cap_nmos_06v0_dn",
+    "cap_pmos_06v0",
+    "cap_pmos_06v0_dn",
+    "cap_nmos_03v3_b",
+    "cap_pmos_03v3_b",
+    "cap_nmos_06v0_b",
+    "cap_pmos_06v0_b",
+    "resistor",
+    "diode_nd2ps_06v0",
+    "diode_pd2nw_06v0"
+  ],
+  "devices": [
+    {
+      "name": "$1",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$11",
+        "g": "\\$5",
+        "d": "\\$12",
+        "b": "vss"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 1.8,
+        "as_um2": 0.9,
+        "ad_um2": 0.9,
+        "ps_um": 4.6,
+        "pd_um": 4.6
+      },
+      "instance_path": [
+        {
+          "cell": "in__first_stage_in",
+          "array_index": null
+        },
+        {
+          "cell": "diff_pair$1",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$10",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$27",
+        "g": "\\$28",
+        "d": "\\$29",
+        "b": "vdd"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 3.0,
+        "as_um2": 1.5,
+        "ad_um2": 1.5,
+        "ps_um": 7.0,
+        "pd_um": 7.0
+      },
+      "instance_path": [
+        {
+          "cell": "load__first_stage_load",
+          "array_index": null
+        },
+        {
+          "cell": "diff_pair",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$2",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$13",
+        "g": "\\$6",
+        "d": "\\$14",
+        "b": "vss"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 1.8,
+        "as_um2": 0.9,
+        "ad_um2": 0.9,
+        "ps_um": 4.6,
+        "pd_um": 4.6
+      },
+      "instance_path": [
+        {
+          "cell": "in__first_stage_in",
+          "array_index": null
+        },
+        {
+          "cell": "diff_pair$1",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$3",
+      "class": "nfet",
+      "nets": {
+        "s": "vss",
+        "g": "ibias",
+        "d": "\\$17",
+        "b": "vss"
+      },
+      "params": {
+        "l_um": 2.0,
+        "w_um": 3.0,
+        "as_um2": 1.5,
+        "ad_um2": 0.87,
+        "ps_um": 7.0,
+        "pd_um": 3.58
+      },
+      "instance_path": [
+        {
+          "cell": "tail__first_stage_tail",
+          "array_index": null
+        },
+        {
+          "cell": "mos_array",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$4",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$17",
+        "g": "ibias",
+        "d": "vss",
+        "b": "vss"
+      },
+      "params": {
+        "l_um": 2.0,
+        "w_um": 3.0,
+        "as_um2": 0.87,
+        "ad_um2": 1.5,
+        "ps_um": 3.58,
+        "pd_um": 7.0
+      },
+      "instance_path": [
+        {
+          "cell": "tail__first_stage_tail",
+          "array_index": null
+        },
+        {
+          "cell": "mos_array",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$5",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$18",
+        "g": "\\$19",
+        "d": "\\$20",
+        "b": "vss"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 1.8,
+        "as_um2": 0.9,
+        "ad_um2": 0.9,
+        "ps_um": 4.6,
+        "pd_um": 4.6
+      },
+      "instance_path": [
+        {
+          "cell": "in__first_stage_in",
+          "array_index": null
+        },
+        {
+          "cell": "diff_pair$1",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$6",
+      "class": "nfet",
+      "nets": {
+        "s": "\\$21",
+        "g": "\\$22",
+        "d": "\\$23",
+        "b": "vss"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 1.8,
+        "as_um2": 0.9,
+        "ad_um2": 0.9,
+        "ps_um": 4.6,
+        "pd_um": 4.6
+      },
+      "instance_path": [
+        {
+          "cell": "in__first_stage_in",
+          "array_index": null
+        },
+        {
+          "cell": "diff_pair$1",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$7",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$7",
+        "g": "\\$3",
+        "d": "\\$8",
+        "b": "vdd"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 3.0,
+        "as_um2": 1.5,
+        "ad_um2": 1.5,
+        "ps_um": 7.0,
+        "pd_um": 7.0
+      },
+      "instance_path": [
+        {
+          "cell": "load__first_stage_load",
+          "array_index": null
+        },
+        {
+          "cell": "diff_pair",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$8",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$9",
+        "g": "\\$4",
+        "d": "\\$10",
+        "b": "vdd"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 3.0,
+        "as_um2": 1.5,
+        "ad_um2": 1.5,
+        "ps_um": 7.0,
+        "pd_um": 7.0
+      },
+      "instance_path": [
+        {
+          "cell": "load__first_stage_load",
+          "array_index": null
+        },
+        {
+          "cell": "diff_pair",
+          "array_index": null
+        }
+      ]
+    },
+    {
+      "name": "$9",
+      "class": "pfet",
+      "nets": {
+        "s": "\\$24",
+        "g": "\\$25",
+        "d": "\\$26",
+        "b": "vdd"
+      },
+      "params": {
+        "l_um": 1.0,
+        "w_um": 3.0,
+        "as_um2": 1.5,
+        "ad_um2": 1.5,
+        "ps_um": 7.0,
+        "pd_um": 7.0
+      },
+      "instance_path": [
+        {
+          "cell": "load__first_stage_load",
+          "array_index": null
+        },
+        {
+          "cell": "diff_pair",
+          "array_index": null
+        }
+      ]
+    }
+  ],
+  "nets": [
+    {
+      "name": "\\$10",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 10,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$11",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 11,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$12",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 12,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$13",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 13,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$14",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 14,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$17",
+      "pin": false,
+      "device_count": 2,
+      "net_id": 17,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$18",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 18,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$19",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 19,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$20",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 20,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$21",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 21,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$22",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 22,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$23",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 23,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$24",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 24,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$25",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 25,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$26",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 26,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$27",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 27,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$28",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 28,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$29",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 29,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$3",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 3,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$4",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 4,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$5",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 5,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$6",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 6,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$7",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 7,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$8",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 8,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "\\$9",
+      "pin": false,
+      "device_count": 1,
+      "net_id": 9,
+      "pin_index": null,
+      "label_positions_um": []
+    },
+    {
+      "name": "ibias",
+      "pin": true,
+      "device_count": 2,
+      "net_id": 16,
+      "pin_index": 0,
+      "label_positions_um": [
+        {
+          "text": "ibias",
+          "x_um": 18.06,
+          "y_um": 5.25
+        }
+      ]
+    },
+    {
+      "name": "vdd",
+      "pin": true,
+      "device_count": 4,
+      "net_id": 1,
+      "pin_index": 1,
+      "label_positions_um": [
+        {
+          "text": "vdd",
+          "x_um": 2.2,
+          "y_um": -0.71
+        }
+      ]
+    },
+    {
+      "name": "vss",
+      "pin": true,
+      "device_count": 2,
+      "net_id": 15,
+      "pin_index": 2,
+      "label_positions_um": [
+        {
+          "text": "vss",
+          "x_um": 15.48,
+          "y_um": 0.21
+        }
+      ]
+    },
+    {
+      "name": "vss",
+      "pin": true,
+      "device_count": 6,
+      "net_id": 30,
+      "pin_index": 3,
+      "label_positions_um": [
+        {
+          "text": "vss",
+          "x_um": 9.76,
+          "y_um": -0.71
+        },
+        {
+          "text": "vss",
+          "x_um": 18.06,
+          "y_um": -0.86
+        }
+      ]
+    }
+  ],
+  "warnings": [
+    "deck 'gf180mcu' declares MOS flavour '06v0' scoped by marker layer 55/0, but that layer has no shapes in the layout; every MOS device binds to the deck's default flavour",
+    "label 'vss' is drawn on 2 separate nets (net_id 15, 30) -- the same-named nets are not connected in the layout (e.g. unstrapped supply rails), so the written netlist names them 'vss', 'vss$1', ... -- see docs/cli/extract.md's 'Split net labels' section.",
+    "8 nets connect to exactly one device terminal -- a MOS gate -- and are not a declared pin: these gates have no DC path from anywhere else in the netlist, so they are almost certainly unconnected inputs rather than legitimate floating nodes; resimulating this netlist directly will hit a singular matrix on these nets -- see single_terminal_nets[] for the full list.",
+    "16 nets connect to exactly one device terminal -- source/drain/body/resistor-equivalent, not a gate -- and are not a declared pin; this can be a legitimate single-terminal tie (e.g. an intentionally unterminated dummy's diffusion tie), but confirm these nets have no other intended connectivity -- see single_terminal_nets[] for the full list."
+  ],
+  "black_box_regions": [],
+  "abstracted_cells": [],
+  "unmodelled_poly": [],
+  "merged_net_labels": [],
+  "split_net_labels": [
+    {
+      "label": "vss",
+      "nets": [
+        15,
+        30
+      ],
+      "count": 2
+    }
+  ],
+  "voltage_domain_warnings": [],
+  "missing_flavour_markers": [
+    {
+      "deck": "gf180mcu",
+      "flavour": "06v0",
+      "marker": "55/0"
+    }
+  ],
+  "unsupported_devices": [],
+  "unbiased_pmos_body_nets": [],
+  "single_terminal_nets": [
+    {
+      "net": "\\$10",
+      "device": "$8",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$11",
+      "device": "$1",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$12",
+      "device": "$1",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$13",
+      "device": "$2",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$14",
+      "device": "$2",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$18",
+      "device": "$5",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$19",
+      "device": "$5",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$20",
+      "device": "$5",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$21",
+      "device": "$6",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$22",
+      "device": "$6",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$23",
+      "device": "$6",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$24",
+      "device": "$9",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$25",
+      "device": "$9",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$26",
+      "device": "$9",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$27",
+      "device": "$10",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$28",
+      "device": "$10",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$29",
+      "device": "$10",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$3",
+      "device": "$7",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$4",
+      "device": "$8",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$5",
+      "device": "$1",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$6",
+      "device": "$2",
+      "terminal": "g",
+      "terminal_kind": "gate"
+    },
+    {
+      "net": "\\$7",
+      "device": "$7",
+      "terminal": "s",
+      "terminal_kind": "source"
+    },
+    {
+      "net": "\\$8",
+      "device": "$7",
+      "terminal": "d",
+      "terminal_kind": "drain"
+    },
+    {
+      "net": "\\$9",
+      "device": "$8",
+      "terminal": "s",
+      "terminal_kind": "source"
+    }
+  ],
+  "dead_metal": [],
+  "matched_device_groups": [],
+  "def_pin_promotion": null,
+  "pin_renames": null,
+  "rename_declared_pins": false,
+  "declared_pins": null,
+  "def_pins": null,
+  "label_layers": null,
+  "probes": [],
+  "pdk": {
+    "variant": "gf180mcuD",
+    "root": {
+      "path": null,
+      "scope": "external"
+    },
+    "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "gf180mcuD",
+      "source": "search root: ~/.ciel",
+      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
+      "ambiguous_sources": [
+        "search root: ~/.volare"
+      ]
+    },
+    "deck": {
+      "name": "gf180mcu",
+      "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
+      "released": true,
+      "options": {
+        "metal_top": "9K",
+        "mim_cap": "cap_mim_2f0_m4m5_noshield",
+        "poly_res": "1k"
+      },
+      "options_explicit": {
+        "metal_top": false,
+        "mim_cap": false,
+        "poly_res": false
+      },
+      "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
+    },
+    "input": {
+      "content_hash": "sha256:dc6753d7bb1b0f49acf9cef77cd0dd06cb082c07e530d1dfd62525bab1a82a9d",
+      "role": "layout"
+    }
+  },
+  "parasitics": null,
+  "spef_path": null,
+  "subcircuit": null,
+  "metrics": {
+    "extract__device__count": 10,
+    "extract__net__count": 29,
+    "extract__pin__count": 4
+  },
+  "timing": {
+    "stages": {
+      "read_layout": 0.0,
+      "device_extraction": 0.009,
+      "diagnostics": 0.0,
+      "netlist_write": 0.001,
+      "netlist_hash": 0.0,
+      "netlist_normalized_hash": 0.0
+    },
+    "total_seconds": 0.135,
+    "unattributed_seconds": 0.124
+  }
+}

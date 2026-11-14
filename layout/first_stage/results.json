@@ -1,0 +1,176 @@
+{
+  "schema": "gf180-opamp.layout-first-stage.results/1",
+  "netlist": "design/netlist/opamp_two_stage.spice",
+  "pdk": "gf180mcuD",
+  "deck": "gf180mcu",
+  "instances": [
+    "XM5",
+    "XM1",
+    "XM2",
+    "XM3",
+    "XM4"
+  ],
+  "groups": [
+    {
+      "id": "in",
+      "generator": "diff_pair",
+      "instances": [
+        "XM1",
+        "XM2"
+      ],
+      "params": {
+        "w_um": 1.8,
+        "l_um": 1.0,
+        "splits": 2,
+        "flavor": "nfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "bbox_um": {
+        "x0": -1.08,
+        "y0": -1.08,
+        "x1": 5.48,
+        "y1": 7.92
+      },
+      "ports": 16
+    },
+    {
+      "id": "load",
+      "generator": "diff_pair",
+      "instances": [
+        "XM3",
+        "XM4"
+      ],
+      "params": {
+        "w_um": 3.0,
+        "l_um": 1.0,
+        "splits": 2,
+        "flavor": "pfet",
+        "gate_contact": true,
+        "add_guard_ring": true,
+        "mirror": true
+      },
+      "bbox_um": {
+        "x0": -1.08,
+        "y0": -1.08,
+        "x1": 5.48,
+        "y1": 10.32
+      },
+      "ports": 16
+    },
+    {
+      "id": "tail",
+      "generator": "mos_array",
+      "instances": [
+        "XM5"
+      ],
+      "params": {
+        "w_um": 3.0,
+        "l_um": 2.0,
+        "fingers": 2,
+        "rows": 1,
+        "cols": 1,
+        "dummy": 0,
+        "flavor": "nfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "bbox_um": {
+        "x0": -1.23,
+        "y0": -1.23,
+        "x1": 6.8100000000000005,
+        "y1": 6.69
+      },
+      "ports": 7
+    }
+  ],
+  "placed": {
+    "cell": "first_stage",
+    "bbox_um": {
+      "x0": -1.08,
+      "y0": -1.23,
+      "x1": 22.080000000000002,
+      "y1": 10.32
+    },
+    "unrouted_nets": [
+      "n1",
+      "n2",
+      "tail",
+      "vdd",
+      "vinn",
+      "vinp"
+    ],
+    "pins_labelled": [
+      "vss",
+      "ibias",
+      "vss",
+      "vss",
+      "vdd"
+    ],
+    "drc": {
+      "status": "clean",
+      "violations": 0,
+      "rules_checked": 35,
+      "rules_skipped": 79,
+      "deck_content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666"
+    },
+    "layout_sha256": "dc6753d7bb1b0f49acf9cef77cd0dd06cb082c07e530d1dfd62525bab1a82a9d"
+  },
+  "lvs": {
+    "status": "mismatch",
+    "error_count": 51,
+    "mismatch_count": 53,
+    "counts": {
+      "nets": {
+        "layout": 29,
+        "reference": 8,
+        "matched": 0
+      },
+      "devices": {
+        "layout": 9,
+        "reference": 5,
+        "matched": 0
+      },
+      "pins": {
+        "layout": 4,
+        "reference": 8,
+        "matched": 12
+      }
+    },
+    "category_error_counts": {
+      "device.unmatched": 14,
+      "net.unmatched": 37
+    },
+    "layout_sha256": "dc6753d7bb1b0f49acf9cef77cd0dd06cb082c07e530d1dfd62525bab1a82a9d",
+    "expected": "mismatch -- the placed-only composition leaves the inter-block and inter-unit nets open (README: filed gap)"
+  },
+  "extract": {
+    "status": "extracted",
+    "device_counts": {
+      "nfet": 6,
+      "pfet": 4
+    }
+  },
+  "routed_attempt": {
+    "unrouted_nets": [
+      "vdd"
+    ],
+    "nets": {
+      "tail": "routed",
+      "n1": "routed",
+      "n2": "routed",
+      "vinn": "routed",
+      "vinp": "routed",
+      "vdd": "partial"
+    },
+    "drc": {
+      "status": "violations",
+      "violations": 2,
+      "rules": [
+        "metal2.space.1",
+        "metal4.space.1"
+      ]
+    },
+    "note": "non-normative: explicit-leg routing attempt over the same placement; the router's own spacing check refuses the final S-pad approaches (0.19 um stub-vs-ladder-pad, deck space 0.28 um) -- README: filed gap"
+  }
+}
