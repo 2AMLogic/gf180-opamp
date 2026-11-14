@@ -44,7 +44,9 @@ NOT_FINGERPRINTED = {
     "VCM_FIXED_CONSUMER_V": "documented reference value for the opt-in --vcm-fixed mode; the common-mode "
                             "policy that is measured enters through corners.vcm_rule",
     "GBW_MIN_HZ": "the ratified GBW bound, quoted in the record's window-vs-tau disclosure only; it sizes "
-                  "no bench parameter, analysis card or axis (no runner derives a timing constant from it)",
+                  "no bench parameter, analysis card or axis -- the three runners derive "
+                  "tau_max = 1/(2 pi GBW_MIN_HZ) solely to restate their own fixed windows in units of "
+                  "tau in that prose",
     "SCENARIO_DESC": "prose describing each scenario; the schedules themselves are in analysis.per_schedule",
     "POINT_NAMES": "display labels for the corner tuples; the tuples enter through POINTS",
     "NOMINAL": "folded into POINTS at import (covered through it)",
