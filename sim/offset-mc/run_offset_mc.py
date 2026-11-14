@@ -93,6 +93,7 @@ from harness import (  # noqa: E402
     remote_jobs,
     KltError,
     Pdk,
+    add_batch_args,
     allocate_record_id,
     batch_block,
     claim_run_paths,
@@ -1102,12 +1103,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--smoke", action="store_true", help="one deterministic local unit, no record")
     ap.add_argument("--grid", choices=GRIDS, default="nominal",
                     help="nominal: 5 corners at 27 C / 3.30 V (issue #45); full: the 45-point T/VDD grid (issue #106)")
-    ap.add_argument("--backend", help="klt execution backend for the Monte Carlo grid "
-                    "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
-    ap.add_argument("--batch-submit-retries", type=int, default=0)
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help="klt execution backend for the Monte Carlo grid "
+                   "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--hosts", type=int, default=None,
                     help=f"--grid full only: fleet jobs to shard the units over (default {GRID_HOSTS})")
     args = ap.parse_args(argv)

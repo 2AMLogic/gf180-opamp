@@ -64,6 +64,7 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    add_batch_args,
     allocate_record_id,
     batch_block,
     claim_run_paths,
@@ -424,11 +425,7 @@ def smoke(pdk: Pdk) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--smoke", action="store_true", help="one nominal point, local, no record")
-    ap.add_argument("--backend", help="klt execution backend (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
-    ap.add_argument("--batch-submit-retries", type=int, default=0)
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help="klt execution backend (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     args = ap.parse_args(argv)
 
     pdk = find_pdk()

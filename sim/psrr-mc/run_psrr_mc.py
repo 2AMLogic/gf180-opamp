@@ -89,6 +89,7 @@ sys.path.insert(0, str(REPO_ROOT / "sim"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    add_batch_args,
     allocate_record_id,
     batch_block,
     claim_run_paths,
@@ -1397,11 +1398,7 @@ def add_args(ap: argparse.ArgumentParser) -> None:
                     help="nominal: 5 corners at 27 C / 3.30 V (issue #99); full: the 45-point T/VDD grid (issue #190)")
     ap.add_argument("--hosts", type=int, default=None,
                     help=f"--grid full only: fleet jobs to shard the units over (default {GRID_HOSTS})")
-    ap.add_argument("--backend", default=None, help="klt backend (default: klt's own, e.g. $KLT_SIM_BACKEND)")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
-    ap.add_argument("--batch-submit-retries", type=int, default=0)
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help="klt backend (default: klt's own, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--keep-work", type=Path, default=None, help="keep the work dir (never commit it)")
 
 

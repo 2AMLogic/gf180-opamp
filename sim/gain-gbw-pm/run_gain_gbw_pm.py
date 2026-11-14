@@ -80,6 +80,7 @@ from harness import (  # noqa: E402
     DUT_INCLUDE_NAME,  # noqa: F401
     KltError,
     Pdk,
+    add_batch_args,
     allocate_record_id,
     batch_block,
     claim_record_paths,
@@ -2017,8 +2018,6 @@ def smoke(pdk: Pdk, vcm_fixed: float | None = None) -> int:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--smoke", action="store_true", help="one nominal point, local, no record")
-    ap.add_argument("--backend", help="klt execution backend for the 45-point grid "
-                    "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--passive-corners", action="store_true",
                     help="opt-in: RZ x CC passive-corner study (3x3 independent poly-resistor / "
                     "MIM-cap sections at fs/125C/2.97V, ss/125C/2.97V and nominal) as ONE klt sim "
@@ -2038,15 +2037,8 @@ def main(argv: list[str] | None = None) -> int:
                     "separate record under fixed-vcm/; default records are untouched. With --smoke it "
                     "runs the one local nominal point at that VCM.")
     ap.add_argument("--strict", action="store_true", help="exit 1 when a ratified row misses")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None,
-                    help="forward batch.runner_version_check (only meaningful on the batch backend)")
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None,
-                    help="forward batch.capacity_wait_s: wait this long for fleet capacity "
-                    "instead of failing the submit immediately")
-    ap.add_argument("--batch-submit-retries", type=int, default=0,
-                    help="re-submit up to N times when the batch submit is refused for fleet "
-                    "capacity / the shared concurrency cap (never changes backend)")
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help="klt execution backend for the 45-point grid "
+                   "(default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     args = ap.parse_args(argv)
 
     # Validate BEFORE any tool is touched or anything is submitted (issue #125).
