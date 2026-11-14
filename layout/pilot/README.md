@@ -21,10 +21,11 @@ single process, no ngspice).
 
 | Item | Pinned identity |
 |---|---|
-| klayout-tools | `klt 0.8.0` (release; run from a throwaway env first on PATH, e.g. `uv venv V && uv pip install --python V/bin/python klayout-tools==0.8.0 && PATH=V/bin:$PATH layout/pilot/regen.sh`) |
+| klayout-tools | `klt 0.8.0` (release; run from a throwaway env first on PATH, e.g. `uv venv V && uv pip install --python V/bin/python klayout-tools==0.8.0 klayout==0.30.12 && PATH=V/bin:$PATH layout/pilot/regen.sh`) |
 | PDK | `gf180mcuD`, `open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7` (`~/.ciel/gf180mcuD`) |
 | PDK variant | `gf180mcuD` (5LM, metal_top 11K, MIM option B), drawn and checked with klt's curated `gf180mcu` deck |
 | klayout python (labelling) | `klayout==0.30.12` via a throwaway `uv run --with` env |
+| klayout engine inside `klt` | `0.30.12` — **pin it explicitly.** `pip install klayout-tools==0.8.0` on its own leaves klayout unpinned and picks up whatever is newest (0.30.13 at the time of writing), which changes the GDS timestamp records, every content hash in `evidence/`, and sets `klayout_version_mismatch: true` in each envelope's provenance. `tools/pilot.py` checks klt's reported engine against `PILOT_KLAYOUT_PIN` on the first generated cell and refuses the run on a mismatch. |
 
 Nothing is installed on the host. The PDK's metal stack was not previously
 pinned in this repo; `D` is chosen because the schematic's
@@ -98,10 +99,55 @@ Model and terminal facts verified here:
   `f6eeac7`.
 - klt LVS compares device parameters: W and L for MOS, C and A for the MIM
   (the PDK model carries no separate width/length parameter), L and W for the
-  resistor. Negative controls (a deliberately wrong reference dimension) were
-  run by hand while building this and each produced a `device.property`
-  mismatch, so the match status is sensitive to the parameters compared.
-  The negative controls are not part of `regen.sh`.
+  resistor. **`regen.sh` proves that compare is live by running a negative
+  control per device kind on every regeneration** (issue #329): for one cell of
+  each kind it re-emits the reference card with a single dimension deliberately
+  wrong and re-compares it against the *same, unchanged* GDS. Each control must
+  report a `device.property` error, or the regeneration exits non-zero and says
+  which control reported `match` — so a `match` above cannot silently stop
+  meaning "the drawn dimensions agree with the schematic", which is what a klt
+  bump that weakened parameter comparison would otherwise do.
+
+  | Control | Kind | Reference perturbation (GDS untouched) | Observed |
+  |---|---|---|---|
+  | `pilot_nfet_mb1_m5` | MOS | `W` 6u -> 12u | `mismatch`, 1 `device.property` error, klt rc 3 |
+  | `pilot_mim_cc` | MIM | `c_width` 16.8u -> 20u | `mismatch`, 1 `device.property` error, klt rc 3 |
+  | `pilot_rpoly_rz` | res | `r_length` 22u -> 30u | `mismatch`, 1 `device.property` error, klt rc 3 |
+
+  Each control is recorded under `results.json` -> `negative_controls` (the
+  altered parameter, both values, the status, the error count and category, and
+  the evidence paths) with its envelope and request committed as
+  `evidence/<cell>.negctl-<param>.lvs.klt.json` and its wrong reference netlist
+  as `ref/<cell>.negctl-<param>.klt.spice`. Adding that key is why
+  `results.json` is now schema `gf180-opamp.layout-pilot.results/2`; the `cells`
+  array is unchanged in both content and meaning.
+
+  Two details the gate depends on, both measured rather than assumed:
+  **it keys on `status`, not `mismatch_count`** — all seven *positive* cells
+  already carry a non-zero `mismatch_count` (2, 2, 2, 2, 2, 5, 6) from
+  warning-severity `topology` entries, so a `mismatch_count > 0` test would read
+  a passing comparison as a tripped control; and **it requires a
+  `device.property` error specifically**, because the perturbation also raises
+  `device.unmatched` / `net.unmatched` entries, so "some mismatch appeared"
+  would pass even if parameter comparison were switched off entirely. The gate
+  also asserts each control's `environment.layout_sha256` equals its positive's,
+  which is the mechanical proof the control ran against the unchanged GDS.
+  `parameter_tolerance` is `null` (exact compare), so the size of the
+  perturbation is not load-bearing.
+- **A regeneration is reproducible in its verdicts, not byte-for-byte.** Two
+  fields move on every run no matter what: KLayout stamps the current date and
+  time into each GDS file's `BGNLIB`/`BGNSTR` records, so all seven
+  `gds/*.gds` files and therefore every `layout_sha256` / `input.content_hash`
+  below them change; and the `klt drc` / `klt extract` envelopes carry a
+  wall-clock `timing` block. Zeroing the GDS timestamp records shows the
+  geometry itself is bit-identical. `results.json`'s `cells` array holds no
+  timing or hash field and does come back byte-for-byte equal across runs; in
+  `negative_controls` only the `layout_sha256` / `reference_sha256` values move,
+  while every verdict field — `status`, `error_count`,
+  `device_property_errors`, `layout_sha256_matches_positive`, `tripped` — is
+  stable. When reviewing a regeneration, compare `results.json` -> `cells`, the
+  control verdicts, and the envelope statuses; do not expect a clean
+  `git diff` on `gds/`.
 - The `klt lvs` warnings counted in `evidence/*.lvs.klt.json` are
   `topology` entries saying an unused device class has no counterpart; there
   are zero error-severity findings.

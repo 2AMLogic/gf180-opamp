@@ -1,0 +1,8 @@
+* NEGATIVE CONTROL for pilot_rpoly_rz -- r_length is deliberately 30u (schematic value 22u).
+* klt lvs must report a mismatch with a device.property error against the
+* unchanged gds/pilot_rpoly_rz.gds; a match here would mean the device-parameter
+* compare is insensitive to the dimensions this pilot claims it checks,
+* and tools/pilot.py exits non-zero.
+.subckt pilot_rpoly_rz A B VSUB
+XRZ A B VSUB ppolyf_u_1k r_width=2u r_length=30u m=1
+.ends

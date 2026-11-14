@@ -1,0 +1,8 @@
+* NEGATIVE CONTROL for pilot_mim_cc -- c_width is deliberately 20u (schematic value 16.8u).
+* klt lvs must report a mismatch with a device.property error against the
+* unchanged gds/pilot_mim_cc.gds; a match here would mean the device-parameter
+* compare is insensitive to the dimensions this pilot claims it checks,
+* and tools/pilot.py exits non-zero.
+.subckt pilot_mim_cc BOT TOP
+XCC BOT TOP cap_mim_2f0_m4m5_noshield c_width=20u c_length=16.8u m=1
+.ends

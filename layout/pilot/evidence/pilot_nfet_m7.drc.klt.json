@@ -693,7 +693,7 @@
       "released": true
     },
     "input": {
-      "content_hash": "sha256:a184f2ab515c85e7949f882b10056bc3adf30cd2485d04594d6a29ea28a1e0de",
+      "content_hash": "sha256:6ba5cf8128190e00286dcbf48926213c40bdb01feb5191eb995b27c3d2c89317",
       "role": "layout"
     },
     "klayout_version_mismatch": false

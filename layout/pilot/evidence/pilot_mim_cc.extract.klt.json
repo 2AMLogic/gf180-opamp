@@ -172,7 +172,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:44b8c05f670ef0328abba2f0ea2d149b3e5e8731553c00cbcc51503776e3d875",
+      "content_hash": "sha256:d4636125455f6e8f964295d51be09813bb40ac0d620ad7e34b10dc446c4cd051",
       "role": "layout"
     }
   },
@@ -186,14 +186,14 @@
   },
   "timing": {
     "stages": {
-      "read_layout": 0.0,
-      "device_extraction": 0.002,
+      "read_layout": 0.001,
+      "device_extraction": 0.003,
       "diagnostics": 0.0,
       "netlist_write": 0.0,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.121,
-    "unattributed_seconds": 0.118
+    "total_seconds": 0.119,
+    "unattributed_seconds": 0.116
   }
 }

@@ -1,0 +1,461 @@
+{
+  "schema_version": 2,
+  "engine": "klayout",
+  "layout": {
+    "path": "layout/pilot/gds/pilot_rpoly_rz.gds",
+    "scope": "repo"
+  },
+  "reference": "../ref/pilot_rpoly_rz.negctl-r_length.klt.spice",
+  "top": "pilot_rpoly_rz",
+  "reference_top": "PILOT_RPOLY_RZ",
+  "reference_conversion": {
+    "form": "subckt-call",
+    "deck": null,
+    "device_map": null
+  },
+  "parameter_tolerance": null,
+  "options": {
+    "combine_devices": true,
+    "combine_devices_per_circuit": null,
+    "combine_devices_max_attempts": 5,
+    "flatten_layout": false,
+    "flatten_reference": false,
+    "netgen_setup": null,
+    "parameter_tolerance": null,
+    "compare_parameters": {
+      "ppolyf_u_1k": [
+        "L",
+        "W"
+      ]
+    },
+    "power_connectivity": null,
+    "anchor_top_level_pins": null,
+    "strict_top_level_pin_count": false,
+    "compare_mos_flavour": false,
+    "supply_nets": [
+      "GND",
+      "VCC",
+      "VDD",
+      "VGND",
+      "VPWR",
+      "VSS"
+    ],
+    "finfet_bulk": null
+  },
+  "hints_applied": null,
+  "constant_nets_applied": null,
+  "status": "mismatch",
+  "power_connectivity": {
+    "status": "unchecked",
+    "reason": "reference.form is 'subckt-call', whose reference netlist carries its own power/ground pins and nets -- they take part in the ordinary compare, so this check (which exists to cover the signal-only 'gate-level-verilog' form) does not apply",
+    "power_pins": [],
+    "power_pins_derivation": null,
+    "instance_count": 0,
+    "expected_nets": null,
+    "unchecked_expected_pins": [],
+    "findings": [],
+    "finding_count": 0
+  },
+  "body_verification": {
+    "status": "verified",
+    "reason": null,
+    "device_classes": [],
+    "device_count": 0,
+    "findings": [],
+    "finding_count": 0
+  },
+  "device_parameter_coverage": [
+    {
+      "class": "ppolyf_u_1k",
+      "device_kind": "resistor",
+      "layout_devices": 1,
+      "reference_devices": 1,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "R",
+          "reason": "placeholder_value"
+        },
+        {
+          "parameter": "A",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "P",
+          "reason": "secondary"
+        }
+      ]
+    }
+  ],
+  "mismatch_count": 15,
+  "error_count": 1,
+  "category_counts": {
+    "device.geometry_not_compared": 1,
+    "device.parameter_excluded": 1,
+    "device.placeholder_value": 1,
+    "device.property": 1,
+    "device.unmatched": 2,
+    "net.unmatched": 6,
+    "topology": 3
+  },
+  "category_error_counts": {
+    "device.property": 1
+  },
+  "counts": {
+    "nets": {
+      "layout": 3,
+      "reference": 3,
+      "matched": 0
+    },
+    "devices": {
+      "layout": 1,
+      "reference": 1,
+      "matched": 0
+    },
+    "pins": {
+      "layout": 3,
+      "reference": 3,
+      "matched": 6
+    }
+  },
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "bjt",
+    "cap_mim_2f0_m4m5_noshield",
+    "cap_nmos_03v3",
+    "cap_nmos_03v3_dn",
+    "cap_pmos_03v3",
+    "cap_pmos_03v3_dn",
+    "cap_nmos_06v0",
+    "cap_nmos_06v0_dn",
+    "cap_pmos_06v0",
+    "cap_pmos_06v0_dn",
+    "cap_nmos_03v3_b",
+    "cap_pmos_03v3_b",
+    "cap_nmos_06v0_b",
+    "cap_pmos_06v0_b",
+    "resistor",
+    "diode_nd2ps_06v0",
+    "diode_pd2nw_06v0"
+  ],
+  "environment": {
+    "engine": "klayout",
+    "engine_version": "0.30.12",
+    "netgen_binary": null,
+    "layout_sha256": "dee9251ec4b853345dae321014949705b6c28ae534112606b52ea1aa24321654",
+    "reference_sha256": "ec6f4bae423a0f031a2aa6471b3aaf84c8e3c6d2bba0f4f56e4fcc4b3131032f",
+    "extracted_netlist": null
+  },
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": {
+      "name": "gf180mcu",
+      "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
+      "released": true,
+      "options": {
+        "metal_top": "9K",
+        "mim_cap": "cap_mim_2f0_m4m5_noshield",
+        "poly_res": "1k"
+      },
+      "options_explicit": {
+        "metal_top": false,
+        "mim_cap": false,
+        "poly_res": true
+      },
+      "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
+    },
+    "input": {
+      "content_hash": "sha256:dee9251ec4b853345dae321014949705b6c28ae534112606b52ea1aa24321654",
+      "role": "layout"
+    },
+    "klayout_version_mismatch": false
+  },
+  "mismatches": [
+    {
+      "category": "device.geometry_not_compared",
+      "severity": "warning",
+      "description": "device class 'ppolyf_u_1k' is a resistor class, whose ['A', 'P'] parameter(s) KLayout declares *secondary*: kdb.NetlistComparer compares primary parameters only, so none of them took part in this compare and each is NOT verified -- this resistor's geometry could differ between the two sides by any amount and this run would still report 'match'. The compared parameter(s) were ['L', 'W']. Name them in options.compare_parameters to compare them (see docs/cli/lvs.md, 'device.geometry_not_compared')",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "ppolyf_u_1k"
+      },
+      "property": null,
+      "details": {
+        "device_kind": "resistor",
+        "compared_parameters": [
+          "L",
+          "W"
+        ],
+        "not_compared_parameters": [
+          "A",
+          "P"
+        ],
+        "layout_devices": 1,
+        "reference_devices": 1
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.parameter_excluded",
+      "severity": "warning",
+      "description": "options.compare_parameters scoped device class 'ppolyf_u_1k' to compare only ['L', 'W'] -- 'R' was excluded from this compare and is NOT verified; a 'match' does not confirm the two sides agree on it (see docs/cli/lvs.md, 'device.parameter_excluded')",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "ppolyf_u_1k"
+      },
+      "property": null,
+      "details": {
+        "parameter": "R",
+        "compared_parameters": [
+          "L",
+          "W"
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.placeholder_value",
+      "severity": "warning",
+      "description": "reference device class 'PPOLYF_U_1K' was converted from a subcircuit call (request.reference.form: \"subckt-call\"), so its 'R' value is the literal 0 placeholder on all 1 reference instance(s) -- klt lvs has no PDK sheet-resistance/capacitance-per-area data to compute a real one. 'R' was therefore excluded from this compare on both sides (layout: 1 instance(s), R 11000) and the two sides were paired on topology alone -- that dimension of the compare is not independently verified. Supply a reference in the plain-element form carrying real 'R' values to compare it (see docs/cli/lvs.md, 'device.placeholder_value')",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "PPOLYF_U_1K"
+      },
+      "property": null,
+      "details": {
+        "parameter": "R",
+        "device_kind": "resistor",
+        "reference_devices": 1,
+        "layout_devices": 1,
+        "layout_values": [
+          11000.0
+        ]
+      },
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.property",
+      "severity": "error",
+      "description": "matched device parameter 'l_um' differs",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": "\\$1",
+        "reference": "Z",
+        "class": "ppolyf_u_1k"
+      },
+      "property": {
+        "name": "l_um",
+        "layout": 22.0,
+        "reference": 30.0
+      },
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "warning",
+      "description": "device has no counterpart on the other side, but the circuit is too small for the comparer to pair it structurally -- the root cause is the parameter difference reported as 'device.property' on this same device pair (see docs/cli/lvs.md, \"Negative controls\")",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": "\\$1",
+        "reference": null,
+        "class": "ppolyf_u_1k"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "device.unmatched",
+      "severity": "warning",
+      "description": "device has no counterpart on the other side, but the circuit is too small for the comparer to pair it structurally -- the root cause is the parameter difference reported as 'device.property' on this same device pair (see docs/cli/lvs.md, \"Negative controls\")",
+      "side": "reference",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": "Z",
+        "class": "PPOLYF_U_1K"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "warning",
+      "description": "net has no counterpart on the other side, but only because the one device pair reported as 'device.property' failed to pair -- no other device or subcircuit touches this net, so it is collateral, not an independent connectivity defect",
+      "side": "layout",
+      "net": {
+        "layout": "A",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "warning",
+      "description": "net has no counterpart on the other side, but only because the one device pair reported as 'device.property' failed to pair -- no other device or subcircuit touches this net, so it is collateral, not an independent connectivity defect",
+      "side": "layout",
+      "net": {
+        "layout": "B",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "warning",
+      "description": "net has no counterpart on the other side, but only because the one device pair reported as 'device.property' failed to pair -- no other device or subcircuit touches this net, so it is collateral, not an independent connectivity defect",
+      "side": "layout",
+      "net": {
+        "layout": "vsubs",
+        "reference": null
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "warning",
+      "description": "net has no counterpart on the other side, but only because the one device pair reported as 'device.property' failed to pair -- no other device or subcircuit touches this net, so it is collateral, not an independent connectivity defect",
+      "side": "reference",
+      "net": {
+        "layout": null,
+        "reference": "A"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "warning",
+      "description": "net has no counterpart on the other side, but only because the one device pair reported as 'device.property' failed to pair -- no other device or subcircuit touches this net, so it is collateral, not an independent connectivity defect",
+      "side": "reference",
+      "net": {
+        "layout": null,
+        "reference": "B"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "net.unmatched",
+      "severity": "warning",
+      "description": "net has no counterpart on the other side, but only because the one device pair reported as 'device.property' failed to pair -- no other device or subcircuit touches this net, so it is collateral, not an independent connectivity defect",
+      "side": "reference",
+      "net": {
+        "layout": null,
+        "reference": "VSUB"
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "warning",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'nfet'",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "nfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "warning",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'pfet'",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "pfet"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "warning",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'bjt'",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "bjt"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    }
+  ],
+  "net_correspondence": []
+}

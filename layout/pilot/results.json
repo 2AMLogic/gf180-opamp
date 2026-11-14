@@ -1,5 +1,5 @@
 {
-  "schema": "gf180-opamp.layout-pilot.results/1",
+  "schema": "gf180-opamp.layout-pilot.results/2",
   "cells": [
     {
       "cell": "pilot_nfet_mb1_m5",
@@ -501,6 +501,95 @@
           ]
         }
       }
+    }
+  ],
+  "negative_controls": [
+    {
+      "cell": "pilot_nfet_mb1_m5",
+      "kind": "mos",
+      "altered_parameter": "w",
+      "schematic_value": "6u",
+      "control_value": "12u",
+      "parameters_compared": {
+        "nfet": [
+          "W",
+          "L"
+        ]
+      },
+      "status": "mismatch",
+      "error_count": 1,
+      "mismatch_count": 13,
+      "category_error_counts": {
+        "device.property": 1
+      },
+      "device_property_errors": 1,
+      "klt_exit_code": 3,
+      "reference_netlist": "ref/pilot_nfet_mb1_m5.negctl-w.klt.spice",
+      "request": "evidence/pilot_nfet_mb1_m5.negctl-w.lvs.klt.request.json",
+      "evidence": "evidence/pilot_nfet_mb1_m5.negctl-w.lvs.klt.json",
+      "layout_sha256": "e82b95e85ea2893da016926cfa6a5be21f6fcda17bbf17ab5cefb9a2dd876012",
+      "layout_sha256_matches_positive": true,
+      "reference_sha256": "6ee56c9d9f900adf8912bc4b56c13df8df3b5b547a598a430ee85a71fa5b7203",
+      "positive_reference_sha256": "0a035fc4857b77ba6055cb86dc9b8858fff43a10972b72f33d39374f844b4643",
+      "tripped": true
+    },
+    {
+      "cell": "pilot_mim_cc",
+      "kind": "mim",
+      "altered_parameter": "c_width",
+      "schematic_value": "16.8u",
+      "control_value": "20u",
+      "parameters_compared": {
+        "cap_mim_2f0_m4m5_noshield": [
+          "C",
+          "A"
+        ]
+      },
+      "status": "mismatch",
+      "error_count": 1,
+      "mismatch_count": 12,
+      "category_error_counts": {
+        "device.property": 1
+      },
+      "device_property_errors": 1,
+      "klt_exit_code": 3,
+      "reference_netlist": "ref/pilot_mim_cc.negctl-c_width.klt.spice",
+      "request": "evidence/pilot_mim_cc.negctl-c_width.lvs.klt.request.json",
+      "evidence": "evidence/pilot_mim_cc.negctl-c_width.lvs.klt.json",
+      "layout_sha256": "d4636125455f6e8f964295d51be09813bb40ac0d620ad7e34b10dc446c4cd051",
+      "layout_sha256_matches_positive": true,
+      "reference_sha256": "0c2727555a7e684217fe745dac182798dcb8447cf5debd89f765fbc73e712093",
+      "positive_reference_sha256": "fc828d5316ff814ac344eabceda8938000187003af5379c70c3a58926ea50371",
+      "tripped": true
+    },
+    {
+      "cell": "pilot_rpoly_rz",
+      "kind": "res",
+      "altered_parameter": "r_length",
+      "schematic_value": "22u",
+      "control_value": "30u",
+      "parameters_compared": {
+        "ppolyf_u_1k": [
+          "L",
+          "W"
+        ]
+      },
+      "status": "mismatch",
+      "error_count": 1,
+      "mismatch_count": 15,
+      "category_error_counts": {
+        "device.property": 1
+      },
+      "device_property_errors": 1,
+      "klt_exit_code": 3,
+      "reference_netlist": "ref/pilot_rpoly_rz.negctl-r_length.klt.spice",
+      "request": "evidence/pilot_rpoly_rz.negctl-r_length.lvs.klt.request.json",
+      "evidence": "evidence/pilot_rpoly_rz.negctl-r_length.lvs.klt.json",
+      "layout_sha256": "dee9251ec4b853345dae321014949705b6c28ae534112606b52ea1aa24321654",
+      "layout_sha256_matches_positive": true,
+      "reference_sha256": "ec6f4bae423a0f031a2aa6471b3aaf84c8e3c6d2bba0f4f56e4fcc4b3131032f",
+      "positive_reference_sha256": "d6811c5951fccb3aeb786777070a1ba2e3d76efef6450b8feca16cff9874bf5b",
+      "tripped": true
     }
   ]
 }
