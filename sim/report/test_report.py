@@ -23,6 +23,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import characterization_report as cr  # noqa: E402
+import extract_mc as em  # noqa: E402
 
 REPO = HERE.parent.parent
 MANIFEST = HERE / "selection.json"
@@ -2050,6 +2051,69 @@ class PsrrMismatchRecord(unittest.TestCase):
         self.edit(PMC_MD, "N = 300 cannot resolve", "N = 301 cannot resolve")
         self.assertNotEqual(self.build(m)["sources"]["psrr-mc"]["sha256"], before)
         self.assertEqual(cr.main(base), 1)
+
+
+class PsrrGridDisplayTiedCorner(unittest.TestCase):
+    """Issue #190: in the full-grid record's T x VDD tables, two corners can be tied at the
+    two-decimal display precision the per-point table is printed to (`typical` and `sf` both
+    at 82.56 dB for PSRR- dc, 27 C / 3.30 V). The writer names its full-precision minimum,
+    which need not be the one re-derivation rounds to first, so `_psrr_mc_grid_tv` accepts any
+    corner tied within `_CM_TOL` -- while still rejecting an untied corner or a wrong value."""
+
+    TEMPS = [27.0]
+    SUPS = [3.30]
+    ORDER = [em._okey("typical", 27.0, 3.30), em._okey("sf", 27.0, 3.30)]
+
+    def text(self, cell):
+        """A record carrying only the T x VDD section, every table holding the same cell."""
+        out = ["## Linear 3-sigma by temperature and supply", ""]
+        for s, _, _ in em.PSRR_MC_SIDES:
+            for h, k, _ in em.PSRR_MC_FIGS:
+                if k in ("dc", "1k", "10k"):
+                    out += [f"### {s} {h}", "", "| T | 3.30 V |", "|---|---|", f"| 27 C | {cell} |", ""]
+        return "\n".join(out) + "\n"
+
+    def stats(self, typical, sf):
+        """lin3 per grid point, identical for every side and figure."""
+        per = {self.ORDER[0]: {"lin3": typical}, self.ORDER[1]: {"lin3": sf}}
+        return {em._pm_key(s, k): dict(per) for s, _, _ in em.PSRR_MC_SIDES
+                for _, k, _ in em.PSRR_MC_FIGS if k in ("dc", "1k", "10k")}
+
+    def check(self, cell, typical, sf):
+        em._psrr_mc_grid_tv(self.text(cell), "psrr-mc:tied", self.stats(typical, sf),
+                            self.ORDER, self.TEMPS, self.SUPS)
+
+    def test_display_tied_corner_accepted(self):
+        # sf is the full-precision minimum; the record names typical, tied at the printed 82.56
+        self.assertLess(abs(82.5600 - 82.5570), em._CM_TOL)
+        self.check("82.56 (typical)", typical=82.5600, sf=82.5570)
+
+    def test_either_tied_corner_accepted(self):
+        # the same record is accepted when it names the minimum itself
+        self.check("82.56 (sf)", typical=82.5600, sf=82.5570)
+
+    def test_exact_minimum_still_accepted(self):
+        self.check("82.56 (sf)", typical=83.1000, sf=82.5600)
+
+    def test_untied_corner_still_rejected(self):
+        # typical is 0.54 dB above the minimum: not a display tie, so the names must agree
+        with self.assertRaisesRegex(cr.ReportError, r"at 27 C / 3\.30 V \(82\.56 \(typical\)\) disagrees"):
+            self.check("82.56 (typical)", typical=83.1000, sf=82.5600)
+
+    def test_corner_just_outside_tolerance_rejected(self):
+        with self.assertRaisesRegex(cr.ReportError, r"disagrees with its own per-point table"):
+            self.check("82.56 (typical)", typical=82.5600 + 2 * em._CM_TOL, sf=82.5600)
+
+    def test_wrong_value_on_a_tied_corner_still_rejected(self):
+        # the tie admits the other corner's name, never a value the per-point table does not carry
+        with self.assertRaisesRegex(cr.ReportError, r"\(85\.00 \(typical\)\) disagrees"):
+            self.check("85.00 (typical)", typical=82.5600, sf=82.5570)
+
+    def test_missing_cell_rejected(self):
+        bad = self.text("82.56 (typical)").replace("| 27 C | 82.56 (typical) |", "| 125 C | 82.56 (typical) |")
+        with self.assertRaisesRegex(cr.ReportError, r"does not carry exactly the grid's temperatures"):
+            em._psrr_mc_grid_tv(bad, "psrr-mc:tied", self.stats(82.56, 82.5570),
+                                self.ORDER, self.TEMPS, self.SUPS)
 
 
 class GainGbwPmMismatchRecord(unittest.TestCase):
