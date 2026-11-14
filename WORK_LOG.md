@@ -2,6 +2,14 @@
 
 Merged pull requests and closed issues recorded by Guide.
 
+## Archives
+
+- [2026-09](work_log/WORK_LOG_2026-09.md)
+
+### 2026-11-14
+
+- **PR #310**: sim: add full-grid PSRR mismatch record and accept display-tied binding corners
+
 ### 2026-11-12
 
 - **PR #317**: docs: remove Loom guard/sweep material transferred upstream
@@ -314,11 +322,3 @@ Merged pull requests and closed issues recorded by Guide.
 - **Issue #18** (closed): Ratify spec/target-spec.md via decision record: propose bounds for [TBD] performance rows
 - **Issue #17** (closed): Schematic entry: two-stage op-amp topology (DR-0001) in design/
 
-### 2026-09-09
-
-- **PR #15**: refactor: remove dead code in run_gmid.py
-- **PR #13**: spec: topology + CL decision record (0001) for the two-stage Miller op-amp
-- **PR #11**: feat: add gm/ID characterization sweep for gf180mcu 3.3V MOS
-- **Issue #14** (closed): Remove dead code in run_gmid.py: unused NOMINAL_VDD constant and unused build_plots record param
-- **Issue #12** (closed): spec: topology + CL decision record (0001) for the two-stage Miller op-amp, cited against the gm/ID study (#10) — the gf180 twin of sg13g2-opamp#6
-- **Issue #10** (closed): sim: gm/ID characterization sweep of gf180mcu 3.3 V MOS — the first engineering task (porting-plan §4, gm/ID-first)
