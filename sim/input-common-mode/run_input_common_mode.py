@@ -99,6 +99,7 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    add_batch_args,
     allocate_record_id,
     batch_block,
     claim_run_paths,
@@ -1491,14 +1492,8 @@ def write_snapshot(path: Path, record: str, reqs: dict, deck0: str) -> None:
 def add_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--smoke", action="store_true", help="nominal point, local, no record")
     ap.add_argument("--recompute", metavar="RECORD_ID", help="re-derive a record's headline from its retained data")
-    ap.add_argument("--backend", help="klt execution backend for the grids (default: klt's own resolution, "
-                    "e.g. $KLT_SIM_BACKEND)")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
-    ap.add_argument("--batch-submit-retries", type=int, default=0,
-                    help="re-submit up to N times when the batch submit is refused for fleet capacity "
-                    "(never changes backend)")
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help="klt execution backend for the grids (default: klt's own resolution, "
+                   "e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--hosts", type=int, default=None,
                     help=f"fleet jobs each request is sharded over (default {GRID_HOSTS})")
     ap.add_argument("--keep-work", type=Path, default=None,

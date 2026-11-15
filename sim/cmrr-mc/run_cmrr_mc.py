@@ -78,6 +78,7 @@ sys.path.insert(0, str(REPO_ROOT / "sim"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    add_batch_args,
     allocate_record_id,
     claim_run_paths,
     finalize_run_evidence,
@@ -737,11 +738,7 @@ def add_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--probe-expr", action="store_true",
                     help="probe: also declare one `expr` measurement (the klt 0.5.0 fleet runner rejects it)")
     ap.add_argument("--grid", choices=sorted(GRIDS), default="nominal")
-    ap.add_argument("--backend", default=None, help="klt backend (default: klt's own, e.g. $KLT_SIM_BACKEND)")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
-    ap.add_argument("--batch-submit-retries", type=int, default=0)
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help="klt backend (default: klt's own, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--keep-work", type=Path, default=None, help="keep the work dir (never commit it)")
 
 

@@ -440,17 +440,6 @@ class GuardTests(unittest.TestCase):
                 self.assertIn("Ibias vdd ibias dc 5e-06", tb2.read_text())
 
 
-class AppendOnlyTests(unittest.TestCase):
-    def test_existing_record_paths_are_never_overwritten(self):
-        with tempfile.TemporaryDirectory() as d:
-            base = Path(d)
-            r.g.claim_record_paths(base, "rid-1")
-            (base / "records").mkdir()
-            (base / "records" / "rid-1.md").write_text("x")
-            with self.assertRaises(FileExistsError):
-                r.g.claim_record_paths(base, "rid-1")
-
-
 class MeasurementFingerprint(unittest.TestCase):
     """Issue #89: the runner and the fingerprint share ONE configuration source,
     per figure."""

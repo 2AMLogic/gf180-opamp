@@ -73,6 +73,7 @@ sys.path.insert(0, str(REPO_ROOT / "sim"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    add_batch_args,
     allocate_record_id,
     claim_run_paths,
     finalize_run_evidence,
@@ -688,13 +689,8 @@ def add_args(ap: argparse.ArgumentParser) -> None:
     ap.add_argument("--deterministic-record", default=None,
                     help="full campaign: the sim/gain-gbw-pm record id holding the revised DUT's deterministic "
                     "evidence (required; must cite the pinned sha256)")
-    ap.add_argument("--backend", default=None, help="klt backend (default: klt's own, e.g. $KLT_SIM_BACKEND); "
-                    "`local` is refused for Monte Carlo")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
-    ap.add_argument("--batch-submit-retries", type=int, default=0,
-                    help="re-submit the SAME request on a batch capacity refusal (never another backend)")
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help="klt backend (default: klt's own, e.g. $KLT_SIM_BACKEND); "
+                   "`local` is refused for Monte Carlo")
     ap.add_argument("--keep-work", type=Path, default=None,
                     help="probe: keep the sanitised report here (outside the repository; never commit it)")
 

@@ -88,6 +88,7 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    add_batch_args,
     allocate_record_id,
     batch_block,
     claim_record_paths,
@@ -1378,13 +1379,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--passive-scope", choices=["limited", "full"], default="limited",
                     help="with --passive-corners: 'limited' (default, issue #97) = 3 screening points x 9 RZ/CC = 27 cells "
                          "per figure; 'full' (issue #150) = all 5 MOS x 3 T x 3 VDD x 9 RZ/CC = 405 cells per figure")
-    ap.add_argument("--backend", help="klt execution backend for the 45-point grids (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--strict", action="store_true", help="exit 1 when a ratified row misses")
-    ap.add_argument("--batch-runner-version-check", choices=["enforce", "warn"], default=None)
-    ap.add_argument("--batch-capacity-wait-s", type=float, default=None)
-    ap.add_argument("--batch-submit-retries", type=int, default=0,
-                    help="re-submit up to N times when the batch submit is refused for fleet capacity (never changes backend)")
-    ap.add_argument("--batch-retry-wait-s", type=float, default=120.0)
+    add_batch_args(ap, backend_help="klt execution backend for the 45-point grids (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--figures", default=",".join(FIGURES),
                     help="comma-separated subset of power,slew,swing to run (default: all; one klt request per figure). "
                          "Rows outside the subset are recorded as not measured, never as a pass.")
