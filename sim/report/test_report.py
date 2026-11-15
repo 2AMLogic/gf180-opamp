@@ -446,13 +446,13 @@ def fingerprint_record(root: Path, rec: str) -> None:
     mod.__file__ = str(root / MCFG)
     exec(compile((root / MCFG).read_text(), str(root / MCFG), "exec"), mod.__dict__)
     sys.path.pop(0)
-    tb = (root / TB).read_text()
+    texts = {k: (root / rel).read_text() for k, rel in mod.TESTBENCHES_REL.items()}
     p = root / GAIN / f"{rec}.md"
     text = p.read_text()
     text = re.sub(r"(?m)^- \*\*Measurement fingerprint\*\*:.*\n", "", text)
     text = re.sub(r"(?ms)^## Measurement fingerprint inputs\n.*?^```\n\n", "", text)
-    text = text.replace("- **Corner matrix run**:", "\n".join(mod.fingerprint_lines(tb)) + "\n- **Corner matrix run**:", 1)
-    text = text.replace("## Plots", "\n".join(mod.inputs_section(tb)) + "\n## Plots", 1)
+    text = text.replace("- **Corner matrix run**:", "\n".join(mod.fingerprint_lines(texts)) + "\n- **Corner matrix run**:", 1)
+    text = text.replace("## Plots", "\n".join(mod.inputs_section(texts)) + "\n## Plots", 1)
     p.write_text(text)
 
 

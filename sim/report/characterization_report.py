@@ -400,11 +400,11 @@ MEASUREMENT_CONFIG = {
 def current_measurement_inputs(root: Path, exp: str, retained: dict | None = None) -> dict:
     """Effective measurement inputs of `exp` as the checkout at `root` would run them.
 
-    Single-bench modules (gain) expose `TESTBENCH_REL` and `inputs(text)`.
-    Later modules expose `TESTBENCHES_REL` (name -> repo-relative bench) and
-    `inputs(texts, retained)`; `retained` is the record's own stored inputs,
-    from which an experiment with independent figures (slew/swing/power)
-    selects the figures that record measured.
+    Every configuration module exposes `TESTBENCHES_REL` (bench name ->
+    repo-relative bench) and `inputs(texts, retained)` -- the one shape, since
+    issue #325. `retained` is the record's own stored inputs, from which an
+    experiment with independent figures (slew/swing/power) selects the figures
+    that record measured.
     """
     import types
     mod_path = root / MEASUREMENT_CONFIG[exp]
@@ -419,18 +419,13 @@ def current_measurement_inputs(root: Path, exp: str, retained: dict | None = Non
         exec(compile(mod_path.read_text(), str(mod_path), "exec"), mod.__dict__)
     finally:
         h.purge_config_modules()
-    if hasattr(mod, "TESTBENCHES_REL"):
-        texts = {}
-        for k, rel in mod.TESTBENCHES_REL.items():
-            tb = root / rel
-            if not tb.is_file():
-                raise ReportError(f"{exp}: current testbench is missing: {rel}")
-            texts[k] = tb.read_text()
-        return mod.inputs(texts, retained)
-    tb = root / mod.TESTBENCH_REL
-    if not tb.is_file():
-        raise ReportError(f"{exp}: current testbench is missing: {mod.TESTBENCH_REL}")
-    return mod.inputs(tb.read_text())
+    texts = {}
+    for k, rel in mod.TESTBENCHES_REL.items():
+        tb = root / rel
+        if not tb.is_file():
+            raise ReportError(f"{exp}: current testbench is missing: {rel}")
+        texts[k] = tb.read_text()
+    return mod.inputs(texts, retained)
 
 
 def _diff_inputs(old, new, path="") -> list:
