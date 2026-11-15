@@ -6,8 +6,23 @@ Merged pull requests and closed issues recorded by Guide.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-15
+
+- **PR #349**: layout: place the first-stage sub-block (XM1-XM5) with clean DRC and a filed routing gap
+- **PR #332**: refactor: give every measurement_config one bench/inputs shape
+- **Issue #325** (closed): Unify the measurement_config interface: one bench/inputs shape, drop the two shape adapters
+
 ### 2026-11-14
 
+- **PR #348**: refactor(sim): collapse 11 hand-rolled --backend/--batch-* CLI blocks into harness.add_batch_args
+- **PR #344**: refactor(sim): collapse 12 copied report-test fixtures into one base class
+- **PR #342**: test: consolidate the claim_record_paths append-only guard into sim/test_harness.py
+- **PR #333**: layout/pilot: run one LVS negative control per device kind from regen.sh
+- **Issue #343** (closed): Collapse 12 hand-copied test fixtures in sim/report/test_report.py into one base class
+- **Issue #339** (closed): Collapse 11 hand-rolled copies of the --backend/--batch-* CLI block into the harness helper that already exists
+- **Issue #329** (closed): layout/pilot: run the LVS negative controls from regen.sh and record them
+- **Issue #324** (closed): Remove 8 duplicate copies of the claim_record_paths append-only test; one parameterised copy in sim/test_harness.py
+- **Issue #190** (closed): sim: extend PSRR mismatch characterization to the full temperature and supply grid
 - **PR #336**: chore: delete the scaffold package.json with its exit-0 test targets
 - **PR #327**: docs: roadmap as of 2026-11-13
 - **PR #323**: docs: replace the "no grid record" PSRR mismatch status with the landed campaign
