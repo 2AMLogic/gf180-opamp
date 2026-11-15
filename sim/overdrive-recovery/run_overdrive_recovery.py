@@ -715,7 +715,8 @@ def main(argv: list[str] | None = None) -> int:
     return run_transient_grid(
         pdk=pdk, args=args, here=HERE, prefix="overdrive-", issue=183,
         tb_rel="sim/overdrive-recovery/testbench/tb_overdrive.spice", tb_path=TESTBENCH,
-        nominal=NOMINAL, want=g.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V),
+        nominal=NOMINAL, corners=CORNERS, temps=TEMPS_C, supplies=SUPPLIES_V,
+        want=g.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V),
         materialise=materialise, make_request=make_request, analyse_report=analyse_report,
         meas_names=[x["name"] for x in mc.measurements()],
         run_controls=run_controls, control_failures=control_failures,

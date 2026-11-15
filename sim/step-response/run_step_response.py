@@ -736,7 +736,8 @@ def main(argv: list[str] | None = None) -> int:
     return run_transient_grid(
         pdk=pdk, args=args, here=HERE, prefix="step-", issue=113,
         tb_rel="sim/step-response/testbench/tb_step.spice", tb_path=TESTBENCH,
-        nominal=NOMINAL, want=g.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V),
+        nominal=NOMINAL, corners=CORNERS, temps=TEMPS_C, supplies=SUPPLIES_V,
+        want=g.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V),
         materialise=materialise, make_request=make_request, analyse_report=analyse_report,
         meas_names=[x["name"] for x in mc.measurements()],
         run_controls=run_controls, control_failures=control_failures,

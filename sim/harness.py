@@ -76,6 +76,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -1237,8 +1238,6 @@ def run_transient_grid(*, pdk: Pdk, args, here: Path, prefix: str, issue: int, t
     handling. Append-only evidence: what is written is byte-identical to the
     pre-hoist runners.
     """
-    import tempfile
-
     record, stamp = allocate_record_id(REPO_ROOT)
     paths = claim_run_paths(here, record)  # fail early if this id was already used
     ngspice = ngspice_version()

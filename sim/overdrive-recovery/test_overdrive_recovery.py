@@ -618,5 +618,28 @@ class RecordTests(unittest.TestCase):
         self.assertIn("| Latched points | 0 (none) |", md)
 
 
+class GridSeamTests(unittest.TestCase):
+    def test_main_passes_the_full_grid_axes_to_run_transient_grid(self):
+        import inspect
+        from unittest import mock
+
+        import harness
+
+        captured = {}
+
+        def recorder(**kw):
+            captured.update(kw)
+            return 0
+
+        with mock.patch.object(r, "find_pdk", return_value=r.Pdk(Path("/x"), "gf180mcuD", "test")), \
+                mock.patch.object(r, "run_transient_grid", new=recorder):
+            rc = r.main([])
+        self.assertEqual(rc, 0)
+        inspect.signature(harness.run_transient_grid).bind(**captured)
+        self.assertIs(captured["corners"], r.CORNERS)
+        self.assertIs(captured["temps"], r.TEMPS_C)
+        self.assertIs(captured["supplies"], r.SUPPLIES_V)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)
