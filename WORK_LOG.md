@@ -8,6 +8,10 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-14
 
+- **PR #336**: chore: delete the scaffold package.json with its exit-0 test targets
+- **PR #327**: docs: roadmap as of 2026-11-13
+- **PR #323**: docs: replace the "no grid record" PSRR mismatch status with the landed campaign
+- **Issue #335** (closed): Remove the scaffold package.json: its test/check:ci targets exit 0 claiming no tests exist
 - **PR #310**: sim: add full-grid PSRR mismatch record and accept display-tied binding corners
 
 ### 2026-11-12
