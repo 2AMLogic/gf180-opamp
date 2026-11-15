@@ -8,6 +8,10 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-15
 
+- **PR #359**: test: scope measurement-config fingerprint exemptions by (experiment, constant)
+- **PR #345**: sim: drop six unread parameters and the unraised GateError from the drivers
+- **Issue #351** (closed): Scope NOT_FINGERPRINTED by (experiment, constant) so a shared constant name cannot silently exempt a second module
+- **Issue #320** (closed): Remove dead parameters and an unraised exception class in the sim drivers
 - **PR #349**: layout: place the first-stage sub-block (XM1-XM5) with clean DRC and a filed routing gap
 - **PR #332**: refactor: give every measurement_config one bench/inputs shape
 - **Issue #325** (closed): Unify the measurement_config interface: one bench/inputs shape, drop the two shape adapters

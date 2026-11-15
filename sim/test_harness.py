@@ -3,11 +3,17 @@
 A scratch directory stands in for the PDK (only `design.ngspice` is copied),
 and a fixed DUT text stands in for the committed export, so these run
 anywhere the stdlib does.
+
+This module also hosts `StaleDutMixin` and `fake_pdk` (issue #347): the ONE
+copy of the stale-DUT negative tests every bench suite mixes in next to its
+runner-specific checks, kept here next to the `guard_dut_core` /
+`stage_workdir` code they exercise instead of being hand-copied per bench.
 """
 
 from __future__ import annotations
 
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -542,6 +548,61 @@ class StatePhraseTests(unittest.TestCase):
         self.assertTrue(local.startswith("  - "))
         self.assertIn("backend `local`", local)
         self.assertNotIn("exit_reason", local)
+
+
+def fake_pdk(d: Path) -> harness.Pdk:
+    """A scratch PDK root with only the `design.ngspice` `stage_workdir` copies."""
+    ng = d / "pdk" / "libs.tech" / "ngspice"
+    ng.mkdir(parents=True)
+    (ng / "design.ngspice").write_text("* stub\n")
+    return harness.Pdk(d / "pdk", "gf180mcuD", "test")
+
+
+class StaleDutMixin:
+    """The bench must measure the committed export: an altered, stale or
+    hand-edited DUT is rejected before anything is written or simulated.
+
+    One copy of these negative tests lives here, in the module that tests
+    the shared guard code they exercise (issue #347); each bench suite
+    subclasses this next to `unittest.TestCase` and points the hooks at its
+    runner. Deliberately NOT a `unittest.TestCase` itself: this module runs
+    standalone with no runner attached (`python3 sim/test_harness.py`), and
+    an unbound TestCase would be collected and fail on its unset hooks.
+
+    Hooks a subclass must provide:
+
+    * ``RUNNER`` -- the bench's runner module. It must expose
+      ``load_dut_text()``, ``materialise(work, pdk, ...)`` and the guards
+      module ``g`` (``guard_dut``, ``strip_instance``, ``DUT_INCLUDE_NAME``).
+    * ``MATERIALISE_ARGS`` -- extra positional arguments passed to
+      ``materialise`` before the keyword ones (e.g. the enable-acquisition
+      schedule; ``()`` for the plain benches).
+    """
+
+    RUNNER = None
+    MATERIALISE_ARGS: tuple = ()
+
+    def test_altered_device_in_the_dut_is_rejected(self):
+        r = self.RUNNER
+        dut = r.load_dut_text()
+        mm = re.search(r"\bW=(\S+)", dut)
+        self.assertIsNotNone(mm)
+        stale = dut[: mm.start()] + "W=" + mm.group(1) + "0" + dut[mm.end():]  # a resized device
+        self.assertTrue(r.g.guard_dut(stale))
+        with tempfile.TemporaryDirectory() as d:
+            with self.assertRaises(RuntimeError):
+                r.materialise(Path(d) / "w", fake_pdk(Path(d)), *self.MATERIALISE_ARGS, dut_text=stale)
+            self.assertFalse((Path(d) / "w" / r.g.DUT_INCLUDE_NAME).exists())
+
+    def test_dropped_or_duplicated_device_is_rejected(self):
+        r = self.RUNNER
+        dut = r.load_dut_text()
+        self.assertTrue(r.g.guard_dut(r.g.strip_instance(dut, "XM6")))
+        first_x = next(ln for ln in dut.splitlines() if ln[:1] and ln[0] in "xX")
+        self.assertTrue(r.g.guard_dut(dut.replace(first_x, first_x + "\n" + first_x, 1)))
+
+    def test_committed_dut_passes(self):
+        self.assertEqual(self.RUNNER.g.guard_dut(self.RUNNER.load_dut_text()), [])
 
 
 if __name__ == "__main__":
