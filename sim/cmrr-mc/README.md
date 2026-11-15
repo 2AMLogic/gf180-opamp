@@ -64,6 +64,8 @@ python3 sim/cmrr-mc/test_cmrr_mc.py               # offline tests (+ 1 local uni
 python3 sim/cmrr-mc/run_cmrr_mc.py --smoke         # one local unit, no record
 python3 sim/cmrr-mc/run_cmrr_mc.py --probe         # N=3 AC+MC probe (batch)
 python3 sim/cmrr-mc/run_cmrr_mc.py --probe-seeds   # seed partition-invariance probe (batch, issue #140)
+python3 sim/cmrr-mc/run_cmrr_mc.py --grid full --batch-runner-version-check warn \
+        --batch-submit-retries 10                  # 45-point grid, chunked (see below)
 python3 sim/cmrr-mc/run_cmrr_mc.py --batch-runner-version-check warn \
         --batch-submit-retries 10                  # full run + record (append-only)
 ```
@@ -72,25 +74,57 @@ On a dispatch worker the Monte Carlo requests go to the Spot batch fleet
 (`$KLT_SIM_BACKEND=batch`); the job ids are in the record. If a submit fails
 the driver stops and writes no record; it never falls back to a local grid.
 
-## Known limit: `--grid full` as one request (issue #140)
+## Chunked grid requests (issue #140)
 
-`--grid full` (13 500 units) submitted as one request exceeds the fleet's
-3600 s job limit (about 0.76 s/unit measured; 1 500 units took 1 203 s) and
-does not complete. Splitting it into several requests is NOT yet valid: the
-seed partition-invariance probe `probes/20261011-021056-395e2cd.md` shows klt
-hands a sample different seeds (and so different devices) depending on which
-other points share the request (21 of 24 compared samples differ), so a split
-grid is not the same population and per-chunk seed offsets would change the
-statistic's definition. Filed as 2AMLogic/klayout-tools#3081. The tested chunk
-planner / unit cap / merge is parked on branch `wip/issue-140-chunk-planner`
-until that is resolved.
+The fleet kills a batch job at 3600 s. One 13 500-unit request for `--grid full`
+ran 3698 s and timed out, so the driver never submits more than
+`MAX_UNITS_PER_REQUEST = 1500` units in one `klt sim` request (`submit()` raises
+before submitting if asked to; the largest size measured to finish is 1 500
+units, 1 203 s wall, about 0.76 s/unit). `plan_chunks` partitions a grid
+deterministically:
+
+- `--grid nominal` (5 corners x 1 T x 1 VDD x N=300 = 1 500 units) stays ONE
+  request tagged `grid`; its report file names and record layout are unchanged.
+- `--grid full` becomes 15 sequential requests, one per (process corner,
+  temperature), each with all three supplies (3 x 300 = 900 units, about 690 s
+  at the measured rate), tagged `grid.<process>.<T>C`.
+- Every chunk keeps `monte_carlo = {n: 300, seed: 45, vary: "mismatch"}`
+  unchanged (no per-chunk seed or N offset) and adds
+  `seed_scope: "point"` (`GRID_SEED_SCOPE`): the sample seeds key on the
+  point's own identity, so any partition of the grid draws the same samples as
+  one request would. This is measured, not assumed:
+  `probes/20261115-112452-de61538.md` (`--probe-seeds --seed-scope point`, klt
+  0.9.0 runner) shows 24/24 identical `(rndseed, mismatch_seed, process_seed)`
+  triples and identical sampled offsets across partitions; the earlier
+  `per_corner`-scope probe `probes/20261011-021056-395e2cd.md` shows the
+  position-keyed default is NOT partition-stable (3/24 identical), which is why
+  the grid requests select the scope explicitly.
+- **Offset-population reconciliation**: point-scoped seeds differ from the
+  `per_corner` population of the committed `nominal` record (2026-10-10) and of
+  `sim/offset-mc/` (`20261009-072205-96bf3cc`). New runs therefore do NOT carry
+  the same per-sample devices as those records, and `offset_mc_link`'s
+  same-seed correspondence is expected to report 0 for them (the link stays
+  information-only). The committed records are append-only evidence and are not
+  edited; a new nominal record supersedes them for link purposes.
+- The chunk reports are merged on the sample key (process, T, VDD,
+  sample_index) before any validation; a missing or duplicated chunk, an
+  overlapping point, or a missing/duplicate sample index is a blocking problem.
+  Per-sample validity, population validity and the offset-sigma check then run on
+  the merged population as before.
+- Fail closed: if any chunk raises a `KltError` or fails validation the driver
+  exits 2, names the chunk, and writes no record and no partial `samples.csv`;
+  it never falls back to a local grid.
+- The record lists one execution line per chunk (job id, instance, state, klt
+  versions, wall), the units per chunk, and the longest chunk's wall as a
+  fraction of 3600 s.
 
 ## Evidence layout (append-only)
 
 ```
 records/<rid>.md                         statistics, controls, validation
 corners/<rid>/samples.csv                one row per sample incl. all three seeds
-corners/<rid>/klt-report.*.json          sanitised klt reports (grid + controls)
+corners/<rid>/klt-report.*.json          sanitised klt reports (grid + controls); chunked
+                                         grids: klt-report.grid.<process>.<T>C.json per chunk
 corners/<rid>/controls/*.csv             control samples
 netlist-snapshots/<rid>.spice            DUT + testbench + requests
 probes/<rid>.{md,json}                   capability probes
