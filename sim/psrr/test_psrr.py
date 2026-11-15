@@ -149,7 +149,7 @@ class GuardTests(unittest.TestCase):
         try:
             pdk = find_pdk()
         except PdkNotFound:
-            skip_or_fail(self, "PDK not available")
+            skip_or_fail("PDK not available")
         with tempfile.TemporaryDirectory() as d:
             base = C.materialise(Path(d) / "a", pdk, C.with_servo(r.MODES["vdd"]), testbench=r.TESTBENCH,
                                  guard=r.guard_testbench)
@@ -166,11 +166,11 @@ class SimTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if shutil.which("klt") is None or shutil.which("ngspice") is None:
-            skip_or_fail(cls, "klt/ngspice not available")
+            skip_or_fail("klt/ngspice not available")
         try:
             cls.pdk = find_pdk()
         except PdkNotFound:
-            skip_or_fail(cls, "gf180mcu PDK not available")
+            skip_or_fail("gf180mcu PDK not available")
 
     def test_nominal_triple_is_valid(self):
         with tempfile.TemporaryDirectory() as d:

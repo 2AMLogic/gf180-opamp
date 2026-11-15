@@ -914,7 +914,7 @@ def build_record(*, record: str, stamp: datetime, pdk: Pdk, regions: list[Region
     return "\n".join(a_ for a_ in L) + "\n"
 
 
-def build_snapshot(record: str, pdk: Pdk) -> str:
+def build_snapshot(record: str) -> str:
     parts = [f"* Stage A snapshot {record} (issue #295): everything needed to reproduce the bench",
              "", f"*==== {CFG['load'].name} (staged as consumer_load.inc) ====", CFG["load"].read_text()]
     benches = (TB_REGION, TB_AC, TB_BETA) + ((TB_SWEEP_FOLLOWER, TB_SWEEP_OPEN) if CFG["sweep"] else ())
@@ -1033,7 +1033,7 @@ def main(argv: list[str] | None = None) -> int:
             shutil.copyfile(f, paths["corners"] / f.name)
         if nominal.result is not None:
             plots(paths["plots"], nominal)
-        paths["snapshot"].write_text(build_snapshot(record, pdk))
+        paths["snapshot"].write_text(build_snapshot(record))
         from harness import git_short_sha
         md = build_record(record=record, stamp=stamp, pdk=pdk, regions=regions, nominal=nominal,
                           vc_runs=vc_runs, iso=iso, iso_problems=iso_problems, cls=cls,
