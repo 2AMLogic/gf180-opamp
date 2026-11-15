@@ -273,6 +273,15 @@ expect_fail . test_harness.py harness.py \
   '    errs = guard_tb(tb_text)
     if errs:' '    errs = guard_tb(tb_text)
     if False:'
+# Issue #350: the add_batch_args dest contract (batch_block / submit_request).
+expect_fail . test_harness.py harness.py \
+  "contract: --batch-capacity-wait-s dest renamed out from under batch_block()" \
+  'ap.add_argument("--batch-capacity-wait-s", type=float, default=None,' \
+  'ap.add_argument("--batch-capacity-wait", type=float, default=None,'
+expect_fail . test_harness.py harness.py \
+  "contract: --batch-retry-wait-s default drifts from the documented 120 s" \
+  'ap.add_argument("--batch-retry-wait-s", type=float, default=120.0,' \
+  'ap.add_argument("--batch-retry-wait-s", type=float, default=0.0,'
 expect_fail slew-swing-power test_slew_swing_power.py passive_corners.py \
   "extraction: worst passive level maps to the ff section" \
   '"worst": "ss"}' '"worst": "ff"}'
