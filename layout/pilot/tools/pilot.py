@@ -25,8 +25,6 @@ import re
 import shutil
 import subprocess
 
-import klayout.db as db
-
 PILOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(PILOT, "..", ".."))
 PDK = "gf180mcuD"
@@ -45,6 +43,15 @@ NEG_CONTROLS = {
     "pilot_mim_cc": {"param": "c_width", "wrong": "20u"},        # MIM: wrong plate width
     "pilot_rpoly_rz": {"param": "r_length", "wrong": "30u"},     # res: wrong length
 }
+
+
+def control_tripped(ctl):
+    """The negative-control gate: the control must report a non-match status
+    with at least one device.property error, against a layout hash that is
+    present in both envelopes and equal to the positive run's -- a missing
+    hash must fail the conjunct, not compare None to None."""
+    return bool(ctl["status"] != "match" and ctl["device_property_errors"] >= 1
+                and ctl["layout_sha256_matches_positive"])
 
 
 def num_um(tok):
@@ -119,6 +126,8 @@ def lvs_request(cell, gds, ref_path, opts):
 
 
 def add_labels(gds_in, report, gds_out, top, mapping):
+    import klayout.db as db
+
     ly = db.Layout()
     ly.read(gds_in)
     c = ly.cell(top)
@@ -264,6 +273,7 @@ def main():
             d, rc = klt_json(["lvs", nc_req], nc_out, ok_rc=(0, 3))
             nc_env = d.get("environment") or {}
             cec = d.get("category_error_counts") or {}
+            nc_sha, pos_sha = nc_env.get("layout_sha256"), pos_env.get("layout_sha256")
             ctl = {"cell": cell, "kind": kind, "altered_parameter": param,
                    "schematic_value": true_value, "control_value": wrong,
                    "parameters_compared": compare,
@@ -273,13 +283,11 @@ def main():
                    "device_property_errors": cec.get("device.property", 0),
                    "klt_exit_code": rc,
                    "reference_netlist": nc_ref, "request": nc_req, "evidence": nc_out,
-                   "layout_sha256": nc_env.get("layout_sha256"),
-                   "layout_sha256_matches_positive":
-                       nc_env.get("layout_sha256") == pos_env.get("layout_sha256"),
+                   "layout_sha256": nc_sha,
+                   "layout_sha256_matches_positive": bool(nc_sha) and nc_sha == pos_sha,
                    "reference_sha256": nc_env.get("reference_sha256"),
                    "positive_reference_sha256": pos_env.get("reference_sha256")}
-            ctl["tripped"] = bool(ctl["status"] != "match" and ctl["device_property_errors"] >= 1
-                                  and ctl["layout_sha256_matches_positive"])
+            ctl["tripped"] = control_tripped(ctl)
             controls.append(ctl)
 
         results.append(ev)
