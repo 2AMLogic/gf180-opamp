@@ -41,6 +41,15 @@ jobs:
           python3 manifests/t1_attest.py --check
           python3 manifests/test_t1_attest.py
 
+      # layout/pilot offline consistency (issue #330). Stdlib-only: re-derives
+      # gen_params, terminal mappings, labels, bbox and the reference netlists
+      # from the schematic and hash-binds results.json to the committed
+      # evidence, so pilot drift fails before klt is even installed.
+      - name: Check layout/pilot consistency
+        run: |
+          python3 layout/pilot/check_consistency.py
+          python3 layout/pilot/test_pilot_consistency.py
+
       - name: Install the pinned klt
         run: |
           pipx install "klayout-tools==0.8.0"
