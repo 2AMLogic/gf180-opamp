@@ -21,9 +21,47 @@ RESULTS = HERE.parent / "results.json"
 
 
 def ctl(status="mismatch", dperr=1, nc_sha="a" * 64, pos_sha="a" * 64):
-    """An otherwise-tripping control carrying exactly the fields the gate reads."""
+    """An otherwise-tripping control carrying exactly the fields the gate reads.
+
+    The hash conjunct is computed by the production predicate from two
+    evidence-shaped environment dicts -- the same shape `main()` receives
+    from the klt evidence files -- never re-implemented here, so a regression
+    in `layout_sha256_matches` cannot pass this suite (issue #338 review)."""
+    nc_env = {} if nc_sha is None else {"layout_sha256": nc_sha}
+    pos_env = {} if pos_sha is None else {"layout_sha256": pos_sha}
     return {"status": status, "device_property_errors": dperr,
-            "layout_sha256_matches_positive": bool(nc_sha) and nc_sha == pos_sha}
+            "layout_sha256_matches_positive": pilot.layout_sha256_matches(nc_env, pos_env)}
+
+
+class TestLayoutSha256Matches(unittest.TestCase):
+    """The presence-and-equality predicate itself, on evidence-shaped dicts
+    (including the `{}` / missing-key case a klt release dropping the field
+    would actually produce)."""
+
+    def test_equal_present_hashes_match(self):
+        self.assertTrue(pilot.layout_sha256_matches({"layout_sha256": "a" * 64},
+                                                    {"layout_sha256": "a" * 64}))
+
+    def test_missing_key_on_both_sides_does_not_match(self):
+        self.assertFalse(pilot.layout_sha256_matches({}, {}))
+
+    def test_missing_key_on_one_side_does_not_match(self):
+        self.assertFalse(pilot.layout_sha256_matches({}, {"layout_sha256": "a" * 64}))
+        self.assertFalse(pilot.layout_sha256_matches({"layout_sha256": "a" * 64}, {}))
+
+    def test_none_value_does_not_match(self):
+        self.assertFalse(pilot.layout_sha256_matches({"layout_sha256": None},
+                                                     {"layout_sha256": "a" * 64}))
+        self.assertFalse(pilot.layout_sha256_matches({"layout_sha256": None},
+                                                     {"layout_sha256": None}))
+
+    def test_empty_hash_does_not_count_as_present(self):
+        self.assertFalse(pilot.layout_sha256_matches({"layout_sha256": ""},
+                                                     {"layout_sha256": "a" * 64}))
+
+    def test_differing_hashes_do_not_match(self):
+        self.assertFalse(pilot.layout_sha256_matches({"layout_sha256": "a" * 64},
+                                                     {"layout_sha256": "b" * 64}))
 
 
 class TestControlTripped(unittest.TestCase):

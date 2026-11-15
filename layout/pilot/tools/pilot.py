@@ -54,6 +54,17 @@ def control_tripped(ctl):
                 and ctl["layout_sha256_matches_positive"])
 
 
+def layout_sha256_matches(nc_env, pos_env):
+    """Presence-and-equality of the layout hash across the two klt evidence
+    envelopes (issue #338): a missing or empty hash must fail the conjunct,
+    not compare None to None. `main()` records this as the control's
+    `layout_sha256_matches_positive` field and `control_tripped` consumes it;
+    the tests call this function directly, so the hardening cannot regress
+    while the suite stays green."""
+    nc_sha, pos_sha = nc_env.get("layout_sha256"), pos_env.get("layout_sha256")
+    return bool(nc_sha) and nc_sha == pos_sha
+
+
 def num_um(tok):
     """'3.6u' -> 3.6 (micrometres)."""
     m = re.fullmatch(r"([0-9.]+)u", tok)
@@ -273,7 +284,7 @@ def main():
             d, rc = klt_json(["lvs", nc_req], nc_out, ok_rc=(0, 3))
             nc_env = d.get("environment") or {}
             cec = d.get("category_error_counts") or {}
-            nc_sha, pos_sha = nc_env.get("layout_sha256"), pos_env.get("layout_sha256")
+            nc_sha = nc_env.get("layout_sha256")
             ctl = {"cell": cell, "kind": kind, "altered_parameter": param,
                    "schematic_value": true_value, "control_value": wrong,
                    "parameters_compared": compare,
@@ -284,7 +295,7 @@ def main():
                    "klt_exit_code": rc,
                    "reference_netlist": nc_ref, "request": nc_req, "evidence": nc_out,
                    "layout_sha256": nc_sha,
-                   "layout_sha256_matches_positive": bool(nc_sha) and nc_sha == pos_sha,
+                   "layout_sha256_matches_positive": layout_sha256_matches(nc_env, pos_env),
                    "reference_sha256": nc_env.get("reference_sha256"),
                    "positive_reference_sha256": pos_env.get("reference_sha256")}
             ctl["tripped"] = control_tripped(ctl)
