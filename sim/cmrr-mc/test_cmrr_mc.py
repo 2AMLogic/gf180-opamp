@@ -30,7 +30,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_cmrr_mc as m  # noqa: E402
-from harness import KltError, PdkNotFound, find_pdk, skip_or_fail  # noqa: E402
+from harness import KltError, PdkNotFound, claim_record_paths, find_pdk, skip_or_fail  # noqa: E402
 
 NOM = ("typical", 27.0, 3.30)
 
@@ -510,6 +510,8 @@ class FailClosedTests(unittest.TestCase):
                 mock.patch.object(m, "submit_request",
                                   lambda tag, req, args, work, *, units, note="":
                                   (runner(req, Path(work) / tag / "out", args, Path(work)), req, 12.0)),
+                # The artifact store needs a broker; the store itself is covered by sim/test_evidence_store.py.
+                mock.patch.object(m, "claim_run_paths", claim_record_paths),
             ]
             with contextlib.ExitStack() as st:
                 for p in patches:
