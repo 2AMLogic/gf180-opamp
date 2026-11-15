@@ -29,25 +29,32 @@ _None._
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-_None._
+- **#339**: Collapse 11 hand-rolled copies of the --backend/--batch-* CLI block into the harness helper that already exists
 
 ## In Progress
 
 Issues currently being built (`loom:building`).
 
-- **#190**: sim: extend PSRR mismatch characterization to the full temperature and supply grid
+- **#320**: Remove dead parameters and an unraised exception class in the sim drivers
+- **#324**: Remove 8 duplicate copies of the claim_record_paths append-only test; one parameterised copy in sim/test_harness.py
+- **#325**: Unify the measurement_config interface: one bench/inputs shape, drop the two shape adapters
+- **#329**: layout/pilot: run the LVS negative controls from regen.sh and record them
+- **#343**: Collapse 12 hand-copied test fixtures in sim/report/test_report.py into one base class
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#332**: refactor: give every measurement_config one bench/inputs shape
+- **#342**: test: consolidate the claim_record_paths append-only guard into sim/test_harness.py
+- **#344**: refactor(sim): collapse 12 copied report-test fixtures into one base class
+- **#345**: sim: drop six unread parameters and the unraised GateError from the drivers
 
 ## Approved (Awaiting Merge)
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#323**: docs: replace the "no grid record" PSRR mismatch status with the landed campaign
+- **#333**: layout/pilot: run one LVS negative control per device kind from regen.sh
 
 ## Proposed
 
@@ -58,14 +65,18 @@ Issues carrying `loom:curated`.
 - **#190**: sim: extend PSRR mismatch characterization to the full temperature and supply grid *(curated)*
 - **#240**: Re-pin open_pdks to f6eeac7 via ciel, with a revision-checked PDK search, before minting layout evidence *(curated)*
 - **#295**: Raise the unity-gain bandwidth target to >= 8 MHz for a type-III compensator load *(curated)*
+- **#321**: Stop committing uncompressed point data: adopt the proven .dat.gz convention for new sim records *(curated)*
+- **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence *(curated)*
+- **#329**: layout/pilot: run the LVS negative controls from regen.sh and record them *(curated)*
+- **#331**: docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement *(curated)*
+- **#337**: Stop four benches importing sim/cmrr/run_cmrr.py as a library: hoist its bench-agnostic half into a shared module *(curated)*
 
 ## Proposed (Architect / Hermit)
 
-- **#320**: Remove dead parameters and an unraised exception class in the sim drivers *(hermit)*
 - **#321**: Stop committing uncompressed point data: adopt the proven .dat.gz convention for new sim records *(hermit)*
 - **#322**: Scope the passive RZ x CC matrix per figure: slew-swing-power re-runs 660 provably identical SPICE cells per full-scope study *(hermit)*
-- **#324**: Remove 8 duplicate copies of the claim_record_paths append-only test; one parameterised copy in sim/test_harness.py *(hermit)*
-- **#325**: Unify the measurement_config interface: one bench/inputs shape, drop the two shape adapters *(hermit)*
+- **#337**: Stop four benches importing sim/cmrr/run_cmrr.py as a library: hoist its bench-agnostic half into a shared module *(hermit)*
+- **#340**: Consolidate 8 duplicate claim_record_paths append-only tests into sim/test_harness.py *(hermit)*
 
 ## Epics
 
@@ -78,11 +89,11 @@ _None._
 | Operator merge-risk holds | 0 |
 | Very important | 1 |
 | Important | 5 |
-| Ready (`loom:issue`) | 0 |
-| In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 0 |
+| Ready (`loom:issue`) | 1 |
+| In Progress (`loom:building`) | 5 |
+| PRs awaiting review | 4 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 5 |
-| Architect / Hermit proposals | 5 |
+| Curated | 10 |
+| Architect / Hermit proposals | 4 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
