@@ -165,7 +165,7 @@ class SweepAndExtractTests(unittest.TestCase):
         s = synth()
         gdir = r.G.latest_gain_dir()
         if gdir is None:
-            skip_or_fail(self, "no committed gain-bench dataset")
+            skip_or_fail("no committed gain-bench dataset")
         dev, bad = r.gain_crosscheck(r.NOMINAL, s, gdir)  # synthetic gain differs from the real one
         self.assertTrue(bad)
 
@@ -205,11 +205,11 @@ class SimControlTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if shutil.which("klt") is None or shutil.which("ngspice") is None:
-            skip_or_fail(cls, "klt/ngspice not available")
+            skip_or_fail("klt/ngspice not available")
         try:
             cls.pdk = find_pdk()
         except PdkNotFound:
-            skip_or_fail(cls, "gf180mcu PDK not available")
+            skip_or_fail("gf180mcu PDK not available")
 
     def test_nominal_point_is_consistent_and_shows_flicker(self):
         with tempfile.TemporaryDirectory() as d:

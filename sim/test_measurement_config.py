@@ -27,33 +27,64 @@ EXPERIMENTS = ("noise", "offset-mc", "cmrr", "cmrr-mc", "psrr", "psrr-mc", "gain
                "slew-swing-power", "input-common-mode", "step-response", "enable-acquisition",
                "overdrive-recovery", "ibias-cl-sensitivity")
 
-#: Public constants that deliberately do NOT enter the fingerprint (identity
-#: or cosmetic). Anything else a config module defines must move its inputs.
-NOT_FINGERPRINTED = {
+#: Interface constants every module defines. Pinned for all 14 modules by
+#: Contract.test_module_contract / test_header_and_block_roundtrip -- identity
+#: and pointers, not configuration. A name-scoped exemption is legitimate only
+#: when another unconditional check pins that name for every module; anything
+#: module-specific belongs in NOT_FINGERPRINTED below instead.
+INTERFACE_CONSTANTS = {
     "EXPERIMENT": "identity label (the experiment is named separately)",
     "FINGERPRINT_VERSION": "harness normalisation version, stored separately",
     "TESTBENCHES_REL": "where the report reads the benches from",
     "MODULE_REL": "pointer printed in the record",
-    "FIGURES": "the selectable figure set; selection comes from the record's own inputs",
-    "QUIET": "folded into MODES at import (covered through it)",
-    "OP_PRINT": "derived from DEVICES (covered through it)",
-    "OP_TAIL": "derived from DEVICES (covered through it)",
-    "CONTROLS": "names/descriptions are cosmetic; the Ibias overrides are asserted in test_control_ibias_moves",
-    "SIM_SOURCE": "name of the swept source, restated inside SIM_ARGS",
-    # --- brought under the contract by issue #325 ---
-    "VCM_FIXED_CONSUMER_V": "documented reference value for the opt-in --vcm-fixed mode; the common-mode "
-                            "policy that is measured enters through corners.vcm_rule",
-    "GBW_MIN_HZ": "the ratified GBW bound, quoted in the record's window-vs-tau disclosure only; it sizes "
-                  "no bench parameter, analysis card or axis -- the three runners derive "
-                  "tau_max = 1/(2 pi GBW_MIN_HZ) solely to restate their own fixed windows in units of "
-                  "tau in that prose",
-    "SCENARIO_DESC": "prose describing each scenario; the schedules themselves are in analysis.per_schedule",
-    "POINT_NAMES": "display labels for the corner tuples; the tuples enter through POINTS",
-    "NOMINAL": "folded into POINTS at import (covered through it)",
-    "PM_BINDING": "folded into POINTS at import (covered through it)",
-    "GBW_BINDING": "folded into POINTS at import (covered through it)",
-    "POWER_BINDING": "folded into POINTS at import (covered through it)",
-    "SLEW_BINDING": "folded into POINTS at import (covered through it)",
+}
+
+#: `(experiment, constant) -> why`, mirroring PERTURB_OVERRIDE's key. Scoped
+#: per module so a name one module legitimately keeps out of the fingerprint
+#: cannot exempt the same name in another, where it may be real configuration.
+NOT_FINGERPRINTED = {
+    ("offset-mc", "SIM_SOURCE"): "name of the swept source, restated inside SIM_ARGS",
+    ("cmrr", "OP_PRINT"): "derived from DEVICES (covered through it)",
+    ("cmrr", "OP_TAIL"): "derived from DEVICES (covered through it)",
+    ("psrr", "QUIET"): "folded into MODES at import (covered through it)",
+    ("gain-gbw-pm", "VCM_FIXED_CONSUMER_V"):
+        "documented reference value for the opt-in --vcm-fixed mode; the common-mode "
+        "policy that is measured enters through corners.vcm_rule",
+    ("slew-swing-power", "FIGURES"): "the selectable figure set; selection comes from the record's own inputs",
+    ("slew-swing-power", "CONTROLS"):
+        "names/descriptions are cosmetic; the Ibias overrides are asserted in test_control_ibias_moves",
+    ("input-common-mode", "OP_PRINT"): "derived from DEVICES (covered through it)",
+    ("input-common-mode", "OP_TAIL"): "derived from DEVICES (covered through it)",
+    ("step-response", "CONTROLS"):
+        "names/descriptions are cosmetic; the Ibias overrides are asserted in test_control_ibias_moves",
+    ("step-response", "GBW_MIN_HZ"):
+        "the ratified GBW bound, quoted in the record's window-vs-tau disclosure only; it sizes "
+        "no bench parameter, analysis card or axis -- the three runners derive "
+        "tau_max = 1/(2 pi GBW_MIN_HZ) solely to restate their own fixed windows in units of "
+        "tau in that prose",
+    ("enable-acquisition", "CONTROLS"):
+        "names/descriptions are cosmetic; the Ibias overrides are asserted in test_control_ibias_moves",
+    ("enable-acquisition", "GBW_MIN_HZ"):
+        "the ratified GBW bound, quoted in the record's window-vs-tau disclosure only; it sizes "
+        "no bench parameter, analysis card or axis -- the three runners derive "
+        "tau_max = 1/(2 pi GBW_MIN_HZ) solely to restate their own fixed windows in units of "
+        "tau in that prose",
+    ("enable-acquisition", "SCENARIO_DESC"):
+        "prose describing each scenario; the schedules themselves are in analysis.per_schedule",
+    ("overdrive-recovery", "CONTROLS"):
+        "names/descriptions are cosmetic; the Ibias overrides are asserted in test_control_ibias_moves",
+    ("overdrive-recovery", "GBW_MIN_HZ"):
+        "the ratified GBW bound, quoted in the record's window-vs-tau disclosure only; it sizes "
+        "no bench parameter, analysis card or axis -- the three runners derive "
+        "tau_max = 1/(2 pi GBW_MIN_HZ) solely to restate their own fixed windows in units of "
+        "tau in that prose",
+    ("ibias-cl-sensitivity", "POINT_NAMES"):
+        "display labels for the corner tuples; the tuples enter through POINTS",
+    ("ibias-cl-sensitivity", "NOMINAL"): "folded into POINTS at import (covered through it)",
+    ("ibias-cl-sensitivity", "PM_BINDING"): "folded into POINTS at import (covered through it)",
+    ("ibias-cl-sensitivity", "GBW_BINDING"): "folded into POINTS at import (covered through it)",
+    ("ibias-cl-sensitivity", "POWER_BINDING"): "folded into POINTS at import (covered through it)",
+    ("ibias-cl-sensitivity", "SLEW_BINDING"): "folded into POINTS at import (covered through it)",
 }
 
 #: `(experiment, constant) -> replacement`, for constants whose fingerprint is
@@ -163,7 +194,7 @@ class Completeness(unittest.TestCase):
                      if n.isupper() and not n.startswith("_") and not isinstance(v, Path)]
             self.assertTrue(names, exp)
             for n in names:
-                if n in NOT_FINGERPRINTED:
+                if n in INTERFACE_CONSTANTS or (exp, n) in NOT_FINGERPRINTED:
                     continue
                 with self.subTest(f"{exp}.{n}"):
                     old = getattr(m, n)
@@ -173,6 +204,25 @@ class Completeness(unittest.TestCase):
                                             f"{exp}: {n} is configuration but is missing from the fingerprint")
                     finally:
                         setattr(m, n, old)
+
+    def test_exemption_tables_name_live_constants(self):
+        """Every exemption key names a constant its module actually defines.
+
+        With `(experiment, constant)`-scoped keys, a renamed or deleted module
+        constant leaves a dead entry that silently exempts nothing -- and
+        nothing else points at the constant to catch the drift. Read
+        PERTURB_OVERRIDE too: a stale key there simply never matches.
+        """
+        for exp in EXPERIMENTS:
+            with self.subTest(exp):
+                m = load(exp)
+                names = {n for n, v in vars(m).items()
+                         if n.isupper() and not n.startswith("_") and not isinstance(v, Path)}
+                for n in INTERFACE_CONSTANTS:
+                    self.assertIn(n, names, f"{exp} does not define interface constant {n}")
+                for e, n in (*NOT_FINGERPRINTED, *PERTURB_OVERRIDE):
+                    if e == exp:
+                        self.assertIn(n, names, f"stale exemption: {exp} no longer defines {n}")
 
     def test_dependent_modules_follow_their_sources(self):
         """psrr takes servo/sweep/isolation from cmrr; both take the grid from gain."""

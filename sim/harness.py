@@ -359,8 +359,12 @@ def require_prereqs() -> bool:
     return os.environ.get("SIM_REQUIRE_PREREQS", "") not in ("", "0")
 
 
-def skip_or_fail(case, reason: str) -> None:
-    """Skip `case` (a unittest.TestCase or class) locally; fail under CI-strict."""
+def skip_or_fail(reason: str) -> None:
+    """Skip the running test locally; fail under CI-strict.
+
+    Raises `unittest.SkipTest` / `AssertionError`, which unittest attributes to
+    the running case or class without being told which one it is.
+    """
     import unittest
 
     if require_prereqs():
