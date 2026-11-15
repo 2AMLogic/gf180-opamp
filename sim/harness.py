@@ -1218,6 +1218,103 @@ def smoke_run(pdk: Pdk, nominal, run_unit, print_point, *, prefix: str) -> int:
     return 0
 
 
+def run_transient_grid(*, pdk: Pdk, args, here: Path, prefix: str, issue: int, tb_rel: str,
+                       tb_path: Path, nominal, corners, temps, supplies, want,
+                       materialise, make_request, analyse_report, meas_names: list[str],
+                       run_controls, control_failures,
+                       save_point_data, rederive, same_result,
+                       build_plots, build_record, summarise, print_summary) -> int:
+    """The full-grid run flow shared by the transient benches (issue #358).
+
+    The `main()` orchestration hoisted out of `run_step_response.py` and
+    `run_overdrive_recovery.py`, finishing the #299 hoist: allocate a record id,
+    claim paths, build and run the ONE 45-point klt grid request, analyse, run
+    the single-unit controls, persist the committed per-point data and
+    re-derive it, snapshot, plots, record, finalize evidence, exit code. The
+    runner passes its bench-specific pieces (scratch prefix, issue number,
+    testbench, expected corner keys, extraction / controls / re-derivation
+    callbacks, `build_record`, summary printer) and keeps its own `--smoke`
+    handling. Append-only evidence: what is written is byte-identical to the
+    pre-hoist runners.
+    """
+    import tempfile
+
+    record, stamp = allocate_record_id(REPO_ROOT)
+    paths = claim_run_paths(here, record)  # fail early if this id was already used
+    ngspice = ngspice_version()
+    kver = klt_version()
+    print(f"record {record}: {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
+
+    with tempfile.TemporaryDirectory(prefix=prefix) as scratch:
+        work = Path(scratch)
+        tb = materialise(work / "grid", pdk)
+        req = make_request(tb, pdk, corners, temps, supplies)
+        req["batch"] = batch_block(args)
+        try:
+            report = run_klt_retrying(req, work / "grid" / "out", args.backend, work / "grid",
+                                      retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
+        except KltError as exc:
+            # Never fall back to a local grid.
+            print(f"ERROR: the 45-point klt request could not be run: {str(exc)[-600:]}", file=sys.stderr)
+            print("NO RECORD WRITTEN.", file=sys.stderr)
+            return 2
+        results, arts, problems = analyse_report(report, want)
+        if problems:
+            print("ERROR: the 45-point grid did not complete cleanly: " + "; ".join(problems[:8]), file=sys.stderr)
+            print("NO RECORD WRITTEN.", file=sys.stderr)
+            return 2
+        backend_desc = describe_backend(report)
+        print(f"  45 points ok ({backend_desc})")
+        xchk_count = (sum(all(a["klt_meas"].get(n) is not None for n in meas_names) for a in arts.values()), len(arts))
+
+        ctrls = run_controls(pdk, work)
+        ctrl_bad = control_failures(ctrls)
+
+        cdir = paths["corners"]
+        cdir.mkdir(parents=True, exist_ok=False)
+        persist_points(cdir, results, arts, report, save=save_point_data, suffix=".dat")
+        rbad: list[str] = []
+        n_ok, _n_all = check_rederive(cdir, results, rederive=lambda p, _k: rederive(p), same=same_result,
+                                      suffix=".dat", label="", rbad=rbad)
+        ccdir = cdir / "controls"
+        ccdir.mkdir()
+        copy_controls(ccdir, ctrls)
+
+        dut_text = load_dut_text()
+        dut_sha = sha256_text(dut_text)
+        a0 = arts.get(nominal)
+        snap = snapshot_text(record=record, issue=issue, req=req, dut_text=dut_text, tb_rel=tb_rel,
+                             tb_text=tb_path.read_text(), nominal_deck=a0["deck"] if a0 else None)
+        paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
+        paths["snapshot"].write_text(snap)
+
+        plots = build_plots(results, paths["plots"])
+        md = build_record(
+            record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, klt_ver=kver, backend_desc=backend_desc,
+            report=report, results=results, ctrls=ctrls, ctrl_bad=ctrl_bad, plots=plots, dut_sha=dut_sha,
+            xchk_count=xchk_count, rederived=(n_ok, len(results), rbad),
+        )
+        paths["record"].parent.mkdir(parents=True, exist_ok=True)
+        paths["record"].write_text(md)
+        finalize_run_evidence(paths)
+
+    print(f"wrote {paths['record']}")
+    s = summarise(results)
+    print_summary(s)
+    rc = 0
+    if rbad:
+        print("RE-DERIVATION MISMATCH: " + "; ".join(rbad[:6]))
+        rc = 1
+    if ctrl_bad:
+        print("CONTROL PROBLEMS:")
+        for x in ctrl_bad:
+            print(f"  - {x}")
+        rc = 1
+    if s.n_invalid:
+        rc = 1
+    return rc
+
+
 def snapshot_text(*, record: str, issue: int, req: dict, dut_text: str, tb_rel: str, tb_text: str,
                   nominal_deck: str | None) -> str:
     """The committed netlist snapshot: conditions, DUT, testbench, nominal deck."""

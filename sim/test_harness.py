@@ -7,11 +7,14 @@ anywhere the stdlib does.
 
 from __future__ import annotations
 
+import argparse
 import os
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 HERE = Path(__file__).resolve().parent
@@ -419,6 +422,135 @@ class ClaimRecordPathsTests(unittest.TestCase):
         fresh = harness.claim_record_paths(base, "20261009-000001-abcdef0")
         self.assertNotEqual(fresh["record"], taken["record"])
         self.assertEqual(taken["record"].read_text(), "old")
+
+
+class RunTransientGridTests(unittest.TestCase):
+    """`run_transient_grid` (issue #358): the run flow hoisted out of the
+    step-response / overdrive-recovery runners. Exercised once here with fake
+    bench pieces and a faked klt grid -- the orchestration, the two
+    no-record failure exits and the exit-code mapping."""
+
+    RECORD = "20260101-000000-abcdef0"
+
+    def _fake_paths(self, root: Path) -> dict:
+        return {
+            "corners": root / "corners" / self.RECORD,
+            "record": root / "records" / f"{self.RECORD}.md",
+            "snapshot": root / "netlist-snapshots" / f"{self.RECORD}.spice",
+            "plots": root / "records" / f"{self.RECORD}-plots",
+        }
+
+    def _run(self, root: Path, *, problems=(), klt_error=None, rederive_bad=(), control_bad=(),
+             n_invalid=0) -> SimpleNamespace:
+        (root / "tb.spice").write_text("* bench\n")
+        args = argparse.Namespace(smoke=False, backend=None, batch_submit_retries=0,
+                                  batch_retry_wait_s=0.0, batch_runner_version_check=None,
+                                  batch_capacity_wait_s=None)
+        report = {"corners": []}
+        results = {"typical_27c_3.30v": object()}
+        arts = {"typical_27c_3.30v": {"klt_meas": {"m1": 1.0}, "deck": None}}
+        built: list[dict] = []
+        printed: list = []
+        finalized: list = []
+        calls = {"persist_points": 0, "check_rederive": 0}
+        paths = self._fake_paths(root)
+        stamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+        def build_record(**kw):
+            built.append(kw)
+            return "# record md\n"
+
+        def fake_persist(sub, res, art, rep, **kw):
+            calls["persist_points"] += 1
+
+        def fake_check_rederive(sub, res, *, rederive, same, suffix, label, rbad):
+            calls["check_rederive"] += 1
+            rbad.extend(rederive_bad)
+            return len(res), len(res)
+
+        def fake_run_klt(*a, **kw):
+            if klt_error is not None:
+                raise klt_error
+            return report
+
+        with mock.patch.object(harness, "allocate_record_id", return_value=(self.RECORD, stamp)), \
+             mock.patch.object(harness, "claim_run_paths", return_value=paths), \
+             mock.patch.object(harness, "ngspice_version", return_value="ngspice-42"), \
+             mock.patch.object(harness, "klt_version", return_value="klt-test"), \
+             mock.patch.object(harness, "run_klt_retrying", side_effect=fake_run_klt), \
+             mock.patch.object(harness, "load_dut_text", return_value="* fake dut"), \
+             mock.patch.object(harness, "persist_points", side_effect=fake_persist), \
+             mock.patch.object(harness, "check_rederive", side_effect=fake_check_rederive), \
+             mock.patch.object(harness, "finalize_run_evidence", side_effect=finalized.append):
+            rc = harness.run_transient_grid(
+                pdk=harness.Pdk(root / "pdk", "gf180mcuD", "test"), args=args,
+                here=root / "bench", prefix="t-", issue=42,
+                tb_rel="sim/t/testbench/tb.spice", tb_path=root / "tb.spice",
+                nominal="typical_27c_3.30v", corners="c", temps="t", supplies="s",
+                want=["typical_27c_3.30v"],
+                materialise=lambda work, pdk: work / "tb.spice",
+                make_request=lambda tb, pdk, c, t, s: {"netlist": str(tb), "corners": ["c1"]},
+                analyse_report=lambda rep, want: (results, arts, list(problems)),
+                meas_names=["m1"],
+                run_controls=lambda pdk, work: [],
+                control_failures=lambda ctrls: list(control_bad),
+                save_point_data=lambda m, path: None,
+                rederive=lambda path: None,
+                same_result=lambda a, b: True,
+                build_plots=lambda res, plot_dir: [],
+                build_record=build_record,
+                summarise=lambda res: SimpleNamespace(n_invalid=n_invalid),
+                print_summary=printed.append,
+            )
+        return SimpleNamespace(rc=rc, built=built, printed=printed, finalized=finalized,
+                               paths=paths, calls=calls, report=report)
+
+    def test_happy_path_writes_the_record_and_returns_0(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._run(Path(d))
+            self.assertEqual(out.rc, 0)
+            self.assertEqual(out.paths["record"].read_text(), "# record md\n")
+            snap = out.paths["snapshot"].read_text()
+            self.assertIn("issue #42", snap)
+            self.assertIn("sim/t/testbench/tb.spice", snap)
+            kw = out.built[0]
+            self.assertEqual(kw["record"], self.RECORD)
+            self.assertEqual(kw["ngspice"], "ngspice-42")
+            self.assertEqual(kw["klt_ver"], "klt-test")
+            self.assertEqual(kw["rederived"], (1, 1, []))
+            self.assertEqual(kw["xchk_count"], (1, 1))
+            self.assertEqual(kw["dut_sha"], harness.sha256_text("* fake dut"))
+            self.assertEqual(kw["backend_desc"], harness.describe_backend(out.report))
+            self.assertEqual(out.finalized, [out.paths])
+            self.assertEqual(out.calls, {"persist_points": 1, "check_rederive": 1})
+            self.assertEqual(len(out.printed), 1)
+
+    def test_a_failed_grid_submit_returns_2_and_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._run(Path(d), klt_error=harness.KltError("batch_no_capacity"))
+            self.assertEqual(out.rc, 2)
+            self.assertFalse(out.paths["record"].exists())
+            self.assertFalse(out.paths["snapshot"].exists())
+            self.assertEqual(out.built, [])
+            self.assertEqual(out.finalized, [])
+
+    def test_an_incomplete_grid_returns_2_and_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._run(Path(d), problems=("missing result for x",))
+            self.assertEqual(out.rc, 2)
+            self.assertFalse(out.paths["record"].exists())
+            self.assertFalse(out.paths["snapshot"].exists())
+            self.assertEqual(out.built, [])
+            self.assertEqual(out.finalized, [])
+
+    def test_rederivation_mismatch_control_problems_and_invalid_points_fail_the_run(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._run(Path(d), rederive_bad=["x.dat differs"], control_bad=["ctl drifted"],
+                            n_invalid=2)
+            self.assertEqual(out.rc, 1)
+            # The run still commits its evidence; the failures are reported, not hidden.
+            self.assertEqual(out.paths["record"].read_text(), "# record md\n")
+            self.assertEqual(out.finalized, [out.paths])
 
 
 if __name__ == "__main__":
