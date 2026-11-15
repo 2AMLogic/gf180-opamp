@@ -1,8 +1,11 @@
-"""Unit tests for `harness.stage_workdir` (issue #94). No simulator, no PDK.
+"""Unit tests for the shared sim-harness helpers.
 
-A scratch directory stands in for the PDK (only `design.ngspice` is copied),
+Started for `harness.stage_workdir` (issue #94) with no simulator and no PDK:
+a scratch directory stands in for the PDK (only `design.ngspice` is copied),
 and a fixed DUT text stands in for the committed export, so these run
-anywhere the stdlib does.
+anywhere the stdlib does. Later arrivals: the source-guard, submit-request,
+MC-snapshot, PDK-search and record-path helpers, and the frequency-domain
+extraction helpers hoisted from the CMRR driver (issue #337).
 """
 
 from __future__ import annotations
@@ -13,6 +16,8 @@ import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
+
+import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -419,6 +424,55 @@ class ClaimRecordPathsTests(unittest.TestCase):
         fresh = harness.claim_record_paths(base, "20261009-000001-abcdef0")
         self.assertNotEqual(fresh["record"], taken["record"])
         self.assertEqual(taken["record"].read_text(), "old")
+
+
+class ExtractionHelpersTests(unittest.TestCase):
+    """The hoisted frequency-domain extraction helpers (issue #337).
+
+    The same invariants the cmrr/psrr extraction tests exercised through the
+    CMRR driver, asserted against the shared home so the next relocation of
+    these bodies has its own guard."""
+
+    F = np.array([0.1, 1.0, 10.0, 100.0])
+
+    def test_check_axis_accepts_a_strictly_increasing_positive_axis(self):
+        harness.check_axis(self.F, 4)  # must not raise
+        harness.check_axis(self.F)  # no expected size: shape/monotonicity only
+
+    def test_check_axis_rejects_wrong_size_and_bad_axes(self):
+        for bad, why in [
+            (np.array([1.0, 2.0]), "wrong size"),
+            (np.array([[1.0, 2.0]]), "not 1-D"),
+            (np.array([1.0, -1.0, 10.0]), "non-positive"),
+            (np.array([1.0, 3.0, 2.0]), "not increasing"),
+            (np.array([1.0, np.nan, 2.0]), "non-finite"),
+        ]:
+            with self.subTest(why=why), self.assertRaises(harness.ExtractionError):
+                harness.check_axis(bad, 3)
+
+    def test_same_axis_rejects_different_axes(self):
+        harness.same_axis(self.F, self.F * 1.0)  # must not raise
+        with self.assertRaises(harness.ExtractionError):
+            harness.same_axis(self.F, self.F * 1.1)
+        with self.assertRaises(harness.ExtractionError):
+            harness.same_axis(self.F, self.F[:-1])
+
+    def test_finite_rejects_non_finite_phasors(self):
+        harness.finite(np.ones(4), np.ones(4))  # must not raise
+        with self.assertRaises(harness.ExtractionError):
+            harness.finite(np.ones(4), np.array([1.0, np.inf, 1.0, 1.0]))
+
+    def test_db_is_twenty_log10_of_the_magnitude(self):
+        np.testing.assert_allclose(harness.db(10.0), 20.0)
+        np.testing.assert_allclose(harness.db(1j), 0.0, atol=1e-12)
+        np.testing.assert_allclose(harness.db(np.array([1.0, 10.0])), [0.0, 20.0])
+
+    def test_interp_db_is_log_linear_and_bounded(self):
+        y = 40.0 * np.log10(self.F)  # exactly linear in (log10 f, dB)
+        self.assertAlmostEqual(harness.interp_db(self.F, y, 1.0), 0.0)
+        self.assertAlmostEqual(harness.interp_db(self.F, y, 10.0), 40.0)
+        with self.assertRaises(harness.ExtractionError):
+            harness.interp_db(self.F, y, 1e3)
 
 
 if __name__ == "__main__":

@@ -99,12 +99,15 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    ExtractionError,
     add_batch_args,
     allocate_record_id,
     batch_block,
+    check_axis,
     claim_run_paths,
     finalize_run_evidence,
     find_pdk,
+    finite,
     klt_version,
     load_dut_text,
     ngspice_version,
@@ -113,6 +116,7 @@ from harness import (  # noqa: E402
     run_klt,
     run_klt_retrying,
     load_sibling,
+    same_axis,
     sanitise_report,
 )
 
@@ -472,16 +476,16 @@ def evaluate_sample(key: Key, dm: Unit | None, cm: Unit | None) -> Sample:
     # AC excitation and the joint Ad/Acm solve (the CMRR bench's method).
     try:
         f_dm, f_cm = np.asarray(dm.vec["frequency"].real, float), np.asarray(cm.vec["frequency"].real, float)
-        C.check_axis(f_dm, N_FREQ)
-        C.same_axis(f_dm, f_cm)
+        check_axis(f_dm, N_FREQ)
+        same_axis(f_dm, f_cm)
         xd, xc = C.Excitation.from_vec(dm.vec), C.Excitation.from_vec(cm.vec)
-        C.finite(xd.vd, xd.vc, xd.vout, xc.vd, xc.vc, xc.vout)
+        finite(xd.vd, xd.vc, xd.vout, xc.vd, xc.vc, xc.vout)
         _, b1 = C.check_dm(xd)
         _, _, b2 = C.check_cm(xc)
         if b1 or b2:
             return invalid_sample(key, *(b1 + b2))
         ad, _acm = C.solve_ad_acm(xd, xc)
-    except (C.ExtractionError, KeyError) as exc:
+    except (ExtractionError, KeyError) as exc:
         return invalid_sample(key, f"AC extraction: {exc}")
 
     # DC-plateau gain.

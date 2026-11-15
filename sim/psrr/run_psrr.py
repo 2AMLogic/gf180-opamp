@@ -79,16 +79,22 @@ import harness  # noqa: E402
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    ExtractionError,
     allocate_record_id,
     batch_block,
+    check_axis,
     claim_run_paths,
+    db,
     finalize_run_evidence,
     find_pdk,
+    finite,
+    interp_db,
     klt_version,
     load_dut_text,
     ngspice_version,
     load_sibling,
     remote_of,
+    same_axis,
     sanitise_report,
 )
 # Shared RZ x CC passive-corner helpers (issues #70, #97, #150), used unchanged.
@@ -123,7 +129,6 @@ CORNERS, TEMPS_C, SUPPLIES_V, NOMINAL = C.CORNERS, C.TEMPS_C, C.SUPPLIES_V, C.NO
 Key = C.Key
 fmt_key, point_stem = C.fmt_key, C.point_stem
 SPOT_HZ = C.SPOT_HZ
-db = C.db
 
 QUIET = mc.QUIET
 MODES = mc.MODES
@@ -195,11 +200,11 @@ def check_supply_run(vec: dict, rail: str) -> tuple[float, float, list[str]]:
 def extract_psrr(dm_vec: dict, sup_vecs: dict[str, dict], floor: float, *, n_expect: int | None = C.N_FREQ) -> PsrrPoint:
     try:
         freq = np.asarray(dm_vec["frequency"].real, dtype=float)
-        C.check_axis(freq, n_expect)
+        check_axis(freq, n_expect)
         for rail, v in sup_vecs.items():
-            C.same_axis(freq, np.asarray(v["frequency"].real, dtype=float))
-            C.finite(*(v[n] for n in NEED))
-        C.finite(*(dm_vec[n] for n in NEED))
+            same_axis(freq, np.asarray(v["frequency"].real, dtype=float))
+            finite(*(v[n] for n in NEED))
+        finite(*(dm_vec[n] for n in NEED))
         dm = C.Excitation.from_vec(dm_vec)
         dm_err, bad = C.check_dm(dm)
         rails_quiet = float(max(np.max(np.abs(dm_vec["v(vdd)"])), np.max(np.abs(dm_vec["v(vss)"]))))
@@ -233,7 +238,7 @@ def extract_psrr(dm_vec: dict, sup_vecs: dict[str, dict], floor: float, *, n_exp
             return PsrrPoint(False, f"input leak contributes {leak:.3g} of the supply-run output (> {INPUT_LEAK_FRAC:g})",
                              freq=freq)
         return pt
-    except (C.ExtractionError, KeyError) as exc:
+    except (ExtractionError, KeyError) as exc:
         return PsrrPoint(False, str(exc))
 
 
@@ -860,7 +865,7 @@ def default_crosscheck(points: dict, cdir: Path) -> tuple[float, dict, list[str]
         dev = 0.0
         for rail, col in (("vdd", 4), ("vss", 5)):
             for which in XCHECK_FIGURES:
-                ref = float(d[0, col]) if which == "low" else C.interp_db(d[:, 0], d[:, col], which)
+                ref = float(d[0, col]) if which == "low" else interp_db(d[:, 0], d[:, col], which)
                 dev = max(dev, abs(figure_of(p, rail, which) - ref))
         devs[k] = dev
         if dev > XCHECK_DEFAULT_TOL_DB:

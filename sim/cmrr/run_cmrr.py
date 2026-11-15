@@ -89,12 +89,17 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    ExtractionError,
     add_common_args,
     allocate_record_id,
     batch_block,
+    check_axis,
     claim_run_paths,
+    db,
     finalize_run_evidence,
     find_pdk,
+    finite,
+    interp_db,
     klt_version,
     load_dut_text,
     logical_lines,
@@ -103,6 +108,7 @@ from harness import (  # noqa: E402
     run_klt,
     run_klt_retrying,
     load_sibling,
+    same_axis,
     sanitise_report,
     stage_workdir,
 )
@@ -441,38 +447,9 @@ def op_agreement(per_mode: dict[str, dict[Key, dict]], want: list[Key]) -> tuple
 # Extraction (pure functions; unit-tested on synthetic responses)
 # --------------------------------------------------------------------------
 
+# The axis/phasor validation and dB helpers this extraction uses live in
+# `harness` (issue #337); only the CMRR-specific extraction is here.
 
-class ExtractionError(ValueError):
-    pass
-
-
-def check_axis(freq: np.ndarray, n_expect: int | None = N_FREQ) -> None:
-    if freq.ndim != 1 or (n_expect is not None and freq.size != n_expect):
-        raise ExtractionError(f"{freq.size} frequency points, expected {n_expect}")
-    if not np.all(np.isfinite(freq)) or np.any(freq <= 0) or np.any(np.diff(freq) <= 0):
-        raise ExtractionError("frequency axis not finite, positive and strictly increasing")
-
-
-def same_axis(f1: np.ndarray, f2: np.ndarray) -> None:
-    if f1.shape != f2.shape or np.any(np.abs(f1 / f2 - 1) > 1e-9):
-        raise ExtractionError("excitations were run on different frequency axes")
-
-
-def finite(*arrs: np.ndarray) -> None:
-    for a in arrs:
-        if not np.all(np.isfinite(a)):
-            raise ExtractionError("non-finite phasor data")
-
-
-def db(x) -> np.ndarray:
-    return 20.0 * np.log10(np.abs(x))
-
-
-def interp_db(freq: np.ndarray, ydb: np.ndarray, f: float) -> float:
-    """Linear interpolation in (log10 f, dB); ValueError outside the sweep."""
-    if f < freq[0] * (1 - 1e-9) or f > freq[-1] * (1 + 1e-9):
-        raise ExtractionError(f"{f:g} Hz is outside the swept range")
-    return float(np.interp(math.log10(f), np.log10(freq), ydb))
 
 
 @dataclass

@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_cmrr as r  # noqa: E402
-from harness import PdkNotFound, find_pdk, skip_or_fail  # noqa: E402
+from harness import ExtractionError, PdkNotFound, find_pdk, interp_db, skip_or_fail  # noqa: E402
 
 FREQ = np.logspace(math.log10(r.AC_FSTART), math.log10(r.AC_FSTOP), r.N_FREQ)
 S = 1j * FREQ
@@ -96,9 +96,9 @@ class ExtractionTests(unittest.TestCase):
     def test_interp_db_is_log_linear_and_bounded(self):
         f = np.array([1.0, 10.0, 100.0])
         y = np.array([0.0, 20.0, 40.0])
-        self.assertAlmostEqual(r.interp_db(f, y, math.sqrt(10)), 10.0)
-        with self.assertRaises(r.ExtractionError):
-            r.interp_db(f, y, 1e3)
+        self.assertAlmostEqual(interp_db(f, y, math.sqrt(10)), 10.0)
+        with self.assertRaises(ExtractionError):
+            interp_db(f, y, 1e3)
 
     def test_unequal_cm_drive_is_rejected_but_solvable(self):
         ad, acm = ad_true(), acm_true()
@@ -204,7 +204,7 @@ class ExtractionTests(unittest.TestCase):
         self.assertIn("keeps one sign", "\n".join(r.cancellation_notes(same, "CMRR", "Acm")))
 
     def test_floor_must_be_positive(self):
-        with self.assertRaises(r.ExtractionError):
+        with self.assertRaises(ExtractionError):
             r.summarise_rejection(FREQ, ad_true(), acm_true(), 1e7, 0.0)
 
     def test_worst_case_picks_lowest(self):

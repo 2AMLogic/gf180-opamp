@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_psrr as r  # noqa: E402
-from harness import PdkNotFound, find_pdk, skip_or_fail  # noqa: E402
+from harness import PdkNotFound, find_pdk, interp_db, skip_or_fail  # noqa: E402
 
 C = r.C
 FREQ = np.logspace(math.log10(C.AC_FSTART), math.log10(C.AC_FSTOP), C.N_FREQ)
@@ -426,7 +426,7 @@ class PassivePairingTests(unittest.TestCase):
         self.assertEqual(len(pts), len(SMALL_WANT))
         k = (pc.passive_name("ss", "worst", "best"), 125.0, 2.97)
         v = cell_vectors(k)
-        self.assertAlmostEqual(pts[k].rej["vdd"].spot_db[1e4], r.C.interp_db(
+        self.assertAlmostEqual(pts[k].rej["vdd"].spot_db[1e4], interp_db(
             FREQ, r.db(v["dm"]["v(vout)"]) - r.db(v["vdd"]["v(vout)"]), 1e4), delta=1e-9)
         d = r.deltas_vs_typical(pts, "vdd", 1e4)
         self.assertEqual(len(d), len(SMALL_WANT) - 2)  # every non-typical cell

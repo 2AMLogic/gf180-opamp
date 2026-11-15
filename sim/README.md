@@ -149,7 +149,11 @@ only a capacity-refused batch submit; never changes backend), `remote_of`,
 and `load_dut_text` (the committed DUT export, wrapper-normalised).
 Every runner (`design/check_dc_op.py`, every `sim/<experiment>/run_*.py`)
 imports it; deck composition, testbench guards, extraction and plotting stay
-per-experiment.
+per-experiment. Since issue #337 it also carries the bench-agnostic
+frequency-domain extraction helpers every AC bench validates with —
+`ExtractionError`, `check_axis`, `same_axis`, `finite`, `db`, `interp_db` —
+hoisted out of the CMRR driver, which the psrr and input-common-mode drivers
+previously loaded as a library to reach them.
 
 This **reverses the earlier copy-not-import convention** (each runner
 carrying its own copy of these helpers) per issue #30 and its operator
