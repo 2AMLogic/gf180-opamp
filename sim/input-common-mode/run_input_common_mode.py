@@ -121,6 +121,11 @@ from harness import (  # noqa: E402
     sanitise_report,
 )
 
+# PDK-provenance and execution-line record helpers (hoisted out of the CMRR
+# driver by issue #337); the CMRR driver is still loaded below, but only for
+# measurement material.
+from rejection_bench import execution_lines, pdk_lines  # noqa: E402
+
 # The CMRR driver owns the servo-bench guards, materialisation, the excitation
 # checks and the joint Ad/Acm solve; reuse them unchanged so the benches stay
 # structurally identical (it in turn reuses the gain driver's DUT guards).
@@ -828,7 +833,7 @@ def execution_lines(reports: dict[str, dict], walls: dict[str, float]) -> list[s
     for tag, rep in reports.items():
         jobs = remote_jobs(rep)
         if len(jobs) <= 1:
-            L += C.execution_lines({tag: rep}, {tag: walls.get(tag, 0)})
+            L += execution_lines({tag: rep}, {tag: walls.get(tag, 0)})
             continue
         j0 = jobs[0]
         env = rep.get("environment") or {}
@@ -1250,7 +1255,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
         f"`{dut_sha[:16]}`), unchanged; snapshot `netlist-snapshots/{record}.spice`")
     for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
         add(ln)
-    for ln in C.pdk_lines(pdk, reports):
+    for ln in pdk_lines(pdk, reports):
         add(ln.replace("the grid's open-loop response reproduces the committed gain-bench record (see Cross-checks)",
                        "the scan's midrail samples reproduce the committed CMRR record (see Controls: midrail "
                        "reproduction)"))

@@ -174,6 +174,25 @@ repos found none to stamp: `sky130-opamp` already extracted its own
 layer, and the PDK-discovery core is gf180mcu-specific (per-PDK harness
 material is per-repo by design under REUSE.md's two-PDKs rule).
 
+## Shared rejection-bench library
+
+`rejection_bench.py` (issue #337) is the shared library of the
+frequency-domain **rejection** benches (CMRR, PSRR, and input-common-mode's
+PDK/execution record lines): the record-writing helpers
+(`worst_case`, `fmt_db`, `klt_pdk_version`, `pdk_lines`, `execution_lines`,
+`save_mode_point`, `save_local_runs`, `save_mode_point_vec`,
+`request_comment`, `write_snapshot`, `build_plots_rejection`) and the table
+emitters (`figure_table`, `worst_table`). They are rejection-bench
+machinery, not cross-experiment harness material, so they live here rather
+than in `harness.py`; the grid axes, nominal point and point formatting are
+sourced from the gain driver exactly as the benches source them. They lived
+in `sim/cmrr/run_cmrr.py` since issue #39, which forced the psrr and
+input-common-mode drivers to load the CMRR driver as a library to reach
+generic plumbing — a change to the CMRR bench could not be reasoned about
+from `sim/cmrr/` alone. `load_sibling` itself is retained for *measurement*
+reuse (issue #68); what stopped is benches reaching into another bench for
+plumbing. Unit tests: `sim/test_rejection_bench.py`.
+
 ## Solver tolerance convention
 
 Every deck under `sim/` runs at ngspice's default solver tolerance — no

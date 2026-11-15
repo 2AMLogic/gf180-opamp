@@ -27,6 +27,7 @@ sys.path.insert(0, str(HERE))
 
 import run_cmrr as r  # noqa: E402
 from harness import ExtractionError, PdkNotFound, find_pdk, interp_db, skip_or_fail  # noqa: E402
+from rejection_bench import worst_case  # noqa: E402
 
 FREQ = np.logspace(math.log10(r.AC_FSTART), math.log10(r.AC_FSTOP), r.N_FREQ)
 S = 1j * FREQ
@@ -211,7 +212,7 @@ class ExtractionTests(unittest.TestCase):
         a = r.extract_cmrr(FREQ, *pair(ad_true(), acm_true(0.6))[:1], FREQ, pair(ad_true(), acm_true(0.6))[1], FLOOR)
         b = r.extract_cmrr(FREQ, *pair(ad_true(), acm_true(6.0))[:1], FREQ, pair(ad_true(), acm_true(6.0))[1], FLOOR)
         ka, kb = ("typical", 27.0, 3.3), ("ss", 125.0, 2.97)
-        v, k, miss = r.worst_case({ka: a.cmrr, kb: b.cmrr}, "dc")
+        v, k, miss = worst_case({ka: a.cmrr, kb: b.cmrr}, "dc")
         self.assertEqual(k, kb)
         self.assertAlmostEqual(v, 80.0, delta=1e-3)
         self.assertEqual(miss, 0)

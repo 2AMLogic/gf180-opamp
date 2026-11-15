@@ -36,6 +36,9 @@ python3 test_measurement_config.py
 echo "== sim: shared harness work-dir staging (no simulator, no PDK) =="
 python3 test_harness.py
 
+echo "== sim: shared rejection-bench record writers (no simulator, no PDK; issue #337) =="
+python3 test_rejection_bench.py
+
 echo "== sim: shared passive-corner matrix, limited and full scope (no simulator, no PDK; issue #150) =="
 python3 test_passive_corners.py
 
