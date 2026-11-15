@@ -113,6 +113,7 @@ from harness import (  # noqa: E402
     ngspice_version,
     remote_jobs,
     remote_of,
+    require_plotting,
     run_klt,
     run_klt_retrying,
     load_sibling,
@@ -1582,7 +1583,7 @@ def main(argv: list[str] | None = None) -> int:
     pdk = find_pdk()
     if args.smoke:
         return smoke(pdk)
-    err = C.require_plotting()
+    err = require_plotting()
     if err:
         print(f"ERROR: {err}", file=sys.stderr)
         return 2

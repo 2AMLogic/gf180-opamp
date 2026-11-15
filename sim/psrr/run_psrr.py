@@ -94,8 +94,11 @@ from harness import (  # noqa: E402
     ngspice_version,
     load_sibling,
     remote_of,
+    require_plotting,
+    run_grid_modes,
     same_axis,
     sanitise_report,
+    work_dir,
 )
 # Shared RZ x CC passive-corner helpers (issues #70, #97, #150), used unchanged.
 from passive_corners import (  # noqa: E402
@@ -1195,7 +1198,7 @@ def run_passive_study(pdk: Pdk, args, *, runner=None, studies_fn=None, root: Pat
     print(f"record {record}: PSRR passive-corner study ({scope}): {len(want)} cells x {len(MODES)} excitations = "
           f"{len(want) * len(MODES)} responses; split {args.partition_split}; PDK={pdk.path}; klt {kver}", flush=True)
 
-    with C.work_dir(args, "psrr-passive-") as scratch:
+    with work_dir(args, "psrr-passive-") as scratch:
         work = Path(scratch)
         # Local nominal studies/controls first (numerical floor, servo isolation,
         # feedthrough controls): a failing control costs no fleet time.
@@ -1407,7 +1410,7 @@ def main(argv: list[str] | None = None) -> int:
         return smoke(pdk)
     if args.passive_corners:
         return run_passive_study(pdk, args)
-    err = C.require_plotting()
+    err = require_plotting()
     if err:
         print(f"ERROR: {err}", file=sys.stderr)
         return 2
@@ -1419,10 +1422,13 @@ def main(argv: list[str] | None = None) -> int:
     gdir = G.latest_gain_dir()
     print(f"record {record}: 3 excitations x {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
-    with C.work_dir(args, "psrr-") as scratch:
+    with work_dir(args, "psrr-") as scratch:
         work = Path(scratch)
         try:
-            reports, reqs, walls = C.run_grid_modes(pdk, work, args, MODES, testbench=TESTBENCH, guard=guard_testbench)
+            reports, reqs, walls = run_grid_modes(pdk, work, args, MODES, corners=CORNERS, temps=TEMPS_C,
+                                              supplies=SUPPLIES_V, materialise=C.materialise,
+                                              with_servo=C.with_servo, ac_request=C.ac_request,
+                                              testbench=TESTBENCH, guard=guard_testbench)
         except KltError as exc:
             print(f"ERROR: a grid request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
             return 2

@@ -152,8 +152,12 @@ imports it; deck composition, testbench guards, extraction and plotting stay
 per-experiment. Since issue #337 it also carries the bench-agnostic
 frequency-domain extraction helpers every AC bench validates with —
 `ExtractionError`, `check_axis`, `same_axis`, `finite`, `db`, `interp_db` —
+and the grid-run plumbing `run_grid_modes` / `require_plotting` / `work_dir`,
 hoisted out of the CMRR driver, which the psrr and input-common-mode drivers
-previously loaded as a library to reach them.
+previously loaded as a library to reach them. `run_grid_modes` takes its
+corner axes and its bench collaborators (`materialise`, `with_servo`,
+`ac_request`, testbench, guard) as explicit parameters, so a bench supplies
+its own axes instead of running CMRR's.
 
 This **reverses the earlier copy-not-import convention** (each runner
 carrying its own copy of these helpers) per issue #30 and its operator

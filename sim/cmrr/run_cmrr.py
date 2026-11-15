@@ -105,12 +105,15 @@ from harness import (  # noqa: E402
     logical_lines,
     ngspice_version,
     remote_of,
+    require_plotting,
+    run_grid_modes,
     run_klt,
     run_klt_retrying,
     load_sibling,
     same_axis,
     sanitise_report,
     stage_workdir,
+    work_dir,
 )
 
 # The gain driver owns the committed-DUT guards, the request shape and the grid
@@ -1254,48 +1257,9 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
 # --------------------------------------------------------------------------
 
 
-def run_grid_modes(pdk, work, args, modes: dict[str, dict], *, testbench=TESTBENCH, guard=guard_testbench):
-    """One `klt sim` corner request per excitation. Raises KltError on a submit
-    failure (no local fallback)."""
-    reports, reqs, walls = {}, {}, {}
-    for mode, mp in modes.items():
-        tb = materialise(work / mode, pdk, with_servo(mp), testbench=testbench, guard=guard)
-        req = ac_request(tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V)
-        req["batch"] = batch_block(args)
-        print(f"  submitting `{mode}` grid ({len(CORNERS) * len(TEMPS_C) * len(SUPPLIES_V)} points)...", flush=True)
-        t0 = time.time()
-        reports[mode] = run_klt_retrying(req, work / mode / "out", args.backend, work / mode,
-                                         retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
-        walls[mode] = time.time() - t0
-        reqs[mode] = req
-        r = remote_of(reports[mode])
-        print(f"  `{mode}` done in {walls[mode]:.0f} s (job {r.get('job_id', 'local')})", flush=True)
-    return reports, reqs, walls
-
-
-def require_plotting() -> str | None:
-    """Fail fast, BEFORE any grid is submitted, if matplotlib cannot import
-    (e.g. a user-site numpy 2 shadowing a distro matplotlib built for numpy 1;
-    `python3 -s` skips the user site). Returns an error message or None."""
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot  # noqa: F401
-    except Exception as exc:  # noqa: BLE001 -- any import failure blocks the record
-        return (f"matplotlib is not importable ({type(exc).__name__}: {str(exc)[:200]}); the record's plots "
-                "cannot be written. Fix the Python environment (try `python3 -s ...`) before running the grid.")
-    return None
-
-
-def work_dir(args, prefix: str):
-    """A temporary work directory, or the kept `--keep-work` one."""
-    import contextlib
-
-    if args.keep_work is None:
-        return tempfile.TemporaryDirectory(prefix=prefix)
-    args.keep_work.mkdir(parents=True, exist_ok=False)
-    return contextlib.nullcontext(str(args.keep_work.resolve()))
+# The grid-run plumbing this driver uses (run_grid_modes, require_plotting,
+# work_dir) lives in `harness` (issue #337); its CMRR collaborators are
+# passed to the shared copy explicitly.
 
 
 def smoke(pdk: Pdk) -> int:
@@ -1341,7 +1305,10 @@ def main(argv: list[str] | None = None) -> int:
     with work_dir(args, "cmrr-") as scratch:
         work = Path(scratch)
         try:
-            reports, reqs, walls = run_grid_modes(pdk, work, args, MODES)
+            reports, reqs, walls = run_grid_modes(pdk, work, args, MODES, corners=CORNERS, temps=TEMPS_C,
+                                                  supplies=SUPPLIES_V, materialise=materialise,
+                                                  with_servo=with_servo, ac_request=ac_request,
+                                                  testbench=TESTBENCH, guard=guard_testbench)
         except KltError as exc:
             print(f"ERROR: a grid request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
             return 2

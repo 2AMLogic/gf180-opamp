@@ -475,5 +475,91 @@ class ExtractionHelpersTests(unittest.TestCase):
             harness.interp_db(self.F, y, 1e3)
 
 
+class RunGridModesTests(unittest.TestCase):
+    """The parameterised grid runner (issue #337): fakes stand in for every
+    bench collaborator, proving the shared copy reads no bench module global."""
+
+    class Args:
+        backend = "local"
+        batch_submit_retries = 0
+        batch_retry_wait_s = 0.0
+        batch_runner_version_check = None
+        batch_capacity_wait_s = None
+
+    def setUp(self):
+        self.calls = []
+
+        def materialise(path, pdk, params, *, testbench, guard):
+            self.calls.append(("materialise", str(path), params, testbench, guard))
+            return path / "tb.spice"
+
+        def with_servo(mp, **over):
+            return {**mp, **over}
+
+        def ac_request(tb, pdk, corners, temps, supplies):
+            self.calls.append(("ac_request", tuple(corners), tuple(temps), tuple(supplies)))
+            return {"netlist": str(tb), "analysis": {}}
+
+        self.materialise, self.with_servo, self.ac_request = materialise, with_servo, ac_request
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_one_request_per_mode_with_the_callers_axes_and_collaborators(self):
+        fake_report = {"environment": {"remote": {"job_id": "j1"}}}
+        with mock.patch.object(harness, "run_klt_retrying", return_value=fake_report) as rk:
+            reports, reqs, walls = harness.run_grid_modes(
+                None, Path(self._tmp.name), self.Args(), {"dm": {"acp": 1}, "cm": {"acp": 2}},
+                corners=["typical", "ff"], temps=[27.0], supplies=[3.3],
+                materialise=self.materialise, with_servo=self.with_servo, ac_request=self.ac_request,
+                testbench="TB", guard="guard")
+        self.assertEqual(sorted(reports), ["cm", "dm"])
+        self.assertEqual(reqs["dm"]["batch"], rk.call_args_list[0].args[0]["batch"])
+        # one request per mode, each with its own workdir
+        self.assertEqual([c.args[3] for c in rk.call_args_list],
+                         [Path(self._tmp.name) / "dm", Path(self._tmp.name) / "cm"])
+        modes = [(c[0], c[2]) for c in self.calls if c[0] == "materialise"]
+        self.assertEqual(modes, [("materialise", {"acp": 1}), ("materialise", {"acp": 2})])
+        ac = [c for c in self.calls if c[0] == "ac_request"]
+        self.assertEqual([c[1:] for c in ac], [(("typical", "ff"), (27.0,), (3.3,))] * 2)
+        self.assertTrue(all(w >= 0 for w in walls.values()))
+
+
+class RequirePlottingTests(unittest.TestCase):
+    def test_returns_none_when_matplotlib_imports(self):
+        from types import SimpleNamespace
+
+        fake_mpl = SimpleNamespace(use=lambda backend: None)
+        with mock.patch.dict(sys.modules, {"matplotlib": fake_mpl, "matplotlib.pyplot": object()}):
+            self.assertIsNone(harness.require_plotting())
+
+    def test_reports_the_environment_error_when_it_cannot_import(self):
+        with mock.patch.dict(sys.modules, {"matplotlib": None}):
+            msg = harness.require_plotting()
+        self.assertIn("matplotlib is not importable (", msg)
+        self.assertIn("python3 -s", msg)
+
+
+class WorkDirTests(unittest.TestCase):
+    class Args:
+        keep_work = None
+
+    def test_defaults_to_a_temporary_directory(self):
+        with harness.work_dir(self.Args(), "prefix-") as scratch:
+            self.assertTrue(Path(scratch).is_dir())
+        self.assertFalse(Path(scratch).exists())  # cleaned up on exit
+
+    def test_keep_work_creates_and_returns_the_kept_directory(self):
+        with tempfile.TemporaryDirectory() as root:
+            kept = Path(root) / "kept"
+
+            class NullArgs:
+                keep_work = kept
+
+            with harness.work_dir(NullArgs(), "prefix-") as scratch:
+                self.assertEqual(Path(scratch), kept.resolve())
+                self.assertTrue(kept.is_dir())
+            self.assertTrue(kept.is_dir())  # survives the exit
+
+
 if __name__ == "__main__":
     unittest.main()
