@@ -437,7 +437,7 @@ def _diff_inputs(old, new, path="") -> list:
     return [] if old == new else [path.rstrip(".")]
 
 
-def measurement_freshness(root: Path, exp: str, fp: dict | None, archival: bool) -> dict:
+def measurement_freshness(root: Path, exp: str, fp: dict | None) -> dict:
     """Status of one source's measurement-configuration freshness."""
     if fp is None:
         why = ("not instrumented: this experiment's records carry no measurement fingerprint"
@@ -546,7 +546,7 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
                 raise ReportError(f"{label}: study bound '{f['bound_text']}' for {f['label']} is not the current "
                                   f"ratified bound in {spec_rel}" + (f" ('{sr['target']}')" if sr else ""))
         fp = parse_fingerprint(text, label)
-        fresh = measurement_freshness(root, exp, fp, archival)
+        fresh = measurement_freshness(root, exp, fp)
         if fresh["status"] == "stale" and not archival:
             raise ReportError(
                 f"stale measurement configuration: {label} was measured with a different bench/analysis configuration "
@@ -660,7 +660,7 @@ def build(root: Path, manifest: dict, spec_rel: str = "spec/target-spec.md", arc
                         r_["limitations"].append(w)
             ex["text_len"] = len(text)
             fp = parse_fingerprint(text, f"{exp}:{p.stem}")
-            fresh = measurement_freshness(root, exp, fp, archival)
+            fresh = measurement_freshness(root, exp, fp)
             ex["measurement_config"] = fresh
             if fresh["status"] == "unknown":
                 note = ("measurement-configuration freshness unknown: " + fresh["detail"] +

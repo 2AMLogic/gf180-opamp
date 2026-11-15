@@ -581,16 +581,16 @@ class SimTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         if shutil.which("klt") is None or shutil.which("ngspice") is None:
-            skip_or_fail(cls, "klt/ngspice not available")
+            skip_or_fail("klt/ngspice not available")
         try:
             cls.pdk = find_pdk()
         except PdkNotFound:
-            skip_or_fail(cls, "gf180mcu PDK not available")
+            skip_or_fail("gf180mcu PDK not available")
 
     def test_nominal_midrail_reproduces_committed_cmrr_plateau(self):
         cdir = m.latest_cmrr_dir()
         if cdir is None:
-            skip_or_fail(self, "committed CMRR record not available")
+            skip_or_fail("committed CMRR record not available")
         with tempfile.TemporaryDirectory() as d:
             s, _, _ = m.local_sample("nominal", self.pdk, Path(d), 1650)
         self.assertTrue(s.valid, s.invalid_reasons)
