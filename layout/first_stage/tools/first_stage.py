@@ -113,7 +113,7 @@ def cut_ref(cards):
     out = []
     for inst in INSTANCES:
         for i, line in enumerate(lines):
-            if line.startswith(inst):
+            if line.split() and line.split()[0] == inst:
                 out.append(line)
                 j = i + 1
                 while j < len(lines) and lines[j].startswith("+"):

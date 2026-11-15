@@ -34,10 +34,12 @@ cell inherits the same request options.
 
 `klt gen-compose` places the three groups in one row (load, in, tail, 1 µm
 channels) inside `gds/first_stage.gds`, with the groups' own guard rings/taps
-and net-name pin labels: `VSS`/`IBIAS` at XM5's source/gate, `VSS` at the two
-nfet ring taps (substrate ties) and `VDD` at the pfet ring tap (n-well tie).
-Labels carry the schematic net names in the SPICE-reader's normalised upper
-case (the same spelling `klt lvs` matches on). The multi-terminal nets
+and net-name pin labels: `vss`/`ibias` at XM5's source/gate, `vss` at the two
+nfet ring taps (substrate ties) and `vdd` at the pfet ring tap (n-well tie).
+Labels carry the schematic net names verbatim, in lower case — the exact
+spelling of the committed GDS strings and the extracted pins; all five label
+records are listed in `results.json` → `placed.pins_labelled`. The
+multi-terminal nets
 (`vdd`, `vinn`, `vinp`, `tail`, `n1`, `n2`) are declared as composition
 connectivity; `vss` and `ibias` are single-terminal in this cut and are
 labelled via `pins[]`.
@@ -68,14 +70,25 @@ then rebuilds `gds/ ref/ extracted/ evidence/` and `results.json`.
 
 Nothing is installed on the host; no ngspice is run.
 
-Reproducibility, as measured on the pilot: **verdicts are stable across
-regenerations, bytes are not** — KLayout stamps the wall-clock date into each
-GDS, so the file's sha256 (and every content hash below it) moves per run.
+Reproducibility, as measured in this directory at the pin above (klt 0.8.0 /
+klayout 0.30.12): **regenerations are byte-identical in the GDS and in every
+committed envelope except one wall-clock timing field**. klt 0.8.0 writes
+zeroed library/structure timestamps (`BGNLIB`/`BGNSTR` modification and
+access times are all 0), so there is no wall-clock content in the GDS: the
+composed GDS's sha256 reproduces exactly across runs (as #328's test plan
+asks), and so does `results.json`. The one moving field is
+`evidence/first_stage.extract.klt.json`'s `timing.*` (wall-clock durations;
+`device_extraction` 0.009 s vs 0.016 s between two runs — scheduler noise,
+not content). (The pilot README's "reproducible in verdicts, not
+byte-for-byte" note describes the pilot's own runs; it is not this
+directory's behaviour.)
 `results.json` records each run's `layout_sha256` and asserts it equals the
-`environment.layout_sha256` in the LVS envelope, which is the mechanical
+`environment.layout_sha256` in the **LVS** envelope — the mechanical
 "the checked layout is the layout this run produced, not an edited one"
-check. Within a run that equality is exact; across runs compare verdicts, not
-hashes.
+check. The `klt drc` envelope carries no `environment`/layout-hash field at
+this pin (only its LVS counterpart does — filed upstream, see the routing-gap
+section), so that equality is asserted on the LVS side only; within a run it
+is exact, and across runs the hash is stable per the paragraph above.
 
 ## Results (actual runs; `results.json` and `evidence/` hold the raw output)
 
@@ -119,8 +132,10 @@ relaxed criterion.
   `evidence/first_stage.routed-attempt.{request,json,drc.klt.json}`: it
   connects five of the six multi-terminal nets (`tail`, `n1`, `n2`, `vinn`,
   `vinp`) and the sixth (`vdd`) is refused by the router's own check —
-  `comes within 0.28um of ... metal2.space.1` — with two residual
-  `metal4.space.1` violations on the drawn legs. This attempt is
+  `comes within 0.28um of ... metal2.space.1` — with two residual violations
+  on the drawn legs, one `metal2.space.1` and one `metal4.space.1`
+  (`evidence/first_stage.routed-attempt.drc.klt.json`; also recorded in
+  `results.json` → `routed_attempt.drc.rules`). This attempt is
   non-normative: it records what was placed and connectivity-validated.
 - The refusal is structural, not tunable. `klt gen diff_pair` reports row
   pads at width-independent x columns with a **0.82 µm** inter-unit S↔D
@@ -145,9 +160,20 @@ relaxed criterion.
   device, and the digest has no per-instance device to declare — both verified
   against 0.8.0 before falling back (the curator's documented fallback
   condition). Sizes remain netlist-derived either way: the driver computes
-  every `klt gen` parameter from the cards.
-- Consequences for this slice, stated plainly: AC 1/2/3/4/6/7 are met by the
-  placed deliverable; **AC 5's `status: match` is not met** — the committed
+  every `klt gen` parameter from the cards. Also
+  [#5774](https://github.com/2AMLogic/klayout-tools/issues/5774): the
+  `klt drc` envelope records no layout content hash (its `lvs` counterpart's
+  `environment.layout_sha256` does), which is why the tamper check above is
+  asserted on the LVS envelope only.
+- Consequences for this slice, stated plainly: AC 1/3/4/6/7 are met by the
+  placed deliverable; **AC 2 is partially met** — the matched-pair style
+  (cross-quad, stated above) and the guard rings/taps are met, but the
+  8-net pin labelling is met for `vss`, `ibias` and `vdd` only (three of the
+  eight names; five label records — `results.json` →
+  `placed.pins_labelled`): `vinp`, `vinn`, `tail`, `n1` and `n2` are
+  multi-terminal in this cut and cannot be promoted to pins until the
+  inter-connect is drawn (the same filed routing gap).
+  **AC 5's `status: match` is not met** — the committed
   `evidence/first_stage.lvs.klt.json` records `status: mismatch`
   (29 layout nets vs 8 reference ports, 0 matched: the open inter-connect),
   with `extract` proving all ten device instances are recognised. When the
@@ -163,6 +189,9 @@ relaxed criterion.
 - `regen.sh`, `tools/first_stage.py`: the recipe (imports the pilot's
   `schematic_cards` / `num_um` / `check_engine` — not forked)
 - `gds/`: the three generated groups + the composed, labelled `first_stage.gds`
+  (the routed attempt's `first_stage_routed.gds` is produced mid-run and
+  deleted at the end — `tools/first_stage.py`; only its DRC envelope survives
+  under `evidence/`, so the routed verdict is re-derived by re-running)
 - `ref/first_stage.klt.spice`: the mechanically cut reference sub-netlist
 - `extracted/first_stage.klt.spice`: klt's extraction of the composed cell
 - `evidence/`: the `gen` / `compose` / `deck rules` / `drc` / `extract` / `lvs`
