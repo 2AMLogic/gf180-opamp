@@ -98,6 +98,7 @@ from harness import (  # noqa: E402
     set_ibias,
     stage_workdir,
     remote_of,
+    state_phrase,
 )
 
 from harness import load_config_module  # noqa: E402
@@ -982,7 +983,7 @@ def build_record(
     if remote:
         add(f"  - `environment.remote`: provider `{remote.get('provider')}`, job id "
             f"`{remote.get('job_id')}`, instance type `{remote.get('instance_type')}`, "
-            f"state `{remote.get('state')}`, runner klt `{remote.get('runner_klt_version')}` "
+            f"{state_phrase(remote)}, runner klt `{remote.get('runner_klt_version')}` "
             f"vs client klt `{remote.get('client_klt_version')}` "
             f"(compatibility `{remote.get('runner_compatibility')}`)")
     if op_report_remote:
@@ -1632,7 +1633,7 @@ def build_fixed_vcm_record(
     add(f"- **Execution**: {backend_desc}")
     if remote:
         add(f"  - `environment.remote`: provider `{remote.get('provider')}`, job id `{remote.get('job_id')}`, "
-            f"instance type `{remote.get('instance_type')}`, state `{remote.get('state')}`, runner klt "
+            f"instance type `{remote.get('instance_type')}`, {state_phrase(remote)}, runner klt "
             f"`{remote.get('runner_klt_version')}` vs client klt `{remote.get('client_klt_version')}` "
             f"(compatibility `{remote.get('runner_compatibility')}`)")
     if op_report_remote:

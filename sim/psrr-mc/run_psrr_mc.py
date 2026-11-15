@@ -109,6 +109,7 @@ from harness import (  # noqa: E402
     lost_shard_refusals,
     remote_jobs,
     exec_line,
+    state_phrase,
     as_mc as _as_mc,
     sha256_text as _sha,
     fmt_digits as fmt,
@@ -1054,7 +1055,7 @@ def grid_exec_line(tag: str, rep: dict, wall: float) -> str:
     eng_s = f"{env.get('engine', 'ngspice')} {env.get('engine_version', '')}".strip()
     return (f"  - `{tag}`: {len(jobs)} fleet job(s) (`remote.hosts = {len(jobs)}`, contiguous shards of the unit "
             "list merged by klt): " + ", ".join(f"`{j.get('job_id', j.get('job', '?'))}`" for j in jobs)
-            + f"; {'Spot ' if j0.get('spot') else ''}{j0.get('instance_type', '')}, state `{j0.get('state')}`; "
+            + f"; {'Spot ' if j0.get('spot') else ''}{j0.get('instance_type', '')}, {state_phrase(j0)}; "
             f"runner klt `{j0.get('runner_klt_version')}` vs client `{j0.get('client_klt_version')}`; "
             f"engine `{eng_s}`; wall {wall:.0f} s")
 

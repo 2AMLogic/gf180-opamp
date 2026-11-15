@@ -110,6 +110,7 @@ from harness import (  # noqa: E402
     ngspice_version,
     remote_jobs,
     remote_of,
+    state_phrase,
     run_klt,
     run_klt_retrying,
     load_sibling,
@@ -831,7 +832,7 @@ def execution_lines(reports: dict[str, dict], walls: dict[str, float]) -> list[s
                   for x in (env.get("staged_model_inputs") or [])]
         L.append(f"  - `{tag}`: {len(jobs)} fleet job(s) (`remote.hosts = {len(jobs)}`, contiguous shards merged by klt): "
                  + ", ".join(f"`{j.get('job_id', j.get('job', '?'))}`" for j in jobs)
-                 + f"; {'Spot ' if j0.get('spot') else ''}{j0.get('instance_type', '')}, state `{j0.get('state')}`; "
+                 + f"; {'Spot ' if j0.get('spot') else ''}{j0.get('instance_type', '')}, {state_phrase(j0)}; "
                  f"runner klt `{j0.get('runner_klt_version')}` vs client `{j0.get('client_klt_version')}`; "
                  f"engine `{env.get('engine')} {env.get('engine_version')}`; "
                  + (f"client models staged ({', '.join(staged)}); " if staged else "")
