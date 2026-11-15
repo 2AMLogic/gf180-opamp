@@ -82,13 +82,17 @@ asks), and so does `results.json`. The one moving field is
 not content). (The pilot README's "reproducible in verdicts, not
 byte-for-byte" note describes the pilot's own runs; it is not this
 directory's behaviour.)
-`results.json` records each run's `layout_sha256` and asserts it equals the
-`environment.layout_sha256` in the **LVS** envelope — the mechanical
-"the checked layout is the layout this run produced, not an edited one"
-check. The `klt drc` envelope carries no `environment`/layout-hash field at
-this pin (only its LVS counterpart does — filed upstream, see the routing-gap
-section), so that equality is asserted on the LVS side only; within a run it
-is exact, and across runs the hash is stable per the paragraph above.
+`results.json` records each run's `layout_sha256` (under `placed`), and
+`tools/first_stage.py` asserts the tamper check — "the checked layout is the
+layout this run produced, not an edited one" — against **both** envelopes:
+every layout-analysis envelope at this pin (`drc`, `extract`, `lvs`) carries
+the checked layout's content hash as `provenance.input.content_hash`
+(`role: "layout"`), so the DRC side is asserted through that field and the
+LVS side through its `environment.layout_sha256` (the same hash re-exposed
+without the `sha256:` prefix). The DRC/LVS difference is key shape only —
+the `drc` envelope has no `environment` block, not a missing hash. Within a
+run the equality is exact, and across runs the hash is stable per the
+paragraph above.
 
 ## Results (actual runs; `results.json` and `evidence/` hold the raw output)
 
@@ -160,11 +164,12 @@ relaxed criterion.
   device, and the digest has no per-instance device to declare — both verified
   against 0.8.0 before falling back (the curator's documented fallback
   condition). Sizes remain netlist-derived either way: the driver computes
-  every `klt gen` parameter from the cards. Also
-  [#5774](https://github.com/2AMLogic/klayout-tools/issues/5774): the
-  `klt drc` envelope records no layout content hash (its `lvs` counterpart's
-  `environment.layout_sha256` does), which is why the tamper check above is
-  asserted on the LVS envelope only.
+  every `klt gen` parameter from the cards. (An earlier revision cited
+  [klayout-tools#5774](https://github.com/2AMLogic/klayout-tools/issues/5774)
+  here as a missing DRC-envelope layout hash — a misreading: the hash is
+  present under `provenance.input.content_hash`, the issue is closed with
+  the measurement, and the tamper check above is asserted on both
+  envelopes.)
 - Consequences for this slice, stated plainly: AC 1/3/4/6/7 are met by the
   placed deliverable; **AC 2 is partially met** — the matched-pair style
   (cross-quad, stated above) and the guard rings/taps are met, but the
@@ -176,7 +181,9 @@ relaxed criterion.
   **AC 5's `status: match` is not met** — the committed
   `evidence/first_stage.lvs.klt.json` records `status: mismatch`
   (29 layout nets vs 8 reference ports, 0 matched: the open inter-connect),
-  with `extract` proving all ten device instances are recognised. When the
+  with `extract` proving all ten device instances are recognised
+  (`lvs.counts.devices.layout` reads 9, not 10 — `combine_devices: true`
+  folds parallel sub-instances on the LVS side). When the
   upstream gap closes, `regen.sh` regenerates the routed composition and the
   same pipeline gates DRC-clean + LVS-match for the follow-up slice. The
   LVS negative control (perturbed-W must report `device.property`) is not
@@ -196,8 +203,10 @@ relaxed criterion.
 - `extracted/first_stage.klt.spice`: klt's extraction of the composed cell
 - `evidence/`: the `gen` / `compose` / `deck rules` / `drc` / `extract` / `lvs`
   envelopes and requests, plus the non-normative routed attempt
-- `results.json`: per-run verdicts, the deck content hash, the composed
-  GDS sha256 and its equality with the LVS envelope's `layout_sha256`
+- `results.json`: per-run verdicts, the deck content hash and the composed
+  GDS sha256 (under `placed`); the envelope tamper asserts — LVS
+  `environment.layout_sha256`, DRC `provenance.input.content_hash` — live
+  in `tools/first_stage.py`
 
 No cell was edited by hand to make anything pass, and no spec value was
 changed.

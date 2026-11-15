@@ -234,6 +234,8 @@ def main():
         "layout_sha256": gds_sha,
     }
     assert drc.get("status") == "clean" and drc.get("violation_count") == 0, drc.get("status")
+    assert (drc.get("provenance") or {}).get("input") == {
+        "content_hash": "sha256:" + gds_sha, "role": "layout"}, drc.get("provenance")
     print("drc clean: %d rules checked, %d skipped (%s)" %
           (results["placed"]["drc"]["rules_checked"],
            results["placed"]["drc"]["rules_skipped"],
