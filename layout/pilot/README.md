@@ -205,3 +205,6 @@ No cell was edited by hand to make it pass, and no spec value was changed.
 - `extracted/`: klt extracted netlists
 - `evidence/`: raw klt JSON (`gen`, `drc`, `extract`, `lvs` and the LVS requests)
 - `results.json`: per-cell summary (klt curated DRC and klt LVS)
+- `check_consistency.py` / `test_pilot_consistency.py`: the stdlib-only
+  offline check that binds `results.json`, `evidence/`, `gds/` and `ref/`
+  to the schematic (`check_consistency.py` runs in CI before klt is installed)

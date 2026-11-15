@@ -23,8 +23,10 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent))
 
 import run_step_response as r  # noqa: E402
+from test_harness import StaleDutMixin, fake_pdk  # noqa: E402
 
 VCM = 1.65
 DT = 1e-9
@@ -379,16 +381,12 @@ class GuardTests(unittest.TestCase):
         self.assertLessEqual(r.TSTEP, tau_max / 10)
 
 
-def fake_pdk(d: Path) -> r.Pdk:
-    ng = d / "pdk" / "libs.tech" / "ngspice"
-    ng.mkdir(parents=True)
-    (ng / "design.ngspice").write_text("* stub\n")
-    return r.Pdk(d / "pdk", "gf180mcuD", "test")
+class StaleDutTests(StaleDutMixin, unittest.TestCase):
+    """The stale-DUT negative tests come from the shared `StaleDutMixin`
+    (`sim/test_harness.py`, issue #347); this bench's own check pins what
+    materialisation may change in the committed testbench."""
 
-
-class StaleDutTests(unittest.TestCase):
-    """The bench must measure the committed export: an altered, stale or
-    hand-edited DUT is rejected before anything is written or simulated."""
+    RUNNER = r
 
     def test_committed_dut_materialises_and_only_includes_change(self):
         with tempfile.TemporaryDirectory() as d:
@@ -402,26 +400,6 @@ class StaleDutTests(unittest.TestCase):
             tb2 = r.materialise(Path(d) / "w2", pdk, cl_f=20e-12, ibias_a=0.0)
             self.assertIn("CL vout 0 2e-11", tb2.read_text())
             self.assertIn("Ibias vdd ibias dc 0", tb2.read_text())
-
-    def test_altered_device_in_the_dut_is_rejected(self):
-        dut = r.load_dut_text()
-        mm = re.search(r"\bW=(\S+)", dut)
-        self.assertIsNotNone(mm)
-        stale = dut[: mm.start()] + "W=" + mm.group(1) + "0" + dut[mm.end():]  # a resized device
-        self.assertTrue(r.g.guard_dut(stale))
-        with tempfile.TemporaryDirectory() as d:
-            with self.assertRaises(RuntimeError):
-                r.materialise(Path(d) / "w", fake_pdk(Path(d)), dut_text=stale)
-            self.assertFalse((Path(d) / "w" / r.g.DUT_INCLUDE_NAME).exists())
-
-    def test_dropped_or_duplicated_device_is_rejected(self):
-        dut = r.load_dut_text()
-        self.assertTrue(r.g.guard_dut(r.g.strip_instance(dut, "XM6")))
-        first_x = next(ln for ln in dut.splitlines() if ln[:1] and ln[0] in "xX")
-        self.assertTrue(r.g.guard_dut(dut.replace(first_x, first_x + "\n" + first_x, 1)))
-
-    def test_committed_dut_passes(self):
-        self.assertEqual(r.g.guard_dut(r.load_dut_text()), [])
 
 
 class FingerprintTests(unittest.TestCase):
