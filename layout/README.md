@@ -5,6 +5,10 @@ Layout (klayout-tools driven) and DRC/LVS signoff artifacts.
 - [`pilot/`](pilot/README.md): bounded device-pilot test cells (issue #77),
   with a one-command regeneration recipe and per-cell DRC/LVS evidence. Not
   block layout and not signoff; see its README for scope and results.
+- [`first_stage/`](first_stage/README.md): the first-stage sub-block (XM1–XM5)
+  placed from the pilot's generator mappings (issue #328), with DRC evidence
+  and a documented routing gap. A placed, labelled sub-block — not block
+  layout, not signoff; see its README for scope and status.
 
 ## Troubleshooting: scratch cleanup after `cd`
 

@@ -178,9 +178,14 @@ No cell was edited by hand to make it pass, and no spec value was changed.
 
 1. (#42 has landed; the cells above are regenerated from its values. Rerun
    `regen.sh` if `XCC`/`XRZ` change again.)
-2. Re-check #2999 and #3000 (contact grid, salicide-block geometry) with a
+2. ~~Re-check #2999 and #3000 (contact grid, salicide-block geometry) with a
    foundry-equivalent DRC before any pilot cell is composed; the curated deck
-   cannot see them (#3001).
+   cannot see them (#3001).~~ Obsolete at klt 0.8.0: the curated `gf180mcu`
+   deck now carries `contact.ongrid.1`, `sab.separation.contact.1` (SB.4) and
+   `poly2.enclosing.sab.1` (SB.10) — 114 rules,
+   `content_hash sha256:0eb6df1b...` — and klayout-tools #2999/#3000/#3001 are
+   closed. The precondition this item set is met by the installed deck; the
+   PDK runset itself remains unavailable on these workers (#282).
 3. Matching groups to place as units: the input pair `XM1/XM2` (common-centroid
    `diff_pair` or `mos_array` topology with dummies), the PMOS mirror
    `XM3/XM4`, and the bias mirror `XMB1/XM5/XM7` (ratio 1 : 1 : 6 by W, same L=2u).

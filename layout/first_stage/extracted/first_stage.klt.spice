@@ -1,0 +1,29 @@
+* extracted by klt extract --deck gf180mcu
+
+* cell first_stage
+* pin ibias
+* pin vdd
+* pin vss
+* pin vss
+.SUBCKT first_stage ibias vdd vss vss$1
+* device instance $1 r0 *1 8.56,0.9 nfet
+X$1 \$12 \$5 \$11 vss$1 nfet_03v3 L=1U W=1.8U AS=0.9P AD=0.9P PS=4.6U PD=4.6U
+* device instance $2 r0 *1 10.96,0.9 nfet
+X$2 \$14 \$6 \$13 vss$1 nfet_03v3 L=1U W=1.8U AS=0.9P AD=0.9P PS=4.6U PD=4.6U
+* device instance $3 r0 *1 16.77,2.32 nfet
+X$3 \$17 ibias vss vss$1 nfet_03v3 L=2U W=3U AS=1.5P AD=0.87P PS=7U PD=3.58U
+* device instance $4 r0 *1 19.35,2.32 nfet
+X$4 vss ibias \$17 vss$1 nfet_03v3 L=2U W=3U AS=0.87P AD=1.5P PS=3.58U PD=7U
+* device instance $5 r0 *1 8.56,4.52 nfet
+X$5 \$20 \$19 \$18 vss$1 nfet_03v3 L=1U W=1.8U AS=0.9P AD=0.9P PS=4.6U PD=4.6U
+* device instance $6 r0 *1 10.96,4.52 nfet
+X$6 \$23 \$22 \$21 vss$1 nfet_03v3 L=1U W=1.8U AS=0.9P AD=0.9P PS=4.6U PD=4.6U
+* device instance $7 r0 *1 1,1.5 pfet
+X$7 \$8 \$3 \$7 vdd pfet_03v3 L=1U W=3U AS=1.5P AD=1.5P PS=7U PD=7U
+* device instance $8 r0 *1 3.4,1.5 pfet
+X$8 \$10 \$4 \$9 vdd pfet_03v3 L=1U W=3U AS=1.5P AD=1.5P PS=7U PD=7U
+* device instance $9 r0 *1 1,6.32 pfet
+X$9 \$26 \$25 \$24 vdd pfet_03v3 L=1U W=3U AS=1.5P AD=1.5P PS=7U PD=7U
+* device instance $10 r0 *1 3.4,6.32 pfet
+X$10 \$29 \$28 \$27 vdd pfet_03v3 L=1U W=3U AS=1.5P AD=1.5P PS=7U PD=7U
+.ENDS first_stage
