@@ -6,6 +6,17 @@ Merged pull requests and closed issues recorded by Guide.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-16
+
+- **PR #354**: fix: require layout_sha256 present before the pilot negative-control gate trusts it
+- **Issue #338** (closed): layout/pilot: negative-control gate's layout_sha256 half is vacuously true if klt stops emitting the field
+- **PR #371**: docs: prune completed ROADMAP Now items and cite tracked issues
+- **Issue #355** (closed): docs: drop the completed ROADMAP 'Documentation corrections' item once #331 lands
+- **PR #362**: refactor: hoist the transient-grid run flow into harness.run_transient_grid
+- **Issue #358** (closed): Hoist the duplicated main() orchestration shared by step-response and overdrive-recovery into harness
+- **PR #376**: test: pin MODULE_REL to the loaded module in Contract.test_module_contract
+- **Issue #360** (closed): MODULE_REL is the one INTERFACE_CONSTANTS entry its own rule does not actually pin
+
 ### 2026-11-15
 
 - **PR #370**: sim(cmrr-mc): full-grid mismatch MC record over the 45-point T/VDD grid
