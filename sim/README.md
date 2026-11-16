@@ -487,8 +487,9 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   PSRR− at DC, 1 kHz–1 MHz and f_u beside the DR-6 proposed bounds, with
   switch-off, process-only and mirror-imbalance controls. Reported, not graded
   (issue #99; follow-up of #61 / DR-6). It carries its own
-  `measurement_config.py` fingerprint (#89 convention); it is not selected by
-  the characterization report. Full record committed:
+  `measurement_config.py` fingerprint (#89 convention); it is the record the
+  characterization report selects for `psrr-mc` (`report/selection.json`).
+  Full record committed:
   [`20261011-145434-286b06c`](psrr-mc/records/20261011-145434-286b06c.md)
   (five corners × N = 300, all validity gates and controls passing; every
   mismatch-inclusive statistic at or above the DR-6 proposed bounds — worst
