@@ -42,6 +42,7 @@ from harness import (  # noqa: E402
     load_dut_text,
     load_sibling,
     remote_of,
+    state_phrase,
 )
 
 # The grid axes, the nominal point and the point-formatting helpers come from
@@ -104,7 +105,7 @@ def execution_lines(reports: dict[str, dict], walls: dict[str, float]) -> list[s
         env = rep.get("environment") or {}
         if r:
             L.append(f"  - `{mode}`: backend `{r.get('provider')}`, job `{r.get('job_id')}`, "
-                     f"{'Spot ' if r.get('spot') else ''}{r.get('instance_type', '')}, state `{r.get('state')}`, "
+                     f"{'Spot ' if r.get('spot') else ''}{r.get('instance_type', '')}, {state_phrase(r)}, "
                      f"runner klt `{r.get('runner_klt_version')}` vs client `{r.get('client_klt_version')}` "
                      f"(compatibility `{r.get('runner_compatibility')}`); engine `{env.get('engine')} "
                      f"{env.get('engine_version')}`; wall {walls.get(mode, 0):.0f} s")

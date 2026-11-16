@@ -86,6 +86,7 @@ from harness import (  # noqa: E402
     load_sibling,
     ngspice_version,
     remote_of,
+    state_phrase,
     request_for_snapshot,
     run_klt,
     sanitise_report,
@@ -552,7 +553,7 @@ def exec_line(rep: dict, wall: float) -> str:
     if not r:
         return f"backend `local`; engine `{eng}`; wall {wall:.0f} s"
     return (f"backend `{r.get('provider')}`, job `{r.get('job_id')}`, {'Spot ' if r.get('spot') else ''}"
-            f"{r.get('instance_type', '')}, state `{r.get('state')}`, runner klt `{r.get('runner_klt_version')}` "
+            f"{r.get('instance_type', '')}, {state_phrase(r)}, runner klt `{r.get('runner_klt_version')}` "
             f"vs client `{r.get('client_klt_version')}`; engine `{eng}`; wall {wall:.0f} s")
 
 

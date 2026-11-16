@@ -1517,6 +1517,45 @@ def remote_jobs(report: dict) -> list[dict]:
     return [r] if r else []
 
 
+def state_phrase(job: dict) -> str:
+    """``state `x``` plus klt's own `exit_reason` discriminator when the state
+    is not success, so a verdict exit code reads differently from a runner
+    crash. Renders klt's fields verbatim (exit code, report status, the
+    nothing-checked reasons, the unit pass counts) and interprets none of
+    them, so a future klt exit code needs no change here. A report whose state
+    is not success and that carries no `exit_reason` says so explicitly."""
+    state = job.get("state")
+    if state == "done":
+        return "state `done`"
+    er = job.get("exit_reason")
+    if er == {}:
+        return f"state `{state}` (`exit_reason` present but empty)"
+    if not er:
+        return f"state `{state}` (no `exit_reason` in the report)"
+    parts: list[str] = []
+    units_seg = None
+    if er.get("exit_code") is not None:
+        parts.append(f"exit {er['exit_code']}")
+    if er.get("report_status"):
+        parts.append(f"report_status `{er['report_status']}`")
+    reasons = er.get("nothing_checked_reasons") or []
+    if reasons:
+        parts.append("nothing checked: " + ", ".join(f"`{r}`" for r in reasons))
+    units = er.get("units") or {}
+    by = units.get("by_status") or {}
+    if by:
+        pass_n, total = by.get("pass"), units.get("total")
+        if pass_n is not None:
+            head = f"{pass_n}/{total} pass" if total is not None else f"{pass_n} pass"
+            units_seg = "units " + head + "".join(f", {n} {s}" for s, n in sorted(by.items()) if s != "pass")
+        else:
+            units_seg = "units " + ", ".join(f"{n} {s}" for s, n in sorted(by.items()))
+    if not parts and not units_seg:
+        return f"state `{state}` (`exit_reason` carries no exit fields)"
+    body = ", ".join(parts) + (f"; {units_seg}" if units_seg else "")
+    return f"state `{state}` ({body})"
+
+
 def sha256_text(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
@@ -1553,7 +1592,7 @@ def exec_line(tag: str, rep: dict, wall: float) -> str:
     if not r:
         return f"  - `{tag}`: backend `local`; engine `{eng_s}`; wall {wall:.0f} s"
     return (f"  - `{tag}`: backend `{r.get('provider')}`, job `{r.get('job_id')}`, "
-            f"{'Spot ' if r.get('spot') else ''}{r.get('instance_type', '')}, state `{r.get('state')}`, "
+            f"{'Spot ' if r.get('spot') else ''}{r.get('instance_type', '')}, {state_phrase(r)}, "
             f"runner klt `{r.get('runner_klt_version')}` vs client `{r.get('client_klt_version')}` "
             f"(compatibility `{r.get('runner_compatibility')}`); engine `{eng_s}`; wall {wall:.0f} s")
 

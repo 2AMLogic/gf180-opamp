@@ -435,6 +435,127 @@ class ClaimRecordPathsTests(unittest.TestCase):
         self.assertEqual(taken["record"].read_text(), "old")
 
 
+def _measured_exit_reason(pass_n: int) -> dict:
+    """The `exit_reason` klt attached to every job of the committed
+    issue #140 probe (`sim/cmrr-mc/probes/20261115-112452-de61538.json`): a
+    verdict exit 4 because no measurements were requested, with every unit
+    passing."""
+    return {
+        "exit_code": 4,
+        "message": "klt sim exited 4 (errored / not_checked / inconclusive)",
+        "nothing_checked": True,
+        "nothing_checked_reasons": ["no_requested_measurements"],
+        "report_status": "not_checked",
+        "units": {"by_status": {"pass": pass_n}, "first_not_passed": [], "total": pass_n},
+    }
+
+
+class StatePhraseTests(unittest.TestCase):
+    """`harness.state_phrase`: the execution-line state discriminator (issue
+    #365). A non-success `state` alone reads as a runner crash; klt's own
+    `exit_reason` fields distinguish a verdict exit from a real failure."""
+
+    def test_done_renders_unchanged(self):
+        # AC3: a passing record's prose must not move.
+        self.assertEqual(harness.state_phrase({"state": "done"}), "state `done`")
+
+    def test_exec_line_done_is_byte_identical_to_the_old_rendering(self):
+        rep = {"environment": {"remote": {"provider": "aws-batch-fleet", "job_id": "j1", "instance_type": "c7i.2x",
+                                          "state": "done", "runner_klt_version": "0.9.0",
+                                          "client_klt_version": "0.9.0", "runner_compatibility": "match"},
+                              "engine": "ngspice", "engine_version": "47"}}
+        self.assertEqual(
+            harness.exec_line("t", rep, 57.0),
+            "  - `t`: backend `aws-batch-fleet`, job `j1`, c7i.2x, state `done`, "
+            "runner klt `0.9.0` vs client `0.9.0` (compatibility `match`); engine `ngspice 47`; wall 57 s",
+        )
+
+    def test_measured_nothing_checked_case_renders_the_discriminator(self):
+        # AC1: the issue #140 probe shape — verdict exit 4, all units passing.
+        phrase = harness.state_phrase({"state": "failed", "exit_reason": _measured_exit_reason(3)})
+        self.assertIn("state `failed`", phrase)
+        self.assertIn("exit 4", phrase)
+        self.assertIn("report_status `not_checked`", phrase)
+        self.assertIn("nothing checked: `no_requested_measurements`", phrase)
+        self.assertIn("units 3/3 pass", phrase)
+        self.assertEqual(phrase, "state `failed` (exit 4, report_status `not_checked`, "
+                                 "nothing checked: `no_requested_measurements`; units 3/3 pass)")
+
+    def test_genuine_unit_failure_renders_differently_from_nothing_checked(self):
+        # AC5: "failed but 24/24 passed" vs "failed because units failed".
+        er = {"exit_code": 4, "report_status": "fail",
+              "units": {"by_status": {"pass": 20, "fail": 4}, "first_not_passed": ["sep.ss.27C"], "total": 24}}
+        phrase = harness.state_phrase({"state": "failed", "exit_reason": er})
+        self.assertIn("report_status `fail`", phrase)
+        self.assertIn("units 20/24 pass, 4 fail", phrase)
+        self.assertNotIn("not_checked", phrase)
+        self.assertNotIn("nothing checked", phrase)
+        self.assertNotEqual(phrase, harness.state_phrase({"state": "failed", "exit_reason": _measured_exit_reason(24)}))
+
+    def test_ceiling_kill_renders_differently_from_a_verdict_exit(self):
+        # AC5: a whole-job ceiling kill reports state timeout, exit 124.
+        phrase = harness.state_phrase({"state": "timeout",
+                                       "exit_reason": {"exit_code": 124, "report_status": "fail",
+                                                       "units": {"by_status": {"pass": 20, "fail": 4}, "total": 24}}})
+        self.assertIn("state `timeout`", phrase)
+        self.assertIn("exit 124", phrase)
+        self.assertNotEqual(phrase.split(" (")[1], harness.state_phrase(
+            {"state": "failed", "exit_reason": {"exit_code": 4, "report_status": "fail",
+                                                "units": {"by_status": {"pass": 20, "fail": 4}, "total": 24}}}).split(" (")[1])
+
+    def test_missing_exit_reason_is_stated_explicitly(self):
+        # AC4: silence is the defect being fixed.
+        self.assertEqual(harness.state_phrase({"state": "failed"}),
+                         "state `failed` (no `exit_reason` in the report)")
+        self.assertEqual(harness.state_phrase({"state": "interrupted", "exit_reason": None}),
+                         "state `interrupted` (no `exit_reason` in the report)")
+
+    def test_empty_exit_reason_is_stated_explicitly(self):
+        self.assertEqual(harness.state_phrase({"state": "failed", "exit_reason": {}}),
+                         "state `failed` (`exit_reason` present but empty)")
+
+    def test_exit_reason_with_only_a_message_says_no_exit_fields(self):
+        phrase = harness.state_phrase({"state": "failed", "exit_reason": {"message": "something happened"}})
+        self.assertEqual(phrase, "state `failed` (`exit_reason` carries no exit fields)")
+
+    def test_lost_shard_empty_job_does_not_crash(self):
+        # `remote_jobs` yields `{}` for a lost shard (`fleet[]` entry `None`).
+        self.assertEqual(harness.state_phrase({}), "state `None` (no `exit_reason` in the report)")
+
+    def test_empty_nothing_checked_reasons_are_omitted(self):
+        er = _measured_exit_reason(3)
+        er["nothing_checked_reasons"] = []
+        phrase = harness.state_phrase({"state": "failed", "exit_reason": er})
+        self.assertNotIn("nothing checked", phrase)
+        self.assertIn("units 3/3 pass", phrase)
+
+    def test_units_absent_while_report_status_present(self):
+        phrase = harness.state_phrase({"state": "failed", "exit_reason": {"exit_code": 3, "report_status": "fail"}})
+        self.assertEqual(phrase, "state `failed` (exit 3, report_status `fail`)")
+        self.assertNotIn("units", phrase)
+
+    def test_by_status_renders_unexpected_status_keys(self):
+        er = {"exit_code": 2, "units": {"by_status": {"pass": 10, "err": 2}, "total": 12}}
+        self.assertIn("units 10/12 pass, 2 err", harness.state_phrase({"state": "failed", "exit_reason": er}))
+        er2 = {"exit_code": 1, "units": {"by_status": {"fail": 4}}}
+        self.assertIn("units 4 fail", harness.state_phrase({"state": "failed", "exit_reason": er2}))
+
+    def test_exec_line_keeps_the_load_bearing_prefix(self):
+        # Caller constraint: `run_cmrr_mc` / `run_psrr_mc` do
+        # `exec_line(...).replace("  - ", "- **Execution**: ", 1)` — the line
+        # must start with `  - ` and carry exactly one occurrence of it.
+        rep = {"environment": {"remote": {"provider": "aws-batch-fleet", "job_id": "j1", "state": "failed",
+                                          "exit_reason": _measured_exit_reason(3)},
+                              "engine": "ngspice", "engine_version": "47"}}
+        line = harness.exec_line("t", rep, 57.0)
+        self.assertTrue(line.startswith("  - "))
+        self.assertEqual(line.count("  - "), 1)
+        self.assertIn("exit 4", line)
+        # The local-backend branch is untouched by the helper.
+        local = harness.exec_line("t", {"environment": {"engine": "ngspice", "engine_version": "47"}}, 12.0)
+        self.assertTrue(local.startswith("  - "))
+        self.assertIn("backend `local`", local)
+        self.assertNotIn("exit_reason", local)
 class BatchArgsDestContractTests(unittest.TestCase):
     """`add_batch_args` dests — the contract `batch_block`/`submit_request` read.
 
