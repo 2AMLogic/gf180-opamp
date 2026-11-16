@@ -7,6 +7,17 @@ the five MOS process corners, N = 300 per corner, seed 45, at 27 °C / 3.30 V /
 VCM = VDD/2 — the same axes and seed as `sim/offset-mc/`, so the two
 statistics describe the same device draws.
 
+That five-corner record
+([`20261010-202454-e4be1ac`](records/20261010-202454-e4be1ac.md)) is the one
+the characterization report selects. A second, 45-point grid record
+([`20261115-185812-3ece683`](records/20261115-185812-3ece683.md): the same
+mismatch draws extended to T −40 / 27 / 125 °C × VDD 2.97 / 3.30 / 3.63 V =
+45 points × N = 300 = 13 500 samples, same seed 45, typical passives) is
+committed beside it but **not** selected — committed, append-only, not
+selected. The three reasons are recorded in `sim/README.md` (the
+"`cmrr-mc --grid full`" note at the end of that file) and codified in
+`sim/report/test_report.py`.
+
 It measures; it judges nothing. Bounds are proposed in
 [`spec/decision-records/0006-cmrr-psrr-bounds.md`](../../spec/decision-records/0006-cmrr-psrr-bounds.md).
 

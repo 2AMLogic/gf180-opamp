@@ -43,7 +43,9 @@ below:
   both systematic-only (matched devices, 45 points); the characterization
   report also lists the CMRR mismatch Monte Carlo record
   ([`20261010-202454-e4be1ac`](sim/cmrr-mc/records/20261010-202454-e4be1ac.md),
-  five corners x 300 samples at 27 C / 3.30 V only) and the PSRR mismatch
+  five corners x 300 samples at 27 C / 3.30 V -- the selected record's
+  population; the experiment also holds a committed 45-point grid record
+  that the report does not select) and the PSRR mismatch
   Monte Carlo record
   ([`20261011-145434-286b06c`](sim/psrr-mc/records/20261011-145434-286b06c.md),
   same population) beside them as separate, ungraded information. Their numeric bounds are
