@@ -8,6 +8,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-16
 
+- **PR #387**: docs: state in sim/README.md psrr-mc bullet that the nominal record is the selected one
+- **Issue #386** (closed): docs: sim/README.md's psrr-mc bullet says the nominal PSRR MC record is "not selected", but selection.json selects it
 - **PR #368**: test: pin add_batch_args dest contract for batch_block and submit_request
 - **Issue #350** (closed): sim/test_harness.py: pin the add_batch_args dest contract that batch_block()/submit_request() read
 - **PR #374**: test: add cmrr-mc mutation entries for chunk-plan and merge guards
