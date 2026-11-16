@@ -164,6 +164,8 @@ class Contract(unittest.TestCase):
                 self.assertEqual(m.FINGERPRINT_VERSION, harness.FINGERPRINT_VERSION)
                 for rel in m.TESTBENCHES_REL.values():
                     self.assertTrue((REPO / rel).is_file(), rel)
+                self.assertTrue((REPO / m.MODULE_REL).is_file(), m.MODULE_REL)
+                self.assertEqual((REPO / m.MODULE_REL).resolve(), Path(m.__file__).resolve(), exp)
                 inp = m.inputs(texts(exp, m))
                 self.assertEqual(inp["experiment"], exp)
                 self.assertEqual(inp["fingerprint_version"], harness.FINGERPRINT_VERSION)

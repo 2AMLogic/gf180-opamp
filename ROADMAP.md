@@ -54,32 +54,25 @@ Done and evidenced:
 
 ## Now
 
-1. **Land the full-grid PSRR mismatch record** (#190, PR #310, in review).
-   Done when `sim/psrr-mc/records/20261108-220319-bb1a6a0.md` and its artifact
-   manifest are on `main`. The report selection is unchanged by that PR.
-2. **Compose the first-stage sub-block from the pilot generators** (no issue
-   yet; first slice of #241). Done when `layout/first_stage/` holds a GDS for
+1. **Compose the first-stage sub-block from the pilot generators** (#328;
+   first slice of #241). Done when `layout/first_stage/` holds a GDS for
    XM1 to XM5 with a one-command `regen.sh`, a clean `klt drc` envelope and a
    `klt lvs` match against a sub-netlist cut from the schematic netlist. The
    pin and deck are already on `main`, so it does not wait on #240.
-3. **Make the pilot's LVS negative controls reproducible** (no issue yet).
+2. **Make the pilot's LVS negative controls reproducible** (no issue yet).
    They were run by hand and are not part of `regen.sh`. Done when `regen.sh`
    runs one wrong reference per device kind, records the mismatch in
    `results.json`, and fails if a wrong reference matches.
-4. **Offline consistency check for the pilot** (no issue yet). Done when a
-   no-PDK test in CI fails if a pilot cell's dimensions drift from the
-   schematic netlist or `results.json` disagrees with `layout/pilot/evidence/`.
-5. **Documentation corrections** (no issue yet). `spec/README.md` does not
-   index DR-0006, and the README status says PSRR is at typical passives only
-   although `sim/psrr/records/20261011-102729-6612014.md` is a full-envelope
-   study. Done when both read correctly and the spec-citation checks pass.
-6. **Remove dead parameters in the sim drivers** (#320, awaiting approval).
-   Done when the six listed elements are gone and `sim/selftest.sh` passes.
+3. **Documentation corrections** (#331, PR #352 in review). `spec/README.md`
+   does not index DR-0006, and the README status says PSRR is at typical
+   passives only although `sim/psrr/records/20261011-102729-6612014.md` is a
+   full-envelope study. Done when both read correctly and the spec-citation
+   checks pass.
 
 ## Next
 
 - **Full core layout with DRC, LVS and ERC evidence** (#241; T1 items 2, 3, 4,
-  11). Follows Now item 2. Done when the signoff record renders those four
+  11). Follows Now item 1. Done when the signoff record renders those four
   items `met`. Carries two placement decisions the pilot left open: the MIM
   plate orientation (`n2` is on the bottom plate today) and a metal-stack
   record for `gf180mcuD` in `spec/`.

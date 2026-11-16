@@ -50,6 +50,13 @@ jobs:
           python3 layout/pilot/check_consistency.py
           python3 layout/pilot/test_pilot_consistency.py
 
+      # Layout-pilot negative-control gate (issue #338): the tripped predicate
+      # must fail when a layout hash is missing, not compare None to None.
+      # Offline; fabricated dicts plus the committed results.json.
+      - name: Check layout pilot negative-control gate predicate
+        run: |
+          python3 layout/pilot/tools/test_pilot.py
+
       - name: Install the pinned klt
         run: |
           pipx install "klayout-tools==0.8.0"
