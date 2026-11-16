@@ -123,8 +123,11 @@ from harness import (  # noqa: E402
 
 # PDK-provenance and execution-line record helpers (hoisted out of the CMRR
 # driver by issue #337); the CMRR driver is still loaded below, but only for
-# measurement material.
-from rejection_bench import execution_lines, pdk_lines  # noqa: E402
+# measurement material. `execution_lines` is aliased: the sharded-request
+# wrapper below (also named `execution_lines`) delegates single-job reports to
+# the shared helper, and an unaliased import would be rebound by the `def`.
+from rejection_bench import execution_lines as rejection_execution_lines  # noqa: E402
+from rejection_bench import pdk_lines  # noqa: E402
 
 # The CMRR driver owns the servo-bench guards, materialisation, the excitation
 # checks and the joint Ad/Acm solve; reuse them unchanged so the benches stay
@@ -833,7 +836,7 @@ def execution_lines(reports: dict[str, dict], walls: dict[str, float]) -> list[s
     for tag, rep in reports.items():
         jobs = remote_jobs(rep)
         if len(jobs) <= 1:
-            L += execution_lines({tag: rep}, {tag: walls.get(tag, 0)})
+            L += rejection_execution_lines({tag: rep}, {tag: walls.get(tag, 0)})
             continue
         j0 = jobs[0]
         env = rep.get("environment") or {}
