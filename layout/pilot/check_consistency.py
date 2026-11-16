@@ -106,10 +106,14 @@ def schematic_cards(text):
     return cards
 
 
-def ref_card_of(kind, model, prm):
-    """The reference device card; mirrors tools/pilot.py's ref_card_of per kind."""
+def ref_card_of(kind, model, prm, nf=None):
+    """The reference device card; mirrors tools/pilot.py's ref_card_of per kind.
+    The caller pins nf from the unmutated card for negative controls, as the
+    producer does by capturing it as a default argument."""
     if kind == "mos":
-        return "XM1 D G S B %s L=%s W=%s nf=%d m=1" % (model, prm["l"], prm["w"], int(prm["nf"]))
+        if nf is None:
+            nf = int(prm["nf"])
+        return "XM1 D G S B %s L=%s W=%s nf=%d m=1" % (model, prm["l"], prm["w"], nf)
     if kind == "mim":
         return "XCC BOT TOP %s c_width=%s c_length=%s m=1" % (model, prm["c_width"], prm["c_length"])
     return "XRZ A B VSUB %s r_width=%s r_length=%s m=1" % (model, prm["r_width"], prm["r_length"])
@@ -126,6 +130,7 @@ def ref_netlist_text(cell, insts, kind, model, prm):
 def negctl_ref_text(cell, kind, model, prm, param, wrong):
     """Byte-exact re-derivation of ref/<cell>.negctl-<param>.klt.spice."""
     pins = " ".join(KIND_PINS[kind])
+    nf = int(prm["nf"]) if kind == "mos" else None
     return ("* NEGATIVE CONTROL for %s -- %s is deliberately %s (schematic value %s).\n"
             "* klt lvs must report a mismatch with a device.property error against the\n"
             "* unchanged gds/%s.gds; a match here would mean the device-parameter\n"
@@ -133,7 +138,7 @@ def negctl_ref_text(cell, kind, model, prm, param, wrong):
             "* and tools/pilot.py exits non-zero.\n"
             ".subckt %s %s\n%s\n.ends\n"
             % (cell, param, wrong, prm[param], cell, cell, pins,
-               ref_card_of(kind, model, dict(prm, **{param: wrong}))))
+               ref_card_of(kind, model, dict(prm, **{param: wrong}), nf=nf)))
 
 
 def count_labels(port_names, mapping):
@@ -288,9 +293,9 @@ class Checker:
         # (mirrors tools/pilot.py's sharing assertion, with model equality added)
         dims = KIND_DIM_KEYS[kind]
         for other in insts[1:]:
-            onodes, omodel, oprm = cards[other]
+            _, omodel, oprm = cards[other]
             same_dims = all(oprm.get(k) == prm.get(k) for k in dims)
-            if not ((omodel == model and onodes == nodes) or same_dims):
+            if not ((omodel == model and oprm == prm) or same_dims):
                 self.err(f"{name}: instances {insts[0]} and {other} do not share dimensions "
                          f"({dims}) or card, so one generator cell cannot correspond to both")
             if omodel != model:
