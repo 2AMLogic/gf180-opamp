@@ -435,6 +435,66 @@ class ClaimRecordPathsTests(unittest.TestCase):
         self.assertEqual(taken["record"].read_text(), "old")
 
 
+class BatchArgsDestContractTests(unittest.TestCase):
+    """`add_batch_args` dests — the contract `batch_block`/`submit_request` read.
+
+    #348 hoisted the five fleet flags into one helper, but nothing connected
+    it to the consumers reading its dests by attribute, so a renamed dest
+    passed the whole local suite and surfaced only on a real fleet submit as
+    an `AttributeError` at `batch_block()` time, after the grid was staged.
+    These tests parse the helper's own argparse parser (never a hand-written
+    namespace) and call the real `batch_block`, so dest or default drift
+    fails here instead of in a staged grid (issue #350).
+    """
+
+    #: Every dest the helper declares; `batch_block` and `submit_request`
+    #: read all five of these by attribute.
+    DESTS = frozenset({"backend", "batch_runner_version_check",
+                       "batch_capacity_wait_s", "batch_submit_retries",
+                       "batch_retry_wait_s"})
+
+    def _parser(self, add, **kwargs) -> argparse.ArgumentParser:
+        ap = argparse.ArgumentParser()
+        add(ap, **kwargs)
+        return ap
+
+    def test_defaults_produce_an_empty_batch_block_and_the_documented_reads(self):
+        ns = self._parser(harness.add_batch_args, backend_help="x").parse_args([])
+        self.assertEqual(harness.batch_block(ns), {})
+        # What `submit_request` reads by attribute (`sim/harness.py`).
+        self.assertIsNone(ns.backend)
+        self.assertEqual(ns.batch_submit_retries, 0)
+        self.assertEqual(ns.batch_retry_wait_s, 120.0)
+
+    def test_flags_forward_into_the_batch_block(self):
+        ns = self._parser(harness.add_batch_args, backend_help="x").parse_args(
+            ["--batch-runner-version-check", "warn", "--batch-capacity-wait-s", "600"])
+        self.assertEqual(harness.batch_block(ns),
+                         {"runner_version_check": "warn", "capacity_wait_s": 600.0})
+        # The `type=float` coercion of the CLI string is part of the contract.
+        self.assertIsInstance(ns.batch_capacity_wait_s, float)
+
+    def test_a_zero_capacity_wait_still_forwards(self):
+        # `batch_block` tests `is not None`, not truthiness: a 0 s wait is a
+        # deliberate request, and a truthiness regression would drop it.
+        ns = self._parser(harness.add_batch_args, backend_help="x").parse_args(
+            ["--batch-capacity-wait-s", "0"])
+        self.assertEqual(harness.batch_block(ns), {"capacity_wait_s": 0.0})
+
+    def test_runner_version_check_outside_the_choices_is_refused(self):
+        with self.assertRaises(SystemExit) as cm:
+            self._parser(harness.add_batch_args, backend_help="x").parse_args(
+                ["--batch-runner-version-check", "maybe"])
+        self.assertEqual(cm.exception.code, 2)
+
+    def test_grid_and_common_parsers_are_supersets_of_the_batch_dests(self):
+        for add, kwargs in ((harness.add_grid_args, {"grid_help": "x"}),
+                            (harness.add_common_args, {})):
+            with self.subTest(helper=add.__name__):
+                ap = self._parser(add, **kwargs)
+                self.assertGreaterEqual(set(vars(ap.parse_args([]))), self.DESTS)
+
+
 class ExtractionHelpersTests(unittest.TestCase):
     """The hoisted frequency-domain extraction helpers (issue #337).
 
