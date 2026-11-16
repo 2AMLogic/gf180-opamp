@@ -30,7 +30,6 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 Human-approved issues ready for implementation (`loom:issue`).
 
 - **#365**: sim: record/probe exec lines print klt job `state: failed` with no exit-reason context
-- **#381**: docs: ROADMAP 'Blocked and waiting' status paragraph enumerates loom:issue numbers that go stale within the hour
 - **#385**: sim/cmrr-mc: check_plan's 'chunked but not in the grid' and 'duplicate chunk tags' branches have no test assertions
 
 ## In Progress
@@ -38,7 +37,6 @@ Human-approved issues ready for implementation (`loom:issue`).
 Issues currently being built (`loom:building`).
 
 - **#331**: docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement
-- **#386**: docs: sim/README.md's psrr-mc bullet says the nominal PSRR MC record is "not selected", but selection.json selects it
 
 ## PRs Awaiting Review
 
@@ -52,7 +50,6 @@ PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#352**: docs: index DR-0006 and name the PSRR full-envelope study as supplementary evidence
 - **#383**: chore(loom): resync installed Loom to v0.19.1302
-- **#387**: docs: state in sim/README.md psrr-mc bullet that the nominal record is the selected one
 
 ## Proposed
 
@@ -64,9 +61,7 @@ Issues carrying `loom:curated`.
 - **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence *(curated)*
 - **#331**: docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement *(curated)*
 - **#365**: sim: record/probe exec lines print klt job `state: failed` with no exit-reason context *(curated)*
-- **#381**: docs: ROADMAP 'Blocked and waiting' status paragraph enumerates loom:issue numbers that go stale within the hour *(curated)*
 - **#385**: sim/cmrr-mc: check_plan's 'chunked but not in the grid' and 'duplicate chunk tags' branches have no test assertions *(curated)*
-- **#386**: docs: sim/README.md's psrr-mc bullet says the nominal PSRR MC record is "not selected", but selection.json selects it *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -85,11 +80,11 @@ _None._
 | Operator merge-risk holds | 2 |
 | Very important | 1 |
 | Important | 4 |
-| Ready (`loom:issue`) | 3 |
-| In Progress (`loom:building`) | 2 |
+| Ready (`loom:issue`) | 2 |
+| In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 3 |
-| Curated | 9 |
+| Approved PRs awaiting merge | 2 |
+| Curated | 7 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
