@@ -112,10 +112,9 @@ Done and evidenced:
 | #274 live `klt artifact verify` | A recorded campaign on a worker with artifact-store access. |
 | #214 | Appears superseded by PR #317; needs a close-or-keep call. |
 
-Backlog status as of 2026-11-16: #190 is closed, completed by merged PR #310,
-and the labelled backlog has ready issues — #373, #367, #365 and #355 are open
-with `loom:issue`. The Now items that carry no issue yet are new work that
-needs none of the decisions above.
+The labelled backlog has ready items; list them with
+`gh issue list --label loom:issue --state open`. The Now items that carry no
+issue yet are new work that needs none of the decisions above.
 
 ## Not planned
 
