@@ -8,6 +8,10 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-16
 
+- **PR #393**: test: assert cmrr-mc check_plan's off-grid and duplicate-tag branches
+- **Issue #385** (closed): sim/cmrr-mc: check_plan's 'chunked but not in the grid' and 'duplicate chunk tags' branches have no test assertions
+- **PR #369**: fix(sim): render klt's exit_reason next to state in record execution lines
+- **Issue #365** (closed): sim: record/probe exec lines print klt job `state: failed` with no exit-reason context
 - **PR #390**: docs: replace ROADMAP backlog enumeration with the loom:issue label query
 - **Issue #381** (closed): docs: ROADMAP 'Blocked and waiting' status paragraph enumerates loom:issue numbers that go stale within the hour
 - **PR #387**: docs: state in sim/README.md psrr-mc bullet that the nominal record is the selected one
