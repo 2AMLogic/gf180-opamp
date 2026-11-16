@@ -96,6 +96,15 @@ expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
 expect_fail cmrr-mc test_cmrr_mc.py harness.py \
   "extraction: duplicate sample index accepted" \
   'if idx is None or idx in seen[k]:' 'if False:'
+expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
+  "guard: MAX_UNITS_PER_REQUEST cap in submit() no longer refuses an oversize request" \
+  'if units > MAX_UNITS_PER_REQUEST:' 'if False:'
+expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
+  "guard: check_plan no longer reports an uncovered grid point" \
+  'probs += [f"{G.fmt_key(k)}: in no chunk" for k in want if k not in seen]' 'probs += []'
+expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
+  "guard: merge_samples tolerates a point supplied by two chunks" \
+  'if k in owner:' 'if False:'
 
 # gain-gbw-pm-mc (issue #129): the Monte Carlo bench guard, the fixed-denominator
 # sample accounting and the #42 campaign gate must each have teeth.
