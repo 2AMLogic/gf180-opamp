@@ -70,7 +70,6 @@ from __future__ import annotations
 
 import argparse
 import csv
-import importlib.util
 import json
 import math
 import re
@@ -113,13 +112,7 @@ from harness import (  # noqa: E402
 
 # The systematic CMRR driver owns the bench guards, the materialisation, the
 # mirror-imbalance mutation and the gain driver's request shape; reuse them.
-if "cmrr_driver" in sys.modules:
-    C = sys.modules["cmrr_driver"]
-else:
-    _spec = importlib.util.spec_from_file_location("cmrr_driver", REPO_ROOT / "sim" / "cmrr" / "run_cmrr.py")
-    C = importlib.util.module_from_spec(_spec)
-    sys.modules["cmrr_driver"] = C
-    _spec.loader.exec_module(C)
+C = load_sibling("cmrr_driver", "sim/cmrr/run_cmrr.py")
 G = C.G
 # One source for everything the fingerprint covers (issue #197).
 mc = load_sibling("cmrr_mc_measurement_config", "sim/cmrr-mc/measurement_config.py")
