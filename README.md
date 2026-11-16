@@ -48,7 +48,8 @@ below:
   that the report does not select) and the PSRR mismatch
   Monte Carlo record
   ([`20261011-145434-286b06c`](sim/psrr-mc/records/20261011-145434-286b06c.md),
-  same population) beside them as separate, ungraded information. Their numeric bounds are
+  the same five corners x 300 samples at 27 C / 3.30 V) beside them as
+  separate, ungraded information. Their numeric bounds are
   not ratified.
 - **Not yet measured:** post-layout verification (no layout evidence; area is
   open).
