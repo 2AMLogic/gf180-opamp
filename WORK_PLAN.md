@@ -29,8 +29,7 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#365**: sim: record/probe exec lines print klt job `state: failed` with no exit-reason context
-- **#385**: sim/cmrr-mc: check_plan's 'chunked but not in the grid' and 'duplicate chunk tags' branches have no test assertions
+- **#394**: sim/harness.py: state_phrase renders a leading `; ` when exit_reason carries only unit counts
 
 ## In Progress
 
@@ -60,8 +59,7 @@ Issues carrying `loom:curated`.
 - **#321**: Stop committing uncompressed point data: adopt the proven .dat.gz convention for new sim records *(curated)*
 - **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence *(curated)*
 - **#331**: docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement *(curated)*
-- **#365**: sim: record/probe exec lines print klt job `state: failed` with no exit-reason context *(curated)*
-- **#385**: sim/cmrr-mc: check_plan's 'chunked but not in the grid' and 'duplicate chunk tags' branches have no test assertions *(curated)*
+- **#394**: sim/harness.py: state_phrase renders a leading `; ` when exit_reason carries only unit counts *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -80,11 +78,11 @@ _None._
 | Operator merge-risk holds | 2 |
 | Very important | 1 |
 | Important | 4 |
-| Ready (`loom:issue`) | 2 |
+| Ready (`loom:issue`) | 1 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 2 |
-| Curated | 7 |
+| Curated | 6 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
