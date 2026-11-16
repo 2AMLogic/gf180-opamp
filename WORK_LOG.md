@@ -8,6 +8,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-16
 
+- **PR #390**: docs: replace ROADMAP backlog enumeration with the loom:issue label query
+- **Issue #381** (closed): docs: ROADMAP 'Blocked and waiting' status paragraph enumerates loom:issue numbers that go stale within the hour
 - **PR #387**: docs: state in sim/README.md psrr-mc bullet that the nominal record is the selected one
 - **Issue #386** (closed): docs: sim/README.md's psrr-mc bullet says the nominal PSRR MC record is "not selected", but selection.json selects it
 - **PR #368**: test: pin add_batch_args dest contract for batch_block and submit_request
