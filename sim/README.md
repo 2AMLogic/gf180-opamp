@@ -447,7 +447,23 @@ identical inputs (sorted keys, no timestamps/hostnames/absolute paths).
   mean / sigma / mean−3σ / min / p5 of CMRR at DC, 1 kHz–1 MHz and f_u, with
   switch-off, process-only and mirror-imbalance controls. Statistic only: the
   record itself proposes no bound; decision record 0006 does (DR-6, proposed,
-  not ratified) (issue #61; DR-3 residual (e3)).
+  not ratified) (issue #61; DR-3 residual (e3)). The `--grid full` campaign
+  (issue #98) is committed beside it as
+  [`20261115-185812-3ece683`](cmrr-mc/records/20261115-185812-3ece683.md)
+  (the same five corners × T −40 / 27 / 125 °C × VDD 2.97 / 3.30 / 3.63 V
+  with VCM = VDD/2 and typical passives everywhere = 45 points × N = 300 =
+  13 500 samples, seed 45; worst lin 3σ 77.25 dB at the DC plateau and
+  77.19 dB at 10 kHz, both sf / −40 °C / 2.97 V, every bounded statistic at
+  or above the DR-6 proposed 60 dB and ungraded — at f_u, reported but not
+  bounded, it measures 58.46 dB at ss / −40 °C / 3.63 V against the nominal
+  record's 60.32 dB, so it is not uniformly the stronger evidence). That grid
+  record is **not** selected by the characterization report — no `cmrr-mc`
+  grid extractor exists, its per-sample `samples.csv` is manifest-only
+  (artifact store) while the report's cross-check re-reads
+  `corners/<record>/samples.csv` from the checkout
+  (2AMLogic/klayout-tools#5591), and its `f6eeac7` PDK pin is in
+  `PENDING_PDK_PINS` so `--latest` skips it — so `selection.json` keeps the
+  nominal record (see the `cmrr-mc --grid full` note at the end of this file).
 - [`cmrr/`](cmrr/README.md) — **CMRR** of the committed sized schematic across
   the full 45-point grid: differential and common-mode excitations (two
   `klt sim` requests) on a DC-servo bench that admits equal AC drive on both
@@ -574,8 +590,14 @@ Monte Carlo
 ([`cmrr-mc/records/20261010-202454-e4be1ac.md`](cmrr-mc/records/20261010-202454-e4be1ac.md):
 worst linear 3-sigma DC CMRR 82.71 dB at typical / 27 C / 3.30 V) samples
 five process corners x 300 at 27 C / 3.30 V only (no temperature or supply
-axis), so CMRR across temperature and supply is systematic-only (matched
-devices), and PSRR is systematic-only at every point. Noise, offset, CMRR and
+axis); mismatch CMRR across temperature and supply is measured by the
+committed 45-point grid record
+([`20261115-185812-3ece683.md`](cmrr-mc/records/20261115-185812-3ece683.md):
+worst linear 3-sigma DC CMRR 77.25 dB at sf / -40 C / 2.97 V), but that
+record is not selected (see the `cmrr-mc --grid full` note at the end of
+this file), so the selected CMRR-versus-temperature/supply evidence is
+still systematic-only (matched devices); PSRR likewise keeps its nominal
+mismatch record selected (its committed grid record is documented above). Noise, offset, CMRR and
 PSRR are measured without a verdict because their numeric bounds are not
 ratified. There is no layout or post-layout evidence. The 5 V stretch row is
 not opened. These records are schematic-level evidence below the T1 tier.
@@ -738,3 +760,26 @@ in git, so the evidence manifest does not re-list them). It is **not** selected:
 (`manifests/artifacts/psrr-mc-20261108-220319-bb1a6a0.manifest.json`), which the report's `samples.csv` cross-check
 cannot reach in a clean CI checkout (2AMLogic/klayout-tools#5591). `selection.json` and the characterization report
 keep the nominal record `20261011-145434-286b06c` for the PSRR mismatch evidence.
+
+*`cmrr-mc --grid full` first minted (issue #98, 2026-11-15).* The 45-point MOS x T x VDD mismatch grid
+(45 points x N = 300 = 13500 units, seed 45, mismatch, typical passives at every point) was submitted through
+`klt sim` (batch fleet, 15 chunked requests one per (process, temperature) plus the three controls, klt client
+`0.9.3.dev3+gd5d57daf9a14`) as `cmrr-mc/records/20261115-185812-3ece683.md`. It is a **new** campaign, not a
+re-mint, so there is no counterpart record to compare it against for movement; its header carries the `f6eeac7`
+revision and its switch-off control reproduces the committed systematic record `20261010-163601-0127eb7` (PASS),
+tying the fleet runner's model library to that pin. All 45 points returned exactly N = 300 valid samples. Worst
+linear 3-sigma: 77.25 dB at the DC plateau and 77.19 dB at 10 kHz, both at sf / -40 C / 2.97 V — every bounded
+figure above the DR-6 proposed 60 dB bound; at f_u, which is reported but not bounded in DR-6 and
+`spec/target-spec.md`, the grid record measures 58.46 dB (ss / -40 C / 3.63 V) against the nominal record's
+60.32 dB, so the grid is not uniformly the stronger evidence. DR-6's 77.1 dB estimate
+(`spec/decision-records/0006-cmrr-psrr-bounds.md`) is corroborated by the measured 77.25 dB to within 0.15 dB,
+though the binding corner differs: the estimate predicts SS / 125 C, the measurement binds at sf / -40 C. It is
+**not** selected, for three reasons: (1) the report extractor has no `cmrr-mc` grid path — `extract_cmrr_mc`
+reads the single-point Population line, which the grid record's three-temperature/three-supply line does not
+match; (2) its per-sample bytes are in the artifact store
+(`manifests/artifacts/cmrr-mc-20261115-185812-3ece683.manifest.json`), which the report's `samples.csv` cross-check
+cannot reach in a clean CI checkout (2AMLogic/klayout-tools#5591); (3) `f6eeac7` is in `PENDING_PDK_PINS`, so
+`--latest` skips the record, and selecting it by hand would also mix that pin into a report whose other rows are
+on `c6d73a3`/`afc17a1`. `selection.json` and the characterization report keep the nominal record
+`20261010-202454-e4be1ac` for the CMRR mismatch evidence, and the deferral is codified in
+`sim/report/test_report.py` (`CmrrMismatchRecord.test_grid_selection_deferred`) so it cannot be swapped silently.
