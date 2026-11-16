@@ -82,12 +82,24 @@ class ExecutionLinesTests(unittest.TestCase):
         walls = {"dm": 61.4, "cm": 30.0}
         lines = rb.execution_lines({"dm": remote_report(), "cm": local_report()}, walls)
         self.assertEqual(lines[0],
-                         "  - `dm`: backend `aws`, job `j-42`, Spot c7g.2xl, state `succeeded`, "
+                         "  - `dm`: backend `aws`, job `j-42`, Spot c7g.2xl, "
+                         "state `succeeded` (no `exit_reason` in the report), "
                          "runner klt `0.8.0` vs client `0.8.0` (compatibility `ok`); "
                          "engine `ngspice 42`; wall 61 s")
         self.assertEqual(lines[1],
                          "  - `cm`: `klt sim` local backend (no `environment.remote`); "
                          "engine `ngspice 42`; wall 30 s")
+
+    def test_failing_remote_renders_the_exit_reason_discriminator(self):
+        failing = remote_report(state="failed")
+        failing["environment"]["remote"]["exit_reason"] = {
+            "exit_code": 4, "report_status": "fail",
+            "units": {"by_status": {"pass": 20, "fail": 4}, "total": 24}}
+        line = rb.execution_lines({"dm": failing}, {"dm": 61.4})[0]
+        self.assertIn("state `failed`", line)
+        self.assertIn("exit 4", line)
+        self.assertIn("report_status `fail`", line)
+        self.assertIn("units 20/24 pass, 4 fail", line)
 
 
 class RequestCommentTests(unittest.TestCase):
