@@ -62,6 +62,18 @@ the #105 boundary by operator ruling of 2026-10-19): `guard_mc_mismatch_switch`
 offset-mc, gain-gbw-pm-mc) because they had drifted as hand copies. Only the
 common MC invariants live here; each runner keeps its wiring, circuit
 equivalence, parameter-key, switch-value, bias/load and control-run checks.
+
+Frequency-domain extraction helpers (issue #337): `ExtractionError`,
+`check_axis`, `same_axis`, `finite`, `db`, `interp_db` -- the axis/phasor
+validation and dB helpers every frequency-domain bench extracts with. Hoisted
+out of `sim/cmrr/run_cmrr.py`, which the psrr and input-common-mode drivers
+previously loaded as a library to reach them. `check_axis`'s `n_expect`
+defaults to `None` here (no size check); each bench passes its own sweep size.
+
+Grid-run plumbing (also #337): `run_grid_modes`, `require_plotting`,
+`work_dir`. `run_grid_modes` takes its corner axes and its bench
+collaborators (`materialise`, `with_servo`, `ac_request`, testbench, guard)
+as explicit parameters -- the shared copy reads no bench module global.
 """
 
 from __future__ import annotations
@@ -76,6 +88,7 @@ import shutil
 import statistics
 import subprocess
 import sys
+import tempfile
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -1161,6 +1174,109 @@ def rederive_dat(path: Path, header: str, extract):
     return extract({"time": d[:, 0], "v(vout)": d[:, 1], "v(vinp)": d[:, 2]})
 
 
+# --------------------------------------------------------------------------
+# Frequency-domain extraction helpers (issue #337; hoisted from the CMRR driver)
+# --------------------------------------------------------------------------
+
+
+class ExtractionError(ValueError):
+    pass
+
+
+def check_axis(freq: "np.ndarray", n_expect: int | None = None) -> None:
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    if freq.ndim != 1 or (n_expect is not None and freq.size != n_expect):
+        raise ExtractionError(f"{freq.size} frequency points, expected {n_expect}")
+    if not np.all(np.isfinite(freq)) or np.any(freq <= 0) or np.any(np.diff(freq) <= 0):
+        raise ExtractionError("frequency axis not finite, positive and strictly increasing")
+
+
+def same_axis(f1: "np.ndarray", f2: "np.ndarray") -> None:
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    if f1.shape != f2.shape or np.any(np.abs(f1 / f2 - 1) > 1e-9):
+        raise ExtractionError("excitations were run on different frequency axes")
+
+
+def finite(*arrs: "np.ndarray") -> None:
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    for a in arrs:
+        if not np.all(np.isfinite(a)):
+            raise ExtractionError("non-finite phasor data")
+
+
+def db(x) -> "np.ndarray":
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    return 20.0 * np.log10(np.abs(x))
+
+
+def interp_db(freq: "np.ndarray", ydb: "np.ndarray", f: float) -> float:
+    """Linear interpolation in (log10 f, dB); ValueError outside the sweep."""
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    if f < freq[0] * (1 - 1e-9) or f > freq[-1] * (1 + 1e-9):
+        raise ExtractionError(f"{f:g} Hz is outside the swept range")
+    return float(np.interp(math.log10(f), np.log10(freq), ydb))
+
+
+# --------------------------------------------------------------------------
+# Grid-run plumbing (issue #337; hoisted from the CMRR driver)
+# --------------------------------------------------------------------------
+
+
+def run_grid_modes(pdk, work, args, modes: dict[str, dict], *, corners, temps, supplies,
+                   materialise, with_servo, ac_request, testbench=None, guard=None):
+    """One `klt sim` corner request per excitation. Raises KltError on a submit
+    failure (no local fallback).
+
+    The corner axes and the bench's `materialise` / `with_servo` /
+    `ac_request` collaborators are explicit parameters: the shared copy reads
+    no bench module global, so any rejection bench supplies its own axes
+    alongside its own testbench and guard."""
+    reports, reqs, walls = {}, {}, {}
+    for mode, mp in modes.items():
+        tb = materialise(work / mode, pdk, with_servo(mp), testbench=testbench, guard=guard)
+        req = ac_request(tb, pdk, corners, temps, supplies)
+        req["batch"] = batch_block(args)
+        print(f"  submitting `{mode}` grid ({len(corners) * len(temps) * len(supplies)} points)...", flush=True)
+        t0 = time.time()
+        reports[mode] = run_klt_retrying(req, work / mode / "out", args.backend, work / mode,
+                                         retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
+        walls[mode] = time.time() - t0
+        reqs[mode] = req
+        r = remote_of(reports[mode])
+        print(f"  `{mode}` done in {walls[mode]:.0f} s (job {r.get('job_id', 'local')})", flush=True)
+    return reports, reqs, walls
+
+
+def require_plotting() -> str | None:
+    """Fail fast, BEFORE any grid is submitted, if matplotlib cannot import
+    (e.g. a user-site numpy 2 shadowing a distro matplotlib built for numpy 1;
+    `python3 -s` skips the user site). Returns an error message or None."""
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot  # noqa: F401
+    except Exception as exc:  # noqa: BLE001 -- any import failure blocks the record
+        return (f"matplotlib is not importable ({type(exc).__name__}: {str(exc)[:200]}); the record's plots "
+                "cannot be written. Fix the Python environment (try `python3 -s ...`) before running the grid.")
+    return None
+
+
+def work_dir(args, prefix: str):
+    """A temporary work directory, or the kept `--keep-work` one."""
+    import contextlib
+
+    if args.keep_work is None:
+        return tempfile.TemporaryDirectory(prefix=prefix)
+    args.keep_work.mkdir(parents=True, exist_ok=False)
+    return contextlib.nullcontext(str(args.keep_work.resolve()))
+
+
 def add_batch_args(ap, *, backend_help: str) -> None:
     """The `--backend` / `batch.*` CLI shared by every grid runner.
 
@@ -1216,6 +1332,101 @@ def smoke_run(pdk: Pdk, nominal, run_unit, print_point, *, prefix: str) -> int:
     print_point(m)
     print("smoke test OK (measurement valid; this experiment records evidence, it judges nothing)")
     return 0
+
+
+def run_transient_grid(*, pdk: Pdk, args, here: Path, prefix: str, issue: int, tb_rel: str,
+                       tb_path: Path, nominal, corners, temps, supplies, want,
+                       materialise, make_request, analyse_report, meas_names: list[str],
+                       run_controls, control_failures,
+                       save_point_data, rederive, same_result,
+                       build_plots, build_record, summarise, print_summary) -> int:
+    """The full-grid run flow shared by the transient benches (issue #358).
+
+    The `main()` orchestration hoisted out of `run_step_response.py` and
+    `run_overdrive_recovery.py`, finishing the #299 hoist: allocate a record id,
+    claim paths, build and run the ONE 45-point klt grid request, analyse, run
+    the single-unit controls, persist the committed per-point data and
+    re-derive it, snapshot, plots, record, finalize evidence, exit code. The
+    runner passes its bench-specific pieces (scratch prefix, issue number,
+    testbench, expected corner keys, extraction / controls / re-derivation
+    callbacks, `build_record`, summary printer) and keeps its own `--smoke`
+    handling. Append-only evidence: what is written is byte-identical to the
+    pre-hoist runners.
+    """
+    record, stamp = allocate_record_id(REPO_ROOT)
+    paths = claim_run_paths(here, record)  # fail early if this id was already used
+    ngspice = ngspice_version()
+    kver = klt_version()
+    print(f"record {record}: {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
+
+    with tempfile.TemporaryDirectory(prefix=prefix) as scratch:
+        work = Path(scratch)
+        tb = materialise(work / "grid", pdk)
+        req = make_request(tb, pdk, corners, temps, supplies)
+        req["batch"] = batch_block(args)
+        try:
+            report = run_klt_retrying(req, work / "grid" / "out", args.backend, work / "grid",
+                                      retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
+        except KltError as exc:
+            # Never fall back to a local grid.
+            print(f"ERROR: the 45-point klt request could not be run: {str(exc)[-600:]}", file=sys.stderr)
+            print("NO RECORD WRITTEN.", file=sys.stderr)
+            return 2
+        results, arts, problems = analyse_report(report, want)
+        if problems:
+            print("ERROR: the 45-point grid did not complete cleanly: " + "; ".join(problems[:8]), file=sys.stderr)
+            print("NO RECORD WRITTEN.", file=sys.stderr)
+            return 2
+        backend_desc = describe_backend(report)
+        print(f"  45 points ok ({backend_desc})")
+        xchk_count = (sum(all(a["klt_meas"].get(n) is not None for n in meas_names) for a in arts.values()), len(arts))
+
+        ctrls = run_controls(pdk, work)
+        ctrl_bad = control_failures(ctrls)
+
+        cdir = paths["corners"]
+        cdir.mkdir(parents=True, exist_ok=False)
+        persist_points(cdir, results, arts, report, save=save_point_data, suffix=".dat")
+        rbad: list[str] = []
+        n_ok, _n_all = check_rederive(cdir, results, rederive=lambda p, _k: rederive(p), same=same_result,
+                                      suffix=".dat", label="", rbad=rbad)
+        ccdir = cdir / "controls"
+        ccdir.mkdir()
+        copy_controls(ccdir, ctrls)
+
+        dut_text = load_dut_text()
+        dut_sha = sha256_text(dut_text)
+        a0 = arts.get(nominal)
+        snap = snapshot_text(record=record, issue=issue, req=req, dut_text=dut_text, tb_rel=tb_rel,
+                             tb_text=tb_path.read_text(), nominal_deck=a0["deck"] if a0 else None)
+        paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
+        paths["snapshot"].write_text(snap)
+
+        plots = build_plots(results, paths["plots"])
+        md = build_record(
+            record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, klt_ver=kver, backend_desc=backend_desc,
+            report=report, results=results, ctrls=ctrls, ctrl_bad=ctrl_bad, plots=plots, dut_sha=dut_sha,
+            xchk_count=xchk_count, rederived=(n_ok, len(results), rbad),
+        )
+        paths["record"].parent.mkdir(parents=True, exist_ok=True)
+        paths["record"].write_text(md)
+        finalize_run_evidence(paths)
+
+    print(f"wrote {paths['record']}")
+    s = summarise(results)
+    print_summary(s)
+    rc = 0
+    if rbad:
+        print("RE-DERIVATION MISMATCH: " + "; ".join(rbad[:6]))
+        rc = 1
+    if ctrl_bad:
+        print("CONTROL PROBLEMS:")
+        for x in ctrl_bad:
+            print(f"  - {x}")
+        rc = 1
+    if s.n_invalid:
+        rc = 1
+    return rc
 
 
 def snapshot_text(*, record: str, issue: int, req: dict, dut_text: str, tb_rel: str, tb_text: str,

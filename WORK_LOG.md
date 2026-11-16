@@ -8,6 +8,14 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-15
 
+- **PR #370**: sim(cmrr-mc): full-grid mismatch MC record over the 45-point T/VDD grid
+- **Issue #98** (closed): sim: CMRR mismatch Monte Carlo over the T/VDD grid (45 points x N=300)
+- **PR #357**: test: collapse the three StaleDutTests copies into a shared StaleDutMixin
+- **Issue #347** (closed): Collapse 3 duplicate StaleDutTests and fake_pdk copies in runner tests into sim/test_harness.py
+- **PR #353**: test: offline layout/pilot consistency check binding evidence to the schematic
+- **Issue #330** (closed): test: offline consistency check tying layout/pilot to the schematic netlist and its evidence
+- **PR #361**: sim(cmrr-mc): chunk --grid full under the 3600 s fleet job limit with the measured partition-stable seed contract
+- **Issue #140** (closed): cmrr-mc: full grid as a single batch request exceeds the 3600 s fleet job limit
 - **PR #359**: test: scope measurement-config fingerprint exemptions by (experiment, constant)
 - **PR #345**: sim: drop six unread parameters and the unraised GateError from the drivers
 - **Issue #351** (closed): Scope NOT_FINGERPRINTED by (experiment, constant) so a shared constant name cannot silently exempt a second module

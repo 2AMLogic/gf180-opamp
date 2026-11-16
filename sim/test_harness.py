@@ -1,8 +1,11 @@
-"""Unit tests for `harness.stage_workdir` (issue #94). No simulator, no PDK.
+"""Unit tests for the shared sim-harness helpers.
 
-A scratch directory stands in for the PDK (only `design.ngspice` is copied),
+Started for `harness.stage_workdir` (issue #94) with no simulator and no PDK:
+a scratch directory stands in for the PDK (only `design.ngspice` is copied),
 and a fixed DUT text stands in for the committed export, so these run
-anywhere the stdlib does.
+anywhere the stdlib does. Later arrivals: the source-guard, submit-request,
+MC-snapshot, PDK-search and record-path helpers, and the frequency-domain
+extraction helpers hoisted from the CMRR driver (issue #337).
 
 This module also hosts `StaleDutMixin` and `fake_pdk` (issue #347): the ONE
 copy of the stale-DUT negative tests every bench suite mixes in next to its
@@ -18,8 +21,12 @@ import re
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
+
+import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -486,6 +493,270 @@ class BatchArgsDestContractTests(unittest.TestCase):
             with self.subTest(helper=add.__name__):
                 ap = self._parser(add, **kwargs)
                 self.assertGreaterEqual(set(vars(ap.parse_args([]))), self.DESTS)
+
+
+class ExtractionHelpersTests(unittest.TestCase):
+    """The hoisted frequency-domain extraction helpers (issue #337).
+
+    The same invariants the cmrr/psrr extraction tests exercised through the
+    CMRR driver, asserted against the shared home so the next relocation of
+    these bodies has its own guard."""
+
+    F = np.array([0.1, 1.0, 10.0, 100.0])
+
+    def test_check_axis_accepts_a_strictly_increasing_positive_axis(self):
+        harness.check_axis(self.F, 4)  # must not raise
+        harness.check_axis(self.F)  # no expected size: shape/monotonicity only
+
+    def test_check_axis_rejects_wrong_size_and_bad_axes(self):
+        for bad, why in [
+            (np.array([1.0, 2.0]), "wrong size"),
+            (np.array([[1.0, 2.0]]), "not 1-D"),
+            (np.array([1.0, -1.0, 10.0]), "non-positive"),
+            (np.array([1.0, 3.0, 2.0]), "not increasing"),
+            (np.array([1.0, np.nan, 2.0]), "non-finite"),
+        ]:
+            with self.subTest(why=why), self.assertRaises(harness.ExtractionError):
+                harness.check_axis(bad, 3)
+
+    def test_same_axis_rejects_different_axes(self):
+        harness.same_axis(self.F, self.F * 1.0)  # must not raise
+        with self.assertRaises(harness.ExtractionError):
+            harness.same_axis(self.F, self.F * 1.1)
+        with self.assertRaises(harness.ExtractionError):
+            harness.same_axis(self.F, self.F[:-1])
+
+    def test_finite_rejects_non_finite_phasors(self):
+        harness.finite(np.ones(4), np.ones(4))  # must not raise
+        with self.assertRaises(harness.ExtractionError):
+            harness.finite(np.ones(4), np.array([1.0, np.inf, 1.0, 1.0]))
+
+    def test_db_is_twenty_log10_of_the_magnitude(self):
+        np.testing.assert_allclose(harness.db(10.0), 20.0)
+        np.testing.assert_allclose(harness.db(1j), 0.0, atol=1e-12)
+        np.testing.assert_allclose(harness.db(np.array([1.0, 10.0])), [0.0, 20.0])
+
+    def test_interp_db_is_log_linear_and_bounded(self):
+        y = 40.0 * np.log10(self.F)  # exactly linear in (log10 f, dB)
+        self.assertAlmostEqual(harness.interp_db(self.F, y, 1.0), 0.0)
+        self.assertAlmostEqual(harness.interp_db(self.F, y, 10.0), 40.0)
+        with self.assertRaises(harness.ExtractionError):
+            harness.interp_db(self.F, y, 1e3)
+
+
+class RunGridModesTests(unittest.TestCase):
+    """The parameterised grid runner (issue #337): fakes stand in for every
+    bench collaborator, proving the shared copy reads no bench module global."""
+
+    class Args:
+        backend = "local"
+        batch_submit_retries = 0
+        batch_retry_wait_s = 0.0
+        batch_runner_version_check = None
+        batch_capacity_wait_s = None
+
+    def setUp(self):
+        self.calls = []
+
+        def materialise(path, pdk, params, *, testbench, guard):
+            self.calls.append(("materialise", str(path), params, testbench, guard))
+            return path / "tb.spice"
+
+        def with_servo(mp, **over):
+            return {**mp, **over}
+
+        def ac_request(tb, pdk, corners, temps, supplies):
+            self.calls.append(("ac_request", tuple(corners), tuple(temps), tuple(supplies)))
+            return {"netlist": str(tb), "analysis": {}}
+
+        self.materialise, self.with_servo, self.ac_request = materialise, with_servo, ac_request
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_one_request_per_mode_with_the_callers_axes_and_collaborators(self):
+        fake_report = {"environment": {"remote": {"job_id": "j1"}}}
+        with mock.patch.object(harness, "run_klt_retrying", return_value=fake_report) as rk:
+            reports, reqs, walls = harness.run_grid_modes(
+                None, Path(self._tmp.name), self.Args(), {"dm": {"acp": 1}, "cm": {"acp": 2}},
+                corners=["typical", "ff"], temps=[27.0], supplies=[3.3],
+                materialise=self.materialise, with_servo=self.with_servo, ac_request=self.ac_request,
+                testbench="TB", guard="guard")
+        self.assertEqual(sorted(reports), ["cm", "dm"])
+        self.assertEqual(reqs["dm"]["batch"], rk.call_args_list[0].args[0]["batch"])
+        # one request per mode, each with its own workdir
+        self.assertEqual([c.args[3] for c in rk.call_args_list],
+                         [Path(self._tmp.name) / "dm", Path(self._tmp.name) / "cm"])
+        modes = [(c[0], c[2]) for c in self.calls if c[0] == "materialise"]
+        self.assertEqual(modes, [("materialise", {"acp": 1}), ("materialise", {"acp": 2})])
+        ac = [c for c in self.calls if c[0] == "ac_request"]
+        self.assertEqual([c[1:] for c in ac], [(("typical", "ff"), (27.0,), (3.3,))] * 2)
+        self.assertTrue(all(w >= 0 for w in walls.values()))
+
+
+class RequirePlottingTests(unittest.TestCase):
+    def test_returns_none_when_matplotlib_imports(self):
+        from types import SimpleNamespace
+
+        fake_mpl = SimpleNamespace(use=lambda backend: None)
+        with mock.patch.dict(sys.modules, {"matplotlib": fake_mpl, "matplotlib.pyplot": object()}):
+            self.assertIsNone(harness.require_plotting())
+
+    def test_reports_the_environment_error_when_it_cannot_import(self):
+        with mock.patch.dict(sys.modules, {"matplotlib": None}):
+            msg = harness.require_plotting()
+        self.assertIn("matplotlib is not importable (", msg)
+        self.assertIn("python3 -s", msg)
+
+
+class WorkDirTests(unittest.TestCase):
+    class Args:
+        keep_work = None
+
+    def test_defaults_to_a_temporary_directory(self):
+        with harness.work_dir(self.Args(), "prefix-") as scratch:
+            self.assertTrue(Path(scratch).is_dir())
+        self.assertFalse(Path(scratch).exists())  # cleaned up on exit
+
+    def test_keep_work_creates_and_returns_the_kept_directory(self):
+        with tempfile.TemporaryDirectory() as root:
+            kept = Path(root) / "kept"
+
+            class NullArgs:
+                keep_work = kept
+
+            with harness.work_dir(NullArgs(), "prefix-") as scratch:
+                self.assertEqual(Path(scratch), kept.resolve())
+                self.assertTrue(kept.is_dir())
+            self.assertTrue(kept.is_dir())  # survives the exit
+
+
+class RunTransientGridTests(unittest.TestCase):
+    """`run_transient_grid` (issue #358): the run flow hoisted out of the
+    step-response / overdrive-recovery runners. Exercised once here with fake
+    bench pieces and a faked klt grid -- the orchestration, the two
+    no-record failure exits and the exit-code mapping."""
+
+    RECORD = "20260101-000000-abcdef0"
+
+    def _fake_paths(self, root: Path) -> dict:
+        return {
+            "corners": root / "corners" / self.RECORD,
+            "record": root / "records" / f"{self.RECORD}.md",
+            "snapshot": root / "netlist-snapshots" / f"{self.RECORD}.spice",
+            "plots": root / "records" / f"{self.RECORD}-plots",
+        }
+
+    def _run(self, root: Path, *, problems=(), klt_error=None, rederive_bad=(), control_bad=(),
+             n_invalid=0) -> SimpleNamespace:
+        (root / "tb.spice").write_text("* bench\n")
+        args = argparse.Namespace(smoke=False, backend=None, batch_submit_retries=0,
+                                  batch_retry_wait_s=0.0, batch_runner_version_check=None,
+                                  batch_capacity_wait_s=None)
+        report = {"corners": []}
+        results = {"typical_27c_3.30v": object()}
+        arts = {"typical_27c_3.30v": {"klt_meas": {"m1": 1.0}, "deck": None}}
+        built: list[dict] = []
+        printed: list = []
+        finalized: list = []
+        calls = {"persist_points": 0, "check_rederive": 0}
+        paths = self._fake_paths(root)
+        stamp = datetime(2026, 1, 1, tzinfo=timezone.utc)
+
+        def build_record(**kw):
+            built.append(kw)
+            return "# record md\n"
+
+        def fake_persist(sub, res, art, rep, **kw):
+            calls["persist_points"] += 1
+
+        def fake_check_rederive(sub, res, *, rederive, same, suffix, label, rbad):
+            calls["check_rederive"] += 1
+            rbad.extend(rederive_bad)
+            return len(res), len(res)
+
+        def fake_run_klt(*a, **kw):
+            if klt_error is not None:
+                raise klt_error
+            return report
+
+        with mock.patch.object(harness, "allocate_record_id", return_value=(self.RECORD, stamp)), \
+             mock.patch.object(harness, "claim_run_paths", return_value=paths), \
+             mock.patch.object(harness, "ngspice_version", return_value="ngspice-42"), \
+             mock.patch.object(harness, "klt_version", return_value="klt-test"), \
+             mock.patch.object(harness, "run_klt_retrying", side_effect=fake_run_klt), \
+             mock.patch.object(harness, "load_dut_text", return_value="* fake dut"), \
+             mock.patch.object(harness, "persist_points", side_effect=fake_persist), \
+             mock.patch.object(harness, "check_rederive", side_effect=fake_check_rederive), \
+             mock.patch.object(harness, "finalize_run_evidence", side_effect=finalized.append):
+            rc = harness.run_transient_grid(
+                pdk=harness.Pdk(root / "pdk", "gf180mcuD", "test"), args=args,
+                here=root / "bench", prefix="t-", issue=42,
+                tb_rel="sim/t/testbench/tb.spice", tb_path=root / "tb.spice",
+                nominal="typical_27c_3.30v", corners="c", temps="t", supplies="s",
+                want=["typical_27c_3.30v"],
+                materialise=lambda work, pdk: work / "tb.spice",
+                make_request=lambda tb, pdk, c, t, s: {"netlist": str(tb), "corners": ["c1"]},
+                analyse_report=lambda rep, want: (results, arts, list(problems)),
+                meas_names=["m1"],
+                run_controls=lambda pdk, work: [],
+                control_failures=lambda ctrls: list(control_bad),
+                save_point_data=lambda m, path: None,
+                rederive=lambda path: None,
+                same_result=lambda a, b: True,
+                build_plots=lambda res, plot_dir: [],
+                build_record=build_record,
+                summarise=lambda res: SimpleNamespace(n_invalid=n_invalid),
+                print_summary=printed.append,
+            )
+        return SimpleNamespace(rc=rc, built=built, printed=printed, finalized=finalized,
+                               paths=paths, calls=calls, report=report)
+
+    def test_happy_path_writes_the_record_and_returns_0(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._run(Path(d))
+            self.assertEqual(out.rc, 0)
+            self.assertEqual(out.paths["record"].read_text(), "# record md\n")
+            snap = out.paths["snapshot"].read_text()
+            self.assertIn("issue #42", snap)
+            self.assertIn("sim/t/testbench/tb.spice", snap)
+            kw = out.built[0]
+            self.assertEqual(kw["record"], self.RECORD)
+            self.assertEqual(kw["ngspice"], "ngspice-42")
+            self.assertEqual(kw["klt_ver"], "klt-test")
+            self.assertEqual(kw["rederived"], (1, 1, []))
+            self.assertEqual(kw["xchk_count"], (1, 1))
+            self.assertEqual(kw["dut_sha"], harness.sha256_text("* fake dut"))
+            self.assertEqual(kw["backend_desc"], harness.describe_backend(out.report))
+            self.assertEqual(out.finalized, [out.paths])
+            self.assertEqual(out.calls, {"persist_points": 1, "check_rederive": 1})
+            self.assertEqual(len(out.printed), 1)
+
+    def test_a_failed_grid_submit_returns_2_and_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._run(Path(d), klt_error=harness.KltError("batch_no_capacity"))
+            self.assertEqual(out.rc, 2)
+            self.assertFalse(out.paths["record"].exists())
+            self.assertFalse(out.paths["snapshot"].exists())
+            self.assertEqual(out.built, [])
+            self.assertEqual(out.finalized, [])
+
+    def test_an_incomplete_grid_returns_2_and_writes_nothing(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._run(Path(d), problems=("missing result for x",))
+            self.assertEqual(out.rc, 2)
+            self.assertFalse(out.paths["record"].exists())
+            self.assertFalse(out.paths["snapshot"].exists())
+            self.assertEqual(out.built, [])
+            self.assertEqual(out.finalized, [])
+
+    def test_rederivation_mismatch_control_problems_and_invalid_points_fail_the_run(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self._run(Path(d), rederive_bad=["x.dat differs"], control_bad=["ctl drifted"],
+                            n_invalid=2)
+            self.assertEqual(out.rc, 1)
+            # The run still commits its evidence; the failures are reported, not hidden.
+            self.assertEqual(out.paths["record"].read_text(), "# record md\n")
+            self.assertEqual(out.finalized, [out.paths])
 
 
 def fake_pdk(d: Path) -> harness.Pdk:

@@ -16,7 +16,7 @@
         "path": ".github/workflows/selftest.yml"
       },
       {
-        "content_hash": "sha256:9ca5c61781ad002e8843643445a6dfc44bb3d4edad85f99033efe96cb5f75344",
+        "content_hash": "sha256:90d2557d8d1cbb884fe498a22a072b089a3e5250dee1d5c5d9d9c7af411b09f5",
         "path": ".github/workflows/signoff.yml"
       }
     ]

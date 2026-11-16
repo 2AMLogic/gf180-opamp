@@ -52,12 +52,10 @@ behave); 1 otherwise; 2 when the grid could not be run (no record written).
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import re
 import sys
-import tempfile
 from dataclasses import dataclass, field
 from functools import partial
 from pathlib import Path
@@ -70,33 +68,21 @@ sys.path.insert(0, str(REPO_ROOT / "sim"))
 sys.path.insert(0, str(REPO_ROOT / "design"))
 
 from harness import (  # noqa: E402
-    KltError,
     Pdk,
-    allocate_record_id,
-    batch_block,
-    claim_run_paths,
-    finalize_run_evidence,
     find_pdk,
-    klt_version,
-    load_dut_text,
+    load_dut_text,  # re-exported for the unit suite
     load_sibling,
-    ngspice_version,
-    run_klt_retrying,
     fmt_finite,
-    describe_backend,
     materialise_bench,
     tran_request,
     save_point_data as _save_point_data,
     run_unit as _run_unit,
     run_controls as _run_controls,
-    check_rederive,
-    copy_controls,
     add_grid_args,
     analyse_points,
     rederive_dat,
     smoke_run,
-    snapshot_text,
-    persist_points,
+    run_transient_grid,
 )
 
 # Shared DUT/testbench source guards, grid bookkeeping and request skeleton:
@@ -726,6 +712,18 @@ def smoke(pdk: Pdk) -> int:
     return smoke_run(pdk, NOMINAL, run_unit, print_point, prefix="step-smoke-")
 
 
+def _build_record(**kw) -> str:
+    return build_record(**kw, gain_pm=load_gain_pm())
+
+
+def _print_summary(s: Summary) -> None:
+    print(f"  worst overshoot {fmt_finite(s.worst_overshoot[0])} % at {g.fmt_key(s.worst_overshoot[1]) if s.worst_overshoot[1] else 'n/a'}")
+    for b in SETTLE_BANDS:
+        v, k = s.worst_ts[b]
+        print(f"  worst {band_label(b)} settling {fmt_ts(v)}{' ns' if math.isfinite(v) else ''} at {g.fmt_key(k) if k else 'n/a'}")
+    print(f"  monotonic at {s.n_monotonic}/{s.n_total - s.n_invalid}; invalid {s.n_invalid}")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     add_grid_args(ap, grid_help="klt execution backend for the 45-point grid (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
@@ -735,86 +733,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.smoke:
         return smoke(pdk)
 
-    want = g.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V)
-    record, stamp = allocate_record_id(REPO_ROOT)
-    paths = claim_run_paths(HERE, record)  # fail early if this id was already used
-    ngspice = ngspice_version()
-    kver = klt_version()
-    print(f"record {record}: {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
-
-    with tempfile.TemporaryDirectory(prefix="step-") as scratch:
-        work = Path(scratch)
-        tb = materialise(work / "grid", pdk)
-        req = make_request(tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V)
-        req["batch"] = batch_block(args)
-        try:
-            report = run_klt_retrying(req, work / "grid" / "out", args.backend, work / "grid",
-                                      retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
-        except KltError as exc:
-            # Never fall back to a local grid.
-            print(f"ERROR: the 45-point klt request could not be run: {str(exc)[-600:]}", file=sys.stderr)
-            print("NO RECORD WRITTEN.", file=sys.stderr)
-            return 2
-        results, arts, problems = analyse_report(report, want)
-        if problems:
-            print("ERROR: the 45-point grid did not complete cleanly: " + "; ".join(problems[:8]), file=sys.stderr)
-            print("NO RECORD WRITTEN.", file=sys.stderr)
-            return 2
-        backend_desc = describe_backend(report)
-        print(f"  45 points ok ({backend_desc})")
-        names = [x["name"] for x in mc.measurements()]
-        xchk_count = (sum(all(a["klt_meas"].get(n) is not None for n in names) for a in arts.values()), len(arts))
-
-        ctrls = run_controls(pdk, work)
-        ctrl_bad = control_failures(ctrls)
-
-        cdir = paths["corners"]
-        cdir.mkdir(parents=True, exist_ok=False)
-        persist_points(cdir, results, arts, report, save=save_point_data, suffix=".dat")
-        rbad: list[str] = []
-        n_ok, _n_all = check_rederive(cdir, results, rederive=lambda p, _k: rederive(p), same=same_result,
-                                      suffix=".dat", label="", rbad=rbad)
-        ccdir = cdir / "controls"
-        ccdir.mkdir()
-        copy_controls(ccdir, ctrls)
-
-        dut_text = load_dut_text()
-        dut_sha = hashlib.sha256(dut_text.encode()).hexdigest()
-        a0 = arts.get(NOMINAL)
-        snap = snapshot_text(record=record, issue=113, req=req, dut_text=dut_text, tb_rel="sim/step-response/testbench/tb_step.spice",
-                             tb_text=TESTBENCH.read_text(), nominal_deck=a0["deck"] if a0 else None)
-        paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
-        paths["snapshot"].write_text(snap)
-
-        plots = build_plots(results, paths["plots"])
-        md = build_record(
-            record=record, stamp=stamp, pdk=pdk, ngspice=ngspice, klt_ver=kver, backend_desc=backend_desc,
-            report=report, results=results, ctrls=ctrls, ctrl_bad=ctrl_bad, plots=plots, dut_sha=dut_sha,
-            xchk_count=xchk_count, rederived=(n_ok, len(results), rbad), gain_pm=load_gain_pm(),
-        )
-        paths["record"].parent.mkdir(parents=True, exist_ok=True)
-        paths["record"].write_text(md)
-        finalize_run_evidence(paths)
-
-    print(f"wrote {paths['record']}")
-    s = summarise(results)
-    print(f"  worst overshoot {fmt_finite(s.worst_overshoot[0])} % at {g.fmt_key(s.worst_overshoot[1]) if s.worst_overshoot[1] else 'n/a'}")
-    for b in SETTLE_BANDS:
-        v, k = s.worst_ts[b]
-        print(f"  worst {band_label(b)} settling {fmt_ts(v)}{' ns' if math.isfinite(v) else ''} at {g.fmt_key(k) if k else 'n/a'}")
-    print(f"  monotonic at {s.n_monotonic}/{s.n_total - s.n_invalid}; invalid {s.n_invalid}")
-    rc = 0
-    if rbad:
-        print("RE-DERIVATION MISMATCH: " + "; ".join(rbad[:6]))
-        rc = 1
-    if ctrl_bad:
-        print("CONTROL PROBLEMS:")
-        for x in ctrl_bad:
-            print(f"  - {x}")
-        rc = 1
-    if s.n_invalid:
-        rc = 1
-    return rc
+    return run_transient_grid(
+        pdk=pdk, args=args, here=HERE, prefix="step-", issue=113,
+        tb_rel="sim/step-response/testbench/tb_step.spice", tb_path=TESTBENCH,
+        nominal=NOMINAL, corners=CORNERS, temps=TEMPS_C, supplies=SUPPLIES_V,
+        want=g.expected_keys(CORNERS, TEMPS_C, SUPPLIES_V),
+        materialise=materialise, make_request=make_request, analyse_report=analyse_report,
+        meas_names=[x["name"] for x in mc.measurements()],
+        run_controls=run_controls, control_failures=control_failures,
+        save_point_data=save_point_data, rederive=rederive, same_result=same_result,
+        build_plots=build_plots, build_record=_build_record,
+        summarise=summarise, print_summary=_print_summary,
+    )
 
 
 if __name__ == "__main__":

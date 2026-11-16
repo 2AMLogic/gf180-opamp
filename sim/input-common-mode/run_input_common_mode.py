@@ -99,22 +99,35 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    ExtractionError,
     add_batch_args,
     allocate_record_id,
     batch_block,
+    check_axis,
     claim_run_paths,
     finalize_run_evidence,
     find_pdk,
+    finite,
     klt_version,
     load_dut_text,
     ngspice_version,
     remote_jobs,
     remote_of,
+    require_plotting,
     run_klt,
     run_klt_retrying,
     load_sibling,
+    same_axis,
     sanitise_report,
 )
+
+# PDK-provenance and execution-line record helpers (hoisted out of the CMRR
+# driver by issue #337); the CMRR driver is still loaded below, but only for
+# measurement material. `execution_lines` is aliased: the sharded-request
+# wrapper below (also named `execution_lines`) delegates single-job reports to
+# the shared helper, and an unaliased import would be rebound by the `def`.
+from rejection_bench import execution_lines as rejection_execution_lines  # noqa: E402
+from rejection_bench import pdk_lines  # noqa: E402
 
 # The CMRR driver owns the servo-bench guards, materialisation, the excitation
 # checks and the joint Ad/Acm solve; reuse them unchanged so the benches stay
@@ -472,16 +485,16 @@ def evaluate_sample(key: Key, dm: Unit | None, cm: Unit | None) -> Sample:
     # AC excitation and the joint Ad/Acm solve (the CMRR bench's method).
     try:
         f_dm, f_cm = np.asarray(dm.vec["frequency"].real, float), np.asarray(cm.vec["frequency"].real, float)
-        C.check_axis(f_dm, N_FREQ)
-        C.same_axis(f_dm, f_cm)
+        check_axis(f_dm, N_FREQ)
+        same_axis(f_dm, f_cm)
         xd, xc = C.Excitation.from_vec(dm.vec), C.Excitation.from_vec(cm.vec)
-        C.finite(xd.vd, xd.vc, xd.vout, xc.vd, xc.vc, xc.vout)
+        finite(xd.vd, xd.vc, xd.vout, xc.vd, xc.vc, xc.vout)
         _, b1 = C.check_dm(xd)
         _, _, b2 = C.check_cm(xc)
         if b1 or b2:
             return invalid_sample(key, *(b1 + b2))
         ad, _acm = C.solve_ad_acm(xd, xc)
-    except (C.ExtractionError, KeyError) as exc:
+    except (ExtractionError, KeyError) as exc:
         return invalid_sample(key, f"AC extraction: {exc}")
 
     # DC-plateau gain.
@@ -823,7 +836,7 @@ def execution_lines(reports: dict[str, dict], walls: dict[str, float]) -> list[s
     for tag, rep in reports.items():
         jobs = remote_jobs(rep)
         if len(jobs) <= 1:
-            L += C.execution_lines({tag: rep}, {tag: walls.get(tag, 0)})
+            L += rejection_execution_lines({tag: rep}, {tag: walls.get(tag, 0)})
             continue
         j0 = jobs[0]
         env = rep.get("environment") or {}
@@ -1245,7 +1258,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, table, an: Analysis, cont
         f"`{dut_sha[:16]}`), unchanged; snapshot `netlist-snapshots/{record}.spice`")
     for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
         add(ln)
-    for ln in C.pdk_lines(pdk, reports):
+    for ln in pdk_lines(pdk, reports):
         add(ln.replace("the grid's open-loop response reproduces the committed gain-bench record (see Cross-checks)",
                        "the scan's midrail samples reproduce the committed CMRR record (see Controls: midrail "
                        "reproduction)"))
@@ -1578,7 +1591,7 @@ def main(argv: list[str] | None = None) -> int:
     pdk = find_pdk()
     if args.smoke:
         return smoke(pdk)
-    err = C.require_plotting()
+    err = require_plotting()
     if err:
         print(f"ERROR: {err}", file=sys.stderr)
         return 2

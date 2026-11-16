@@ -130,8 +130,9 @@ Model and terminal facts verified here:
   `device.property` error specifically**, because the perturbation also raises
   `device.unmatched` / `net.unmatched` entries, so "some mismatch appeared"
   would pass even if parameter comparison were switched off entirely. The gate
-  also asserts each control's `environment.layout_sha256` equals its positive's,
-  which is the mechanical proof the control ran against the unchanged GDS.
+  also asserts each control's `environment.layout_sha256` is present and equals
+  its positive's, which is the mechanical proof the control ran against the
+  unchanged GDS.
   `parameter_tolerance` is `null` (exact compare), so the size of the
   perturbation is not load-bearing.
 - **A regeneration is reproducible in its verdicts, not byte-for-byte.** Two
