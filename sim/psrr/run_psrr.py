@@ -79,17 +79,44 @@ import harness  # noqa: E402
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    ExtractionError,
     allocate_record_id,
     batch_block,
+    check_axis,
     claim_run_paths,
+    db,
     finalize_run_evidence,
     find_pdk,
+    finite,
+    interp_db,
     klt_version,
     load_dut_text,
     ngspice_version,
     load_sibling,
     remote_of,
+    require_plotting,
+    run_grid_modes,
+    same_axis,
     sanitise_report,
+    work_dir,
+)
+
+# The record-writing helpers and table emitters (hoisted out of the CMRR
+# driver by issue #337); the CMRR driver is still loaded below, but only for
+# measurement material.
+from rejection_bench import (  # noqa: E402
+    FIGURES,
+    SPOT_HZ,
+    build_plots_rejection,
+    execution_lines,
+    figure_table,
+    fmt_db,
+    pdk_lines,
+    save_local_runs,
+    save_mode_point,
+    worst_case,
+    worst_table,
+    write_snapshot,
 )
 # Shared RZ x CC passive-corner helpers (issues #70, #97, #150), used unchanged.
 from passive_corners import (  # noqa: E402
@@ -122,8 +149,6 @@ TESTBENCH = HERE / "testbench" / "tb_psrr.spice"
 CORNERS, TEMPS_C, SUPPLIES_V, NOMINAL = C.CORNERS, C.TEMPS_C, C.SUPPLIES_V, C.NOMINAL
 Key = C.Key
 fmt_key, point_stem = C.fmt_key, C.point_stem
-SPOT_HZ = C.SPOT_HZ
-db = C.db
 
 QUIET = mc.QUIET
 MODES = mc.MODES
@@ -195,11 +220,11 @@ def check_supply_run(vec: dict, rail: str) -> tuple[float, float, list[str]]:
 def extract_psrr(dm_vec: dict, sup_vecs: dict[str, dict], floor: float, *, n_expect: int | None = C.N_FREQ) -> PsrrPoint:
     try:
         freq = np.asarray(dm_vec["frequency"].real, dtype=float)
-        C.check_axis(freq, n_expect)
+        check_axis(freq, n_expect)
         for rail, v in sup_vecs.items():
-            C.same_axis(freq, np.asarray(v["frequency"].real, dtype=float))
-            C.finite(*(v[n] for n in NEED))
-        C.finite(*(dm_vec[n] for n in NEED))
+            same_axis(freq, np.asarray(v["frequency"].real, dtype=float))
+            finite(*(v[n] for n in NEED))
+        finite(*(dm_vec[n] for n in NEED))
         dm = C.Excitation.from_vec(dm_vec)
         dm_err, bad = C.check_dm(dm)
         rails_quiet = float(max(np.max(np.abs(dm_vec["v(vdd)"])), np.max(np.abs(dm_vec["v(vss)"]))))
@@ -233,7 +258,7 @@ def extract_psrr(dm_vec: dict, sup_vecs: dict[str, dict], floor: float, *, n_exp
             return PsrrPoint(False, f"input leak contributes {leak:.3g} of the supply-run output (> {INPUT_LEAK_FRAC:g})",
                              freq=freq)
         return pt
-    except (C.ExtractionError, KeyError) as exc:
+    except (ExtractionError, KeyError) as exc:
         return PsrrPoint(False, str(exc))
 
 
@@ -347,11 +372,11 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
         f"unchanged; snapshot `netlist-snapshots/{record}.spice`")
     for ln in mc.fingerprint_lines({"bench": TESTBENCH.read_text()}):
         add(ln)
-    for ln in C.pdk_lines(pdk, reports):
+    for ln in pdk_lines(pdk, reports):
         add(ln)
     add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`, numpy `{np.__version__}`")
     add("- **Execution**: three `klt sim` corner requests (one per excitation), 45 points each:")
-    for ln in C.execution_lines(reports, walls):
+    for ln in execution_lines(reports, walls):
         add(ln)
     add("  - Local single units (studies/controls below) run with an empty `HOME` so no user `~/.spiceinit` "
         "applies (the fleet grid runs without one; DR-0004).")
@@ -378,7 +403,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
         vals = {k: p.rej[rail] for k, p in points.items()}
         add(f"## {LABEL[rail]} worst case over the 45 points")
         add("")
-        C.worst_table(add, vals, LABEL[rail])
+        worst_table(add, vals, LABEL[rail])
         add("")
         add(f"- Plateau verified at {sum(r.plateau_ok for r in vals.values())}/{len(vals)} points; lower bounds "
             f"(numerical floor): {sum(r.lower_bound for r in vals.values())}/{len(vals)}.")
@@ -430,7 +455,7 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     for rail in RAILS:
         add(f"## {LABEL[rail]} at all 45 points (dB, input-referred)")
         add("")
-        C.figure_table(add, {k: p.rej[rail] for k, p in points.items()}, LABEL[rail])
+        figure_table(add, {k: p.rej[rail] for k, p in points.items()}, LABEL[rail])
         add("")
     add("## Ad, Avdd, Avss at the plateau (dB)")
     add("")
@@ -439,8 +464,8 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
     for k in sorted(points, key=lambda k: (CORNERS.index(k[0]), k[2], k[1])):
         p = points[k]
         add(f"| {fmt_key(k)} | {p.ad_dc_db:.2f} | {-p.feedthrough_db['vdd']:.2f} | {-p.feedthrough_db['vss']:.2f} | "
-            f"{C.fmt_db(p.rej['vdd'].dc_db, p.rej['vdd'].lower_bound)} | "
-            f"{C.fmt_db(p.rej['vss'].dc_db, p.rej['vss'].lower_bound)} |")
+            f"{fmt_db(p.rej['vdd'].dc_db, p.rej['vdd'].lower_bound)} | "
+            f"{fmt_db(p.rej['vss'].dc_db, p.rej['vss'].lower_bound)} |")
     add("")
     studies_section(add, studies, points)
     L.extend(mc.inputs_section({"bench": TESTBENCH.read_text()}))
@@ -860,7 +885,7 @@ def default_crosscheck(points: dict, cdir: Path) -> tuple[float, dict, list[str]
         dev = 0.0
         for rail, col in (("vdd", 4), ("vss", 5)):
             for which in XCHECK_FIGURES:
-                ref = float(d[0, col]) if which == "low" else C.interp_db(d[:, 0], d[:, col], which)
+                ref = float(d[0, col]) if which == "low" else interp_db(d[:, 0], d[:, col], which)
                 dev = max(dev, abs(figure_of(p, rail, which) - ref))
         devs[k] = dev
         if dev > XCHECK_DEFAULT_TOL_DB:
@@ -894,7 +919,7 @@ def study_problem_report(problems: list[str]) -> None:
 
 
 def _fmt_cell_val(pt: PsrrPoint, rail: str, which) -> str:
-    return C.fmt_db(figure_of(pt, rail, which), pt.rej[rail].lower_bound)
+    return fmt_db(figure_of(pt, rail, which), pt.rej[rail].lower_bound)
 
 
 def _lbl(which) -> str:
@@ -929,7 +954,7 @@ def build_study_record(*, record, stamp, pdk, ngspice, kver, scope, want: list, 
         f"`netlist-snapshots/{record}.spice`. The passive levels are PDK sections loaded per cell, not netlist edits.")
     for ln in mc.fingerprint_lines(texts, retained):
         add(ln)
-    for ln in C.pdk_lines(pdk, reports):
+    for ln in pdk_lines(pdk, reports):
         add(ln)
     add(f"- **Tools**: ngspice local `{ngspice}`, klt `{kver}`, numpy `{np.__version__}`")
     acc = [e for e in log if e["outcome"] == "accepted"]
@@ -960,7 +985,7 @@ def build_study_record(*, record, stamp, pdk, ngspice, kver, scope, want: list, 
             e, et = study_extremes(points, rail, f), study_extremes(typ, rail, f)
             (wv, wk), (bv, bk), (tv, _) = e["worst"], e["best"], et["worst"]
             add(f"| {LABEL[rail]} {_lbl(f)} | **{_fmt_cell_val(points[wk], rail, f)}** | {cell_label(wk)} | "
-                f"{_fmt_cell_val(points[bk], rail, f)} | {cell_label(bk)} | {C.fmt_db(tv)} | {wv - tv:+.2f} |")
+                f"{_fmt_cell_val(points[bk], rail, f)} | {cell_label(bk)} | {fmt_db(tv)} | {wv - tv:+.2f} |")
     add("")
     add("## Difference vs typical passives at matching PVT (1 kHz, 10 kHz)")
     add("")
@@ -988,7 +1013,7 @@ def build_study_record(*, record, stamp, pdk, ngspice, kver, scope, want: list, 
         for rail in RAILS:
             for f in STUDY_FREQS:
                 v, k = study_extremes(sub, rail, f)["worst"]
-                cells.append(f"{C.fmt_db(v)} ({fmt_key((split_passive_key(k)[0], k[1], k[2]))})")
+                cells.append(f"{fmt_db(v)} ({fmt_key((split_passive_key(k)[0], k[1], k[2]))})")
         rng = []
         for rail in RAILS:
             d = [v for kk, v in deltas_vs_typical(points, rail, 1e4).items() if kk in sub]
@@ -1001,10 +1026,10 @@ def build_study_record(*, record, stamp, pdk, ngspice, kver, scope, want: list, 
         add("")
         add(f"| {LABEL[rail]} figure | worst (dB) | binding cell | best (dB) | best cell | cells without the figure |")
         add("|---|---|---|---|---|---|")
-        for which, lbl in C.FIGURES:
+        for which, lbl in FIGURES:
             e = study_extremes(points, rail, which)
             (wv, wk), (bv, bk) = e["worst"], e["best"]
-            add(f"| {lbl} | **{C.fmt_db(wv)}** | {cell_label(wk) if wk else 'n/a'} | {C.fmt_db(bv)} | "
+            add(f"| {lbl} | **{fmt_db(wv)}** | {cell_label(wk) if wk else 'n/a'} | {fmt_db(bv)} | "
                 f"{cell_label(bk) if bk else 'n/a'} | {e['missing']} |")
         vals = {k: p.rej[rail] for k, p in points.items()}
         add("")
@@ -1122,8 +1147,8 @@ def build_study_record(*, record, stamp, pdk, ngspice, kver, scope, want: list, 
         add(f"| {cell_label(k)} | {_fmt_cell_val(p, 'vdd', 1e3)} | {_fmt_cell_val(p, 'vdd', 1e4)} | "
             f"{_fmt_cell_val(p, 'vss', 1e3)} | {_fmt_cell_val(p, 'vss', 1e4)} | "
             + " | ".join(f"{dp[rail][k]:+.3f}" if k in dp[rail] else "typ." for rail in RAILS)
-            + f" | {C.fmt_db(p.rej['vdd'].dc_db, p.rej['vdd'].lower_bound)} | "
-            f"{C.fmt_db(p.rej['vss'].dc_db, p.rej['vss'].lower_bound)} | {p.fu_hz / 1e6:.3f} | {'; '.join(note)} |")
+            + f" | {fmt_db(p.rej['vdd'].dc_db, p.rej['vdd'].lower_bound)} | "
+            f"{fmt_db(p.rej['vss'].dc_db, p.rej['vss'].lower_bound)} | {p.fu_hz / 1e6:.3f} | {'; '.join(note)} |")
     add("")
     L.extend(mc.inputs_section(texts, retained))
     add("## Reproduce / evidence")
@@ -1190,7 +1215,7 @@ def run_passive_study(pdk: Pdk, args, *, runner=None, studies_fn=None, root: Pat
     print(f"record {record}: PSRR passive-corner study ({scope}): {len(want)} cells x {len(MODES)} excitations = "
           f"{len(want) * len(MODES)} responses; split {args.partition_split}; PDK={pdk.path}; klt {kver}", flush=True)
 
-    with C.work_dir(args, "psrr-passive-") as scratch:
+    with work_dir(args, "psrr-passive-") as scratch:
         work = Path(scratch)
         # Local nominal studies/controls first (numerical floor, servo isolation,
         # feedthrough controls): a failing control costs no fleet time.
@@ -1295,7 +1320,7 @@ def run_passive_study(pdk: Pdk, args, *, runner=None, studies_fn=None, root: Pat
         cdir.mkdir(parents=True)
         for mode in MODES:
             for k, a in per_mode[mode].items():
-                C.save_mode_point(cdir, k, mode, a, NEED)
+                save_mode_point(cdir, k, mode, a, NEED)
         for label, rep in reports.items():
             (cdir / f"klt-report.{label}.json").write_text(json.dumps(sanitise_report(rep), indent=1))
         (cdir / "partitions.json").write_text(json.dumps(partitions_json(plan, sched, log, want), indent=1))
@@ -1304,11 +1329,11 @@ def run_passive_study(pdk: Pdk, args, *, runner=None, studies_fn=None, root: Pat
                        np.column_stack([pt.freq, db(pt.ad), db(pt.asup["vdd"]), db(pt.asup["vss"]),
                                         pt.rej["vdd"].curve_db, pt.rej["vss"].curve_db]), fmt="%.8e",
                        header="freq_hz Ad_dB Avdd_dB Avss_dB PSRRplus_dB PSRRminus_dB (Asupply clamped at the floor)")
-        C.save_local_runs(cdir / "controls", studies.runs)
+        save_local_runs(cdir / "controls", studies.runs)
         paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
         nom_a = per_mode["dm"].get(nom) or per_mode["dm"][sorted(per_mode["dm"], key=cell_sort)[0]]
         deck0 = Path(nom_a["deck"]).read_text() if nom_a.get("deck") else ""
-        C.write_snapshot(paths["snapshot"], record, "issue #155, PSRR RZ x CC passive-corner study", TESTBENCH,
+        write_snapshot(paths["snapshot"], record, "issue #155, PSRR RZ x CC passive-corner study", TESTBENCH,
                          reqs, deck0)
         (root / "netlist-snapshots" / f"{record}-controls.spice").write_text("\n".join([
             f"* control snapshot for record {record} (issue #155) -- NOT the baseline bench",
@@ -1333,7 +1358,7 @@ def run_passive_study(pdk: Pdk, args, *, runner=None, studies_fn=None, root: Pat
     for rail in RAILS:
         for f in STUDY_FREQS:
             v, k = study_extremes(points, rail, f)["worst"]
-            print(f"  worst {LABEL[rail]} {_lbl(f)}: {C.fmt_db(v)} dB at {cell_label(k)}")
+            print(f"  worst {LABEL[rail]} {_lbl(f)}: {fmt_db(v)} dB at {cell_label(k)}")
     return 0
 
 
@@ -1364,7 +1389,7 @@ def smoke(pdk: Pdk) -> int:
         return 1
     for rail in RAILS:
         c = pt.rej[rail]
-        print(f"  {LABEL[rail]}: DC {C.fmt_db(c.dc_db)} dB, " + ", ".join(f"{f:g} Hz {c.spot_db[f]:.1f}" for f in SPOT_HZ)
+        print(f"  {LABEL[rail]}: DC {fmt_db(c.dc_db)} dB, " + ", ".join(f"{f:g} Hz {c.spot_db[f]:.1f}" for f in SPOT_HZ)
               + f", at f_u {c.at_fu_db:.1f} dB")
     print("smoke test OK (all three excitations ran and validated; the full run records the evidence)")
     return 0
@@ -1402,7 +1427,7 @@ def main(argv: list[str] | None = None) -> int:
         return smoke(pdk)
     if args.passive_corners:
         return run_passive_study(pdk, args)
-    err = C.require_plotting()
+    err = require_plotting()
     if err:
         print(f"ERROR: {err}", file=sys.stderr)
         return 2
@@ -1414,10 +1439,13 @@ def main(argv: list[str] | None = None) -> int:
     gdir = G.latest_gain_dir()
     print(f"record {record}: 3 excitations x {len(want)} points, PDK={pdk.path} (open_pdks {pdk.version}), klt {kver}")
 
-    with C.work_dir(args, "psrr-") as scratch:
+    with work_dir(args, "psrr-") as scratch:
         work = Path(scratch)
         try:
-            reports, reqs, walls = C.run_grid_modes(pdk, work, args, MODES, testbench=TESTBENCH, guard=guard_testbench)
+            reports, reqs, walls = run_grid_modes(pdk, work, args, MODES, corners=CORNERS, temps=TEMPS_C,
+                                              supplies=SUPPLIES_V, materialise=C.materialise,
+                                              with_servo=C.with_servo, ac_request=C.ac_request,
+                                              testbench=TESTBENCH, guard=guard_testbench)
         except KltError as exc:
             print(f"ERROR: a grid request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
             return 2
@@ -1467,19 +1495,19 @@ def main(argv: list[str] | None = None) -> int:
         corners_dir.mkdir(parents=True)
         for mode in MODES:
             for k, a in per_mode[mode].items():
-                C.save_mode_point(corners_dir, k, mode, a, NEED)
+                save_mode_point(corners_dir, k, mode, a, NEED)
             (corners_dir / f"klt-report.{mode}.json").write_text(json.dumps(sanitise_report(reports[mode]), indent=1))
         for k, p in points.items():
             np.savetxt(corners_dir / f"{point_stem(k)}.psrr.dat",
                        np.column_stack([p.freq, db(p.ad), db(p.asup["vdd"]), db(p.asup["vss"]),
                                         p.rej["vdd"].curve_db, p.rej["vss"].curve_db]), fmt="%.8e",
                        header="freq_hz Ad_dB Avdd_dB Avss_dB PSRRplus_dB PSRRminus_dB (Asupply clamped at the floor)")
-        C.save_local_runs(corners_dir / "controls", studies.runs)
+        save_local_runs(corners_dir / "controls", studies.runs)
 
         dut_sha = hashlib.sha256(load_dut_text().encode()).hexdigest()
         paths["snapshot"].parent.mkdir(parents=True, exist_ok=True)
         deck0 = Path(per_mode["dm"][NOMINAL]["deck"]).read_text() if per_mode["dm"][NOMINAL].get("deck") else ""
-        C.write_snapshot(paths["snapshot"], record, "issue #39", TESTBENCH, reqs, deck0)
+        write_snapshot(paths["snapshot"], record, "issue #39", TESTBENCH, reqs, deck0)
         ctl = HERE / "netlist-snapshots" / f"{record}-controls.spice"
         ctl.write_text("\n".join([
             f"* control snapshot for record {record} (issue #39) -- NOT the baseline bench",
@@ -1493,7 +1521,7 @@ def main(argv: list[str] | None = None) -> int:
         ]))
 
         nomp = points[NOMINAL]
-        plots = C.build_plots_rejection(
+        plots = build_plots_rejection(
             {k: p.freq for k, p in points.items()},
             {LABEL[r]: {k: p.rej[r].curve_db for k, p in points.items()} for r in RAILS},
             nomp.ad, {"|Avdd|": db(nomp.asup["vdd"]), "|Avss|": db(nomp.asup["vss"]),
@@ -1508,9 +1536,9 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"wrote {paths['record']}")
     for rail in RAILS:
-        for which, lbl in C.FIGURES:
-            v, k, _ = C.worst_case({kk: p.rej[rail] for kk, p in points.items()}, which)
-            print(f"  worst {LABEL[rail]} {lbl}: {C.fmt_db(v)} dB at {fmt_key(k) if k else 'n/a'}")
+        for which, lbl in FIGURES:
+            v, k, _ = worst_case({kk: p.rej[rail] for kk, p in points.items()}, which)
+            print(f"  worst {LABEL[rail]} {lbl}: {fmt_db(v)} dB at {fmt_key(k) if k else 'n/a'}")
     return 0
 
 

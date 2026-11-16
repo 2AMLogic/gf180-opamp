@@ -62,6 +62,18 @@ the #105 boundary by operator ruling of 2026-10-19): `guard_mc_mismatch_switch`
 offset-mc, gain-gbw-pm-mc) because they had drifted as hand copies. Only the
 common MC invariants live here; each runner keeps its wiring, circuit
 equivalence, parameter-key, switch-value, bias/load and control-run checks.
+
+Frequency-domain extraction helpers (issue #337): `ExtractionError`,
+`check_axis`, `same_axis`, `finite`, `db`, `interp_db` -- the axis/phasor
+validation and dB helpers every frequency-domain bench extracts with. Hoisted
+out of `sim/cmrr/run_cmrr.py`, which the psrr and input-common-mode drivers
+previously loaded as a library to reach them. `check_axis`'s `n_expect`
+defaults to `None` here (no size check); each bench passes its own sweep size.
+
+Grid-run plumbing (also #337): `run_grid_modes`, `require_plotting`,
+`work_dir`. `run_grid_modes` takes its corner axes and its bench
+collaborators (`materialise`, `with_servo`, `ac_request`, testbench, guard)
+as explicit parameters -- the shared copy reads no bench module global.
 """
 
 from __future__ import annotations
@@ -1160,6 +1172,109 @@ def rederive_dat(path: Path, header: str, extract):
     if d.shape[1] != 3:
         raise ValueError(f"{path}: {d.shape[1]} columns, expected 3")
     return extract({"time": d[:, 0], "v(vout)": d[:, 1], "v(vinp)": d[:, 2]})
+
+
+# --------------------------------------------------------------------------
+# Frequency-domain extraction helpers (issue #337; hoisted from the CMRR driver)
+# --------------------------------------------------------------------------
+
+
+class ExtractionError(ValueError):
+    pass
+
+
+def check_axis(freq: "np.ndarray", n_expect: int | None = None) -> None:
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    if freq.ndim != 1 or (n_expect is not None and freq.size != n_expect):
+        raise ExtractionError(f"{freq.size} frequency points, expected {n_expect}")
+    if not np.all(np.isfinite(freq)) or np.any(freq <= 0) or np.any(np.diff(freq) <= 0):
+        raise ExtractionError("frequency axis not finite, positive and strictly increasing")
+
+
+def same_axis(f1: "np.ndarray", f2: "np.ndarray") -> None:
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    if f1.shape != f2.shape or np.any(np.abs(f1 / f2 - 1) > 1e-9):
+        raise ExtractionError("excitations were run on different frequency axes")
+
+
+def finite(*arrs: "np.ndarray") -> None:
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    for a in arrs:
+        if not np.all(np.isfinite(a)):
+            raise ExtractionError("non-finite phasor data")
+
+
+def db(x) -> "np.ndarray":
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    return 20.0 * np.log10(np.abs(x))
+
+
+def interp_db(freq: "np.ndarray", ydb: "np.ndarray", f: float) -> float:
+    """Linear interpolation in (log10 f, dB); ValueError outside the sweep."""
+    import numpy as np  # deferred: numpy-free at import time (see save_point_data)
+
+    if f < freq[0] * (1 - 1e-9) or f > freq[-1] * (1 + 1e-9):
+        raise ExtractionError(f"{f:g} Hz is outside the swept range")
+    return float(np.interp(math.log10(f), np.log10(freq), ydb))
+
+
+# --------------------------------------------------------------------------
+# Grid-run plumbing (issue #337; hoisted from the CMRR driver)
+# --------------------------------------------------------------------------
+
+
+def run_grid_modes(pdk, work, args, modes: dict[str, dict], *, corners, temps, supplies,
+                   materialise, with_servo, ac_request, testbench=None, guard=None):
+    """One `klt sim` corner request per excitation. Raises KltError on a submit
+    failure (no local fallback).
+
+    The corner axes and the bench's `materialise` / `with_servo` /
+    `ac_request` collaborators are explicit parameters: the shared copy reads
+    no bench module global, so any rejection bench supplies its own axes
+    alongside its own testbench and guard."""
+    reports, reqs, walls = {}, {}, {}
+    for mode, mp in modes.items():
+        tb = materialise(work / mode, pdk, with_servo(mp), testbench=testbench, guard=guard)
+        req = ac_request(tb, pdk, corners, temps, supplies)
+        req["batch"] = batch_block(args)
+        print(f"  submitting `{mode}` grid ({len(corners) * len(temps) * len(supplies)} points)...", flush=True)
+        t0 = time.time()
+        reports[mode] = run_klt_retrying(req, work / mode / "out", args.backend, work / mode,
+                                         retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
+        walls[mode] = time.time() - t0
+        reqs[mode] = req
+        r = remote_of(reports[mode])
+        print(f"  `{mode}` done in {walls[mode]:.0f} s (job {r.get('job_id', 'local')})", flush=True)
+    return reports, reqs, walls
+
+
+def require_plotting() -> str | None:
+    """Fail fast, BEFORE any grid is submitted, if matplotlib cannot import
+    (e.g. a user-site numpy 2 shadowing a distro matplotlib built for numpy 1;
+    `python3 -s` skips the user site). Returns an error message or None."""
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot  # noqa: F401
+    except Exception as exc:  # noqa: BLE001 -- any import failure blocks the record
+        return (f"matplotlib is not importable ({type(exc).__name__}: {str(exc)[:200]}); the record's plots "
+                "cannot be written. Fix the Python environment (try `python3 -s ...`) before running the grid.")
+    return None
+
+
+def work_dir(args, prefix: str):
+    """A temporary work directory, or the kept `--keep-work` one."""
+    import contextlib
+
+    if args.keep_work is None:
+        return tempfile.TemporaryDirectory(prefix=prefix)
+    args.keep_work.mkdir(parents=True, exist_ok=False)
+    return contextlib.nullcontext(str(args.keep_work.resolve()))
 
 
 def add_batch_args(ap, *, backend_help: str) -> None:

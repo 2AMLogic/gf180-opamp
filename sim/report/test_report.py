@@ -1735,6 +1735,26 @@ class CmrrMismatchRecord(ScratchRootTest):
         self.assertTrue(any("this report does not ingest that record" in l for l in r["limitations"]))
         self.assertTrue(any(l.startswith("no record selected for cmrr-mc") for l in rep["limitations"]))
 
+    def test_grid_selection_deferred(self):
+        # the 45-point grid record 20261115-185812-3ece683 (issue #98) IS committed, but the nominal
+        # record stays selected DELIBERATELY, for three independent reasons (issue #373):
+        # 1. the report has no cmrr-mc grid extractor -- extract_cmrr_mc's Population regex expects
+        #    one T/VDD pair and the grid record declares three of each, so the report build would
+        #    fail with "no Population line";
+        # 2. the grid record's per-sample samples.csv is manifest-only (artifact store) and
+        #    cmrr_mc_crosscheck re-reads it from the checkout, so selecting it would fail --check
+        #    in a clean CI tree (2AMLogic/klayout-tools#5591);
+        # 3. the grid record's open_pdks pin f6eeac7 is in PENDING_PDK_PINS, so --latest filters it
+        #    out, and selecting it by hand would mix that pin into a report whose other rows are on
+        #    c6d73a3/afc17a1.
+        # Resolving all three belongs to the eventual selection swap (see sim/README.md, the
+        # "cmrr-mc --grid full" note). Pointing cmrr-mc at the grid record without that work breaks
+        # the report; do not delete or weaken this test to make such a swap pass silently.
+        sel = json.loads(MANIFEST.read_text())["experiments"]
+        self.assertEqual(sel["cmrr-mc"], CMC_MD)
+        # the deferred record itself stays committed and append-only
+        self.assertTrue((REPO / CMC / "records" / "20261115-185812-3ece683.md").is_file())
+
     # ---- the record's own summaries ----
 
     def test_altered_lin3s_cell_rejected(self):

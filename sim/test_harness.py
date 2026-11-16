@@ -1,8 +1,11 @@
-"""Unit tests for `harness.stage_workdir` (issue #94). No simulator, no PDK.
+"""Unit tests for the shared sim-harness helpers.
 
-A scratch directory stands in for the PDK (only `design.ngspice` is copied),
+Started for `harness.stage_workdir` (issue #94) with no simulator and no PDK:
+a scratch directory stands in for the PDK (only `design.ngspice` is copied),
 and a fixed DUT text stands in for the committed export, so these run
-anywhere the stdlib does.
+anywhere the stdlib does. Later arrivals: the source-guard, submit-request,
+MC-snapshot, PDK-search and record-path helpers, and the frequency-domain
+extraction helpers hoisted from the CMRR driver (issue #337).
 
 This module also hosts `StaleDutMixin` and `fake_pdk` (issue #347): the ONE
 copy of the stale-DUT negative tests every bench suite mixes in next to its
@@ -22,6 +25,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
+
+import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -551,6 +556,199 @@ class StatePhraseTests(unittest.TestCase):
         self.assertTrue(local.startswith("  - "))
         self.assertIn("backend `local`", local)
         self.assertNotIn("exit_reason", local)
+class BatchArgsDestContractTests(unittest.TestCase):
+    """`add_batch_args` dests — the contract `batch_block`/`submit_request` read.
+
+    #348 hoisted the five fleet flags into one helper, but nothing connected
+    it to the consumers reading its dests by attribute, so a renamed dest
+    passed the whole local suite and surfaced only on a real fleet submit as
+    an `AttributeError` at `batch_block()` time, after the grid was staged.
+    These tests parse the helper's own argparse parser (never a hand-written
+    namespace) and call the real `batch_block`, so dest or default drift
+    fails here instead of in a staged grid (issue #350).
+    """
+
+    #: Every dest the helper declares; `batch_block` and `submit_request`
+    #: read all five of these by attribute.
+    DESTS = frozenset({"backend", "batch_runner_version_check",
+                       "batch_capacity_wait_s", "batch_submit_retries",
+                       "batch_retry_wait_s"})
+
+    def _parser(self, add, **kwargs) -> argparse.ArgumentParser:
+        ap = argparse.ArgumentParser()
+        add(ap, **kwargs)
+        return ap
+
+    def test_defaults_produce_an_empty_batch_block_and_the_documented_reads(self):
+        ns = self._parser(harness.add_batch_args, backend_help="x").parse_args([])
+        self.assertEqual(harness.batch_block(ns), {})
+        # What `submit_request` reads by attribute (`sim/harness.py`).
+        self.assertIsNone(ns.backend)
+        self.assertEqual(ns.batch_submit_retries, 0)
+        self.assertEqual(ns.batch_retry_wait_s, 120.0)
+
+    def test_flags_forward_into_the_batch_block(self):
+        ns = self._parser(harness.add_batch_args, backend_help="x").parse_args(
+            ["--batch-runner-version-check", "warn", "--batch-capacity-wait-s", "600"])
+        self.assertEqual(harness.batch_block(ns),
+                         {"runner_version_check": "warn", "capacity_wait_s": 600.0})
+        # The `type=float` coercion of the CLI string is part of the contract.
+        self.assertIsInstance(ns.batch_capacity_wait_s, float)
+
+    def test_a_zero_capacity_wait_still_forwards(self):
+        # `batch_block` tests `is not None`, not truthiness: a 0 s wait is a
+        # deliberate request, and a truthiness regression would drop it.
+        ns = self._parser(harness.add_batch_args, backend_help="x").parse_args(
+            ["--batch-capacity-wait-s", "0"])
+        self.assertEqual(harness.batch_block(ns), {"capacity_wait_s": 0.0})
+
+    def test_runner_version_check_outside_the_choices_is_refused(self):
+        with self.assertRaises(SystemExit) as cm:
+            self._parser(harness.add_batch_args, backend_help="x").parse_args(
+                ["--batch-runner-version-check", "maybe"])
+        self.assertEqual(cm.exception.code, 2)
+
+    def test_grid_and_common_parsers_are_supersets_of_the_batch_dests(self):
+        for add, kwargs in ((harness.add_grid_args, {"grid_help": "x"}),
+                            (harness.add_common_args, {})):
+            with self.subTest(helper=add.__name__):
+                ap = self._parser(add, **kwargs)
+                self.assertGreaterEqual(set(vars(ap.parse_args([]))), self.DESTS)
+
+
+class ExtractionHelpersTests(unittest.TestCase):
+    """The hoisted frequency-domain extraction helpers (issue #337).
+
+    The same invariants the cmrr/psrr extraction tests exercised through the
+    CMRR driver, asserted against the shared home so the next relocation of
+    these bodies has its own guard."""
+
+    F = np.array([0.1, 1.0, 10.0, 100.0])
+
+    def test_check_axis_accepts_a_strictly_increasing_positive_axis(self):
+        harness.check_axis(self.F, 4)  # must not raise
+        harness.check_axis(self.F)  # no expected size: shape/monotonicity only
+
+    def test_check_axis_rejects_wrong_size_and_bad_axes(self):
+        for bad, why in [
+            (np.array([1.0, 2.0]), "wrong size"),
+            (np.array([[1.0, 2.0]]), "not 1-D"),
+            (np.array([1.0, -1.0, 10.0]), "non-positive"),
+            (np.array([1.0, 3.0, 2.0]), "not increasing"),
+            (np.array([1.0, np.nan, 2.0]), "non-finite"),
+        ]:
+            with self.subTest(why=why), self.assertRaises(harness.ExtractionError):
+                harness.check_axis(bad, 3)
+
+    def test_same_axis_rejects_different_axes(self):
+        harness.same_axis(self.F, self.F * 1.0)  # must not raise
+        with self.assertRaises(harness.ExtractionError):
+            harness.same_axis(self.F, self.F * 1.1)
+        with self.assertRaises(harness.ExtractionError):
+            harness.same_axis(self.F, self.F[:-1])
+
+    def test_finite_rejects_non_finite_phasors(self):
+        harness.finite(np.ones(4), np.ones(4))  # must not raise
+        with self.assertRaises(harness.ExtractionError):
+            harness.finite(np.ones(4), np.array([1.0, np.inf, 1.0, 1.0]))
+
+    def test_db_is_twenty_log10_of_the_magnitude(self):
+        np.testing.assert_allclose(harness.db(10.0), 20.0)
+        np.testing.assert_allclose(harness.db(1j), 0.0, atol=1e-12)
+        np.testing.assert_allclose(harness.db(np.array([1.0, 10.0])), [0.0, 20.0])
+
+    def test_interp_db_is_log_linear_and_bounded(self):
+        y = 40.0 * np.log10(self.F)  # exactly linear in (log10 f, dB)
+        self.assertAlmostEqual(harness.interp_db(self.F, y, 1.0), 0.0)
+        self.assertAlmostEqual(harness.interp_db(self.F, y, 10.0), 40.0)
+        with self.assertRaises(harness.ExtractionError):
+            harness.interp_db(self.F, y, 1e3)
+
+
+class RunGridModesTests(unittest.TestCase):
+    """The parameterised grid runner (issue #337): fakes stand in for every
+    bench collaborator, proving the shared copy reads no bench module global."""
+
+    class Args:
+        backend = "local"
+        batch_submit_retries = 0
+        batch_retry_wait_s = 0.0
+        batch_runner_version_check = None
+        batch_capacity_wait_s = None
+
+    def setUp(self):
+        self.calls = []
+
+        def materialise(path, pdk, params, *, testbench, guard):
+            self.calls.append(("materialise", str(path), params, testbench, guard))
+            return path / "tb.spice"
+
+        def with_servo(mp, **over):
+            return {**mp, **over}
+
+        def ac_request(tb, pdk, corners, temps, supplies):
+            self.calls.append(("ac_request", tuple(corners), tuple(temps), tuple(supplies)))
+            return {"netlist": str(tb), "analysis": {}}
+
+        self.materialise, self.with_servo, self.ac_request = materialise, with_servo, ac_request
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_one_request_per_mode_with_the_callers_axes_and_collaborators(self):
+        fake_report = {"environment": {"remote": {"job_id": "j1"}}}
+        with mock.patch.object(harness, "run_klt_retrying", return_value=fake_report) as rk:
+            reports, reqs, walls = harness.run_grid_modes(
+                None, Path(self._tmp.name), self.Args(), {"dm": {"acp": 1}, "cm": {"acp": 2}},
+                corners=["typical", "ff"], temps=[27.0], supplies=[3.3],
+                materialise=self.materialise, with_servo=self.with_servo, ac_request=self.ac_request,
+                testbench="TB", guard="guard")
+        self.assertEqual(sorted(reports), ["cm", "dm"])
+        self.assertEqual(reqs["dm"]["batch"], rk.call_args_list[0].args[0]["batch"])
+        # one request per mode, each with its own workdir
+        self.assertEqual([c.args[3] for c in rk.call_args_list],
+                         [Path(self._tmp.name) / "dm", Path(self._tmp.name) / "cm"])
+        modes = [(c[0], c[2]) for c in self.calls if c[0] == "materialise"]
+        self.assertEqual(modes, [("materialise", {"acp": 1}), ("materialise", {"acp": 2})])
+        ac = [c for c in self.calls if c[0] == "ac_request"]
+        self.assertEqual([c[1:] for c in ac], [(("typical", "ff"), (27.0,), (3.3,))] * 2)
+        self.assertTrue(all(w >= 0 for w in walls.values()))
+
+
+class RequirePlottingTests(unittest.TestCase):
+    def test_returns_none_when_matplotlib_imports(self):
+        from types import SimpleNamespace
+
+        fake_mpl = SimpleNamespace(use=lambda backend: None)
+        with mock.patch.dict(sys.modules, {"matplotlib": fake_mpl, "matplotlib.pyplot": object()}):
+            self.assertIsNone(harness.require_plotting())
+
+    def test_reports_the_environment_error_when_it_cannot_import(self):
+        with mock.patch.dict(sys.modules, {"matplotlib": None}):
+            msg = harness.require_plotting()
+        self.assertIn("matplotlib is not importable (", msg)
+        self.assertIn("python3 -s", msg)
+
+
+class WorkDirTests(unittest.TestCase):
+    class Args:
+        keep_work = None
+
+    def test_defaults_to_a_temporary_directory(self):
+        with harness.work_dir(self.Args(), "prefix-") as scratch:
+            self.assertTrue(Path(scratch).is_dir())
+        self.assertFalse(Path(scratch).exists())  # cleaned up on exit
+
+    def test_keep_work_creates_and_returns_the_kept_directory(self):
+        with tempfile.TemporaryDirectory() as root:
+            kept = Path(root) / "kept"
+
+            class NullArgs:
+                keep_work = kept
+
+            with harness.work_dir(NullArgs(), "prefix-") as scratch:
+                self.assertEqual(Path(scratch), kept.resolve())
+                self.assertTrue(kept.is_dir())
+            self.assertTrue(kept.is_dir())  # survives the exit
 
 
 class RunTransientGridTests(unittest.TestCase):

@@ -89,23 +89,47 @@ sys.path.insert(0, str(REPO_ROOT / "design"))
 from harness import (  # noqa: E402
     KltError,
     Pdk,
+    ExtractionError,
     add_common_args,
     allocate_record_id,
     batch_block,
+    check_axis,
     claim_run_paths,
+    db,
     finalize_run_evidence,
     find_pdk,
+    finite,
+    interp_db,
     klt_version,
     load_dut_text,
     logical_lines,
     ngspice_version,
     remote_of,
-    state_phrase,
+    require_plotting,
+    run_grid_modes,
     run_klt,
     run_klt_retrying,
     load_sibling,
+    same_axis,
     sanitise_report,
     stage_workdir,
+    work_dir,
+)
+# The record-writing helpers and table emitters this driver emits its
+# evidence with (hoisted out of this file by issue #337).
+from rejection_bench import (  # noqa: E402
+    FIGURES,
+    SPOT_HZ,
+    build_plots_rejection,
+    execution_lines,
+    figure_table,
+    fmt_db,
+    pdk_lines,
+    save_local_runs,
+    save_mode_point,
+    worst_case,
+    worst_table,
+    write_snapshot,
 )
 
 # The gain driver owns the committed-DUT guards, the request shape and the grid
@@ -139,7 +163,6 @@ N_FREQ = int(round(math.log10(AC_FSTOP / AC_FSTART) * AC_PPD)) + 1
 
 SERVO_NOMINAL = mc.SERVO_NOMINAL
 MODES = mc.MODES
-SPOT_HZ = (1e3, 1e4, 1e5, 1e6)
 
 PLATEAU_DECADE_HI = 10.0  # "DC" band = [f0, 10 f0] = 0.1-1 Hz
 PLATEAU_TOL_DB = 0.10
@@ -442,38 +465,9 @@ def op_agreement(per_mode: dict[str, dict[Key, dict]], want: list[Key]) -> tuple
 # Extraction (pure functions; unit-tested on synthetic responses)
 # --------------------------------------------------------------------------
 
+# The axis/phasor validation and dB helpers this extraction uses live in
+# `harness` (issue #337); only the CMRR-specific extraction is here.
 
-class ExtractionError(ValueError):
-    pass
-
-
-def check_axis(freq: np.ndarray, n_expect: int | None = N_FREQ) -> None:
-    if freq.ndim != 1 or (n_expect is not None and freq.size != n_expect):
-        raise ExtractionError(f"{freq.size} frequency points, expected {n_expect}")
-    if not np.all(np.isfinite(freq)) or np.any(freq <= 0) or np.any(np.diff(freq) <= 0):
-        raise ExtractionError("frequency axis not finite, positive and strictly increasing")
-
-
-def same_axis(f1: np.ndarray, f2: np.ndarray) -> None:
-    if f1.shape != f2.shape or np.any(np.abs(f1 / f2 - 1) > 1e-9):
-        raise ExtractionError("excitations were run on different frequency axes")
-
-
-def finite(*arrs: np.ndarray) -> None:
-    for a in arrs:
-        if not np.all(np.isfinite(a)):
-            raise ExtractionError("non-finite phasor data")
-
-
-def db(x) -> np.ndarray:
-    return 20.0 * np.log10(np.abs(x))
-
-
-def interp_db(freq: np.ndarray, ydb: np.ndarray, f: float) -> float:
-    """Linear interpolation in (log10 f, dB); ValueError outside the sweep."""
-    if f < freq[0] * (1 - 1e-9) or f > freq[-1] * (1 + 1e-9):
-        raise ExtractionError(f"{f:g} Hz is outside the swept range")
-    return float(np.interp(math.log10(f), np.log10(freq), ydb))
 
 
 @dataclass
@@ -832,171 +826,9 @@ def run_cmrr_studies(pdk: Pdk, work: Path) -> Studies:
 
 
 # --------------------------------------------------------------------------
-# Worst case
+# Cancellation flagging (CMRR-specific; the record writers and table
+# emitters live in `rejection_bench`, issue #337)
 # --------------------------------------------------------------------------
-
-FIGURES = (("dc", "DC plateau (0.1-1 Hz)"), *((f"{f:g}", f"{f / 1e3:g} kHz" if f < 1e6 else f"{f / 1e6:g} MHz") for f in SPOT_HZ),
-           ("fu", "at f_u (differential unity gain)"))
-
-
-def worst_case(values: dict[Key, Rejection], which: str) -> tuple[float, Key | None, int]:
-    """(lowest value, its corner, number of points without the figure)."""
-    items = [(r.figure(which), k) for k, r in values.items() if math.isfinite(r.figure(which))]
-    missing = len(values) - len(items)
-    if not items:
-        return float("nan"), None, missing
-    v, k = min(items)
-    return v, k, missing
-
-
-def fmt_db(v: float, lb: bool = False) -> str:
-    if not math.isfinite(v):
-        return "n/a"
-    return (">= " if lb else "") + f"{v:.2f}"
-
-
-def klt_pdk_version(report: dict) -> str:
-    return ((report.get("provenance") or {}).get("pdk") or {}).get("version", "n/a")
-
-
-def pdk_lines(pdk: Pdk, reports: dict[str, dict]) -> list[str]:
-    """PDK provenance, stating exactly what each source does and does not say."""
-    client = sorted({f"{klt_pdk_version(r)} ({((r.get('provenance') or {}).get('pdk') or {}).get('source', '?')})"
-                     for r in reports.values()})
-    return [
-        f"- **PDK revision**: {pdk.variant}, open_pdks `{pdk.version}` (harness `find_pdk`, via {pdk.source}); the "
-        "local single units are pinned to it (`models.pdk_root`).",
-        f"  - klt's `provenance.pdk` and `environment.models_lib_sha256` in the grid reports are resolved on the "
-        f"SUBMITTING CLIENT ({'; '.join(client)}), not on the fleet runner, which uses its own install and (klt "
-        "0.5.0) does not report its revision. The fleet library is tied to the pinned revision indirectly: the "
-        "local pinned units reproduce the grid's nominal point, and the grid's open-loop response reproduces the "
-        "committed gain-bench record (see Cross-checks).",
-    ]
-
-
-def execution_lines(reports: dict[str, dict], walls: dict[str, float]) -> list[str]:
-    L = []
-    for mode, rep in reports.items():
-        r = remote_of(rep)
-        env = rep.get("environment") or {}
-        if r:
-            L.append(f"  - `{mode}`: backend `{r.get('provider')}`, job `{r.get('job_id')}`, "
-                     f"{'Spot ' if r.get('spot') else ''}{r.get('instance_type', '')}, {state_phrase(r)}, "
-                     f"runner klt `{r.get('runner_klt_version')}` vs client `{r.get('client_klt_version')}` "
-                     f"(compatibility `{r.get('runner_compatibility')}`); engine `{env.get('engine')} "
-                     f"{env.get('engine_version')}`; wall {walls.get(mode, 0):.0f} s")
-        else:
-            L.append(f"  - `{mode}`: `klt sim` local backend (no `environment.remote`); engine "
-                     f"`{env.get('engine')} {env.get('engine_version')}`; wall {walls.get(mode, 0):.0f} s")
-    return L
-
-
-# --------------------------------------------------------------------------
-# Evidence writing (shared)
-# --------------------------------------------------------------------------
-
-
-def save_mode_point(corners_dir: Path, k: Key, mode: str, a: dict, cols: tuple[str, ...]) -> None:
-    stem = f"{point_stem(k)}.{mode}"
-    shutil.copyfile(a["log"], corners_dir / f"{stem}.log")
-    if a.get("deck"):
-        shutil.copyfile(a["deck"], corners_dir / f"{stem}.cir")
-    save_mode_point_vec(corners_dir / f"{stem}.dat", a["vec"], cols)
-
-
-SAVED_VECTORS = ("v(vout)", "v(vinp)", "v(vinn)", "v(vdd)", "v(vss)")
-
-
-def save_local_runs(cdir: Path, runs: list[LocalRun]) -> None:
-    """Log + klt deck of every local unit, and its node phasors as `.dat`
-    (the same layout as the grid points; the full rawfile is not kept)."""
-    cdir.mkdir(parents=True, exist_ok=True)
-    for r in runs:
-        for kind in ("log", "deck"):
-            src = r.files.get(kind)
-            if src and Path(src).is_file():
-                shutil.copyfile(src, cdir / f"{r.name}.{'cir' if kind == 'deck' else 'log'}")
-        if r.vec is not None:
-            cols = tuple(c for c in SAVED_VECTORS if c in r.vec)
-            save_mode_point_vec(cdir / f"{r.name}.dat", r.vec, cols)
-
-
-def save_mode_point_vec(path: Path, vec: dict, cols: tuple[str, ...]) -> None:
-    data = [vec["frequency"].real]
-    hdr = ["freq_hz"]
-    for c in cols:
-        data += [vec[c].real, vec[c].imag]
-        hdr += [f"re{c}", f"im{c}"]
-    np.savetxt(path, np.column_stack(data), fmt="%.12e", header=" ".join(hdr))
-
-
-def request_comment(req: dict) -> list[str]:
-    return ["* " + ln for ln in json.dumps({k: v for k, v in req.items() if k != "netlist"}, indent=1).splitlines()]
-
-
-def write_snapshot(path: Path, record: str, issue: str, testbench: Path, reqs: dict[str, dict], deck0: str) -> None:
-    dut_text = load_dut_text()
-    lines = [f"* netlist snapshot for record {record} ({issue})",
-             "* Reproduces the measured design: DUT contents, testbench, conditions."]
-    for mode, req in reqs.items():
-        lines += [f"* ---- conditions: klt sim request, excitation `{mode}` (grid) ----", *request_comment(req), ""]
-    lines += [
-        "* ---- DUT: design/netlist/opamp_two_stage.spice, wrapper-normalised (file opamp_two_stage.dut.spice) ----",
-        dut_text,
-        f"* ---- testbench: {testbench.relative_to(REPO_ROOT)} (verbatim; the driver rewrites only its .param line) ----",
-        testbench.read_text(),
-        "* ---- klt-generated deck of the nominal point, first excitation (corner.cir) ----",
-        *("* | " + ln for ln in deck0.splitlines()),
-        "",
-    ]
-    path.write_text("\n".join(lines))
-
-
-def build_plots_rejection(freq_by_key: dict[Key, np.ndarray], curves: dict[str, dict[Key, np.ndarray]],
-                          ad_nom: np.ndarray | None, errs_nom: dict[str, np.ndarray], plot_dir: Path,
-                          ylabel: str) -> list[str]:
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-
-    plot_dir.mkdir(parents=True, exist_ok=True)
-    out = []
-    for name, cur in curves.items():
-        fig, ax = plt.subplots(figsize=(8, 5))
-        for k, c in cur.items():
-            ax.semilogx(freq_by_key[k], c, lw=0.6, alpha=0.5, color="0.6")
-        for corner in CORNERS:
-            k = (corner, 27.0, 3.30)
-            if k in cur:
-                ax.semilogx(freq_by_key[k], cur[k], lw=1.3, label=f"{corner} 27C 3.30V")
-        ax.set_xlabel("frequency (Hz)")
-        ax.set_ylabel(f"{name} (dB)")
-        ax.set_title(f"{name}: all 45 points (grey), 27 C / 3.30 V corners (colour)")
-        ax.grid(True, which="both", alpha=0.3)
-        ax.legend(fontsize=8)
-        fig.tight_layout()
-        fn = f"{name.lower().replace('+', 'plus').replace('-', 'minus')}-all45.png"
-        fig.savefig(plot_dir / fn, dpi=110)
-        plt.close(fig)
-        out.append(fn)
-    if ad_nom is not None:
-        fig, ax = plt.subplots(figsize=(8, 5))
-        f = freq_by_key[NOMINAL]
-        ax.semilogx(f, db(ad_nom), label="|Ad|")
-        for label, e in errs_nom.items():
-            ax.semilogx(f, e, label=label)
-        ax.set_xlabel("frequency (Hz)")
-        ax.set_ylabel(ylabel)
-        ax.set_title("Transfers at typical / 27 C / 3.30 V")
-        ax.grid(True, which="both", alpha=0.3)
-        ax.legend(fontsize=8)
-        fig.tight_layout()
-        fig.savefig(plot_dir / "transfers-nominal.png", dpi=110)
-        plt.close(fig)
-        out.append("transfers-nominal.png")
-    return out
-
 
 CANCEL_EXCESS_DB = 20.0
 
@@ -1036,30 +868,6 @@ def cancellation_notes(values: dict[Key, Rejection], name: str, err_name: str) -
     out.append(f"- Such values are numerically real for the matched schematic but are NOT design margin: a "
                "mismatch-sized perturbation of the cancelling terms removes them. Use the worst-case figure.")
     return out
-
-
-def figure_table(add, values: dict[Key, Rejection], title: str) -> None:
-    add(f"| point | {title} DC | " + " | ".join(lbl for w, lbl in FIGURES[1:-1]) + " | at f_u | f_u (MHz) | note |")
-    add("|---|---|" + "---|" * (len(FIGURES) - 2) + "---|---|---|")
-    for k in sorted(values, key=lambda k: (CORNERS.index(k[0]), k[2], k[1])):
-        r = values[k]
-        note = []
-        if not r.plateau_ok:
-            note.append(f"no plateau (spread {r.plateau_spread_db:.3f} dB); 0.1 Hz value {r.low_db:.2f} dB")
-        if r.lower_bound:
-            note.append("lower bound (numerical floor)")
-        add(f"| {fmt_key(k)} | {fmt_db(r.dc_db, r.lower_bound)} | "
-            + " | ".join(fmt_db(r.spot_db[f], r.lower_bound) for f in SPOT_HZ)
-            + f" | {fmt_db(r.at_fu_db, r.lower_bound)} | {r.fu_hz / 1e6:.3f} | {'; '.join(note)} |")
-
-
-def worst_table(add, values: dict[Key, Rejection], name: str) -> None:
-    add(f"| {name} figure | worst (lowest) value (dB) | worst-case corner (process / T / VDD) | best (dB) | points without the figure |")
-    add("|---|---|---|---|---|")
-    for which, lbl in FIGURES:
-        v, k, miss = worst_case(values, which)
-        hi = max((r.figure(which) for r in values.values() if math.isfinite(r.figure(which))), default=float("nan"))
-        add(f"| {lbl} | **{fmt_db(v)}** | {fmt_key(k) if k else 'n/a'} | {fmt_db(hi)} | {miss} |")
 
 
 def op_section(add, per_mode: dict[str, dict[Key, dict]], agree_v: float) -> None:
@@ -1278,48 +1086,9 @@ def build_record(*, record, stamp, pdk, ngspice, kver, reports, walls, points: d
 # --------------------------------------------------------------------------
 
 
-def run_grid_modes(pdk, work, args, modes: dict[str, dict], *, testbench=TESTBENCH, guard=guard_testbench):
-    """One `klt sim` corner request per excitation. Raises KltError on a submit
-    failure (no local fallback)."""
-    reports, reqs, walls = {}, {}, {}
-    for mode, mp in modes.items():
-        tb = materialise(work / mode, pdk, with_servo(mp), testbench=testbench, guard=guard)
-        req = ac_request(tb, pdk, CORNERS, TEMPS_C, SUPPLIES_V)
-        req["batch"] = batch_block(args)
-        print(f"  submitting `{mode}` grid ({len(CORNERS) * len(TEMPS_C) * len(SUPPLIES_V)} points)...", flush=True)
-        t0 = time.time()
-        reports[mode] = run_klt_retrying(req, work / mode / "out", args.backend, work / mode,
-                                         retries=args.batch_submit_retries, wait_s=args.batch_retry_wait_s)
-        walls[mode] = time.time() - t0
-        reqs[mode] = req
-        r = remote_of(reports[mode])
-        print(f"  `{mode}` done in {walls[mode]:.0f} s (job {r.get('job_id', 'local')})", flush=True)
-    return reports, reqs, walls
-
-
-def require_plotting() -> str | None:
-    """Fail fast, BEFORE any grid is submitted, if matplotlib cannot import
-    (e.g. a user-site numpy 2 shadowing a distro matplotlib built for numpy 1;
-    `python3 -s` skips the user site). Returns an error message or None."""
-    try:
-        import matplotlib
-
-        matplotlib.use("Agg")
-        import matplotlib.pyplot  # noqa: F401
-    except Exception as exc:  # noqa: BLE001 -- any import failure blocks the record
-        return (f"matplotlib is not importable ({type(exc).__name__}: {str(exc)[:200]}); the record's plots "
-                "cannot be written. Fix the Python environment (try `python3 -s ...`) before running the grid.")
-    return None
-
-
-def work_dir(args, prefix: str):
-    """A temporary work directory, or the kept `--keep-work` one."""
-    import contextlib
-
-    if args.keep_work is None:
-        return tempfile.TemporaryDirectory(prefix=prefix)
-    args.keep_work.mkdir(parents=True, exist_ok=False)
-    return contextlib.nullcontext(str(args.keep_work.resolve()))
+# The grid-run plumbing this driver uses (run_grid_modes, require_plotting,
+# work_dir) lives in `harness` (issue #337); its CMRR collaborators are
+# passed to the shared copy explicitly.
 
 
 def smoke(pdk: Pdk) -> int:
@@ -1365,7 +1134,10 @@ def main(argv: list[str] | None = None) -> int:
     with work_dir(args, "cmrr-") as scratch:
         work = Path(scratch)
         try:
-            reports, reqs, walls = run_grid_modes(pdk, work, args, MODES)
+            reports, reqs, walls = run_grid_modes(pdk, work, args, MODES, corners=CORNERS, temps=TEMPS_C,
+                                                  supplies=SUPPLIES_V, materialise=materialise,
+                                                  with_servo=with_servo, ac_request=ac_request,
+                                                  testbench=TESTBENCH, guard=guard_testbench)
         except KltError as exc:
             print(f"ERROR: a grid request could not be run; NO RECORD WRITTEN.\n{exc}", file=sys.stderr)
             return 2

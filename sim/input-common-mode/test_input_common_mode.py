@@ -513,6 +513,40 @@ class KeepWorkCacheTests(unittest.TestCase):
             m.REUSED.discard("scan-dm")
 
 
+class ExecutionLinesTests(unittest.TestCase):
+    """The sharded-request `execution_lines` wrapper emits one fleet line per
+    multi-job report and DELEGATES single-job reports to the shared
+    rejection_bench helper — the delegation must resolve to the imported
+    helper, not recurse into the wrapper itself."""
+
+    @staticmethod
+    def _sharded(job_ids):
+        return {"environment": {"engine": "ngspice", "engine_version": "44", "remote": {
+            "provider": "batch",
+            "fleet": [{"job_id": j, "spot": True, "instance_type": "c7i.xlarge", "state": "succeeded",
+                       "runner_klt_version": "0.5.0", "client_klt_version": "0.5.0"} for j in job_ids],
+        }}}
+
+    def test_two_reports_get_one_line_each_sharded_and_delegated(self):
+        lines = m.execution_lines(
+            {"shard": self._sharded(["job-a", "job-b"]),
+             "local": {"environment": {"engine": "ngspice", "engine_version": "44"}}},
+            {"shard": 30, "local": 12})
+        self.assertEqual(len(lines), 2)
+        self.assertIn("2 fleet job(s)", lines[0])
+        self.assertIn("`job-a`", lines[0])
+        self.assertIn("`job-b`", lines[0])
+        self.assertIn("`klt sim` local backend", lines[1])
+        self.assertIn("wall 12 s", lines[1])
+
+    def test_single_job_report_delegates_to_the_shared_helper(self):
+        lines = m.execution_lines(
+            {"local": {"environment": {"engine": "ngspice", "engine_version": "44"}}},
+            {"local": 12})
+        self.assertEqual(lines, ["  - `local`: `klt sim` local backend (no `environment.remote`); "
+                                 "engine `ngspice 44`; wall 12 s"])
+
+
 class EvidenceTests(unittest.TestCase):
     def test_archive_roundtrip(self):
         ret = {}

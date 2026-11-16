@@ -96,6 +96,15 @@ expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
 expect_fail cmrr-mc test_cmrr_mc.py harness.py \
   "extraction: duplicate sample index accepted" \
   'if idx is None or idx in seen[k]:' 'if False:'
+expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
+  "guard: MAX_UNITS_PER_REQUEST cap in submit() no longer refuses an oversize request" \
+  'if units > MAX_UNITS_PER_REQUEST:' 'if False:'
+expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
+  "guard: check_plan no longer reports an uncovered grid point" \
+  'probs += [f"{G.fmt_key(k)}: in no chunk" for k in want if k not in seen]' 'probs += []'
+expect_fail cmrr-mc test_cmrr_mc.py cmrr-mc/run_cmrr_mc.py \
+  "guard: merge_samples tolerates a point supplied by two chunks" \
+  'if k in owner:' 'if False:'
 
 # gain-gbw-pm-mc (issue #129): the Monte Carlo bench guard, the fixed-denominator
 # sample accounting and the #42 campaign gate must each have teeth.
@@ -273,6 +282,15 @@ expect_fail . test_harness.py harness.py \
   '    errs = guard_tb(tb_text)
     if errs:' '    errs = guard_tb(tb_text)
     if False:'
+# Issue #350: the add_batch_args dest contract (batch_block / submit_request).
+expect_fail . test_harness.py harness.py \
+  "contract: --batch-capacity-wait-s dest renamed out from under batch_block()" \
+  'ap.add_argument("--batch-capacity-wait-s", type=float, default=None,' \
+  'ap.add_argument("--batch-capacity-wait", type=float, default=None,'
+expect_fail . test_harness.py harness.py \
+  "contract: --batch-retry-wait-s default drifts from the documented 120 s" \
+  'ap.add_argument("--batch-retry-wait-s", type=float, default=120.0,' \
+  'ap.add_argument("--batch-retry-wait-s", type=float, default=0.0,'
 expect_fail slew-swing-power test_slew_swing_power.py passive_corners.py \
   "extraction: worst passive level maps to the ff section" \
   '"worst": "ss"}' '"worst": "ff"}'
