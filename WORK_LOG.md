@@ -8,6 +8,18 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-16
 
+- **PR #368**: test: pin add_batch_args dest contract for batch_block and submit_request
+- **Issue #350** (closed): sim/test_harness.py: pin the add_batch_args dest contract that batch_block()/submit_request() read
+- **PR #374**: test: add cmrr-mc mutation entries for chunk-plan and merge guards
+- **Issue #366** (closed): sim/ci_regression_check.sh: no deliberate-regression entry proves the cmrr-mc chunk-planner and merge guards have teeth
+- **PR #380**: docs: reconcile cmrr-mc prose with the committed-but-unselected 45-point grid record
+- **Issue #373** (closed): report: decide whether the full-grid CMRR mismatch record (45 points x N=300) supersedes the nominal record in the characterization report
+- **PR #379**: docs: refresh ROADMAP 'Blocked and waiting' status to live backlog state
+- **Issue #378** (closed): docs: refresh the stale ROADMAP 'Blocked and waiting' status paragraph (#190 closed, ready issue exists, Now item range out of date)
+- **PR #363**: refactor: hoist the CMRR driver's bench-agnostic half into harness and rejection_bench
+- **Issue #337** (closed): Stop four benches importing sim/cmrr/run_cmrr.py as a library: hoist its bench-agnostic half into a shared module
+- **PR #382**: fix: align pilot consistency mirror's sharing guard and negctl nf pinning with tools/pilot.py
+- **Issue #367** (closed): Tighten check_consistency.py's mirror of tools/pilot.py (sharing guard, negctl nf, unknown-schema message)
 - **PR #354**: fix: require layout_sha256 present before the pilot negative-control gate trusts it
 - **Issue #338** (closed): layout/pilot: negative-control gate's layout_sha256 half is vacuously true if klt stops emitting the field
 - **PR #371**: docs: prune completed ROADMAP Now items and cite tracked issues
