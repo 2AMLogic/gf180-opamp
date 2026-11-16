@@ -8,6 +8,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-15
 
+- **PR #370**: sim(cmrr-mc): full-grid mismatch MC record over the 45-point T/VDD grid
+- **Issue #98** (closed): sim: CMRR mismatch Monte Carlo over the T/VDD grid (45 points x N=300)
 - **PR #357**: test: collapse the three StaleDutTests copies into a shared StaleDutMixin
 - **Issue #347** (closed): Collapse 3 duplicate StaleDutTests and fake_pdk copies in runner tests into sim/test_harness.py
 - **PR #353**: test: offline layout/pilot consistency check binding evidence to the schematic
