@@ -68,6 +68,19 @@ class PilotConsistency(unittest.TestCase):
         n.write_text(text)
         self.assertEqual(self.check(), 1)
 
+    def test_second_instance_dimension_drift_fails(self):
+        # give XM5 XMB1's node list AND a drifting W: the sharing guard's
+        # first disjunct is model+params equality (tools/pilot.py's
+        # cards[other][1:] == first[1:]), so equal node lists must not wave
+        # a dimension drift on the second instance through
+        n = self.root / "design/netlist/opamp_two_stage.spice"
+        text = n.read_text().replace(
+            "XM5 tail ibias vss vss nfet_03v3 L=2u W=6u",
+            "XM5 ibias ibias vss vss nfet_03v3 L=2u W=9u")
+        self.assertNotEqual(text, n.read_text())
+        n.write_text(text)
+        self.assertEqual(self.check(), 1)
+
     def test_ref_netlist_edit_fails(self):
         f = self.root / "layout/pilot/ref/pilot_mim_cc.klt.spice"
         f.write_text(f.read_text() + "* edited\n")
@@ -133,8 +146,22 @@ class PilotConsistency(unittest.TestCase):
                   lambda d: d.__setitem__("schema", "gf180-opamp.layout-pilot.results/9"))
         rc = self.check()
         self.assertEqual(rc, 1)
+        errors = check_consistency.Checker(self.root).check()
+        self.assertTrue(
+            any("gf180-opamp.layout-pilot.results/9" in e for e in errors),
+            f"unknown-schema failure does not name the version: {errors}")
 
     # ---------------------------------------------------- negative controls --
+    def test_negctl_pins_nf_from_unmutated_card(self):
+        # a future NEG_CONTROLS entry altering nf must still re-derive the
+        # producer's card: tools/pilot.py captures nf as a default argument
+        # from the unmutated card, so the emitted count must stay at 2
+        prm = {"l": "2u", "w": "6u", "nf": "2"}
+        text = check_consistency.negctl_ref_text(
+            "pilot_nfet_mb1_m5", "mos", "nfet_03v3", prm, "nf", "4")
+        self.assertIn("nf=2", text)
+        self.assertNotIn("nf=4", text)
+
     def test_negative_control_envelope_reporting_match_fails(self):
         e = self.root / "layout/pilot/evidence/pilot_nfet_mb1_m5.negctl-w.lvs.klt.json"
         edit_json(e, lambda d: d.__setitem__("status", "match"))
