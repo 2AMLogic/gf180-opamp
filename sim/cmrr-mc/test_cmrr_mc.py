@@ -22,6 +22,7 @@ import statistics
 import sys
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -419,6 +420,14 @@ class ChunkPlanTests(unittest.TestCase):
         want = m.keys_of(m.CORNERS, *m.GRIDS["full"])
         self.assertTrue(any("in no chunk" in x for x in m.check_plan(chunks[1:], want)))
         self.assertTrue(any("in 2 chunks" in x for x in m.check_plan(chunks + [chunks[0]], want)))
+
+    def test_check_plan_flags_off_grid_chunks_and_duplicate_tags(self):
+        chunks = m.plan_chunks("full")
+        want = m.keys_of(m.CORNERS, *m.GRIDS["full"])
+        self.assertTrue(any("chunked but not in the grid" in x for x in m.check_plan(chunks, want[1:])),
+                        m.check_plan(chunks, want[1:]))
+        twins = [chunks[0], replace(chunks[1], tag=chunks[0].tag)] + chunks[2:]
+        self.assertEqual(m.check_plan(twins, want), ["duplicate chunk tags"])
 
 
 class MergeTests(unittest.TestCase):
