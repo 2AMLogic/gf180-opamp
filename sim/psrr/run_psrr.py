@@ -98,6 +98,7 @@ from harness import (  # noqa: E402
     run_grid_modes,
     same_axis,
     sanitise_report,
+    state_phrase,
     work_dir,
 )
 
@@ -667,7 +668,8 @@ def unit_entry(mode: str, part: Partition, attempt: int, submit: int, wall: floa
     return {
         "excitation": mode, "partition": part.name, "cells": len(part.keys), "attempt": attempt, "submit": submit,
         "preflight": preflight, "provider": r.get("provider") or ("local" if rep else None),
-        "job_id": r.get("job_id"), "state": r.get("state"), "instance_type": r.get("instance_type"),
+        "job_id": r.get("job_id"), "state": r.get("state"), "exit_reason": r.get("exit_reason"),
+        "instance_type": r.get("instance_type"),
         "spot": r.get("spot"), "elapsed_s": r.get("elapsed_seconds"), "wall_s": round(wall, 1),
         "runner_klt": r.get("runner_klt_version"), "outcome": outcome,
     }
@@ -1080,6 +1082,13 @@ def build_study_record(*, record, stamp, pdk, ngspice, kver, scope, want: list, 
             f"{('Spot ' if e['spot'] else '') + (e['instance_type'] or '-')} | {e['state'] or '-'} | "
             f"{e['elapsed_s'] if e['elapsed_s'] is not None else '-'} | {e['wall_s']:.0f} |")
     add("")
+    non_done = [(i, e) for i, e in enumerate(log, 1) if e["state"] and e["state"] != "done"]
+    if non_done:
+        add("- Execution-log rows whose job state is not `done`:")
+        for i, e in non_done:
+            add(f"  - row {i} (`{e['excitation']}` / {e['partition']}{' (preflight)' if e['preflight'] else ''}): "
+                f"{state_phrase(e)}")
+        add("")
     runners = sorted({e["runner_klt"] for e in acc if e["runner_klt"]})
     add(f"- **Fleet provenance limitations**: runner klt {', '.join(runners) or 'n/a'} vs client `{kver}`; the fleet "
         "runner does not report its PDK revision, and klt's `provenance.pdk` is resolved on the submitting client. "
