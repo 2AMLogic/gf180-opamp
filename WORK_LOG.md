@@ -8,6 +8,7 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-17
 
+- **PR #401**: chore(loom): resync installed Loom to v0.19.1306
 - **PR #399**: fix(sim): discriminate non-done klt job states beneath the psrr execution-log table
 - **Issue #375** (closed): sim/psrr: execution-log table renders a bare klt `state` column, outside #365's AC2 grep
 - **PR #398**: fix: join state_phrase segments so a units-only exit_reason has no leading separator
