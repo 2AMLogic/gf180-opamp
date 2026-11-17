@@ -26,7 +26,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import run_psrr as r  # noqa: E402
-from harness import PdkNotFound, find_pdk, interp_db, skip_or_fail  # noqa: E402
+from harness import PdkNotFound, find_pdk, interp_db, skip_or_fail, state_phrase  # noqa: E402
 
 C = r.C
 FREQ = np.logspace(math.log10(C.AC_FSTART), math.log10(C.AC_FSTOP), C.N_FREQ)
@@ -274,10 +274,13 @@ class FakeKlt:
     `elapsed` (fleet execution seconds), `tamper(mode, key, vec)` (returns a
     vector or None to drop the cell), `fail_first` ({(mode, mos)}: first
     attempt of those partitions drops a cell), `refuse` (first N submits
-    refused for capacity)."""
+    refused for capacity), `job_state` / `exit_reason` (what every report's
+    `environment.remote` block carries as the job `state` / klt
+    `exit_reason`; defaults are a passing `done` job, issue #375)."""
 
-    def __init__(self, elapsed=60, tamper=None, fail_first=(), refuse=0):
+    def __init__(self, elapsed=60, tamper=None, fail_first=(), refuse=0, job_state="done", exit_reason=None):
         self.elapsed, self.tamper, self.fail_first, self.refuse = elapsed, tamper, set(fail_first), refuse
+        self.job_state, self.exit_reason = job_state, exit_reason
         self.calls = []
         self.vec_cache = {}
 
@@ -315,7 +318,8 @@ class FakeKlt:
                                           "deck": str(d / "corner.cir")}})
         return {"corners": corners, "errored": 0, "provenance": {"pdk": {"version": "test", "source": "test"}},
                 "environment": {"engine": "ngspice", "engine_version": "46", "remote": {
-                    "provider": "aws-batch-fleet", "job_id": f"klt-sim-fake{len(self.calls):03d}", "state": "done",
+                    "provider": "aws-batch-fleet", "job_id": f"klt-sim-fake{len(self.calls):03d}",
+                    "state": self.job_state, "exit_reason": self.exit_reason,
                     "spot": True, "instance_type": "c7i.4xlarge", "elapsed_seconds": self.elapsed,
                     "runner_klt_version": "0.5.0"}}}
 
@@ -641,6 +645,70 @@ class PassiveStudyEndToEnd(unittest.TestCase):
         self.assertIn(("vdd", "ss", 1, "rejected"), out)
         self.assertIn(("vdd", "ss", 2, "accepted"), out)
         self.assertIn("rejected (", rec.read_text())
+
+    # --- issue #375: execution-log discriminator for non-`done` job states ---
+
+    @staticmethod
+    def _verdict_exit_reason(units: int) -> dict:
+        """A klt `exit_reason` shaped like the #140 probe: a verdict exit 4
+        because no measurements were requested, every unit passing."""
+        return {"exit_code": 4, "message": "klt sim exited 4 (errored / not_checked / inconclusive)",
+                "nothing_checked": True, "nothing_checked_reasons": ["no_requested_measurements"],
+                "report_status": "not_checked",
+                "units": {"by_status": {"pass": units}, "first_not_passed": [], "total": units}}
+
+    def test_non_done_state_gets_one_discriminator_line_per_row(self):
+        er = self._verdict_exit_reason(9)
+        fake = FakeKlt(job_state="failed", exit_reason=er)
+        code, root = self.run_study(fake)
+        self.assertEqual(code, 0)
+        rec = next((root / "records").glob("*.md"))
+        md = rec.read_text()
+        self.assertIn("- Execution-log rows whose job state is not `done`:", md)
+        phrase = state_phrase({"state": "failed", "exit_reason": er})
+        rows = [ln for ln in md.splitlines() if ln.startswith("  - row ")]
+        self.assertEqual(len(rows), len(fake.calls))  # every submitted job was non-done
+        self.assertEqual(rows[0], f"  - row 1 (`dm` / typical (preflight)): {phrase}")
+        pj = json.loads((root / "corners" / rec.stem / "partitions.json").read_text())
+        self.assertTrue(all(s["exit_reason"] == er for s in pj["submissions"]))
+
+    def test_non_done_state_without_exit_reason_uses_the_explicit_degradation(self):
+        fake = FakeKlt(job_state="interrupted")
+        code, root = self.run_study(fake)
+        self.assertEqual(code, 0)
+        md = next((root / "records").glob("*.md")).read_text()
+        self.assertIn("  - row 1 (`dm` / typical (preflight)): state `interrupted` "
+                      "(no `exit_reason` in the report)", md)
+
+    def test_state_none_submit_refused_row_gets_no_discriminator_line(self):
+        fake = FakeKlt(job_state="failed", exit_reason=self._verdict_exit_reason(9), elapsed=10, refuse=1)
+        code, root = self.run_study(fake, batch_submit_retries=2)
+        self.assertEqual(code, 0)
+        md = next((root / "records").glob("*.md")).read_text()
+        table_rows = [ln for ln in md.splitlines() if re.match(r"^\| \d+ \| ", ln)]
+        self.assertEqual(len(table_rows), len(fake.calls) + 1)  # + the refused submit (state None -> `-`)
+        rows = [ln for ln in md.splitlines() if ln.startswith("  - row ")]
+        self.assertEqual(len(rows), len(fake.calls))  # the None-state row is excluded
+
+    def test_all_done_record_table_is_byte_identical_to_the_old_rendering(self):
+        fake = FakeKlt()
+        code, root = self.run_study(fake)
+        self.assertEqual(code, 0)
+        rec = next((root / "records").glob("*.md"))
+        md = rec.read_text()
+        self.assertNotIn("rows whose job state is not", md)
+        pj = json.loads((root / "corners" / rec.stem / "partitions.json").read_text())
+        head = ("| # | excitation | partition | cells | attempt / submit | outcome | backend | job | instance | "
+                "state | execution (s) | wall (s) |")
+        lines = [head, "|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        for i, e in enumerate(pj["submissions"], 1):
+            lines.append(f"| {i} | `{e['excitation']}` | {e['partition']}{' (preflight)' if e['preflight'] else ''} | "
+                         f"{e['cells']} | {e['attempt']} / {e['submit']} | {e['outcome']} | {e['provider'] or '-'} | "
+                         f"`{e['job_id'] or '-'}` | {('Spot ' if e['spot'] else '') + (e['instance_type'] or '-')} | "
+                         f"{e['state'] or '-'} | {e['elapsed_s'] if e['elapsed_s'] is not None else '-'} | "
+                         f"{e['wall_s']:.0f} |")
+        start = md.index(head)
+        self.assertTrue(md.startswith("\n".join(lines) + "\n\n", start))
 
     def test_no_partition_retries_means_no_record(self):
         code, root = self.run_study(FakeKlt(fail_first={("vdd", "ss")}), partition_retries=0)
