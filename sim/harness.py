@@ -1552,7 +1552,7 @@ def state_phrase(job: dict) -> str:
             units_seg = "units " + ", ".join(f"{n} {s}" for s, n in sorted(by.items()))
     if not parts and not units_seg:
         return f"state `{state}` (`exit_reason` carries no exit fields)"
-    body = ", ".join(parts) + (f"; {units_seg}" if units_seg else "")
+    body = "; ".join(seg for seg in (", ".join(parts), units_seg) if seg)
     return f"state `{state}` ({body})"
 
 

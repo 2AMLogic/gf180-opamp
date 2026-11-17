@@ -529,6 +529,14 @@ class StatePhraseTests(unittest.TestCase):
         self.assertNotIn("nothing checked", phrase)
         self.assertIn("units 3/3 pass", phrase)
 
+    def test_units_only_exit_reason_has_no_leading_separator(self):
+        # AC1: a units-only payload (no exit_code / report_status / reasons)
+        # must not render a leading `; ` before the units segment.
+        phrase = harness.state_phrase(
+            {"state": "failed", "exit_reason": {"units": {"by_status": {"pass": 3}, "total": 3}}})
+        self.assertEqual(phrase, "state `failed` (units 3/3 pass)")
+        self.assertNotIn("; ", phrase)
+
     def test_units_absent_while_report_status_present(self):
         phrase = harness.state_phrase({"state": "failed", "exit_reason": {"exit_code": 3, "report_status": "fail"}})
         self.assertEqual(phrase, "state `failed` (exit 3, report_status `fail`)")
