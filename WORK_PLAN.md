@@ -8,7 +8,7 @@ Current Loom label state. Tracking and blocked items do not constitute ready wor
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
 - **#352**: docs: index DR-0006 and name the PSRR full-envelope study as supplementary evidence
-- **#383**: chore(loom): resync installed Loom to v0.19.1302
+- **#396**: chore(loom): resync installed Loom to v0.19.1305
 
 ## Very Important
 
@@ -29,7 +29,7 @@ Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a h
 
 Human-approved issues ready for implementation (`loom:issue`).
 
-- **#394**: sim/harness.py: state_phrase renders a leading `; ` when exit_reason carries only unit counts
+_None._
 
 ## In Progress
 
@@ -48,7 +48,7 @@ _None._
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
 - **#352**: docs: index DR-0006 and name the PSRR full-envelope study as supplementary evidence
-- **#383**: chore(loom): resync installed Loom to v0.19.1302
+- **#396**: chore(loom): resync installed Loom to v0.19.1305
 
 ## Proposed
 
@@ -59,7 +59,6 @@ Issues carrying `loom:curated`.
 - **#321**: Stop committing uncompressed point data: adopt the proven .dat.gz convention for new sim records *(curated)*
 - **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence *(curated)*
 - **#331**: docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement *(curated)*
-- **#394**: sim/harness.py: state_phrase renders a leading `; ` when exit_reason carries only unit counts *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -78,11 +77,11 @@ _None._
 | Operator merge-risk holds | 2 |
 | Very important | 1 |
 | Important | 4 |
-| Ready (`loom:issue`) | 1 |
+| Ready (`loom:issue`) | 0 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 2 |
-| Curated | 6 |
+| Curated | 5 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
