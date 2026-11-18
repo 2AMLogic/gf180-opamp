@@ -10,10 +10,15 @@ sim/gain-gbw-pm/fixed-vcm/records/... is covered).  Only status A (added) is
 allowed.  --no-renames is used, so a rename shows as D+A and fails on the D.
 
 Comparison range (stdlib only, no simulator, no credentials):
-  --base REF     PR mode: git diff REF...HEAD (merge-base of REF and HEAD)
-  --before SHA   push mode: git diff SHA..HEAD (the push event's "before");
-                 an all-zero SHA (new branch) falls back to HEAD~1
-  neither        HEAD~1..HEAD; a root commit counts as all adds
+  --base REF          PR mode: git diff REF...HEAD (merge-base of REF and HEAD)
+  --before SHA        push mode: git diff SHA..HEAD (the push event's "before");
+                      an all-zero SHA (new branch) falls back to HEAD~1
+  --merge-group-base SHA
+                      merge-queue mode: git diff SHA..HEAD (the merge_group
+                      event's base_sha; --head overrides HEAD).  An empty or
+                      unresolvable base is a hard failure -- no HEAD~1
+                      fallback, never a silent pass.
+  neither             HEAD~1..HEAD; a root commit counts as all adds
 A comparison revision that cannot be resolved (shallow clone, missing fetch)
 is a hard failure, never a silent pass.
 
@@ -59,7 +64,8 @@ def resolves(repo: Path, rev: str) -> bool:
                            rev + "^{commit}"], capture_output=True).returncode == 0
 
 
-def diff_range(repo: Path, base: str | None, before: str | None) -> str:
+def diff_range(repo: Path, base: str | None, before: str | None,
+               mg_base: str | None = None, head: str = "HEAD") -> str:
     if base:
         if not resolves(repo, base):
             raise CompareError(f"base revision {base!r} not found (shallow checkout? fetch it)")
@@ -69,6 +75,14 @@ def diff_range(repo: Path, base: str | None, before: str | None) -> str:
             raise CompareError(f"before revision {before!r} not found (shallow checkout? "
                                "use fetch-depth: 0)")
         return f"{before}..HEAD"
+    if mg_base is not None:
+        if not mg_base:
+            raise CompareError("merge_group event has no base_sha (event payload or "
+                               "checkout incomplete); refusing to guess a range")
+        if not resolves(repo, mg_base):
+            raise CompareError(f"merge_group base revision {mg_base!r} not found "
+                               "(shallow checkout? use fetch-depth: 0)")
+        return f"{mg_base}..{head}"
     if resolves(repo, "HEAD~1"):
         return "HEAD~1..HEAD"
     if git(repo, "rev-parse", "--is-shallow-repository").strip() == "true":
@@ -113,6 +127,11 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--base", help="PR mode: base ref, diff BASE...HEAD")
     ap.add_argument("--before", help="push mode: previous tip SHA, diff BEFORE..HEAD")
+    ap.add_argument("--merge-group-base",
+                    help="merge_group mode: trial-merge base SHA, diff BASE..HEAD; "
+                         "absent or unresolvable base is a hard failure")
+    ap.add_argument("--head", default="HEAD",
+                    help="head ref for --merge-group-base (default HEAD)")
     ap.add_argument("--repo", default=str(Path(__file__).resolve().parent.parent))
     ap.add_argument("--allowlist", default=str(ALLOWLIST))
     a = ap.parse_args(argv)
@@ -123,7 +142,7 @@ def main(argv: list[str] | None = None) -> int:
         print("\n".join(f"ERROR: {e}" for e in errors), file=sys.stderr)
         return 1
     try:
-        rng = diff_range(repo, a.base, a.before)
+        rng = diff_range(repo, a.base, a.before, a.merge_group_base, a.head)
         bad = violations(repo, rng, allowed)
     except CompareError as e:
         print(f"ERROR: cannot compare against history: {e}", file=sys.stderr)

@@ -1,5 +1,8 @@
 # Re-run the block's klt signoff (manifests/gf180-opamp.json) on every push
-# and PR, and require the committed record (manifests/gf180-opamp.signoff.json)
+# and PR -- and on merge-queue trial merges (merge_group: the ruleset requires
+# the `signoff` context to be reported on queued merge commits before the
+# queue can be enabled, issue #405) -- and require the committed record
+# (manifests/gf180-opamp.signoff.json)
 # to be byte-reproducible from a fresh run — evidence, checklist, manifest, and
 # klt pin cannot drift apart without failing the build. See manifests/README.md
 # for the regeneration command and the pin/bump procedure.
@@ -9,6 +12,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
 
 jobs:
   signoff:
