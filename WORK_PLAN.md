@@ -35,12 +35,13 @@ _None._
 Issues currently being built (`loom:building`).
 
 - **#331**: docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement
+- **#405**: Merge queue: add the merge_group trigger and adapt the PR-metadata gates
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#406**: ci: report required checks on merge-queue trial merges; fail the evidence gate closed on a missing merge-group base
 
 ## Approved (Awaiting Merge)
 
@@ -57,6 +58,7 @@ Issues carrying `loom:curated`.
 - **#321**: Stop committing uncompressed point data: adopt the proven .dat.gz convention for new sim records *(curated)* *(held)*
 - **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence *(curated)* *(held)*
 - **#331**: docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement *(curated)*
+- **#405**: Merge queue: add the merge_group trigger and adapt the PR-metadata gates *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -76,10 +78,10 @@ _None._
 | Very important | 1 |
 | Important | 4 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 0 |
+| In Progress (`loom:building`) | 2 |
+| PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 1 |
-| Curated | 5 |
+| Curated | 6 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->
