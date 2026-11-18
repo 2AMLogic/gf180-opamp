@@ -1,5 +1,8 @@
 # Run sim/selftest.sh (extraction + source-guard unit tests plus one nominal
-# local ngspice point per testbench) on every push and PR, with the pinned
+# local ngspice point per testbench) on every push and PR -- and on
+# merge-queue trial merges (merge_group: the ruleset requires the `selftest`
+# context to be reported on queued merge commits before the queue can be
+# enabled, issue #405) -- with the pinned
 # tools and PDK provisioned and every missing prerequisite a hard failure.
 # No credentials, no PVT/Monte Carlo grid, no evidence records: the job fails
 # if it leaves anything modified or untracked in the checkout. See
@@ -16,6 +19,7 @@ on:
   push:
     branches: [main]
   pull_request:
+  merge_group:
 
 permissions:
   contents: read
@@ -56,19 +60,26 @@ jobs:
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09  # v5.1.0
         with:
           # Full history so the evidence append-only guard can resolve the PR
-          # base / push "before" revision (issue #159).
+          # base / push "before" / merge-group base_sha revision (issue #159).
           fetch-depth: 0
 
       - name: Guard committed sim/ evidence is append-only (issue #159)
         # Stdlib only; fails on any modified/deleted file under sim/**/{records,
         # corners,netlist-snapshots,probes}/ unless allow-listed with an issue.
+        # merge_group (issue #405): github.base_ref is empty there, so the
+        # base/head come from the event payload; an absent or unresolvable
+        # base fails the gate (exit 2) -- never a silent HEAD~1 fallback.
         env:
           EVENT_NAME: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
           PUSH_BEFORE: ${{ github.event.before }}
+          MG_BASE: ${{ github.event.merge_group.base_sha }}
+          MG_HEAD: ${{ github.event.merge_group.head_sha }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ]; then
             python3 sim/ci_evidence_append_only.py --base "origin/$BASE_REF"
+          elif [ "$EVENT_NAME" = "merge_group" ]; then
+            python3 sim/ci_evidence_append_only.py --merge-group-base "$MG_BASE" --head "$MG_HEAD"
           else
             python3 sim/ci_evidence_append_only.py --before "$PUSH_BEFORE"
           fi

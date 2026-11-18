@@ -129,6 +129,32 @@ class T(unittest.TestCase):
         zeros = "0" * 40
         self.assertEqual(run(self.r, "--before", zeros)[0], 1)    # new branch -> HEAD~1
 
+    def test_merge_group_base_passes_add_only_with_explicit_head(self):
+        base = self.r.git("rev-parse", "base")
+        self.r.write("sim/noise/records/r9.md")
+        self.r.commit()
+        head = self.r.git("rev-parse", "HEAD")
+        rc, err = run(self.r, "--merge-group-base", base, "--head", head)
+        self.assertEqual(rc, 0, err)
+
+    def test_merge_group_base_catches_edit_to_evidence(self):
+        base = self.r.git("rev-parse", "base")
+        self.r.write(KINDS[0], "changed\n")
+        self.r.commit()
+        rc, err = run(self.r, "--merge-group-base", base)
+        self.assertEqual(rc, 1)
+        self.assertIn(f"M\t{KINDS[0]}", err)
+
+    def test_merge_group_absent_base_fails_closed(self):
+        rc, err = run(self.r, "--merge-group-base", "")
+        self.assertEqual(rc, 2)
+        self.assertIn("merge_group", err)
+
+    def test_merge_group_unresolvable_base_fails_closed(self):
+        rc, err = run(self.r, "--merge-group-base", "1" * 40)
+        self.assertEqual(rc, 2)
+        self.assertIn("merge_group", err)
+
     def test_merge_commit_head_vs_first_parent(self):
         self.r.write(KINDS[0], "changed\n")
         self.r.commit()
