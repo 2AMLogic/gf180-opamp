@@ -6,6 +6,11 @@ Merged pull requests and closed issues recorded by Guide.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-18
+
+- **PR #406**: ci: report required checks on merge-queue trial merges; fail the evidence gate closed on a missing merge-group base
+- **Issue #405** (closed): Merge queue: add the merge_group trigger and adapt the PR-metadata gates
+
 ### 2026-11-17
 
 - **PR #401**: chore(loom): resync installed Loom to v0.19.1306
