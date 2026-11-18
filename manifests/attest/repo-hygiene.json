@@ -12,11 +12,11 @@
     ],
     "workflows": [
       {
-        "content_hash": "sha256:bbfb200daa53107248e077e6efd87ccf91a3ddebd3943a395a5a64821b28fc3e",
+        "content_hash": "sha256:72fd16bb4ea1e5d4574af2fe2a0a041020fb483c6fea7c24703fa70b72726998",
         "path": ".github/workflows/selftest.yml"
       },
       {
-        "content_hash": "sha256:90d2557d8d1cbb884fe498a22a072b089a3e5250dee1d5c5d9d9c7af411b09f5",
+        "content_hash": "sha256:abdf34505746971cf2d5ef929a09f55704b938079bc40158f19c6a504539e343",
         "path": ".github/workflows/signoff.yml"
       }
     ]
