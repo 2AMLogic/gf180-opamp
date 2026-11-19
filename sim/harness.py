@@ -74,6 +74,15 @@ Grid-run plumbing (also #337): `run_grid_modes`, `require_plotting`,
 `work_dir`. `run_grid_modes` takes its corner axes and its bench
 collaborators (`materialise`, `with_servo`, `ac_request`, testbench, guard)
 as explicit parameters -- the shared copy reads no bench module global.
+
+Corner-point identity helpers (issue #420): `Key`, `point_key`, `fmt_key`,
+`point_stem` -- the (process, temperature_c, supply_v) key of a klt corner,
+its human label and its filename stem. Hoisted out of
+`sim/gain-gbw-pm/run_gain_gbw_pm.py`, which the shared corner index
+previously reached through a lazy driver load (and whose NumPy import that
+load dragged into corner indexing); the gain driver re-imports them under
+their original names, so sibling drivers that load it as a library keep
+their API.
 """
 
 from __future__ import annotations
@@ -1046,20 +1055,38 @@ def save_point_data(m, path: Path, header: str) -> None:
     np.savetxt(path, np.column_stack([m.x, m.y, m.vin]), header="\n".join(head), fmt=("%.9e", "%.10e", "%.10e"))
 
 
-def _g():
-    """The gain bench driver (point key / stem / label helpers); loaded lazily
-    because it imports this module."""
-    return load_sibling("gain_gbw_pm_driver", "sim/gain-gbw-pm/run_gain_gbw_pm.py")
+#: One grid point's identity: (process, temperature_c, supply_v). The gain
+#: driver keeps its own identical alias; this one belongs to the shared
+#: corner-index helpers below (issue #420).
+Key = tuple[str, float, float]
+
+
+def point_key(corner: dict) -> Key:
+    """(process, temperature_c, supply_v) of a klt corner dict."""
+    return (
+        corner["process"],
+        float(corner["temperature_c"]),
+        float(corner["supply_v"]["vdd"]),
+    )
+
+
+def fmt_key(k: Key) -> str:
+    """Human label of a point key, as used in problem strings."""
+    return f"{k[0]} / {k[1]:g} C / {k[2]:.2f} V"
+
+
+def point_stem(k: Key) -> str:
+    """Filename stem of a point key (per-point logs, decks and traces)."""
+    return f"{k[0]}_{k[1]:g}c_{k[2]:.2f}v"
 
 
 def index_corners(report: dict, want: list, problems: list[str]) -> dict:
     """klt corners keyed by point; appends duplicate / unexpected-extra-point problems."""
-    g = _g()
     seen: dict = {}
     for c in report.get("corners", []):
-        k = g.point_key(c)
+        k = point_key(c)
         if k in seen:
-            problems.append(f"duplicate result for {g.fmt_key(k)}")
+            problems.append(f"duplicate result for {fmt_key(k)}")
         seen[k] = c
     extra = set(seen) - set(want)
     if extra:
@@ -1070,26 +1097,24 @@ def index_corners(report: dict, want: list, problems: list[str]) -> dict:
 def read_raw(c: dict, k, problems: list[str]):
     """Parsed rawfile vectors of corner `c`, or None (with a problem appended)
     when the simulation failed or the rawfile is malformed."""
-    g = _g()
     ssp = load_sibling("slew_swing_power_driver", "sim/slew-swing-power/run_slew_swing_power.py")
     diag = "; ".join(d.get("message", "")[:200] for d in c.get("diagnostics", []) if d.get("severity") == "error")
     raw = (c.get("artifacts") or {}).get("raw")
     if not raw or not Path(raw).is_file():
-        problems.append(f"simulation failed for {g.fmt_key(k)}: {diag or 'no rawfile retained'}")
+        problems.append(f"simulation failed for {fmt_key(k)}: {diag or 'no rawfile retained'}")
         return None
     try:
         return ssp.parse_ascii_real_raw(Path(raw).read_text())
     except ValueError as exc:
-        problems.append(f"malformed data for {g.fmt_key(k)}: {exc}")
+        problems.append(f"malformed data for {fmt_key(k)}: {exc}")
         return None
 
 
 def persist_points(sub: Path, results: dict, arts: dict, report: dict, *, save, suffix: str) -> None:
     """One case's committed evidence: per-point logs, decks and `<stem><suffix>`
     traces (written by `save(metrics, path)`), plus the sanitised klt report."""
-    g = _g()
     for k, a in arts.items():
-        stem = g.point_stem(k)
+        stem = point_stem(k)
         if a["log"]:
             shutil.copyfile(a["log"], sub / f"{stem}.log")
         if a["deck"]:
@@ -1104,20 +1129,19 @@ def check_rederive(sub: Path, results: dict, *, rederive, same, suffix: str, lab
     (`rederive(path, key)`) and compare with the in-memory metrics via
     `same(a, b)`; mismatch / unreadable points are appended to `rbad`
     (prefixed `label` when non-empty). Returns (n_ok, n_all)."""
-    g = _g()
     pre = f"{label} " if label else ""
     n_ok = n_all = 0
     for k, m in results.items():
         n_all += 1
         try:
-            m2 = rederive(sub / f"{g.point_stem(k)}{suffix}", k)
+            m2 = rederive(sub / f"{point_stem(k)}{suffix}", k)
         except (ValueError, OSError) as exc:
-            rbad.append(f"{pre}{g.fmt_key(k)}: {exc}")
+            rbad.append(f"{pre}{fmt_key(k)}: {exc}")
             continue
         if same(m, m2):
             n_ok += 1
         else:
-            rbad.append(f"{pre}{g.fmt_key(k)}")
+            rbad.append(f"{pre}{fmt_key(k)}")
     return n_ok, n_all
 
 
@@ -1129,7 +1153,6 @@ def meas(c: dict) -> dict:
 def analyse_points(report: dict, want: list, *, extract, crosscheck) -> tuple[dict, dict, list[str]]:
     """Per-point metrics + artifacts from a klt report (`extract(vec)` ->
     metrics, `crosscheck(key, vals, metrics)` -> problems); list of failure strings."""
-    g = _g()
     problems: list[str] = []
     results: dict = {}
     arts: dict = {}
@@ -1137,7 +1160,7 @@ def analyse_points(report: dict, want: list, *, extract, crosscheck) -> tuple[di
     for k in want:
         c = seen.get(k)
         if c is None:
-            problems.append(f"missing result for {g.fmt_key(k)}")
+            problems.append(f"missing result for {fmt_key(k)}")
             continue
         vec = read_raw(c, k, problems)
         if vec is None:
