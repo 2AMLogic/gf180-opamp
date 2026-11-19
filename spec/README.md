@@ -30,6 +30,10 @@ Target specification and decision records. Spec changes require a decision recor
   (**proposed**, issue #60: adds the input common-mode range row from the
   measured 45-point follower-biased ICMR; not ratified before the operator's
   approval of its carrying PR),
+  [`0006-cmrr-psrr-bounds.md`](decision-records/0006-cmrr-psrr-bounds.md)
+  (**proposed — not ratified**, issue #61: numeric CMRR and PSRR bounds with
+  a stated frequency and statistical basis, for two rows DR-3 left `[TBD]`;
+  ratified only by the operator's approval of its carrying PR),
   [`0007-noise-offset-requirement-basis.md`](decision-records/0007-noise-offset-requirement-basis.md)
   (**proposed preparation draft**, issue #62: consumer-derived noise/offset
   requirement basis and a bounded validation plan; proposes no number and

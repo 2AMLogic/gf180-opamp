@@ -72,8 +72,12 @@ SS / 125 C / 2.97 V, RZ ff, CC ss); slew, swing and power
 ([`20261011-052206-c635487`](sim/slew-swing-power/records/20261011-052206-c635487.md))
 pass 405/405 per row (worst slew 14.25 V/us, swing 2.465 Vpp, power 311 uW).
 The full studies are supplementary evidence (not graded rows); DC gain is not
-measured by the passive study, and the other figures (noise, offset, CMRR,
-PSRR, input common mode) remain at typical passives only. The `klt signoff` verdict of
+measured by the passive study. Issue #155 adds a PSRR full-envelope study
+([`20261011-102729-6612014`](sim/psrr/records/20261011-102729-6612014.md),
+405 cells per figure, measured, no pass or fail verdict); issue #173
+integrates it into the characterization report as supplementary, ungraded
+evidence. The remaining figures (noise, offset, CMRR, input common mode)
+remain at typical passives only. The `klt signoff` verdict of
 record ([`manifests/`](manifests/README.md)) is still below T1; no T1 claim
 is made. The 5 V device flavors remain surveyed but not characterized, and
 the 5 V stretch row stays unopened.
