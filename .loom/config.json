@@ -115,5 +115,10 @@
         ]
       }
     ]
+  },
+  "buildGate": {
+    "enabled": true,
+    "command": "python3 manifests/t1_attest.py --check && python3 sim/report/characterization_report.py --check",
+    "fastCommand": "python3 manifests/t1_attest.py --check && python3 sim/report/characterization_report.py --check"
   }
 }
