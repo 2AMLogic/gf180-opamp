@@ -97,9 +97,10 @@ def make_root(tmp: Path) -> Path:
               + list((REPO / OFF).glob("corners/*/offset_samples.csv"))
               + list((REPO / CMC).glob("corners/*/samples.csv"))  # CMRR mismatch MC (issue #124)
               + list((REPO / PMC).glob("corners/*/samples.csv"))  # PSRR mismatch MC (issue #182)
-              # full PSRR passive study (issue #173): its retained per-cell curves and partition membership
-              + [q for d in (REPO / PSRR).glob("corners/*/partitions.json")
-                 for q in [d, *d.parent.glob("*.psrr.dat")]]
+              # full PSRR passive study (issue #173): the selected study's (issue #416) retained
+              # per-cell curves and partition membership, not every archival study's
+              + [REPO / PSRR_STUDY_DIR / "partitions.json",
+                 *(REPO / PSRR_STUDY_DIR).glob("*.psrr.dat")]
               + list((REPO / GMC).glob("corners/*/samples.csv"))  # gain/GBW/PM mismatch MC (issue #172)
               # follower step-response study (issue #198): its retained per-point transients
               + list((REPO / "sim/step-response").glob("corners/*/*.dat"))):
