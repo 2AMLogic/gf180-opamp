@@ -87,11 +87,14 @@ from harness import (  # noqa: E402
     claim_run_paths,
     finalize_run_evidence,
     find_pdk,
+    fmt_key,
     guard_dut_core,
     guard_testbench_core,
     klt_version,
     load_dut_text,
     ngspice_version,
+    point_key,
+    point_stem,
     run_klt,
     run_klt_retrying,
     sanitise_report,
@@ -582,10 +585,6 @@ class RowVerdict:
     stretch_pass: int | None = None  # gain only
 
 
-def fmt_key(k: Key) -> str:
-    return f"{k[0]} / {k[1]:g} C / {k[2]:.2f} V"
-
-
 def judge(results: dict[Key, Metrics]) -> list[RowVerdict]:
     out: list[RowVerdict] = []
     for rid, label, attr, bound, unit in ROWS:
@@ -616,18 +615,6 @@ def judge(results: dict[Key, Metrics]) -> list[RowVerdict]:
 # --------------------------------------------------------------------------
 # Report handling
 # --------------------------------------------------------------------------
-
-
-def point_key(corner: dict) -> Key:
-    return (
-        corner["process"],
-        float(corner["temperature_c"]),
-        float(corner["supply_v"]["vdd"]),
-    )
-
-
-def point_stem(k: Key) -> str:
-    return f"{k[0]}_{k[1]:g}c_{k[2]:.2f}v"
 
 
 def latest_gain_dir() -> Path | None:
