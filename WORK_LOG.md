@@ -6,6 +6,11 @@ Merged pull requests and closed issues recorded by Guide.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-19
+
+- **PR #413**: fix: use the bundled signoff checklist
+- **Issue #411** (closed): Read the T1 checklist from the pinned klayout-tools wheel
+
 ### 2026-11-18
 
 - **PR #406**: ci: report required checks on merge-queue trial merges; fail the evidence gate closed on a missing merge-group base
