@@ -133,8 +133,8 @@ sim/selftest.sh                      # fast check: no records written, one local
 sim/characterize.sh                  # full PVT grids; appends new records, then rebuilds the report
 python3 sim/report/characterization_report.py --check   # committed report + evidence sidecar current
 python3 manifests/t1_attest.py --check                  # T1 items 1/9/10 inventories current
-klt signoff --manifest manifests/gf180-opamp.json \
-            --tiers-doc manifests/design-evidence-tiers.md --format json   # see manifests/README.md
+env -u KLT_TIERS_DOC klt signoff --manifest manifests/gf180-opamp.json \
+                                --format json   # see manifests/README.md
 ```
 
 Multi-corner and Monte Carlo grids go through `klt sim` (never hand-looped `ngspice`).

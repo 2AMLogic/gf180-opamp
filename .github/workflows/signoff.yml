@@ -68,9 +68,9 @@ jobs:
 
       - name: Re-run the block signoff fresh
         run: |
+          unset KLT_TIERS_DOC
           set +e
           klt signoff --manifest manifests/gf180-opamp.json \
-                      --tiers-doc manifests/design-evidence-tiers.md \
                       --format json > "$RUNNER_TEMP/fresh-signoff.json"
           rc=$?
           set -e
@@ -89,7 +89,7 @@ jobs:
             echo "Committed signoff record matches a fresh run."
             exit 0
           fi
-          echo "::error::manifests/gf180-opamp.signoff.json is stale — a fresh klt signoff run does not reproduce it. Re-run the regeneration command in manifests/README.md and commit the result; if the klt pin or the vendored checklist moved, regenerate and commit those changes together in the same PR."
+          echo "::error::manifests/gf180-opamp.signoff.json is stale — a fresh klt signoff run does not reproduce it. Re-run the regeneration command in manifests/README.md and commit the result; if the klt pin moved, regenerate the record with the matching wheel and commit both changes in the same PR."
           echo "--- committed record vs fresh run (pretty-printed diff) ---"
           diff -u \
             <(python3 -m json.tool manifests/gf180-opamp.signoff.json) \

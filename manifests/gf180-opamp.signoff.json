@@ -6,7 +6,7 @@
   "t1_item_count": 11,
   "build_t1_item_count": 11,
   "t1_met_count": 4,
-  "source_doc": "manifests/design-evidence-tiers.md",
+  "source_doc": "docs/design-evidence-tiers.md",
   "source_doc_content_hash": "sha256:a26b90262320d0fbd32b3f549a02b6300832706041797a559d8bf6bdb62efdc7",
   "build": {
     "version": "0.8.0",
@@ -191,7 +191,7 @@
         "command": null,
         "kind": "generic",
         "check_status": "pass",
-        "content_hash": "sha256:f421200ec75b3add40a1b4d7791455dcfed59903e746b972b5f880e5223ae53b",
+        "content_hash": "sha256:4cf025a53d276a33900c70ca359b558502dc0321fee8e1e802a897cbca40cd86",
         "input_verified": true,
         "exit_status": 0,
         "artifact_binding": {
@@ -200,7 +200,7 @@
             "path": "manifests/attest/repo-hygiene.json",
             "scope": "repo"
           },
-          "content_hash": "sha256:f421200ec75b3add40a1b4d7791455dcfed59903e746b972b5f880e5223ae53b",
+          "content_hash": "sha256:4cf025a53d276a33900c70ca359b558502dc0321fee8e1e802a897cbca40cd86",
           "input_verified": true,
           "summary": "README (block, spec table link, reproduction), license and CI audited",
           "source": "manifests/attest/repo-hygiene.json"
