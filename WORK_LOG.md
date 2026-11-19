@@ -8,6 +8,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-19
 
+- **PR #410**: build: gate Loom preflight on offline evidence freshness checks
+- **Issue #341** (closed): Run the offline evidence freshness checks in Loom preflight
 - **PR #413**: fix: use the bundled signoff checklist
 - **Issue #411** (closed): Read the T1 checklist from the pinned klayout-tools wheel
 
