@@ -137,6 +137,8 @@ env -u KLT_TIERS_DOC klt signoff --manifest manifests/gf180-opamp.json \
                                 --format json   # see manifests/README.md
 ```
 
+The two `--check` commands above are also the Loom preflight gate (`buildGate` in `.loom/config.json`).
+
 Multi-corner and Monte Carlo grids go through `klt sim` (never hand-looped `ngspice`).
 The experiments `sim/characterize.sh` does not drive (for example `sim/cmrr-mc/`) document
 their own commands in their READMEs. The testbench inventory behind signoff T1 item 9 is
