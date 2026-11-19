@@ -8,6 +8,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-19
 
+- **PR #417**: perf(test): stage only the selected PSRR study in report scratch roots
+- **Issue #416** (closed): Copy only the selected PSRR study into report-test scratch directories
 - **PR #410**: build: gate Loom preflight on offline evidence freshness checks
 - **Issue #341** (closed): Run the offline evidence freshness checks in Loom preflight
 - **PR #413**: fix: use the bundled signoff checklist
@@ -395,13 +397,4 @@ Merged pull requests and closed issues recorded by Guide.
 - **PR #25**: feat: add a klt signoff block manifest as the graded T1 verdict of record
 - **Issue #24** (closed): spec: ratify target-spec.md — it is DRAFT, which blocks T1 item 5 (and items 6/7/8 that grade against its rows)
 - **Issue #23** (closed): Commit a klt signoff block manifest so this block's T1 state is graded, not hand-read
-
-### 2026-09-15
-
-- **PR #22**: Add sim/gain-gbw-pm/: first circuit-level spec-row testbench with a one-command driver
-- **PR #21**: feat: add gm/ID-sized two-stage op-amp schematic and DC-OP check
-- **PR #20**: spec: propose bounds for target-spec.md [TBD] performance rows (DR-2)
-- **Issue #19** (closed): First spec-row testbench under sim/ with one-command driver
-- **Issue #18** (closed): Ratify spec/target-spec.md via decision record: propose bounds for [TBD] performance rows
-- **Issue #17** (closed): Schematic entry: two-stage op-amp topology (DR-0001) in design/
 
