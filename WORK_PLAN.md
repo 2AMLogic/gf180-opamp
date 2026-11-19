@@ -3,12 +3,12 @@
 Current Loom label state. Tracking and blocked items do not constitute ready work.
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-19T07:14:35Z (snapshot; compare against live labels)_
+_Generated: 2026-11-19T22:20:18Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-- **#352**: docs: index DR-0006 and name the PSRR full-envelope study as supplementary evidence
+_None._
 
 ## Very Important
 
@@ -35,7 +35,7 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#331**: docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement
+_None._
 
 ## PRs Awaiting Review
 
@@ -47,7 +47,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-- **#352**: docs: index DR-0006 and name the PSRR full-envelope study as supplementary evidence — closes #331
+_None._
 
 ## Proposed
 
@@ -57,7 +57,6 @@ Issues carrying `loom:curated`.
 - **#295**: Raise the unity-gain bandwidth target to >= 8 MHz for a type-III compensator load *(curated)* *(held)*
 - **#321**: Stop committing uncompressed point data: adopt the proven .dat.gz convention for new sim records *(curated)* *(held)*
 - **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence *(curated)* *(held)*
-- **#331**: docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement *(curated)*
 
 ## Proposed (Architect / Hermit)
 
@@ -73,14 +72,14 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 1 |
+| Operator merge-risk holds | 0 |
 | Very important | 1 |
 | Important | 4 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 1 |
+| In Progress (`loom:building`) | 0 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 1 |
-| Curated | 5 |
+| Approved PRs awaiting merge | 0 |
+| Curated | 4 |
 | Architect / Hermit proposals | 3 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

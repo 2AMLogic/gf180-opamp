@@ -8,6 +8,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-19
 
+- **PR #352**: docs: index DR-0006 and name the PSRR full-envelope study as supplementary evidence
+- **Issue #331** (closed): docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement
 - **PR #417**: perf(test): stage only the selected PSRR study in report scratch roots
 - **Issue #416** (closed): Copy only the selected PSRR study into report-test scratch directories
 - **PR #410**: build: gate Loom preflight on offline evidence freshness checks
