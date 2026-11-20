@@ -8,6 +8,9 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-19
 
+- **PR #421**: refactor: hoist corner point key/label/stem helpers into sim harness
+- **Issue #420** (closed): Remove the gain-driver import from corner indexing in the shared simulation harness
+- **Issue #422** (closed): Untracked .loom/account-ranking.codex makes every main-checkout cleanliness check report dirty
 - **PR #352**: docs: index DR-0006 and name the PSRR full-envelope study as supplementary evidence
 - **Issue #331** (closed): docs: index DR-0006 in spec/README.md and correct the README's passive-corner coverage statement
 - **PR #417**: perf(test): stage only the selected PSRR study in report scratch roots
