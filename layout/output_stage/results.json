@@ -1,0 +1,252 @@
+{
+  "schema": "gf180-opamp.layout-output-stage.results/1",
+  "netlist": "design/netlist/opamp_two_stage.spice",
+  "pdk": "gf180mcuD",
+  "deck": "gf180mcu",
+  "instances": [
+    "XM6",
+    "XM7",
+    "XMB1",
+    "XCC",
+    "XRZ"
+  ],
+  "blocks": [
+    {
+      "id": "m6",
+      "generator": "mos_array",
+      "instances": [
+        "XM6"
+      ],
+      "params": {
+        "w_um": 3.0,
+        "l_um": 1.0,
+        "fingers": 24,
+        "rows": 1,
+        "cols": 1,
+        "dummy": 0,
+        "flavor": "pfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "bbox_um": {
+        "x0": -1.23,
+        "y0": -1.23,
+        "x1": 39.57,
+        "y1": 6.69
+      },
+      "ports": 7
+    },
+    {
+      "id": "mb1",
+      "generator": "mos_array",
+      "instances": [
+        "XMB1"
+      ],
+      "params": {
+        "w_um": 3.0,
+        "l_um": 2.0,
+        "fingers": 2,
+        "rows": 1,
+        "cols": 1,
+        "dummy": 0,
+        "flavor": "nfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "bbox_um": {
+        "x0": -1.23,
+        "y0": -1.23,
+        "x1": 6.8100000000000005,
+        "y1": 6.69
+      },
+      "ports": 7
+    },
+    {
+      "id": "m7",
+      "generator": "mos_array",
+      "instances": [
+        "XM7"
+      ],
+      "params": {
+        "w_um": 3.0,
+        "l_um": 2.0,
+        "fingers": 12,
+        "rows": 1,
+        "cols": 1,
+        "dummy": 0,
+        "flavor": "nfet",
+        "gate_contact": true,
+        "add_guard_ring": true
+      },
+      "bbox_um": {
+        "x0": -1.23,
+        "y0": -1.23,
+        "x1": 32.61,
+        "y1": 6.69
+      },
+      "ports": 7
+    },
+    {
+      "id": "cc",
+      "generator": "cap_array",
+      "instances": [
+        "XCC"
+      ],
+      "params": {
+        "plate_w_um": 16.8,
+        "plate_h_um": 16.8,
+        "num": 1
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": 0.0,
+        "x1": 18.92,
+        "y1": 19.88
+      },
+      "ports": 2
+    },
+    {
+      "id": "rz",
+      "generator": "res_array",
+      "instances": [
+        "XRZ"
+      ],
+      "params": {
+        "length_um": 22.0,
+        "width_um": 2.0,
+        "num": 1,
+        "dummy": 0,
+        "flavor": "1k"
+      },
+      "bbox_um": {
+        "x0": 0.0,
+        "y0": -0.22,
+        "x1": 23.04,
+        "y1": 2.22
+      },
+      "ports": 2
+    }
+  ],
+  "routed": {
+    "cell": "output_stage",
+    "bbox_um": {
+      "x0": -1.23,
+      "y0": -1.23,
+      "x1": 139.41,
+      "y1": 19.88
+    },
+    "unrouted_nets": [],
+    "pins_labelled": [
+      "n2",
+      "vout",
+      "ibias",
+      "vdd",
+      "vss"
+    ],
+    "nets": {
+      "ibias": {
+        "status": "routed",
+        "route_length_um": 37.02,
+        "legs": 2
+      },
+      "n2": {
+        "status": "routed",
+        "route_length_um": 78.49,
+        "legs": 1
+      },
+      "nz": {
+        "status": "routed",
+        "route_length_um": 63.27,
+        "legs": 1
+      },
+      "vdd": {
+        "status": "routed",
+        "route_length_um": 3.59,
+        "legs": 1
+      },
+      "vout": {
+        "status": "routed",
+        "route_length_um": 108.07,
+        "legs": 2
+      },
+      "vss": {
+        "status": "routed",
+        "route_length_um": 65.74,
+        "legs": 3
+      }
+    },
+    "drc": {
+      "status": "clean",
+      "violations": 0,
+      "rules_checked": 80,
+      "rules_skipped": 34,
+      "layers_in_stream_without_rules": [
+        "34/10",
+        "36/10",
+        "42/10",
+        "46/10",
+        "81/10"
+      ],
+      "deck_content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666"
+    },
+    "layout_sha256": "3af96ba5689153a392aa50ac87eafb0c7e6978ad7dbe3ad9453d6e6b394ba151"
+  },
+  "extract": {
+    "status": "extracted",
+    "device_counts": {
+      "cap_mim_2f0_m4m5_noshield": 1,
+      "nfet": 14,
+      "pfet": 24,
+      "ppolyf_u_1k": 1
+    }
+  },
+  "lvs": {
+    "status": "match",
+    "error_count": 0,
+    "mismatch_count": 6,
+    "counts": {
+      "nets": {
+        "layout": 6,
+        "reference": 6,
+        "matched": 6
+      },
+      "devices": {
+        "layout": 5,
+        "reference": 5,
+        "matched": 5
+      },
+      "pins": {
+        "layout": 6,
+        "reference": 5,
+        "matched": 6
+      }
+    },
+    "category_error_counts": {},
+    "layout_sha256": "3af96ba5689153a392aa50ac87eafb0c7e6978ad7dbe3ad9453d6e6b394ba151"
+  },
+  "negative_control": {
+    "altered_parameter": "c_width",
+    "schematic_value": "16.8u",
+    "control_value": "20u",
+    "parameters_compared": {
+      "cap_mim_2f0_m4m5_noshield": [
+        "C",
+        "A"
+      ]
+    },
+    "status": "mismatch",
+    "error_count": 3,
+    "category_error_counts": {
+      "device.property": 1,
+      "topology": 2
+    },
+    "device_property_errors": 1,
+    "klt_exit_code": 3,
+    "layout_sha256": "3af96ba5689153a392aa50ac87eafb0c7e6978ad7dbe3ad9453d6e6b394ba151",
+    "layout_sha256_matches_positive": true,
+    "reference_netlist": "ref/output_stage.negctl-c_width.klt.spice",
+    "request": "evidence/output_stage.negctl-c_width.lvs.klt.request.json",
+    "evidence": "evidence/output_stage.negctl-c_width.lvs.klt.json",
+    "tripped": true
+  }
+}

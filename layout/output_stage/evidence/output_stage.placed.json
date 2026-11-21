@@ -1,0 +1,573 @@
+{
+  "schema_version": 1,
+  "generator": "gen-compose",
+  "cell_name": "output_stage",
+  "gds_path": "gds/output_stage.gds",
+  "pdk": {
+    "name": "gf180mcuD",
+    "variant": "gf180mcuD",
+    "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+  },
+  "dbu_um": 0.0005,
+  "bbox_um": {
+    "x0": -1.23,
+    "y0": -1.23,
+    "x1": 139.41,
+    "y1": 19.88
+  },
+  "ports": [
+    {
+      "name": "n2",
+      "net": "n2",
+      "layer": {
+        "layer": 46,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 93.44999999999999,
+      "y_um": 9.46,
+      "width_um": 18.92,
+      "direction_deg": 180,
+      "block": "cc",
+      "port": "C0_BOT"
+    },
+    {
+      "name": "vout",
+      "net": "vout",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 116.63,
+      "y_um": 1.0,
+      "width_um": 2.0,
+      "direction_deg": 180,
+      "block": "rz",
+      "port": "R0_A"
+    },
+    {
+      "name": "ibias",
+      "net": "ibias",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 47.589999999999996,
+      "y_um": 5.250000000000001,
+      "width_um": 0.42000000000000004,
+      "direction_deg": 90,
+      "block": "mb1",
+      "port": "U0_G"
+    },
+    {
+      "name": "vdd",
+      "net": "vdd",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 19.16999999999999,
+      "y_um": 6.320000000000001,
+      "width_um": 0.42,
+      "direction_deg": 90,
+      "block": "m6",
+      "port": "TAP_N"
+    },
+    {
+      "name": "vss",
+      "net": "vss",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 55.98,
+      "y_um": 2.7300000000000004,
+      "width_um": 0.42,
+      "direction_deg": 180,
+      "block": "m7",
+      "port": "TAP_W"
+    }
+  ],
+  "blocks": [
+    {
+      "id": "m6",
+      "source": "generator_report",
+      "generator": "mos_array",
+      "cell_name": "output_stage_m6",
+      "source_path": "gds/m6.gds",
+      "source_digest": "sha256:fee3589b76a0e071950fa9751ea9cfae2e5f9e66f04d5fc94eab85b8b60dbe74",
+      "offset_um": {
+        "x": 0.0,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": -1.23,
+        "y0": -1.23,
+        "x1": 39.57,
+        "y1": 6.69
+      },
+      "orientation": "none",
+      "abuts": []
+    },
+    {
+      "id": "mb1",
+      "source": "generator_report",
+      "generator": "mos_array",
+      "cell_name": "output_stage_mb1",
+      "source_path": "gds/mb1.gds",
+      "source_digest": "sha256:9de647a2713871967317eb06d9357bac2813716e15f53e276ad4590fc4a6719e",
+      "offset_um": {
+        "x": 44.8,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 43.57,
+        "y0": -1.23,
+        "x1": 51.61,
+        "y1": 6.69
+      },
+      "orientation": "none",
+      "abuts": []
+    },
+    {
+      "id": "m7",
+      "source": "generator_report",
+      "generator": "mos_array",
+      "cell_name": "output_stage_m7",
+      "source_path": "gds/m7.gds",
+      "source_digest": "sha256:1c5f201d525a0cc2952a254a42215ec1675cb72963868ababe225f560caa226c",
+      "offset_um": {
+        "x": 56.839999999999996,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 55.61,
+        "y0": -1.23,
+        "x1": 89.44999999999999,
+        "y1": 6.69
+      },
+      "orientation": "none",
+      "abuts": []
+    },
+    {
+      "id": "cc",
+      "source": "generator_report",
+      "generator": "cap_array",
+      "cell_name": "output_stage_cc",
+      "source_path": "gds/cc.gds",
+      "source_digest": "sha256:b4083e308965d16f69ab3bbecc8292c7b3b47591a9383b654a96e2160f536122",
+      "offset_um": {
+        "x": 93.44999999999999,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 93.44999999999999,
+        "y0": 0.0,
+        "x1": 112.36999999999999,
+        "y1": 19.88
+      },
+      "orientation": "none",
+      "abuts": []
+    },
+    {
+      "id": "rz",
+      "source": "generator_report",
+      "generator": "res_array",
+      "cell_name": "output_stage_rz",
+      "source_path": "gds/rz.gds",
+      "source_digest": "sha256:5ce076331257e298ab95237c7d8eef94ccb538f1e71080ec4aa30f23fded7b4f",
+      "offset_um": {
+        "x": 116.36999999999999,
+        "y": 0.0
+      },
+      "bbox_um": {
+        "x0": 116.36999999999999,
+        "y0": -0.22,
+        "x1": 139.41,
+        "y1": 2.22
+      },
+      "orientation": "none",
+      "abuts": []
+    }
+  ],
+  "nets": [
+    {
+      "net": "ibias",
+      "pins": [
+        {
+          "block": "mb1",
+          "port": "U0_D"
+        },
+        {
+          "block": "mb1",
+          "port": "U0_G"
+        },
+        {
+          "block": "m7",
+          "port": "U0_G"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "mb1",
+              "port": "U0_D"
+            },
+            {
+              "block": "mb1",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        },
+        {
+          "pins": [
+            {
+              "block": "mb1",
+              "port": "U0_D"
+            },
+            {
+              "block": "m7",
+              "port": "U0_G"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        }
+      ]
+    },
+    {
+      "net": "n2",
+      "pins": [
+        {
+          "block": "m6",
+          "port": "U0_G"
+        },
+        {
+          "block": "cc",
+          "port": "C0_BOT"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "m6",
+              "port": "U0_G"
+            },
+            {
+              "block": "cc",
+              "port": "C0_BOT"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        }
+      ]
+    },
+    {
+      "net": "nz",
+      "pins": [
+        {
+          "block": "cc",
+          "port": "C0_TOP"
+        },
+        {
+          "block": "rz",
+          "port": "R0_B"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "cc",
+              "port": "C0_TOP"
+            },
+            {
+              "block": "rz",
+              "port": "R0_B"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        }
+      ]
+    },
+    {
+      "net": "vdd",
+      "pins": [
+        {
+          "block": "m6",
+          "port": "U0_S"
+        },
+        {
+          "block": "m6",
+          "port": "TAP_W"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "m6",
+              "port": "U0_S"
+            },
+            {
+              "block": "m6",
+              "port": "TAP_W"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        }
+      ]
+    },
+    {
+      "net": "vout",
+      "pins": [
+        {
+          "block": "m6",
+          "port": "U0_D"
+        },
+        {
+          "block": "m7",
+          "port": "U0_D"
+        },
+        {
+          "block": "rz",
+          "port": "R0_A"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "m6",
+              "port": "U0_D"
+            },
+            {
+              "block": "m7",
+              "port": "U0_D"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        },
+        {
+          "pins": [
+            {
+              "block": "m6",
+              "port": "U0_D"
+            },
+            {
+              "block": "rz",
+              "port": "R0_A"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        }
+      ]
+    },
+    {
+      "net": "vss",
+      "pins": [
+        {
+          "block": "mb1",
+          "port": "U0_S"
+        },
+        {
+          "block": "mb1",
+          "port": "TAP_S"
+        },
+        {
+          "block": "m7",
+          "port": "U0_S"
+        },
+        {
+          "block": "m7",
+          "port": "TAP_S"
+        }
+      ],
+      "routed": false,
+      "route_length_um": null,
+      "status": "unrouted",
+      "landed_on_block": null,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "mb1",
+              "port": "U0_S"
+            },
+            {
+              "block": "mb1",
+              "port": "TAP_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        },
+        {
+          "pins": [
+            {
+              "block": "mb1",
+              "port": "U0_S"
+            },
+            {
+              "block": "m7",
+              "port": "U0_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        },
+        {
+          "pins": [
+            {
+              "block": "mb1",
+              "port": "U0_S"
+            },
+            {
+              "block": "m7",
+              "port": "TAP_S"
+            }
+          ],
+          "routed": false,
+          "route_length_um": null,
+          "reason": "routing not requested"
+        }
+      ]
+    }
+  ],
+  "pins": [
+    {
+      "net": "n2",
+      "block": "cc",
+      "port": "C0_BOT",
+      "labelled": true
+    },
+    {
+      "net": "vout",
+      "block": "rz",
+      "port": "R0_A",
+      "labelled": true
+    },
+    {
+      "net": "ibias",
+      "block": "mb1",
+      "port": "U0_G",
+      "labelled": true
+    },
+    {
+      "net": "vdd",
+      "block": "m6",
+      "port": "TAP_N",
+      "labelled": true
+    },
+    {
+      "net": "vss",
+      "block": "m7",
+      "port": "TAP_W",
+      "labelled": true
+    }
+  ],
+  "unrouted_nets": [
+    "ibias",
+    "n2",
+    "nz",
+    "vdd",
+    "vout",
+    "vss"
+  ],
+  "drc_hints": {
+    "min_spacing_um": null,
+    "matched_groups": [
+      {
+        "matched_group_id": "mos_array:1x1:common_centroid",
+        "blocks": [
+          "m6",
+          "mb1",
+          "m7"
+        ],
+        "placement_symmetric": null
+      },
+      {
+        "matched_group_id": "cap_array:1",
+        "blocks": [
+          "cc"
+        ],
+        "placement_symmetric": null
+      },
+      {
+        "matched_group_id": "res_array:1",
+        "blocks": [
+          "rz"
+        ],
+        "placement_symmetric": null
+      }
+    ],
+    "notes": [
+      "net 'ibias' could not be routed: routing not requested",
+      "net 'n2' could not be routed: routing not requested",
+      "net 'nz' could not be routed: routing not requested",
+      "net 'vdd' could not be routed: routing not requested",
+      "net 'vout' could not be routed: routing not requested",
+      "net 'vss' could not be routed: routing not requested",
+      "pin 'n2' (block 'cc' port 'C0_BOT') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written",
+      "pin 'vout' (block 'rz' port 'R0_A') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written",
+      "pin 'ibias' (block 'mb1' port 'U0_G') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written"
+    ]
+  },
+  "warnings": [],
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "gf180mcuD",
+      "source": "search root: ~/.ciel",
+      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
+      "ambiguous_sources": [
+        "search root: ~/.volare"
+      ]
+    },
+    "deck": null,
+    "input": null
+  }
+}

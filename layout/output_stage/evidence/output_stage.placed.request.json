@@ -1,0 +1,166 @@
+{
+  "schema": "klt.gen_compose.request/1",
+  "pdk": {
+    "variant": "gf180mcuD"
+  },
+  "blocks": [
+    {
+      "id": "m6",
+      "generator_report": "m6.gen.json"
+    },
+    {
+      "id": "mb1",
+      "generator_report": "mb1.gen.json"
+    },
+    {
+      "id": "m7",
+      "generator_report": "m7.gen.json"
+    },
+    {
+      "id": "cc",
+      "generator_report": "cc.gen.json"
+    },
+    {
+      "id": "rz",
+      "generator_report": "rz.gen.json"
+    }
+  ],
+  "placement": {
+    "strategy": "row",
+    "order": [
+      "m6",
+      "mb1",
+      "m7",
+      "cc",
+      "rz"
+    ],
+    "spacing_um": 4.0
+  },
+  "connectivity": [
+    {
+      "net": "ibias",
+      "pins": [
+        {
+          "block": "mb1",
+          "port": "U0_D"
+        },
+        {
+          "block": "mb1",
+          "port": "U0_G"
+        },
+        {
+          "block": "m7",
+          "port": "U0_G"
+        }
+      ]
+    },
+    {
+      "net": "n2",
+      "pins": [
+        {
+          "block": "m6",
+          "port": "U0_G"
+        },
+        {
+          "block": "cc",
+          "port": "C0_BOT"
+        }
+      ]
+    },
+    {
+      "net": "nz",
+      "pins": [
+        {
+          "block": "cc",
+          "port": "C0_TOP"
+        },
+        {
+          "block": "rz",
+          "port": "R0_B"
+        }
+      ]
+    },
+    {
+      "net": "vdd",
+      "pins": [
+        {
+          "block": "m6",
+          "port": "U0_S"
+        },
+        {
+          "block": "m6",
+          "port": "TAP_W"
+        }
+      ]
+    },
+    {
+      "net": "vout",
+      "pins": [
+        {
+          "block": "m6",
+          "port": "U0_D"
+        },
+        {
+          "block": "m7",
+          "port": "U0_D"
+        },
+        {
+          "block": "rz",
+          "port": "R0_A"
+        }
+      ]
+    },
+    {
+      "net": "vss",
+      "pins": [
+        {
+          "block": "mb1",
+          "port": "U0_S"
+        },
+        {
+          "block": "mb1",
+          "port": "TAP_S"
+        },
+        {
+          "block": "m7",
+          "port": "U0_S"
+        },
+        {
+          "block": "m7",
+          "port": "TAP_S"
+        }
+      ]
+    }
+  ],
+  "pins": [
+    {
+      "net": "n2",
+      "block": "cc",
+      "port": "C0_BOT"
+    },
+    {
+      "net": "vout",
+      "block": "rz",
+      "port": "R0_A"
+    },
+    {
+      "net": "ibias",
+      "block": "mb1",
+      "port": "U0_G"
+    },
+    {
+      "net": "vdd",
+      "block": "m6",
+      "port": "TAP_N"
+    },
+    {
+      "net": "vss",
+      "block": "m7",
+      "port": "TAP_W"
+    }
+  ],
+  "options": {
+    "cell_name": "output_stage",
+    "output": "gds/output_stage.gds"
+  }
+}

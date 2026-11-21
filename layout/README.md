@@ -9,6 +9,12 @@ Layout (klayout-tools driven) and DRC/LVS signoff artifacts.
   placed from the pilot's generator mappings (issue #328), with DRC evidence
   and a documented routing gap. A placed, labelled sub-block — not block
   layout, not signoff; see its README for scope and status.
+- [`output_stage/`](output_stage/README.md): the output-stage + compensation
+  sub-block (XM6, XM7, XMB1, XCC, XRZ) composed and routed from the pilot's
+  generator mappings (issue #424) — `unrouted_nets: []`, DRC clean, LVS match
+  against the schematic cut, with a negative control. A routed, labelled
+  sub-block — not block layout, not signoff; see its README for scope,
+  placement/matching claims and the inherited MIM orientation.
 
 ## Troubleshooting: scratch cleanup after `cd`
 
