@@ -1,0 +1,3676 @@
+{
+  "schema_version": 1,
+  "deck": "gf180mcu",
+  "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
+  "nominal_dbu_um": 0.001,
+  "rules": [
+    {
+      "id": "poly2.width.1",
+      "description": "minimum poly2 interconnect width (3.3V)",
+      "check": "width",
+      "layers": [
+        "Poly2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Poly2",
+          "layer": 30,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.7 Poly2",
+      "value_um": 0.18,
+      "value_dbu": 180,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/16_Poly2_42.csv",
+        "rule_id": "PL.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "poly2.space.1",
+      "description": "minimum poly2 spacing (3.3V)",
+      "check": "space",
+      "layers": [
+        "Poly2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Poly2",
+          "layer": 30,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.7 Poly2",
+      "value_um": 0.24,
+      "value_dbu": 240,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/16_Poly2_42.csv",
+        "rule_id": "PL.3a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "poly2.enclosing.contact.1",
+      "description": "minimum poly2 overlap of contact",
+      "check": "enclosing",
+      "layers": [
+        "Poly2",
+        "Contact"
+      ],
+      "layer_refs": [
+        {
+          "name": "Poly2",
+          "layer": 30,
+          "datatype": 0
+        },
+        {
+          "name": "Contact",
+          "layer": 33,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.12 Contact",
+      "value_um": 0.07,
+      "value_dbu": 70,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/21_Contact_56.csv",
+        "rule_id": "CO.3",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "comp.width.1",
+      "description": "minimum COMP (diffusion/active) width outside Dualgate (3.3V)",
+      "check": "width",
+      "layers": [
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": 0.22,
+      "value_dbu": 220,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.1a_LV",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.width.mv.1",
+      "description": "minimum COMP (diffusion/active) width inside Dualgate (5V/6V)",
+      "check": "width",
+      "layers": [
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": 0.3,
+      "value_dbu": 300,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.1a_MV",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.space.1",
+      "description": "minimum COMP (diffusion/active) spacing outside Dualgate (3.3V)",
+      "check": "space",
+      "layers": [
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": 0.28,
+      "value_dbu": 280,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.3a_LV",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.space.mv.1",
+      "description": "minimum COMP (diffusion/active) spacing inside Dualgate (5V/6V)",
+      "check": "space",
+      "layers": [
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": 0.36,
+      "value_dbu": 360,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.3a_MV",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.enclosing.contact.1",
+      "description": "minimum COMP overlap of contact",
+      "check": "enclosing",
+      "layers": [
+        "Comp",
+        "Contact"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        },
+        {
+          "name": "Contact",
+          "layer": 33,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.12 Contact",
+      "value_um": 0.07,
+      "value_dbu": 70,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/21_Contact_56.csv",
+        "rule_id": "CO.4",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "contact.width.1",
+      "description": "min/max contact size (fixed 0.22 x 0.22 um square)",
+      "check": "width",
+      "layers": [
+        "Contact"
+      ],
+      "layer_refs": [
+        {
+          "name": "Contact",
+          "layer": 33,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.12 Contact",
+      "value_um": 0.22,
+      "value_dbu": 220,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/21_Contact_56.csv",
+        "rule_id": "CO.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "contact.space.1",
+      "description": "minimum contact spacing",
+      "check": "space",
+      "layers": [
+        "Contact"
+      ],
+      "layer_refs": [
+        {
+          "name": "Contact",
+          "layer": 33,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.12 Contact",
+      "value_um": 0.25,
+      "value_dbu": 250,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/21_Contact_56.csv",
+        "rule_id": "CO.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal1.enclosing.contact.1",
+      "description": "minimum metal1 overlap of contact",
+      "check": "enclosing",
+      "layers": [
+        "Metal1",
+        "Contact"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal1",
+          "layer": 34,
+          "datatype": 0
+        },
+        {
+          "name": "Contact",
+          "layer": 33,
+          "datatype": 0
+        }
+      ],
+      "scope": null,
+      "value_um": 0.005,
+      "value_dbu": 5,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/contact.rb",
+        "rule_id": "CO.6",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "via1.width.1",
+      "description": "min/max via1 size (fixed 0.26 x 0.26 um square)",
+      "check": "width",
+      "layers": [
+        "Via1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via1",
+          "layer": 35,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.14 Vian",
+      "value_um": 0.26,
+      "value_dbu": 260,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/23_Vian_59.csv",
+        "rule_id": "Vn.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "via1.space.1",
+      "description": "minimum via1 spacing (approximates official 4x4-array rule)",
+      "check": "space",
+      "layers": [
+        "Via1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via1",
+          "layer": 35,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.14 Vian",
+      "value_um": 0.26,
+      "value_dbu": 260,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/23_Vian_59.csv",
+        "rule_id": "Vn.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal1.enclosing.via1.1",
+      "description": "minimum metal1 overlap of via1 (the conductor below the cut)",
+      "check": "enclosing",
+      "layers": [
+        "Metal1",
+        "Via1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal1",
+          "layer": 34,
+          "datatype": 0
+        },
+        {
+          "name": "Via1",
+          "layer": 35,
+          "datatype": 0
+        }
+      ],
+      "scope": null,
+      "value_um": 0.0,
+      "value_dbu": 0,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/via.rb",
+        "rule_id": "V1.3a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal2.enclosing.via1.1",
+      "description": "minimum metal2 overlap of via1 (the conductor above the cut)",
+      "check": "enclosing",
+      "layers": [
+        "Metal2",
+        "Via1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal2",
+          "layer": 36,
+          "datatype": 0
+        },
+        {
+          "name": "Via1",
+          "layer": 35,
+          "datatype": 0
+        }
+      ],
+      "scope": null,
+      "value_um": 0.01,
+      "value_dbu": 10,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/via.rb",
+        "rule_id": "V1.4a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "via2.width.1",
+      "description": "min/max via2 size (fixed 0.26 x 0.26 um square)",
+      "check": "width",
+      "layers": [
+        "Via2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via2",
+          "layer": 38,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.14 Vian",
+      "value_um": 0.26,
+      "value_dbu": 260,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/23_Vian_59.csv",
+        "rule_id": "Vn.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "via2.space.1",
+      "description": "minimum via2 spacing (approximates official 4x4-array rule)",
+      "check": "space",
+      "layers": [
+        "Via2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via2",
+          "layer": 38,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.14 Vian",
+      "value_um": 0.26,
+      "value_dbu": 260,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/23_Vian_59.csv",
+        "rule_id": "Vn.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal2.enclosing.via2.1",
+      "description": "minimum metal2 overlap of via2 (the conductor below the cut)",
+      "check": "enclosing",
+      "layers": [
+        "Metal2",
+        "Via2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal2",
+          "layer": 36,
+          "datatype": 0
+        },
+        {
+          "name": "Via2",
+          "layer": 38,
+          "datatype": 0
+        }
+      ],
+      "scope": null,
+      "value_um": 0.01,
+      "value_dbu": 10,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/via.rb",
+        "rule_id": "V2.3b",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal3.enclosing.via2.1",
+      "description": "minimum metal3 overlap of via2 (the conductor above the cut)",
+      "check": "enclosing",
+      "layers": [
+        "Metal3",
+        "Via2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal3",
+          "layer": 42,
+          "datatype": 0
+        },
+        {
+          "name": "Via2",
+          "layer": 38,
+          "datatype": 0
+        }
+      ],
+      "scope": null,
+      "value_um": 0.01,
+      "value_dbu": 10,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/via.rb",
+        "rule_id": "V2.4a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "via3.width.1",
+      "description": "min/max via3 size (fixed 0.26 x 0.26 um square)",
+      "check": "width",
+      "layers": [
+        "Via3"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via3",
+          "layer": 40,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.14 Vian",
+      "value_um": 0.26,
+      "value_dbu": 260,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/23_Vian_59.csv",
+        "rule_id": "Vn.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "via3.space.1",
+      "description": "minimum via3 spacing (approximates official 4x4-array rule)",
+      "check": "space",
+      "layers": [
+        "Via3"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via3",
+          "layer": 40,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.14 Vian",
+      "value_um": 0.26,
+      "value_dbu": 260,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/23_Vian_59.csv",
+        "rule_id": "Vn.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal3.enclosing.via3.1",
+      "description": "minimum metal3 overlap of via3 (the conductor below the cut)",
+      "check": "enclosing",
+      "layers": [
+        "Metal3",
+        "Via3"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal3",
+          "layer": 42,
+          "datatype": 0
+        },
+        {
+          "name": "Via3",
+          "layer": 40,
+          "datatype": 0
+        }
+      ],
+      "scope": null,
+      "value_um": 0.01,
+      "value_dbu": 10,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/via.rb",
+        "rule_id": "V3.3b",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal4.enclosing.via3.1",
+      "description": "minimum metal4 overlap of via3 (the conductor above the cut)",
+      "check": "enclosing",
+      "layers": [
+        "Metal4",
+        "Via3"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        },
+        {
+          "name": "Via3",
+          "layer": 40,
+          "datatype": 0
+        }
+      ],
+      "scope": null,
+      "value_um": 0.01,
+      "value_dbu": 10,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/via.rb",
+        "rule_id": "V3.4a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "via4.width.1",
+      "description": "min/max via4 size (fixed 0.26 x 0.26 um square)",
+      "check": "width",
+      "layers": [
+        "Via4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via4",
+          "layer": 41,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.14 Vian",
+      "value_um": 0.26,
+      "value_dbu": 260,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/23_Vian_59.csv",
+        "rule_id": "Vn.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "via4.space.1",
+      "description": "minimum via4 spacing (approximates official 4x4-array rule)",
+      "check": "space",
+      "layers": [
+        "Via4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via4",
+          "layer": 41,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.14 Vian",
+      "value_um": 0.26,
+      "value_dbu": 260,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/23_Vian_59.csv",
+        "rule_id": "Vn.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal4.enclosing.via4.1",
+      "description": "minimum metal4 overlap of via4 (the conductor below the cut)",
+      "check": "enclosing",
+      "layers": [
+        "Metal4",
+        "Via4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        },
+        {
+          "name": "Via4",
+          "layer": 41,
+          "datatype": 0
+        }
+      ],
+      "scope": null,
+      "value_um": 0.01,
+      "value_dbu": 10,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/via.rb",
+        "rule_id": "V4.3b",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal5.enclosing.via4.1",
+      "description": "minimum metal5 overlap of via4 (the conductor above the cut)",
+      "check": "enclosing",
+      "layers": [
+        "Metal5",
+        "Via4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal5",
+          "layer": 81,
+          "datatype": 0
+        },
+        {
+          "name": "Via4",
+          "layer": 41,
+          "datatype": 0
+        }
+      ],
+      "scope": null,
+      "value_um": 0.01,
+      "value_dbu": 10,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/via.rb",
+        "rule_id": "V4.4a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal1.width.1",
+      "description": "minimum metal1 width",
+      "check": "width",
+      "layers": [
+        "Metal1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal1",
+          "layer": 34,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.23,
+      "value_dbu": 230,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal1.space.1",
+      "description": "minimum metal1 spacing",
+      "check": "space",
+      "layers": [
+        "Metal1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal1",
+          "layer": 34,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.23,
+      "value_dbu": 230,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal2.width.1",
+      "description": "minimum metal2 width",
+      "check": "width",
+      "layers": [
+        "Metal2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal2",
+          "layer": 36,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.28,
+      "value_dbu": 280,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal2.space.1",
+      "description": "minimum metal2 spacing",
+      "check": "space",
+      "layers": [
+        "Metal2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal2",
+          "layer": 36,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.28,
+      "value_dbu": 280,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal3.width.1",
+      "description": "minimum metal3 width",
+      "check": "width",
+      "layers": [
+        "Metal3"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal3",
+          "layer": 42,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.28,
+      "value_dbu": 280,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal3.space.1",
+      "description": "minimum metal3 spacing",
+      "check": "space",
+      "layers": [
+        "Metal3"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal3",
+          "layer": 42,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.28,
+      "value_dbu": 280,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal4.width.1",
+      "description": "minimum metal4 width",
+      "check": "width",
+      "layers": [
+        "Metal4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.28,
+      "value_dbu": 280,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal4.space.1",
+      "description": "minimum metal4 spacing",
+      "check": "space",
+      "layers": [
+        "Metal4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.28,
+      "value_dbu": 280,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal5.width.1",
+      "description": "minimum metal5 width",
+      "check": "width",
+      "layers": [
+        "Metal5"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal5",
+          "layer": 81,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.28,
+      "value_dbu": 280,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metal5.space.1",
+      "description": "minimum metal5 spacing",
+      "check": "space",
+      "layers": [
+        "Metal5"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal5",
+          "layer": 81,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.13 Metaln",
+      "value_um": 0.28,
+      "value_dbu": 280,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/22_Metaln_58.csv",
+        "rule_id": "Mn.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metaltop.width.1",
+      "description": "minimum metaltop width (standard 6K angstrom thickness)",
+      "check": "width",
+      "layers": [
+        "MetalTop"
+      ],
+      "layer_refs": [
+        {
+          "name": "MetalTop",
+          "layer": 53,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.15 MetalTop",
+      "value_um": 0.36,
+      "value_dbu": 360,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/24_MetalTop_61.csv",
+        "rule_id": "MT.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "metaltop.space.1",
+      "description": "minimum metaltop spacing (standard 6K angstrom thickness)",
+      "check": "space",
+      "layers": [
+        "MetalTop"
+      ],
+      "layer_refs": [
+        {
+          "name": "MetalTop",
+          "layer": 53,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.15 MetalTop",
+      "value_um": 0.38,
+      "value_dbu": 380,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/24_MetalTop_61.csv",
+        "rule_id": "MT.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "mim.space.1",
+      "description": "minimum MiM virtual bottom plate spacing to other bottom-plate-or-routing metal4 (fusetop-sized metal4, scoped to genuine MiM structures)",
+      "check": "separation",
+      "layers": [
+        "Metal4",
+        "Metal4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        },
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        }
+      ],
+      "scope": "10.4.2 MIM Option B",
+      "value_um": 1.2,
+      "value_dbu": 1200,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/35_MIM2_88.csv",
+        "rule_id": "MIMTM.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "mim.enclosing.fusetop.1",
+      "description": "minimum MiM bottom plate (metal4) overlap of top plate (fusetop)",
+      "check": "enclosing",
+      "layers": [
+        "Metal4",
+        "FuseTop"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        },
+        {
+          "name": "FuseTop",
+          "layer": 75,
+          "datatype": 0
+        }
+      ],
+      "scope": "10.4.2 MIM Option B",
+      "value_um": 0.6,
+      "value_dbu": 600,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/35_MIM2_88.csv",
+        "rule_id": "MIMTM.3",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "mim.enclosing.via4.1",
+      "description": "minimum MiM virtual bottom plate overlap of via4 (fusetop-sized metal4, scoped to genuine MiM structures)",
+      "check": "enclosing",
+      "layers": [
+        "Metal4",
+        "Via4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        },
+        {
+          "name": "Via4",
+          "layer": 41,
+          "datatype": 0
+        }
+      ],
+      "scope": "10.4.2 MIM Option B",
+      "value_um": 0.4,
+      "value_dbu": 400,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/35_MIM2_88.csv",
+        "rule_id": "MIMTM.2",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "pad.enclosing.metal5.1",
+      "description": "minimum top-metal (Metal5) overlap of pad opening",
+      "check": "enclosing",
+      "layers": [
+        "Metal5",
+        "Pad"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal5",
+          "layer": 81,
+          "datatype": 0
+        },
+        {
+          "name": "Pad",
+          "layer": 37,
+          "datatype": 0
+        }
+      ],
+      "scope": "9.1 Bond Pad",
+      "value_um": 2.0,
+      "value_dbu": 2000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/29_BondPad1_70.csv",
+        "rule_id": "PAD.4",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "nwell.space.1",
+      "description": "minimum Nwell spacing (equipotential, 3.3V)",
+      "check": "space",
+      "layers": [
+        "Nwell"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nwell",
+          "layer": 21,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.4 Nwell",
+      "value_um": 0.6,
+      "value_dbu": 600,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/13_Nwell31.csv",
+        "rule_id": "NW.2a",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "nwell.enclosing.comp.1",
+      "description": "minimum Nwell enclosure of an Nwell tap (COMP), 3.3V",
+      "check": "enclosing",
+      "layers": [
+        "Nwell",
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nwell",
+          "layer": 21,
+          "datatype": 0
+        },
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": 0.12,
+      "value_dbu": 120,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/14_COMP33_1.csv",
+        "rule_id": "DF.4d",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "comp.coverage.1",
+      "description": "COMP not covered by Nplus or Pplus is forbidden (except COMP under the Schottky-diode marking)",
+      "check": "comp_coverage",
+      "layers": [
+        "Comp",
+        "Nplus",
+        "Pplus",
+        "Schottky_diode"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        },
+        {
+          "name": "Schottky_diode",
+          "layer": 241,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.12",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.tap_distance.nwell.lv.1",
+      "description": "Max distance of an Nwell tap (NCOMP inside Nwell) from PCOMP inside Nwell: 20um (3.3V)",
+      "check": "tap_distance",
+      "layers": [
+        "Comp",
+        "Nwell",
+        "DNWELL",
+        "204/0",
+        "Nplus",
+        "Pplus",
+        "RES_MK",
+        "Dualgate",
+        "112/1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        },
+        {
+          "name": "Nwell",
+          "layer": 21,
+          "datatype": 0
+        },
+        {
+          "name": "DNWELL",
+          "layer": 12,
+          "datatype": 0
+        },
+        {
+          "name": null,
+          "layer": 204,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        },
+        {
+          "name": "RES_MK",
+          "layer": 110,
+          "datatype": 5
+        },
+        {
+          "name": "Dualgate",
+          "layer": 55,
+          "datatype": 0
+        },
+        {
+          "name": null,
+          "layer": 112,
+          "datatype": 1
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "well_domain": "inside",
+        "voltage": "lv",
+        "max_distance_um": 20.0,
+        "step_um": 0.5
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.13_LV",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.tap_distance.psub.lv.1",
+      "description": "Max distance of a substrate tap (PCOMP outside Nwell) from NCOMP outside Nwell: 20um (3.3V)",
+      "check": "tap_distance",
+      "layers": [
+        "Comp",
+        "Nwell",
+        "DNWELL",
+        "204/0",
+        "Nplus",
+        "Pplus",
+        "RES_MK",
+        "Dualgate",
+        "112/1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        },
+        {
+          "name": "Nwell",
+          "layer": 21,
+          "datatype": 0
+        },
+        {
+          "name": "DNWELL",
+          "layer": 12,
+          "datatype": 0
+        },
+        {
+          "name": null,
+          "layer": 204,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        },
+        {
+          "name": "RES_MK",
+          "layer": 110,
+          "datatype": 5
+        },
+        {
+          "name": "Dualgate",
+          "layer": 55,
+          "datatype": 0
+        },
+        {
+          "name": null,
+          "layer": 112,
+          "datatype": 1
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "well_domain": "outside",
+        "voltage": "lv",
+        "max_distance_um": 20.0,
+        "step_um": 0.5
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.14_LV",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.tap_distance.nwell.mv.1",
+      "description": "Max distance of an Nwell tap (NCOMP inside Nwell) from PCOMP inside Nwell: 15um (5V/6V)",
+      "check": "tap_distance",
+      "layers": [
+        "Comp",
+        "Nwell",
+        "DNWELL",
+        "204/0",
+        "Nplus",
+        "Pplus",
+        "RES_MK",
+        "Dualgate",
+        "112/1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        },
+        {
+          "name": "Nwell",
+          "layer": 21,
+          "datatype": 0
+        },
+        {
+          "name": "DNWELL",
+          "layer": 12,
+          "datatype": 0
+        },
+        {
+          "name": null,
+          "layer": 204,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        },
+        {
+          "name": "RES_MK",
+          "layer": 110,
+          "datatype": 5
+        },
+        {
+          "name": "Dualgate",
+          "layer": 55,
+          "datatype": 0
+        },
+        {
+          "name": null,
+          "layer": 112,
+          "datatype": 1
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "well_domain": "inside",
+        "voltage": "mv",
+        "max_distance_um": 15.0,
+        "step_um": 0.5
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.13_MV",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.tap_distance.psub.mv.1",
+      "description": "Max distance of a substrate tap (PCOMP outside Nwell) from NCOMP outside Nwell: 15um (5V/6V)",
+      "check": "tap_distance",
+      "layers": [
+        "Comp",
+        "Nwell",
+        "DNWELL",
+        "204/0",
+        "Nplus",
+        "Pplus",
+        "RES_MK",
+        "Dualgate",
+        "112/1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        },
+        {
+          "name": "Nwell",
+          "layer": 21,
+          "datatype": 0
+        },
+        {
+          "name": "DNWELL",
+          "layer": 12,
+          "datatype": 0
+        },
+        {
+          "name": null,
+          "layer": 204,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        },
+        {
+          "name": "RES_MK",
+          "layer": 110,
+          "datatype": 5
+        },
+        {
+          "name": "Dualgate",
+          "layer": 55,
+          "datatype": 0
+        },
+        {
+          "name": null,
+          "layer": 112,
+          "datatype": 1
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "well_domain": "outside",
+        "voltage": "mv",
+        "max_distance_um": 15.0,
+        "step_um": 0.5
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.14_MV",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "nplus.width.1",
+      "description": "minimum Nplus implant width",
+      "check": "width",
+      "layers": [
+        "Nplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.8 Nplus",
+      "value_um": 0.4,
+      "value_dbu": 400,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/17_Nplus_44.csv",
+        "rule_id": "NP.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "nplus.space.1",
+      "description": "minimum Nplus implant spacing",
+      "check": "space",
+      "layers": [
+        "Nplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.8 Nplus",
+      "value_um": 0.4,
+      "value_dbu": 400,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/17_Nplus_44.csv",
+        "rule_id": "NP.2",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "dualgate.width.1",
+      "description": "minimum Dualgate (5V/6V thick-oxide marker) width",
+      "check": "width",
+      "layers": [
+        "Dualgate"
+      ],
+      "layer_refs": [
+        {
+          "name": "Dualgate",
+          "layer": 55,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": 0.7,
+      "value_dbu": 700,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/dualgate.rb",
+        "rule_id": "DV.5",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "dualgate.space.1",
+      "description": "minimum Dualgate (5V/6V thick-oxide marker) spacing",
+      "check": "space",
+      "layers": [
+        "Dualgate"
+      ],
+      "layer_refs": [
+        {
+          "name": "Dualgate",
+          "layer": 55,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": 0.44,
+      "value_dbu": 440,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/dualgate.rb",
+        "rule_id": "DV.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "nplus.space.pcomp.1",
+      "description": "minimum Nplus implant space to PCOMP (p-type diffusion)",
+      "check": "separation",
+      "layers": [
+        "Nplus",
+        "Nplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.8 Nplus",
+      "value_um": 0.16,
+      "value_dbu": 160,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/nplus.rb",
+        "rule_id": "NP.3a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "nplus.space.pcomp.far.1",
+      "description": "minimum Nplus implant space to PCOMP (p-type diffusion) at least 0.429um from any Nwell/Dnwell",
+      "check": "separation",
+      "layers": [
+        "Nplus",
+        "Nplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.8 Nplus",
+      "value_um": 0.08,
+      "value_dbu": 80,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/nplus.rb",
+        "rule_id": "NP.3cii",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "nplus.enclosing.poly2.1",
+      "description": "minimum Nplus implant overlap of the N-channel gate region",
+      "check": "enclosed",
+      "layers": [
+        "Nplus",
+        "Nplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.8 Nplus",
+      "value_um": 0.23,
+      "value_dbu": 230,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/nplus.rb",
+        "rule_id": "NP.5a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "nplus.enclosing.comp.1",
+      "description": "minimum Nplus implant extension beyond NCOMP (n-type diffusion)",
+      "check": "enclosed",
+      "layers": [
+        "Nplus",
+        "Nplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.8 Nplus",
+      "value_um": 0.16,
+      "value_dbu": 160,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/nplus.rb",
+        "rule_id": "NP.5b",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "pplus.width.1",
+      "description": "minimum Pplus implant width",
+      "check": "width",
+      "layers": [
+        "Pplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.9 Pplus",
+      "value_um": 0.4,
+      "value_dbu": 400,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/18_Pplus_48.csv",
+        "rule_id": "PP.1",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "pplus.space.1",
+      "description": "minimum Pplus implant spacing",
+      "check": "space",
+      "layers": [
+        "Pplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.9 Pplus",
+      "value_um": 0.4,
+      "value_dbu": 400,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/18_Pplus_48.csv",
+        "rule_id": "PP.2",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "pplus.space.ncomp.1",
+      "description": "minimum Pplus implant space to NCOMP (n-type diffusion)",
+      "check": "separation",
+      "layers": [
+        "Pplus",
+        "Pplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.9 Pplus",
+      "value_um": 0.16,
+      "value_dbu": 160,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/pplus.rb",
+        "rule_id": "PP.3a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "pplus.enclosing.poly2.1",
+      "description": "minimum Pplus implant overlap of the P-channel gate region",
+      "check": "enclosed",
+      "layers": [
+        "Pplus",
+        "Pplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.9 Pplus",
+      "value_um": 0.23,
+      "value_dbu": 230,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/pplus.rb",
+        "rule_id": "PP.5a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "pplus.enclosing.comp.1",
+      "description": "minimum Pplus implant extension beyond PCOMP (p-type diffusion)",
+      "check": "enclosed",
+      "layers": [
+        "Pplus",
+        "Pplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.9 Pplus",
+      "value_um": 0.16,
+      "value_dbu": 160,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/pplus.rb",
+        "rule_id": "PP.5b",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "pplus.enclosing.comp.far.1",
+      "description": "minimum Pplus implant extension beyond PCOMP (p-type diffusion) at least 0.429um from any Nwell/Dnwell",
+      "check": "enclosed",
+      "layers": [
+        "Pplus",
+        "Pplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.9 Pplus",
+      "value_um": 0.02,
+      "value_dbu": 20,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/pplus.rb",
+        "rule_id": "PP.5di",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "bjt.separation.comp.1",
+      "description": "minimum space of DRC_BJT (bipolar device mark layer) to COMP",
+      "check": "separation",
+      "layers": [
+        "DRC_BJT",
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "DRC_BJT",
+          "layer": 127,
+          "datatype": 5
+        },
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "10.7 DRC_BJT Mark Layer",
+      "value_um": 0.1,
+      "value_dbu": 100,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/gf180mcu-pdk",
+        "source_path": "docs/physical_verification/design_manual/tables_clear/38_DRC_BJT_103.csv",
+        "rule_id": "BJT.3",
+        "commit": "de3240d"
+      }
+    },
+    {
+      "id": "comp.ongrid.1",
+      "description": "comp vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "comp_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "dnwell.ongrid.1",
+      "description": "dnwell vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "DNWELL"
+      ],
+      "layer_refs": [
+        {
+          "name": "DNWELL",
+          "layer": 12,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "dnwell_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "nwell.ongrid.1",
+      "description": "nwell vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Nwell"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nwell",
+          "layer": 21,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "nwell_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "dualgate.ongrid.1",
+      "description": "dualgate vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Dualgate"
+      ],
+      "layer_refs": [
+        {
+          "name": "Dualgate",
+          "layer": 55,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "dualgate_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "poly2.ongrid.1",
+      "description": "poly2 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Poly2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Poly2",
+          "layer": 30,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "poly2_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "nplus.ongrid.1",
+      "description": "nplus vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Nplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "nplus_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "pplus.ongrid.1",
+      "description": "pplus vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Pplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "pplus_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "sab.ongrid.1",
+      "description": "sab vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "SAB"
+      ],
+      "layer_refs": [
+        {
+          "name": "SAB",
+          "layer": 49,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "sab_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "resistor.ongrid.1",
+      "description": "resistor vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Resistor"
+      ],
+      "layer_refs": [
+        {
+          "name": "Resistor",
+          "layer": 62,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "resistor_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "fusetop.ongrid.1",
+      "description": "fusetop vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "FuseTop"
+      ],
+      "layer_refs": [
+        {
+          "name": "FuseTop",
+          "layer": 75,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "fusetop_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "plfuse.ongrid.1",
+      "description": "plfuse vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "plfuse"
+      ],
+      "layer_refs": [
+        {
+          "name": "plfuse",
+          "layer": 125,
+          "datatype": 5
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "plfuse_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "efuse_mk.ongrid.1",
+      "description": "efuse_mk vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "efuse_mk"
+      ],
+      "layer_refs": [
+        {
+          "name": "efuse_mk",
+          "layer": 80,
+          "datatype": 5
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "efuse_mk_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "res_mk.ongrid.1",
+      "description": "res_mk vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "RES_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "RES_MK",
+          "layer": 110,
+          "datatype": 5
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "res_mk_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "cap_mk.ongrid.1",
+      "description": "cap_mk vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "CAP_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "CAP_MK",
+          "layer": 117,
+          "datatype": 5
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "cap_mk_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "diode_mk.ongrid.1",
+      "description": "diode_mk vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "diode_mk"
+      ],
+      "layer_refs": [
+        {
+          "name": "diode_mk",
+          "layer": 115,
+          "datatype": 5
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "diode_mk_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "drc_bjt.ongrid.1",
+      "description": "drc_bjt vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "DRC_BJT"
+      ],
+      "layer_refs": [
+        {
+          "name": "DRC_BJT",
+          "layer": 127,
+          "datatype": 5
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "drc_bjt_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "mim_l_mk.ongrid.1",
+      "description": "mim_l_mk vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "MIM_L_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "MIM_L_MK",
+          "layer": 117,
+          "datatype": 10
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "mim_l_mk_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "contact.ongrid.1",
+      "description": "contact vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Contact"
+      ],
+      "layer_refs": [
+        {
+          "name": "Contact",
+          "layer": 33,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "contact_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal1.ongrid.1",
+      "description": "metal1 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Metal1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal1",
+          "layer": 34,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "metal1_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "via1.ongrid.1",
+      "description": "via1 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Via1"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via1",
+          "layer": 35,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "via1_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal2.ongrid.1",
+      "description": "metal2 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Metal2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal2",
+          "layer": 36,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "metal2_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "via2.ongrid.1",
+      "description": "via2 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Via2"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via2",
+          "layer": 38,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "via2_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal3.ongrid.1",
+      "description": "metal3 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Metal3"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal3",
+          "layer": 42,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "metal3_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "via3.ongrid.1",
+      "description": "via3 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Via3"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via3",
+          "layer": 40,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "via3_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal4.ongrid.1",
+      "description": "metal4 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Metal4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "metal4_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "via4.ongrid.1",
+      "description": "via4 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Via4"
+      ],
+      "layer_refs": [
+        {
+          "name": "Via4",
+          "layer": 41,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "via4_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal5.ongrid.1",
+      "description": "metal5 vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Metal5"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal5",
+          "layer": 81,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "metal5_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metaltop.ongrid.1",
+      "description": "metaltop vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "MetalTop"
+      ],
+      "layer_refs": [
+        {
+          "name": "MetalTop",
+          "layer": 53,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "metaltop_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "pad.ongrid.1",
+      "description": "pad vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "Pad"
+      ],
+      "layer_refs": [
+        {
+          "name": "Pad",
+          "layer": 37,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "pad_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "sab.width.1",
+      "description": "minimum SAB width",
+      "check": "width",
+      "layers": [
+        "SAB"
+      ],
+      "layer_refs": [
+        {
+          "name": "SAB",
+          "layer": 49,
+          "datatype": 0
+        }
+      ],
+      "scope": "SB",
+      "value_um": 0.42,
+      "value_dbu": 420,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/sab.rb",
+        "rule_id": "SB.1",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "sab.space.1",
+      "description": "minimum SAB spacing",
+      "check": "space",
+      "layers": [
+        "SAB"
+      ],
+      "layer_refs": [
+        {
+          "name": "SAB",
+          "layer": 49,
+          "datatype": 0
+        }
+      ],
+      "scope": "SB",
+      "value_um": 0.42,
+      "value_dbu": 420,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/sab.rb",
+        "rule_id": "SB.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "sab.separation.contact.1",
+      "description": "minimum SAB spacing to contact",
+      "check": "separation",
+      "layers": [
+        "SAB",
+        "Contact"
+      ],
+      "layer_refs": [
+        {
+          "name": "SAB",
+          "layer": 49,
+          "datatype": 0
+        },
+        {
+          "name": "Contact",
+          "layer": 33,
+          "datatype": 0
+        }
+      ],
+      "scope": "SB",
+      "value_um": 0.15,
+      "value_dbu": 150,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/sab.rb",
+        "rule_id": "SB.4",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "poly2.enclosing.sab.1",
+      "description": "minimum Poly2 extension beyond related SAB",
+      "check": "enclosing",
+      "layers": [
+        "Poly2",
+        "SAB"
+      ],
+      "layer_refs": [
+        {
+          "name": "Poly2",
+          "layer": 30,
+          "datatype": 0
+        },
+        {
+          "name": "SAB",
+          "layer": 49,
+          "datatype": 0
+        }
+      ],
+      "scope": "SB",
+      "value_um": 0.22,
+      "value_dbu": 220,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/sab.rb",
+        "rule_id": "SB.10",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "esd.width.1",
+      "description": "minimum ESD implant width",
+      "check": "width",
+      "layers": [
+        "ESD"
+      ],
+      "layer_refs": [
+        {
+          "name": "ESD",
+          "layer": 24,
+          "datatype": 0
+        }
+      ],
+      "scope": "ESD",
+      "value_um": 0.6,
+      "value_dbu": 600,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/esd.rb",
+        "rule_id": "ESD.1",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "esd.space.1",
+      "description": "minimum ESD implant spacing",
+      "check": "space",
+      "layers": [
+        "ESD"
+      ],
+      "layer_refs": [
+        {
+          "name": "ESD",
+          "layer": 24,
+          "datatype": 0
+        }
+      ],
+      "scope": "ESD",
+      "value_um": 0.6,
+      "value_dbu": 600,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/esd.rb",
+        "rule_id": "ESD.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "esd.overlap.comp.1",
+      "description": "minimum overlap of an ESD implant edge to a COMP",
+      "check": "overlap",
+      "layers": [
+        "ESD",
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "ESD",
+          "layer": 24,
+          "datatype": 0
+        },
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "ESD",
+      "value_um": 0.45,
+      "value_dbu": 450,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/esd.rb",
+        "rule_id": "ESD.4b",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "esd.area.1",
+      "description": "minimum ESD implant area",
+      "check": "area",
+      "layers": [
+        "ESD"
+      ],
+      "layer_refs": [
+        {
+          "name": "ESD",
+          "layer": 24,
+          "datatype": 0
+        }
+      ],
+      "scope": "ESD",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "area_min_um2": 0.49,
+        "area_max_um2": null
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/esd.rb",
+        "rule_id": "ESD.5a",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "esd.holes_area.1",
+      "description": "minimum field area enclosed by ESD implant",
+      "check": "area",
+      "layers": [
+        "ESD"
+      ],
+      "layer_refs": [
+        {
+          "name": "ESD",
+          "layer": 24,
+          "datatype": 0
+        }
+      ],
+      "scope": "ESD",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "area_min_um2": 0.49,
+        "area_max_um2": null
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/esd.rb",
+        "rule_id": "ESD.5b",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "esd.separation.nplus.1",
+      "description": "minimum ESD implant spacing to Nplus",
+      "check": "separation",
+      "layers": [
+        "ESD",
+        "Nplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "ESD",
+          "layer": 24,
+          "datatype": 0
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        }
+      ],
+      "scope": "ESD",
+      "value_um": 0.3,
+      "value_dbu": 300,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/esd.rb",
+        "rule_id": "ESD.8",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "esd.separation.pplus.1",
+      "description": "minimum ESD implant spacing to Pplus",
+      "check": "separation",
+      "layers": [
+        "ESD",
+        "Pplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "ESD",
+          "layer": 24,
+          "datatype": 0
+        },
+        {
+          "name": "Pplus",
+          "layer": 31,
+          "datatype": 0
+        }
+      ],
+      "scope": "ESD",
+      "value_um": 0.3,
+      "value_dbu": 300,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/esd.rb",
+        "rule_id": "ESD.8",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.separation.guard_ring_mk.1",
+      "description": "minimum Comp spacing to GUARD_RING_MK",
+      "check": "separation",
+      "layers": [
+        "Comp",
+        "GUARD_RING_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        },
+        {
+          "name": "GUARD_RING_MK",
+          "layer": 167,
+          "datatype": 5
+        }
+      ],
+      "scope": "GR",
+      "value_um": 10.0,
+      "value_dbu": 10000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb",
+        "rule_id": "GR.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "nwell.separation.guard_ring_mk.1",
+      "description": "minimum Nwell spacing to GUARD_RING_MK",
+      "check": "separation",
+      "layers": [
+        "Nwell",
+        "GUARD_RING_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "Nwell",
+          "layer": 21,
+          "datatype": 0
+        },
+        {
+          "name": "GUARD_RING_MK",
+          "layer": 167,
+          "datatype": 5
+        }
+      ],
+      "scope": "GR",
+      "value_um": 10.0,
+      "value_dbu": 10000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb",
+        "rule_id": "GR.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "poly2.separation.guard_ring_mk.1",
+      "description": "minimum Poly2 spacing to GUARD_RING_MK",
+      "check": "separation",
+      "layers": [
+        "Poly2",
+        "GUARD_RING_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "Poly2",
+          "layer": 30,
+          "datatype": 0
+        },
+        {
+          "name": "GUARD_RING_MK",
+          "layer": 167,
+          "datatype": 5
+        }
+      ],
+      "scope": "GR",
+      "value_um": 10.0,
+      "value_dbu": 10000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb",
+        "rule_id": "GR.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal1.separation.guard_ring_mk.1",
+      "description": "minimum Metal1 spacing to GUARD_RING_MK",
+      "check": "separation",
+      "layers": [
+        "Metal1",
+        "GUARD_RING_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal1",
+          "layer": 34,
+          "datatype": 0
+        },
+        {
+          "name": "GUARD_RING_MK",
+          "layer": 167,
+          "datatype": 5
+        }
+      ],
+      "scope": "GR",
+      "value_um": 10.0,
+      "value_dbu": 10000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb",
+        "rule_id": "GR.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal2.separation.guard_ring_mk.1",
+      "description": "minimum Metal2 spacing to GUARD_RING_MK",
+      "check": "separation",
+      "layers": [
+        "Metal2",
+        "GUARD_RING_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal2",
+          "layer": 36,
+          "datatype": 0
+        },
+        {
+          "name": "GUARD_RING_MK",
+          "layer": 167,
+          "datatype": 5
+        }
+      ],
+      "scope": "GR",
+      "value_um": 10.0,
+      "value_dbu": 10000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb",
+        "rule_id": "GR.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal3.separation.guard_ring_mk.1",
+      "description": "minimum Metal3 spacing to GUARD_RING_MK",
+      "check": "separation",
+      "layers": [
+        "Metal3",
+        "GUARD_RING_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal3",
+          "layer": 42,
+          "datatype": 0
+        },
+        {
+          "name": "GUARD_RING_MK",
+          "layer": 167,
+          "datatype": 5
+        }
+      ],
+      "scope": "GR",
+      "value_um": 10.0,
+      "value_dbu": 10000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb",
+        "rule_id": "GR.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal4.separation.guard_ring_mk.1",
+      "description": "minimum Metal4 spacing to GUARD_RING_MK",
+      "check": "separation",
+      "layers": [
+        "Metal4",
+        "GUARD_RING_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal4",
+          "layer": 46,
+          "datatype": 0
+        },
+        {
+          "name": "GUARD_RING_MK",
+          "layer": 167,
+          "datatype": 5
+        }
+      ],
+      "scope": "GR",
+      "value_um": 10.0,
+      "value_dbu": 10000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb",
+        "rule_id": "GR.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metal5.separation.guard_ring_mk.1",
+      "description": "minimum Metal5 spacing to GUARD_RING_MK",
+      "check": "separation",
+      "layers": [
+        "Metal5",
+        "GUARD_RING_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "Metal5",
+          "layer": 81,
+          "datatype": 0
+        },
+        {
+          "name": "GUARD_RING_MK",
+          "layer": 167,
+          "datatype": 5
+        }
+      ],
+      "scope": "GR",
+      "value_um": 10.0,
+      "value_dbu": 10000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb",
+        "rule_id": "GR.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "metaltop.separation.guard_ring_mk.1",
+      "description": "minimum MetalTop spacing to GUARD_RING_MK",
+      "check": "separation",
+      "layers": [
+        "MetalTop",
+        "GUARD_RING_MK"
+      ],
+      "layer_refs": [
+        {
+          "name": "MetalTop",
+          "layer": 53,
+          "datatype": 0
+        },
+        {
+          "name": "GUARD_RING_MK",
+          "layer": 167,
+          "datatype": 5
+        }
+      ],
+      "scope": "GR",
+      "value_um": 10.0,
+      "value_dbu": 10000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/guard_ring.rb",
+        "rule_id": "GR.2",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    }
+  ],
+  "unmodeled_rules": [
+    "CO.6a",
+    "CO.6b",
+    "DF.15a_MV",
+    "DF.15b_MV",
+    "DF.16_MV",
+    "DF.17_MV",
+    "DF.19_MV",
+    "DF.1b_MV",
+    "DF.2a_MV",
+    "DF.3c_MV",
+    "DF.4a_MV",
+    "DF.4b_MV",
+    "DF.4c_MV",
+    "DF.4d_MV",
+    "DF.4e_MV",
+    "DF.5_MV",
+    "DF.6_MV",
+    "DF.7_MV",
+    "DF.8_MV",
+    "DV.1",
+    "DV.3",
+    "DV.6",
+    "DV.7",
+    "DV.8",
+    "DV.9",
+    "ESD.10",
+    "ESD.3a",
+    "ESD.3b",
+    "ESD.4a",
+    "ESD.6",
+    "ESD.7",
+    "ESD.9",
+    "ESD.pl",
+    "GR.1",
+    "GR.11",
+    "GR.3",
+    "GR.4",
+    "GR.6",
+    "LPW.1_MV",
+    "LPW.2a_MV",
+    "LPW.2b_MV",
+    "M1.2b",
+    "M2.2b",
+    "M3.2b",
+    "M4.2b",
+    "M5.2b",
+    "MSLOT.1",
+    "MSLOT.2",
+    "MSLOT.3",
+    "MSLOT.4",
+    "MSLOT.5",
+    "MSLOT.6",
+    "MSLOT.7",
+    "MSLOT.8",
+    "MT.2b",
+    "MT.3",
+    "MT.4",
+    "MT30.1a",
+    "MT30.1b",
+    "MT30.2",
+    "MT30.3",
+    "MT30.4",
+    "MT30.5",
+    "MT30.6",
+    "MT30.7",
+    "MT30.8",
+    "NW.1a_MV",
+    "NW.1b_MV",
+    "NW.2a_MV",
+    "NW.2b_MV",
+    "NW.5_MV",
+    "NW.6_MV",
+    "NW.7_MV",
+    "PL.1_MV",
+    "PL.1a_MV",
+    "PL.2_MV",
+    "PL.3b_MV",
+    "PL.4_MV",
+    "PL.5a_MV",
+    "PL.5b_MV",
+    "PL.7_MV",
+    "V1.3c",
+    "V1.3d",
+    "V1.4b",
+    "V1.4c",
+    "V2.3c",
+    "V2.3d",
+    "V2.4b",
+    "V2.4c",
+    "V3.3c",
+    "V3.3d",
+    "V3.4b",
+    "V3.4c",
+    "V4.3c",
+    "V4.3d",
+    "V4.4b",
+    "V4.4c"
+  ],
+  "marker_blind_layers": [],
+  "layer_table": [
+    {
+      "name": "DNWELL",
+      "layer": 12,
+      "datatype": 0
+    },
+    {
+      "name": "Nwell",
+      "layer": 21,
+      "datatype": 0
+    },
+    {
+      "name": "Comp",
+      "layer": 22,
+      "datatype": 0
+    },
+    {
+      "name": "ESD",
+      "layer": 24,
+      "datatype": 0
+    },
+    {
+      "name": "Poly2",
+      "layer": 30,
+      "datatype": 0
+    },
+    {
+      "name": "Pplus",
+      "layer": 31,
+      "datatype": 0
+    },
+    {
+      "name": "Nplus",
+      "layer": 32,
+      "datatype": 0
+    },
+    {
+      "name": "Contact",
+      "layer": 33,
+      "datatype": 0
+    },
+    {
+      "name": "Metal1",
+      "layer": 34,
+      "datatype": 0
+    },
+    {
+      "name": "Via1",
+      "layer": 35,
+      "datatype": 0
+    },
+    {
+      "name": "Metal2",
+      "layer": 36,
+      "datatype": 0
+    },
+    {
+      "name": "Pad",
+      "layer": 37,
+      "datatype": 0
+    },
+    {
+      "name": "Via2",
+      "layer": 38,
+      "datatype": 0
+    },
+    {
+      "name": "Via3",
+      "layer": 40,
+      "datatype": 0
+    },
+    {
+      "name": "Via4",
+      "layer": 41,
+      "datatype": 0
+    },
+    {
+      "name": "Metal3",
+      "layer": 42,
+      "datatype": 0
+    },
+    {
+      "name": "Metal4",
+      "layer": 46,
+      "datatype": 0
+    },
+    {
+      "name": "SAB",
+      "layer": 49,
+      "datatype": 0
+    },
+    {
+      "name": "MetalTop",
+      "layer": 53,
+      "datatype": 0
+    },
+    {
+      "name": "Dualgate",
+      "layer": 55,
+      "datatype": 0
+    },
+    {
+      "name": "Resistor",
+      "layer": 62,
+      "datatype": 0
+    },
+    {
+      "name": "FuseTop",
+      "layer": 75,
+      "datatype": 0
+    },
+    {
+      "name": "efuse_mk",
+      "layer": 80,
+      "datatype": 5
+    },
+    {
+      "name": "Metal5",
+      "layer": 81,
+      "datatype": 0
+    },
+    {
+      "name": "RES_MK",
+      "layer": 110,
+      "datatype": 5
+    },
+    {
+      "name": "diode_mk",
+      "layer": 115,
+      "datatype": 5
+    },
+    {
+      "name": "CAP_MK",
+      "layer": 117,
+      "datatype": 5
+    },
+    {
+      "name": "MIM_L_MK",
+      "layer": 117,
+      "datatype": 10
+    },
+    {
+      "name": "plfuse",
+      "layer": 125,
+      "datatype": 5
+    },
+    {
+      "name": "DRC_BJT",
+      "layer": 127,
+      "datatype": 5
+    },
+    {
+      "name": "MOS_CAP_MK",
+      "layer": 166,
+      "datatype": 5
+    },
+    {
+      "name": "GUARD_RING_MK",
+      "layer": 167,
+      "datatype": 5
+    },
+    {
+      "name": "Schottky_diode",
+      "layer": 241,
+      "datatype": 0
+    }
+  ],
+  "ambiguous_names": [],
+  "unresolved": [
+    {
+      "layer": 112,
+      "datatype": 1,
+      "rules": [
+        "comp.tap_distance.nwell.lv.1",
+        "comp.tap_distance.psub.lv.1",
+        "comp.tap_distance.nwell.mv.1",
+        "comp.tap_distance.psub.mv.1"
+      ]
+    },
+    {
+      "layer": 204,
+      "datatype": 0,
+      "rules": [
+        "comp.tap_distance.nwell.lv.1",
+        "comp.tap_distance.psub.lv.1",
+        "comp.tap_distance.nwell.mv.1",
+        "comp.tap_distance.psub.mv.1"
+      ]
+    }
+  ]
+}

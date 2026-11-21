@@ -1,0 +1,91 @@
+* extracted by klt extract --deck gf180mcu
+
+* cell output_stage
+* pin ibias
+* pin n2
+* pin nz
+* pin vdd
+* pin vout
+* pin vss
+.SUBCKT output_stage ibias n2 nz vdd vout vss
+* device instance $1 r0 *1 46.3,2.32 nfet
+X$1 ibias ibias vss vss nfet_03v3 L=2U W=3U AS=1.5P AD=0.87P PS=7U PD=3.58U
+* device instance $2 r0 *1 48.88,2.32 nfet
+X$2 vss ibias ibias vss nfet_03v3 L=2U W=3U AS=0.87P AD=1.5P PS=3.58U PD=7U
+* device instance $3 r0 *1 58.34,2.32 nfet
+X$3 vout ibias vss vss nfet_03v3 L=2U W=3U AS=1.5P AD=0.87P PS=7U PD=3.58U
+* device instance $4 r0 *1 60.92,2.32 nfet
+X$4 vss ibias vout vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $5 r0 *1 63.5,2.32 nfet
+X$5 vout ibias vss vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $6 r0 *1 66.08,2.32 nfet
+X$6 vss ibias vout vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $7 r0 *1 68.66,2.32 nfet
+X$7 vout ibias vss vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $8 r0 *1 71.24,2.32 nfet
+X$8 vss ibias vout vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $9 r0 *1 73.82,2.32 nfet
+X$9 vout ibias vss vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $10 r0 *1 76.4,2.32 nfet
+X$10 vss ibias vout vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $11 r0 *1 78.98,2.32 nfet
+X$11 vout ibias vss vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $12 r0 *1 81.56,2.32 nfet
+X$12 vss ibias vout vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $13 r0 *1 84.14,2.32 nfet
+X$13 vout ibias vss vss nfet_03v3 L=2U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $14 r0 *1 86.72,2.32 nfet
+X$14 vss ibias vout vss nfet_03v3 L=2U W=3U AS=0.87P AD=1.5P PS=3.58U PD=7U
+* device instance $15 r0 *1 1,2.32 pfet
+X$15 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=1.5P AD=0.87P PS=7U PD=3.58U
+* device instance $16 r0 *1 2.58,2.32 pfet
+X$16 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $17 r0 *1 4.16,2.32 pfet
+X$17 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $18 r0 *1 5.74,2.32 pfet
+X$18 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $19 r0 *1 7.32,2.32 pfet
+X$19 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $20 r0 *1 8.9,2.32 pfet
+X$20 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $21 r0 *1 10.48,2.32 pfet
+X$21 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $22 r0 *1 12.06,2.32 pfet
+X$22 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $23 r0 *1 13.64,2.32 pfet
+X$23 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $24 r0 *1 15.22,2.32 pfet
+X$24 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $25 r0 *1 16.8,2.32 pfet
+X$25 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $26 r0 *1 18.38,2.32 pfet
+X$26 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $27 r0 *1 19.96,2.32 pfet
+X$27 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $28 r0 *1 21.54,2.32 pfet
+X$28 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $29 r0 *1 23.12,2.32 pfet
+X$29 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $30 r0 *1 24.7,2.32 pfet
+X$30 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $31 r0 *1 26.28,2.32 pfet
+X$31 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $32 r0 *1 27.86,2.32 pfet
+X$32 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $33 r0 *1 29.44,2.32 pfet
+X$33 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $34 r0 *1 31.02,2.32 pfet
+X$34 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $35 r0 *1 32.6,2.32 pfet
+X$35 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $36 r0 *1 34.18,2.32 pfet
+X$36 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $37 r0 *1 35.76,2.32 pfet
+X$37 vout n2 vdd vdd pfet_03v3 L=1U W=3U AS=0.87P AD=0.87P PS=3.58U PD=3.58U
+* device instance $38 r0 *1 37.34,2.32 pfet
+X$38 vdd n2 vout vdd pfet_03v3 L=1U W=3U AS=0.87P AD=1.5P PS=3.58U PD=7U
+* device instance $39 r0 *1 102.91,9.46 cap_mim_2f0_m4m5_noshield
+X$39 n2 nz cap_mim_2f0_m4m5_noshield c_length=16.8U c_width=16.8U
+* device instance $40 r0 *1 127.89,1 ppolyf_u_1k
+X$40 vout nz vss ppolyf_u_1k r_length=22U r_width=2U
+.ENDS output_stage

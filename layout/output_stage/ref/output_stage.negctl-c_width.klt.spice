@@ -1,0 +1,18 @@
+* NEGATIVE CONTROL for output_stage -- XCC c_width deliberately 20u (schematic 16.8u).
+* klt lvs must report a mismatch with a device.property error against
+* the unchanged gds/output_stage.gds; a match would mean the (C, A) compare is
+* insensitive to the plate size this slice claims it checks.
+* schematic-derived sub-netlist for output_stage: XM6+XM7+XMB1+XCC+XRZ cut mechanically from
+* design/netlist/opamp_two_stage.spice -- the five instance cards, unchanged.
+* (issue #424; ad/as/pd/ps and nrd/nrs are carried verbatim; nz is
+* internal, not a sub-block port.)
+.subckt output_stage n2 vout ibias vdd vss
+XM6 vout n2 vdd vdd pfet_03v3 L=1u W=72u nf=24 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM7 vout ibias vss vss nfet_03v3 L=2u W=36u nf=12 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XMB1 ibias ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XCC n2 nz cap_mim_2f0_m4m5_noshield c_width=20u c_length=16.8u m=1
+XRZ vout nz vss ppolyf_u_1k r_width=2u r_length=22u m=1
+.ends
