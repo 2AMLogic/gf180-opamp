@@ -6,10 +6,10 @@
   },
   "deck": "gf180mcu",
   "top": "pilot_pfet_m3_m4",
-  "dbu_um": 0.0005,
+  "dbu_um": 0.001,
   "netlist_path": "extracted/pilot_pfet_m3_m4.klt.spice",
   "netlist_sha256": "3b1594b5efc3f84405e3ecc5e04a113176b234e39086021f16160521bc644518",
-  "netlist_normalized_sha256": "06f3197454c84e064db61584282f67ba824e6d3bd44d496485aa7126fe99c067",
+  "netlist_normalized_sha256": "b69684962c4e804789362414b165a19456176d04d1e1f3acb044a9f7fc2f10f4",
   "status": "extracted",
   "device_count": 2,
   "net_count": 4,
@@ -61,7 +61,7 @@
       },
       "instance_path": [
         {
-          "cell": "mos_array",
+          "cell": "pilot_pfet_m3_m4__core",
           "array_index": null
         }
       ]
@@ -85,7 +85,7 @@
       },
       "instance_path": [
         {
-          "cell": "mos_array",
+          "cell": "pilot_pfet_m3_m4__core",
           "array_index": null
         }
       ]
@@ -96,6 +96,7 @@
       "name": "B",
       "pin": true,
       "device_count": 2,
+      "structural_id": null,
       "net_id": 3,
       "pin_index": 0,
       "label_positions_um": [
@@ -125,6 +126,7 @@
       "name": "D",
       "pin": true,
       "device_count": 2,
+      "structural_id": null,
       "net_id": 1,
       "pin_index": 1,
       "label_positions_um": [
@@ -139,6 +141,7 @@
       "name": "G",
       "pin": true,
       "device_count": 2,
+      "structural_id": null,
       "net_id": 2,
       "pin_index": 2,
       "label_positions_um": [
@@ -153,6 +156,7 @@
       "name": "S",
       "pin": true,
       "device_count": 2,
+      "structural_id": null,
       "net_id": 4,
       "pin_index": 3,
       "label_positions_um": [
@@ -184,6 +188,13 @@
   "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [],
   "dead_metal": [],
+  "dead_metal_omitted": false,
+  "dead_metal_summary": {
+    "clusters": 0,
+    "shapes": 0,
+    "area_um2": 0.0,
+    "by_layer": []
+  },
   "matched_device_groups": [],
   "def_pin_promotion": null,
   "pin_renames": null,
@@ -191,6 +202,7 @@
   "declared_pins": null,
   "def_pins": null,
   "label_layers": null,
+  "device_models": null,
   "probes": [],
   "pdk": {
     "variant": "gf180mcuD",
@@ -201,7 +213,9 @@
     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
   },
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev3808+g1ad4a837f657",
+    "klt_git_commit": "1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f6577813bc367c29a0b948c0bff66fda",
     "klayout_version": "0.30.12",
     "pdk": {
       "name": "gf180mcuD",
@@ -213,8 +227,8 @@
     },
     "deck": {
       "name": "gf180mcu",
-      "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
-      "released": true,
+      "content_hash": "sha256:778e9a4eba34b67a0427367917b4c9c2602d44ff085d663affd302a8d0f197cd",
+      "released": false,
       "options": {
         "metal_top": "9K",
         "mim_cap": "cap_mim_2f0_m4m5_noshield",
@@ -228,7 +242,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:6408ce91f8b09dd88799190b8b9976f5c74a293b601fe9a7a4389d2ff87a97b2",
+      "content_hash": "sha256:1986de90869b4717a0c83e9d7cc2f49266e6b887f46ce3b4a9301b79292916c0",
       "role": "layout"
     }
   },
@@ -245,11 +259,13 @@
       "read_layout": 0.0,
       "device_extraction": 0.005,
       "diagnostics": 0.0,
+      "unsupported_devices": 0.0,
+      "unmodeled_marker_diagnostic": 0.0,
       "netlist_write": 0.0,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.115,
-    "unattributed_seconds": 0.109
+    "total_seconds": 0.04,
+    "unattributed_seconds": 0.033
   }
 }

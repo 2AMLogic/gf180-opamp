@@ -8,13 +8,14 @@
     "variant": "gf180mcuD",
     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
   },
-  "dbu_um": 0.0005,
+  "dbu_um": 0.001,
   "bbox_um": {
     "x0": -1.08,
     "y0": -1.08,
-    "x1": 5.48,
+    "x1": 5.98,
     "y1": 10.32
   },
+  "subcell_naming_scheme": "core-suffix-v1",
   "device_count": 4,
   "ports": [
     {
@@ -64,7 +65,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 2.61,
+      "x_um": 3.11,
       "y_um": 1.5,
       "width_um": 3.0,
       "direction_deg": 180
@@ -77,7 +78,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 4.1899999999999995,
+      "x_um": 4.6899999999999995,
       "y_um": 1.5,
       "width_um": 3.0,
       "direction_deg": 0
@@ -90,7 +91,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 3.4,
+      "x_um": 3.9,
       "y_um": 3.96,
       "width_um": 0.42000000000000004,
       "direction_deg": 90
@@ -142,7 +143,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 2.61,
+      "x_um": 3.11,
       "y_um": 6.32,
       "width_um": 3.0,
       "direction_deg": 180
@@ -155,7 +156,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 4.1899999999999995,
+      "x_um": 4.6899999999999995,
       "y_um": 6.32,
       "width_um": 3.0,
       "direction_deg": 0
@@ -168,7 +169,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 3.4,
+      "x_um": 3.9,
       "y_um": 8.780000000000001,
       "width_um": 0.42000000000000004,
       "direction_deg": 90
@@ -181,7 +182,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 2.1999999999999997,
+      "x_um": 2.45,
       "y_um": 9.95,
       "width_um": 0.42,
       "direction_deg": 90
@@ -194,7 +195,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 2.1999999999999997,
+      "x_um": 2.45,
       "y_um": -0.7100000000000001,
       "width_um": 0.42,
       "direction_deg": 270
@@ -207,7 +208,7 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 5.109999999999999,
+      "x_um": 5.61,
       "y_um": 4.62,
       "width_um": 0.42,
       "direction_deg": 0
@@ -234,11 +235,18 @@
     "notes": [],
     "voltage_flavor": null,
     "voltage_flavor_mark_present": false,
-    "sd_implant_present": true
+    "sd_implant_present": true,
+    "pitch": {
+      "col_pitch_um": 2.9,
+      "min_col_pitch_um": 2.4,
+      "pitch_x_clamped": false
+    }
   },
   "warnings": [],
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev3808+g1ad4a837f657",
+    "klt_git_commit": "1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f6577813bc367c29a0b948c0bff66fda",
     "klayout_version": "0.30.12",
     "pdk": {
       "name": "gf180mcuD",

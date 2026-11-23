@@ -21,11 +21,11 @@ single process, no ngspice).
 
 | Item | Pinned identity |
 |---|---|
-| klayout-tools | `klt 0.8.0` (release; run from a throwaway env first on PATH, e.g. `uv venv V && uv pip install --python V/bin/python klayout-tools==0.8.0 klayout==0.30.12 && PATH=V/bin:$PATH layout/pilot/regen.sh`) |
+| klayout-tools | `klt 0.9.3.dev3808+g1ad4a837f657` (commit `1ad4a837f657` of `2AMLogic/klayout-tools`, not a PyPI release — bumped from 0.8.0 together with `layout/first_stage/`, whose routing needs a klt change no release up to 0.9.2 carries; run from a throwaway env first on PATH, e.g. `uv venv V && uv pip install --python V/bin/python "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f657" klayout==0.30.12 && PATH=V/bin:$PATH layout/pilot/regen.sh`) |
 | PDK | `gf180mcuD`, `open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7` (`~/.ciel/gf180mcuD`) |
 | PDK variant | `gf180mcuD` (5LM, metal_top 11K, MIM option B), drawn and checked with klt's curated `gf180mcu` deck |
 | klayout python (labelling) | `klayout==0.30.12` via a throwaway `uv run --with` env |
-| klayout engine inside `klt` | `0.30.12` — **pin it explicitly.** `pip install klayout-tools==0.8.0` on its own leaves klayout unpinned and picks up whatever is newest (0.30.13 at the time of writing), which changes the GDS timestamp records, every content hash in `evidence/`, and sets `klayout_version_mismatch: true` in each envelope's provenance. `tools/pilot.py` checks klt's reported engine against `PILOT_KLAYOUT_PIN` on the first generated cell and refuses the run on a mismatch. |
+| klayout engine inside `klt` | `0.30.12` — **pin it explicitly.** Installing klayout-tools on its own leaves klayout unpinned and picks up whatever is newest, which changes the GDS timestamp records, every content hash in `evidence/`, and sets `klayout_version_mismatch: true` in each envelope's provenance. `tools/pilot.py` checks klt's reported engine against `PILOT_KLAYOUT_PIN` on the first generated cell and refuses the run on a mismatch. |
 
 Nothing is installed on the host. The PDK's metal stack was not previously
 pinned in this repo; `D` is chosen because the schematic's
@@ -181,12 +181,13 @@ No cell was edited by hand to make it pass, and no spec value was changed.
    `regen.sh` if `XCC`/`XRZ` change again.)
 2. ~~Re-check #2999 and #3000 (contact grid, salicide-block geometry) with a
    foundry-equivalent DRC before any pilot cell is composed; the curated deck
-   cannot see them (#3001).~~ Obsolete at klt 0.8.0: the curated `gf180mcu`
-   deck now carries `contact.ongrid.1`, `sab.separation.contact.1` (SB.4) and
-   `poly2.enclosing.sab.1` (SB.10) — 114 rules,
-   `content_hash sha256:0eb6df1b...` — and klayout-tools #2999/#3000/#3001 are
-   closed. The precondition this item set is met by the installed deck; the
-   PDK runset itself remains unavailable on these workers (#282).
+   cannot see them (#3001).~~ Obsolete since klt 0.8.0: the curated `gf180mcu`
+   deck carries `contact.ongrid.1`, `sab.separation.contact.1` (SB.4) and
+   `poly2.enclosing.sab.1` (SB.10) — 127 rules at the pin above,
+   `content_hash sha256:778e9a4e...` (114 rules, `sha256:0eb6df1b...` at klt
+   0.8.0) — and klayout-tools #2999/#3000/#3001 are closed. The precondition
+   this item set is met by the installed deck; the PDK runset itself remains
+   unavailable on these workers (#282).
 3. Matching groups to place as units: the input pair `XM1/XM2` (common-centroid
    `diff_pair` or `mos_array` topology with dummies), the PMOS mirror
    `XM3/XM4`, and the bias mirror `XMB1/XM5/XM7` (ratio 1 : 1 : 6 by W, same L=2u).

@@ -1,11 +1,14 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "engine": "klayout",
   "layout": {
     "path": "layout/pilot/gds/pilot_pfet_m6.gds",
     "scope": "repo"
   },
-  "reference": "../ref/pilot_pfet_m6.klt.spice",
+  "reference": {
+    "path": "layout/pilot/ref/pilot_pfet_m6.klt.spice",
+    "scope": "repo"
+  },
   "top": "pilot_pfet_m6",
   "reference_top": "PILOT_PFET_M6",
   "reference_conversion": {
@@ -32,6 +35,7 @@
     "anchor_top_level_pins": null,
     "strict_top_level_pin_count": false,
     "compare_mos_flavour": false,
+    "ignore_mos_bulk": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -53,6 +57,7 @@
     "instance_count": 0,
     "expected_nets": null,
     "unchecked_expected_pins": [],
+    "excluded_pins": [],
     "findings": [],
     "finding_count": 0
   },
@@ -61,10 +66,41 @@
     "reason": null,
     "device_classes": [],
     "device_count": 0,
+    "inspected_count": 1,
     "findings": [],
     "finding_count": 0
   },
-  "device_parameter_coverage": [],
+  "device_parameter_coverage": [
+    {
+      "class": "pfet",
+      "device_kind": "mos",
+      "layout_devices": 1,
+      "reference_devices": 1,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "AS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "AD",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PD",
+          "reason": "secondary"
+        }
+      ]
+    }
+  ],
+  "mismatches_omitted": false,
   "mismatch_count": 2,
   "error_count": 0,
   "category_counts": {
@@ -88,6 +124,17 @@
       "matched": 4
     }
   },
+  "pin_set_difference": {
+    "deck_synthesized_layout_pins": [],
+    "layout_only_pins": [],
+    "layout_only_pins_count": 0,
+    "layout_only_pins_truncated": false,
+    "reference_only_pins": [],
+    "reference_only_pins_count": 0,
+    "reference_only_pins_truncated": false
+  },
+  "ignored_layers": [],
+  "warnings": [],
   "device_classes": [
     "nfet",
     "pfet",
@@ -113,18 +160,20 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "7cabddd9207533b8af85be8ea1d1f0678334f17d721da7f9fbb6d78f48243f2a",
+    "layout_sha256": "3cd73e1a25f967059e5b934696b4cd4f421e5f94a1adb703447f77a044c3ee3e",
     "reference_sha256": "d3b39e177c44b784ca370caa0628a6c8ce8fb2322b77f909428be684e251fb06",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev3808+g1ad4a837f657",
+    "klt_git_commit": "1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f6577813bc367c29a0b948c0bff66fda",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "gf180mcu",
-      "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
-      "released": true,
+      "content_hash": "sha256:778e9a4eba34b67a0427367917b4c9c2602d44ff085d663affd302a8d0f197cd",
+      "released": false,
       "options": {
         "metal_top": "9K",
         "mim_cap": "cap_mim_2f0_m4m5_noshield",
@@ -138,7 +187,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:7cabddd9207533b8af85be8ea1d1f0678334f17d721da7f9fbb6d78f48243f2a",
+      "content_hash": "sha256:3cd73e1a25f967059e5b934696b4cd4f421e5f94a1adb703447f77a044c3ee3e",
       "role": "layout"
     },
     "klayout_version_mismatch": false
@@ -182,22 +231,30 @@
   "net_correspondence": [
     {
       "layout": "B",
+      "layout_id": 0,
       "reference": "B",
+      "reference_id": 3,
       "pin": true
     },
     {
       "layout": "D",
+      "layout_id": 3,
       "reference": "D",
+      "reference_id": 0,
       "pin": true
     },
     {
       "layout": "G",
+      "layout_id": 2,
       "reference": "G",
+      "reference_id": 1,
       "pin": true
     },
     {
       "layout": "S",
+      "layout_id": 1,
       "reference": "S",
+      "reference_id": 2,
       "pin": true
     }
   ]
