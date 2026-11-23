@@ -3,7 +3,7 @@
 Current Loom label state. Tracking and blocked items do not constitute ready work.
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-21T06:54:05Z (snapshot; compare against live labels)_
+_Generated: 2026-11-23T03:23:15Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -24,7 +24,6 @@ _None._
 - **#241**: T1 items 2, 3, 4, 11: compose the full op-amp core layout from the pilot cells and mint klt DRC, LVS and ERC evidence *(held)*
 - **#242**: T1 item 5: cite the retained klt sim reports per spec row, with declared gaps for rows not yet covered *(held)*
 - **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence *(held)*
-- **#424**: layout: compose the output-stage and compensation sub-block (XM6, XM7, XMB1, XCC, XRZ) from the pilot generators with klt DRC and LVS evidence
 
 ## Ready
 
@@ -36,13 +35,13 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-- **#424**: layout: compose the output-stage and compensation sub-block (XM6, XM7, XMB1, XCC, XRZ) from the pilot generators with klt DRC and LVS evidence
+_None._
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-- **#426**: layout: add routed output-stage + compensation sub-block with DRC/LVS evidence
+_None._
 
 ## Approved (Awaiting Merge)
 
@@ -58,13 +57,11 @@ Issues carrying `loom:curated`.
 - **#295**: Raise the unity-gain bandwidth target to >= 8 MHz for a type-III compensator load *(curated)* *(held)*
 - **#321**: Stop committing uncompressed point data: adopt the proven .dat.gz convention for new sim records *(curated)* *(held)*
 - **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence *(curated)* *(held)*
-- **#424**: layout: compose the output-stage and compensation sub-block (XM6, XM7, XMB1, XCC, XRZ) from the pilot generators with klt DRC and LVS evidence *(curated)*
 
 ## Proposed (Architect / Hermit)
 
 - **#321**: Stop committing uncompressed point data: adopt the proven .dat.gz convention for new sim records *(hermit)* *(held)*
 - **#322**: Scope the passive RZ x CC matrix per figure: slew-swing-power re-runs 660 provably identical SPICE cells per full-scope study *(hermit)* *(held)*
-- **#340**: Consolidate 8 duplicate claim_record_paths append-only tests into sim/test_harness.py *(hermit)* *(held)*
 
 ## Epics
 
@@ -76,12 +73,12 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 1 |
-| Important | 5 |
+| Important | 4 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 1 |
-| PRs awaiting review | 1 |
+| In Progress (`loom:building`) | 0 |
+| PRs awaiting review | 0 |
 | Approved PRs awaiting merge | 0 |
-| Curated | 5 |
-| Architect / Hermit proposals | 3 |
+| Curated | 4 |
+| Architect / Hermit proposals | 2 |
 | Active epics | 0 |
 <!-- guide:plan-body:end -->

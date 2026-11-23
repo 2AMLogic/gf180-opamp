@@ -6,6 +6,12 @@ Merged pull requests and closed issues recorded by Guide.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-23
+
+- **PR #426**: layout: add routed output-stage + compensation sub-block with DRC/LVS evidence
+- **Issue #424** (closed): layout: compose the output-stage and compensation sub-block (XM6, XM7, XMB1, XCC, XRZ) from the pilot generators with klt DRC and LVS evidence
+- **Issue #340** (closed): Consolidate 8 duplicate claim_record_paths append-only tests into sim/test_harness.py
+
 ### 2026-11-19
 
 - **PR #421**: refactor: hoist corner point key/label/stem helpers into sim harness
