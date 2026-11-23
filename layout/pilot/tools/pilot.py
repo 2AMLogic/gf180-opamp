@@ -19,6 +19,7 @@ Per cell:
      passing LVS would no longer prove the compared dimensions agree.
 Outputs are deterministic (no timestamps) and written under layout/pilot/.
 """
+import hashlib
 import json
 import os
 import re
@@ -28,6 +29,7 @@ import subprocess
 PILOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(PILOT, "..", ".."))
 PDK = "gf180mcuD"
+NETLIST = "design/netlist/opamp_two_stage.spice"
 KLAYOUT_PIN = os.environ.get("PILOT_KLAYOUT_PIN")  # exported by regen.sh
 
 MOS_LABELS = {"U0_S": "S", "U0_D": "D", "U0_G": "G", "TAP_*": "B"}
@@ -95,17 +97,59 @@ def schematic_cards():
     return cards
 
 
-def run(cmd, **kw):
-    return subprocess.run(cmd, capture_output=True, text=True, **kw)
+def run(cmd, cwd, out_path=None, ok_rc=(0,)):
+    """Run a klt command line in `cwd`; optionally store stdout verbatim under
+    `cwd`; return (parsed stdout, rc).  A run outside ok_rc with no stdout to
+    parse exits, reporting the verb, rc, and the stderr tail."""
+    r = subprocess.run(cmd, capture_output=True, text=True, cwd=cwd)
+    if out_path is not None:
+        open(os.path.join(cwd, out_path), "w").write(r.stdout)
+    if r.returncode not in ok_rc and not r.stdout.strip():
+        raise SystemExit("klt %s failed (rc %d): %s" % (cmd[1], r.returncode, r.stderr[-800:]))
+    return json.loads(r.stdout), r.returncode
+
+
+def klt(args, cwd, out_path=None, ok_rc=(0,)):
+    """Run a klt verb with --format json via run()."""
+    return run(["klt"] + args + ["--format", "json"], cwd, out_path, ok_rc)
 
 
 def klt_json(args, out_path, ok_rc=(0,)):
     """Run a klt verb with --format json, store stdout verbatim, return parsed."""
-    r = run(["klt"] + args + ["--format", "json"], cwd=PILOT)
-    open(os.path.join(PILOT, out_path), "w").write(r.stdout)
-    if r.returncode not in ok_rc and not r.stdout.strip():
-        raise SystemExit("klt %s failed: %s" % (args[0], r.stderr))
-    return json.loads(r.stdout), r.returncode
+    return run(["klt"] + args + ["--format", "json"], PILOT, out_path, ok_rc)
+
+
+def sha256_file(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 16), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def cut_ref(instances, cell, ports, note_lines):
+    """Cut the instance cards verbatim (continuation lines included) and wrap
+    them in a .subckt; `note_lines` parameterises the per-slice provenance
+    comment in the header."""
+    text = open(os.path.join(REPO, NETLIST)).read()
+    lines = text.splitlines()
+    out = []
+    for inst in instances:
+        for i, line in enumerate(lines):
+            if line.split() and line.split()[0] == inst:
+                out.append(line)
+                j = i + 1
+                while j < len(lines) and lines[j].startswith("+"):
+                    out.append(lines[j])
+                    j += 1
+                break
+        else:
+            raise SystemExit("instance %s not found in %s" % (inst, NETLIST))
+    header = ("* schematic-derived sub-netlist for %s: %s cut mechanically from\n"
+              "* %s -- the five instance cards, unchanged.\n* (%s)\n"
+              % (cell, "+".join(instances), NETLIST, "\n* ".join(note_lines)))
+    body = "\n".join([".subckt %s %s" % (cell, ports)] + out + [".ends"]) + "\n"
+    return header + body
 
 
 def check_engine(rep):
