@@ -5,7 +5,7 @@
     "scope": "repo"
   },
   "deck": "gf180mcu",
-  "dbu_um": 0.0005,
+  "dbu_um": 0.001,
   "status": "clean",
   "violation_count": 0,
   "rule_counts": {},
@@ -15,6 +15,7 @@
   "violations": [],
   "coverage": {
     "deck_layers": [
+      "11/39",
       "12/0",
       "21/0",
       "22/0",
@@ -39,6 +40,7 @@
       "75/0",
       "80/5",
       "81/0",
+      "100/8",
       "110/5",
       "112/1",
       "115/5",
@@ -46,8 +48,11 @@
       "117/10",
       "125/5",
       "127/5",
+      "166/5",
       "167/5",
       "204/0",
+      "210/0",
+      "226/0",
       "241/0"
     ],
     "layers_checked": [
@@ -101,6 +106,7 @@
       "comp.tap_distance.nwell.lv.1",
       "comp.tap_distance.nwell.mv.1",
       "comp.tap_distance.psub.mv.1",
+      "comp.width.moscap.1",
       "comp.width.mv.1",
       "diode_mk.ongrid.1",
       "dnwell.ongrid.1",
@@ -108,7 +114,9 @@
       "dualgate.ongrid.1",
       "dualgate.space.1",
       "dualgate.width.1",
+      "efuse_mk.enclosing.lvs_source.1",
       "efuse_mk.ongrid.1",
+      "efuse_mk.space.1",
       "esd.area.1",
       "esd.holes_area.1",
       "esd.overlap.comp.1",
@@ -117,6 +125,7 @@
       "esd.space.1",
       "esd.width.1",
       "fusetop.ongrid.1",
+      "ldmos_xtor.enclosing.mvpsd.1",
       "metal1.enclosing.via1.1",
       "metal1.separation.guard_ring_mk.1",
       "metal2.enclosing.via1.1",
@@ -150,6 +159,10 @@
       "mim.enclosing.via4.1",
       "mim.space.1",
       "mim_l_mk.ongrid.1",
+      "mvpsd.ongrid.1",
+      "mvsd.ongrid.1",
+      "mvsd.separation.dnwell.1",
+      "mvsd.width.1",
       "nwell.enclosing.comp.1",
       "nwell.ongrid.1",
       "nwell.separation.guard_ring_mk.1",
@@ -157,6 +170,11 @@
       "pad.enclosing.metal5.1",
       "pad.ongrid.1",
       "plfuse.ongrid.1",
+      "plfuse.separation.comp.1",
+      "plfuse.separation.esd.1",
+      "plfuse.separation.nplus.1",
+      "plfuse.separation.resistor.1",
+      "plfuse.separation.sab.1",
       "poly2.enclosing.sab.1",
       "poly2.separation.guard_ring_mk.1",
       "pplus.enclosing.comp.1",
@@ -195,8 +213,11 @@
       "7.8 Nplus",
       "7.9 Pplus",
       "9.1 Bond Pad",
+      "EF",
       "ESD",
       "GR",
+      "MDN",
+      "MDP",
       "OFFGRID",
       "SB"
     ],
@@ -226,6 +247,30 @@
       "DV.7",
       "DV.8",
       "DV.9",
+      "EF.01",
+      "EF.02",
+      "EF.03",
+      "EF.04a",
+      "EF.04b",
+      "EF.04c",
+      "EF.04d",
+      "EF.05",
+      "EF.06",
+      "EF.07",
+      "EF.08",
+      "EF.09",
+      "EF.10",
+      "EF.11",
+      "EF.12",
+      "EF.13",
+      "EF.15",
+      "EF.16a",
+      "EF.16b",
+      "EF.18",
+      "EF.19",
+      "EF.21",
+      "EF.22a",
+      "EF.22b",
       "ESD.10",
       "ESD.3a",
       "ESD.3b",
@@ -247,6 +292,76 @@
       "M3.2b",
       "M4.2b",
       "M5.2b",
+      "MDN.10a",
+      "MDN.10b",
+      "MDN.10c",
+      "MDN.10d",
+      "MDN.10ei",
+      "MDN.10eii",
+      "MDN.10f",
+      "MDN.11",
+      "MDN.12",
+      "MDN.13a",
+      "MDN.13b",
+      "MDN.13c",
+      "MDN.13d",
+      "MDN.15a",
+      "MDN.15b",
+      "MDN.17",
+      "MDN.2a",
+      "MDN.2b",
+      "MDN.3a",
+      "MDN.3b",
+      "MDN.4a",
+      "MDN.4b",
+      "MDN.5ai",
+      "MDN.5aii",
+      "MDN.5b",
+      "MDN.5c",
+      "MDN.6",
+      "MDN.6a",
+      "MDN.7",
+      "MDN.7a",
+      "MDN.8a",
+      "MDN.8b",
+      "MDN.9",
+      "MDP.1",
+      "MDP.10",
+      "MDP.10a",
+      "MDP.10b",
+      "MDP.11",
+      "MDP.12",
+      "MDP.13a",
+      "MDP.13b",
+      "MDP.13c",
+      "MDP.15",
+      "MDP.16a",
+      "MDP.16b",
+      "MDP.17a",
+      "MDP.17c",
+      "MDP.1a",
+      "MDP.2",
+      "MDP.3",
+      "MDP.3ai",
+      "MDP.3aii",
+      "MDP.3b",
+      "MDP.3c",
+      "MDP.3d",
+      "MDP.4",
+      "MDP.4a",
+      "MDP.4b",
+      "MDP.5",
+      "MDP.5a",
+      "MDP.6a",
+      "MDP.7",
+      "MDP.8",
+      "MDP.9a",
+      "MDP.9b",
+      "MDP.9c",
+      "MDP.9d",
+      "MDP.9ei",
+      "MDP.9eii",
+      "MDP.9f",
       "MSLOT.1",
       "MSLOT.2",
       "MSLOT.3",
@@ -274,6 +389,25 @@
       "NW.5_MV",
       "NW.6_MV",
       "NW.7_MV",
+      "PAD.1",
+      "PAD.10",
+      "PAD.11",
+      "PAD.12",
+      "PAD.13",
+      "PAD.14",
+      "PAD.15",
+      "PAD.16",
+      "PAD.17",
+      "PAD.18",
+      "PAD.19a",
+      "PAD.19b",
+      "PAD.2",
+      "PAD.20",
+      "PAD.5",
+      "PAD.6",
+      "PAD.7",
+      "PAD.8",
+      "PAD.9",
       "PL.1_MV",
       "PL.1a_MV",
       "PL.2_MV",
@@ -364,6 +498,10 @@
         "reason": "inapplicable_empty_checked_region"
       },
       {
+        "id": "comp.width.moscap.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "comp.width.mv.1",
         "reason": "no_applicable_geometry"
       },
@@ -392,7 +530,15 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "efuse_mk.enclosing.lvs_source.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "efuse_mk.ongrid.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "efuse_mk.space.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -425,6 +571,10 @@
       },
       {
         "id": "fusetop.ongrid.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "ldmos_xtor.enclosing.mvpsd.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -560,6 +710,22 @@
         "reason": "no_applicable_geometry"
       },
       {
+        "id": "mvpsd.ongrid.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "mvsd.ongrid.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "mvsd.separation.dnwell.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "mvsd.width.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
         "id": "nwell.enclosing.comp.1",
         "reason": "no_applicable_geometry"
       },
@@ -585,6 +751,26 @@
       },
       {
         "id": "plfuse.ongrid.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "plfuse.separation.comp.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "plfuse.separation.esd.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "plfuse.separation.nplus.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "plfuse.separation.resistor.1",
+        "reason": "no_applicable_geometry"
+      },
+      {
+        "id": "plfuse.separation.sab.1",
         "reason": "no_applicable_geometry"
       },
       {
@@ -674,10 +860,24 @@
     ],
     "unknown": [],
     "nothing_checked": false,
-    "nothing_checked_reasons": []
+    "nothing_checked_reasons": [],
+    "approximated_rules": [
+      {
+        "rule": "comp.tap_distance.psub.lv.1",
+        "class": "whole_polygon_selection",
+        "description": "D1: selection is of whole active polygons that do not interact with the tap reach region, so a long active with one end near a tap is legal; the check under-reports monotonically and a violation count of 0 does not establish the DRM DF.13/DF.14 every-point-within-distance form"
+      },
+      {
+        "rule": "comp.tap_distance.psub.lv.1",
+        "class": "non_complement_voltage_selection",
+        "description": "D3: the lv (touching neither v5_xtor nor dualgate) and mv (overlapping dualgate) selections are not complements; active touching v5_xtor without dualgate is evaluated by neither voltage column"
+      }
+    ]
   },
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev3808+g1ad4a837f657",
+    "klt_git_commit": "1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f6577813bc367c29a0b948c0bff66fda",
     "klayout_version": "0.30.12",
     "pdk": {
       "name": "gf180mcuD",
@@ -689,11 +889,11 @@
     },
     "deck": {
       "name": "gf180mcu",
-      "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
-      "released": true
+      "content_hash": "sha256:778e9a4eba34b67a0427367917b4c9c2602d44ff085d663affd302a8d0f197cd",
+      "released": false
     },
     "input": {
-      "content_hash": "sha256:e82b95e85ea2893da016926cfa6a5be21f6fcda17bbf17ab5cefb9a2dd876012",
+      "content_hash": "sha256:f2490c793ff87c5d99321307f09a5897041b33f45d0310f0990a827cd8610779",
       "role": "layout"
     },
     "klayout_version_mismatch": false

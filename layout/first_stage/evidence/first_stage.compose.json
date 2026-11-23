@@ -8,14 +8,29 @@
     "variant": "gf180mcuD",
     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
   },
-  "dbu_um": 0.0005,
+  "dbu_um": 0.001,
   "bbox_um": {
     "x0": -1.08,
     "y0": -1.23,
-    "x1": 22.080000000000002,
+    "x1": 23.08,
     "y1": 10.32
   },
   "ports": [
+    {
+      "name": "vdd",
+      "net": "vdd",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 2.45,
+      "y_um": -0.7100000000000001,
+      "width_um": 0.42,
+      "direction_deg": 270,
+      "block": "load",
+      "port": "TAP_S"
+    },
     {
       "name": "vss",
       "net": "vss",
@@ -24,12 +39,87 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 15.480000000000002,
-      "y_um": 0.21000000000000002,
-      "width_um": 0.42000000000000004,
-      "direction_deg": 180,
+      "x_um": 19.06,
+      "y_um": -0.8600000000000001,
+      "width_um": 0.42,
+      "direction_deg": 270,
       "block": "tail",
-      "port": "U0_S"
+      "port": "TAP_S"
+    },
+    {
+      "name": "vinp",
+      "net": "vinp",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 11.96,
+      "y_um": 2.76,
+      "width_um": 0.42000000000000004,
+      "direction_deg": 90,
+      "block": "in",
+      "port": "Q2_1_G"
+    },
+    {
+      "name": "vinn",
+      "net": "vinn",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 9.06,
+      "y_um": 2.76,
+      "width_um": 0.42000000000000004,
+      "direction_deg": 90,
+      "block": "in",
+      "port": "Q1_1_G"
+    },
+    {
+      "name": "tail",
+      "net": "tail",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 8.270000000000001,
+      "y_um": 0.9,
+      "width_um": 1.8,
+      "direction_deg": 180,
+      "block": "in",
+      "port": "Q1_1_S"
+    },
+    {
+      "name": "n1",
+      "net": "n1",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 9.850000000000001,
+      "y_um": 0.9,
+      "width_um": 1.8,
+      "direction_deg": 0,
+      "block": "in",
+      "port": "Q1_1_D"
+    },
+    {
+      "name": "n2",
+      "net": "n2",
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 12.75,
+      "y_um": 0.9,
+      "width_um": 1.8,
+      "direction_deg": 0,
+      "block": "in",
+      "port": "Q2_1_D"
     },
     {
       "name": "ibias",
@@ -39,57 +129,12 @@
         "datatype": 0,
         "name": null
       },
-      "x_um": 18.060000000000002,
+      "x_um": 19.06,
       "y_um": 5.250000000000001,
       "width_um": 0.42000000000000004,
       "direction_deg": 90,
       "block": "tail",
       "port": "U0_G"
-    },
-    {
-      "name": "vss",
-      "net": "vss",
-      "layer": {
-        "layer": 34,
-        "datatype": 0,
-        "name": null
-      },
-      "x_um": 9.76,
-      "y_um": -0.7100000000000001,
-      "width_um": 0.42,
-      "direction_deg": 270,
-      "block": "in",
-      "port": "TAP_S"
-    },
-    {
-      "name": "vss",
-      "net": "vss",
-      "layer": {
-        "layer": 34,
-        "datatype": 0,
-        "name": null
-      },
-      "x_um": 18.060000000000002,
-      "y_um": -0.8600000000000001,
-      "width_um": 0.42,
-      "direction_deg": 270,
-      "block": "tail",
-      "port": "TAP_S"
-    },
-    {
-      "name": "vdd",
-      "net": "vdd",
-      "layer": {
-        "layer": 34,
-        "datatype": 0,
-        "name": null
-      },
-      "x_um": 2.1999999999999997,
-      "y_um": -0.7100000000000001,
-      "width_um": 0.42,
-      "direction_deg": 270,
-      "block": "load",
-      "port": "TAP_S"
     }
   ],
   "blocks": [
@@ -99,7 +144,7 @@
       "generator": "diff_pair",
       "cell_name": "first_stage_load",
       "source_path": "gds/load.gds",
-      "source_digest": "sha256:beafda8a8493591032a3e82e866ab1d8e1da985fd94fd17473e19c67bd96bc86",
+      "source_digest": "sha256:3ba2dfa444125eaed2f62d8ca15959a98859e0a7aa10fc17fe954354c1e14a38",
       "offset_um": {
         "x": 0.0,
         "y": 0.0
@@ -107,10 +152,11 @@
       "bbox_um": {
         "x0": -1.08,
         "y0": -1.08,
-        "x1": 5.48,
+        "x1": 5.98,
         "y1": 10.32
       },
       "orientation": "none",
+      "placed_cell_name": "load__first_stage_load",
       "abuts": []
     },
     {
@@ -119,18 +165,19 @@
       "generator": "diff_pair",
       "cell_name": "first_stage_in",
       "source_path": "gds/in.gds",
-      "source_digest": "sha256:dccbba788ec60070417c7ae00d813d9a2e237a269ff4ac356f13212268d401bd",
+      "source_digest": "sha256:e55dfdc9d7938c688f06a63125a8213383ff85cf7810a3f59320f295e6f4c22e",
       "offset_um": {
-        "x": 7.5600000000000005,
+        "x": 8.06,
         "y": 0.0
       },
       "bbox_um": {
-        "x0": 6.48,
+        "x0": 6.98,
         "y0": -1.08,
-        "x1": 13.040000000000001,
+        "x1": 14.040000000000001,
         "y1": 7.92
       },
       "orientation": "none",
+      "placed_cell_name": "in__first_stage_in",
       "abuts": []
     },
     {
@@ -139,201 +186,248 @@
       "generator": "mos_array",
       "cell_name": "first_stage_tail",
       "source_path": "gds/tail.gds",
-      "source_digest": "sha256:fe7b6c66d1436217d38e355690ef72df60b5f15a91732654756e8fe992a2f18b",
+      "source_digest": "sha256:0f1551cd4d4e36894b561a7f81abb68e275b174c963660e77e4712e93f72d584",
       "offset_um": {
-        "x": 15.270000000000001,
+        "x": 16.27,
         "y": 0.0
       },
       "bbox_um": {
-        "x0": 14.040000000000001,
+        "x0": 15.04,
         "y0": -1.23,
-        "x1": 22.080000000000002,
+        "x1": 23.08,
         "y1": 6.69
       },
       "orientation": "none",
+      "placed_cell_name": "tail__first_stage_tail",
       "abuts": []
     }
   ],
   "nets": [
     {
-      "net": "n1",
+      "net": "vdd",
       "pins": [
         {
-          "block": "in",
-          "port": "Q1_1_D"
-        },
-        {
-          "block": "in",
-          "port": "Q1_2_D"
+          "block": "load",
+          "port": "M1_1_S"
         },
         {
           "block": "load",
-          "port": "M1_1_D"
+          "port": "M1_2_S"
         },
         {
           "block": "load",
-          "port": "M1_2_D"
+          "port": "M2_1_S"
         },
         {
           "block": "load",
-          "port": "M1_1_G"
+          "port": "M2_2_S"
         },
         {
           "block": "load",
-          "port": "M1_2_G"
+          "port": "TAP_S"
         }
       ],
-      "routed": false,
-      "route_length_um": null,
-      "status": "unrouted",
-      "landed_on_block": null,
+      "routed": true,
+      "route_length_um": 26.29,
+      "status": "routed",
+      "landed_on_block": true,
       "legs": [
         {
           "pins": [
             {
-              "block": "in",
-              "port": "Q1_1_D"
+              "block": "load",
+              "port": "M1_1_S"
             },
             {
-              "block": "in",
-              "port": "Q1_2_D"
+              "block": "load",
+              "port": "M1_2_S"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 7.720000000000001,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         },
         {
           "pins": [
             {
-              "block": "in",
-              "port": "Q1_1_D"
+              "block": "load",
+              "port": "M2_1_S"
             },
             {
               "block": "load",
-              "port": "M1_1_D"
+              "port": "M1_2_S"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 5.379999999999999,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         },
         {
           "pins": [
             {
-              "block": "in",
-              "port": "Q1_1_D"
+              "block": "load",
+              "port": "M2_2_S"
             },
             {
               "block": "load",
-              "port": "M1_2_D"
+              "port": "M1_2_S"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 6.140000000000001,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         },
         {
           "pins": [
             {
-              "block": "in",
-              "port": "Q1_1_D"
+              "block": "load",
+              "port": "M1_1_S"
             },
             {
               "block": "load",
-              "port": "M1_1_G"
+              "port": "TAP_S"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
-        },
-        {
-          "pins": [
-            {
-              "block": "in",
-              "port": "Q1_1_D"
-            },
-            {
-              "block": "load",
-              "port": "M1_2_G"
-            }
-          ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 7.049999999999999,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         }
       ]
     },
     {
-      "net": "n2",
+      "net": "vss",
+      "pins": [
+        {
+          "block": "tail",
+          "port": "U0_S"
+        },
+        {
+          "block": "in",
+          "port": "TAP_S"
+        },
+        {
+          "block": "tail",
+          "port": "TAP_S"
+        }
+      ],
+      "routed": true,
+      "route_length_um": 16.39,
+      "status": "routed",
+      "landed_on_block": true,
+      "legs": [
+        {
+          "pins": [
+            {
+              "block": "tail",
+              "port": "U0_S"
+            },
+            {
+              "block": "tail",
+              "port": "TAP_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 5.95,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "tail",
+              "port": "TAP_S"
+            },
+            {
+              "block": "in",
+              "port": "TAP_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 10.44,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        }
+      ]
+    },
+    {
+      "net": "vinp",
       "pins": [
         {
           "block": "in",
-          "port": "Q2_1_D"
+          "port": "Q2_1_G"
         },
         {
           "block": "in",
-          "port": "Q2_2_D"
-        },
-        {
-          "block": "load",
-          "port": "M2_1_D"
-        },
-        {
-          "block": "load",
-          "port": "M2_2_D"
+          "port": "Q2_2_G"
         }
       ],
-      "routed": false,
-      "route_length_um": null,
-      "status": "unrouted",
-      "landed_on_block": null,
+      "routed": true,
+      "route_length_um": 6.52,
+      "status": "routed",
+      "landed_on_block": true,
       "legs": [
         {
           "pins": [
             {
               "block": "in",
-              "port": "Q2_1_D"
+              "port": "Q2_1_G"
             },
             {
               "block": "in",
-              "port": "Q2_2_D"
+              "port": "Q2_2_G"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 6.52,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        }
+      ]
+    },
+    {
+      "net": "vinn",
+      "pins": [
+        {
+          "block": "in",
+          "port": "Q1_1_G"
         },
+        {
+          "block": "in",
+          "port": "Q1_2_G"
+        }
+      ],
+      "routed": true,
+      "route_length_um": 6.52,
+      "status": "routed",
+      "landed_on_block": true,
+      "legs": [
         {
           "pins": [
             {
               "block": "in",
-              "port": "Q2_1_D"
+              "port": "Q1_1_G"
             },
-            {
-              "block": "load",
-              "port": "M2_1_D"
-            }
-          ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
-        },
-        {
-          "pins": [
             {
               "block": "in",
-              "port": "Q2_1_D"
-            },
-            {
-              "block": "load",
-              "port": "M2_2_D"
+              "port": "Q1_2_G"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 6.52,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         }
       ]
     },
@@ -361,11 +455,28 @@
           "port": "U0_D"
         }
       ],
-      "routed": false,
-      "route_length_um": null,
-      "status": "unrouted",
-      "landed_on_block": null,
+      "routed": true,
+      "route_length_um": 29.240000000000006,
+      "status": "routed",
+      "landed_on_block": true,
       "legs": [
+        {
+          "pins": [
+            {
+              "block": "in",
+              "port": "Q2_2_S"
+            },
+            {
+              "block": "in",
+              "port": "Q1_1_S"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 4.1800000000000015,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
         {
           "pins": [
             {
@@ -377,203 +488,330 @@
               "port": "Q2_1_S"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 8.72,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         },
         {
           "pins": [
             {
               "block": "in",
-              "port": "Q1_1_S"
-            },
-            {
-              "block": "in",
-              "port": "Q2_2_S"
-            }
-          ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
-        },
-        {
-          "pins": [
-            {
-              "block": "in",
-              "port": "Q1_1_S"
+              "port": "Q2_1_S"
             },
             {
               "block": "in",
               "port": "Q1_2_S"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 3.6199999999999997,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         },
         {
           "pins": [
             {
               "block": "in",
-              "port": "Q1_1_S"
+              "port": "Q1_2_S"
             },
             {
               "block": "tail",
               "port": "U0_D"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 12.720000000000002,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         }
       ]
     },
     {
-      "net": "vdd",
-      "pins": [
-        {
-          "block": "load",
-          "port": "M1_1_S"
-        },
-        {
-          "block": "load",
-          "port": "M1_2_S"
-        },
-        {
-          "block": "load",
-          "port": "M2_1_S"
-        },
-        {
-          "block": "load",
-          "port": "M2_2_S"
-        }
-      ],
-      "routed": false,
-      "route_length_um": null,
-      "status": "unrouted",
-      "landed_on_block": null,
-      "legs": [
-        {
-          "pins": [
-            {
-              "block": "load",
-              "port": "M1_1_S"
-            },
-            {
-              "block": "load",
-              "port": "M1_2_S"
-            }
-          ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
-        },
-        {
-          "pins": [
-            {
-              "block": "load",
-              "port": "M1_1_S"
-            },
-            {
-              "block": "load",
-              "port": "M2_1_S"
-            }
-          ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
-        },
-        {
-          "pins": [
-            {
-              "block": "load",
-              "port": "M1_1_S"
-            },
-            {
-              "block": "load",
-              "port": "M2_2_S"
-            }
-          ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
-        }
-      ]
-    },
-    {
-      "net": "vinn",
+      "net": "n1",
       "pins": [
         {
           "block": "in",
-          "port": "Q1_1_G"
+          "port": "Q1_1_D"
         },
         {
           "block": "in",
-          "port": "Q1_2_G"
+          "port": "Q1_2_D"
+        },
+        {
+          "block": "load",
+          "port": "M1_1_D"
+        },
+        {
+          "block": "load",
+          "port": "M1_2_D"
+        },
+        {
+          "block": "load",
+          "port": "M1_1_G"
+        },
+        {
+          "block": "load",
+          "port": "M1_2_G"
+        },
+        {
+          "block": "load",
+          "port": "M2_1_G"
+        },
+        {
+          "block": "load",
+          "port": "M2_2_G"
         }
       ],
-      "routed": false,
-      "route_length_um": null,
-      "status": "unrouted",
-      "landed_on_block": null,
+      "routed": true,
+      "route_length_um": 59.660000000000004,
+      "status": "routed",
+      "landed_on_block": true,
       "legs": [
         {
           "pins": [
             {
               "block": "in",
-              "port": "Q1_1_G"
+              "port": "Q1_1_D"
+            },
+            {
+              "block": "load",
+              "port": "M1_1_D"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 16.32,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "load",
+              "port": "M1_1_D"
+            },
+            {
+              "block": "load",
+              "port": "M1_1_G"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 3.25,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "load",
+              "port": "M1_1_G"
+            },
+            {
+              "block": "load",
+              "port": "M2_1_G"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 3.4600000000000004,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "load",
+              "port": "M1_1_G"
+            },
+            {
+              "block": "load",
+              "port": "M2_2_G"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 4.820000000000001,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "load",
+              "port": "M2_1_G"
+            },
+            {
+              "block": "load",
+              "port": "M1_2_G"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 4.820000000000001,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "load",
+              "port": "M1_2_G"
+            },
+            {
+              "block": "load",
+              "port": "M1_2_D"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 4.37,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "load",
+              "port": "M1_2_D"
             },
             {
               "block": "in",
-              "port": "Q1_2_G"
+              "port": "Q1_2_D"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 22.620000000000005,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         }
       ]
     },
     {
-      "net": "vinp",
+      "net": "n2",
       "pins": [
         {
           "block": "in",
-          "port": "Q2_1_G"
+          "port": "Q2_1_D"
         },
         {
           "block": "in",
-          "port": "Q2_2_G"
+          "port": "Q2_2_D"
+        },
+        {
+          "block": "load",
+          "port": "M2_1_D"
+        },
+        {
+          "block": "load",
+          "port": "M2_2_D"
         }
       ],
-      "routed": false,
-      "route_length_um": null,
-      "status": "unrouted",
-      "landed_on_block": null,
+      "routed": true,
+      "route_length_um": 89.94,
+      "status": "routed",
+      "landed_on_block": true,
       "legs": [
         {
           "pins": [
             {
-              "block": "in",
-              "port": "Q2_1_G"
+              "block": "load",
+              "port": "M2_1_D"
+            },
+            {
+              "block": "load",
+              "port": "M2_2_D"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 37.32,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "load",
+              "port": "M2_2_D"
             },
             {
               "block": "in",
-              "port": "Q2_2_G"
+              "port": "Q2_2_D"
             }
           ],
-          "routed": false,
-          "route_length_um": null,
-          "reason": "routing not requested"
+          "routed": true,
+          "route_length_um": 21.42,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
+        },
+        {
+          "pins": [
+            {
+              "block": "load",
+              "port": "M2_1_D"
+            },
+            {
+              "block": "in",
+              "port": "Q2_1_D"
+            }
+          ],
+          "routed": true,
+          "route_length_um": 31.2,
+          "reason": null,
+          "channel_track": 0,
+          "landed_on_block": true
         }
       ]
     }
   ],
   "pins": [
     {
+      "net": "vdd",
+      "block": "load",
+      "port": "TAP_S",
+      "labelled": true
+    },
+    {
       "net": "vss",
       "block": "tail",
-      "port": "U0_S",
+      "port": "TAP_S",
+      "labelled": true
+    },
+    {
+      "net": "vinp",
+      "block": "in",
+      "port": "Q2_1_G",
+      "labelled": true
+    },
+    {
+      "net": "vinn",
+      "block": "in",
+      "port": "Q1_1_G",
+      "labelled": true
+    },
+    {
+      "net": "tail",
+      "block": "in",
+      "port": "Q1_1_S",
+      "labelled": true
+    },
+    {
+      "net": "n1",
+      "block": "in",
+      "port": "Q1_1_D",
+      "labelled": true
+    },
+    {
+      "net": "n2",
+      "block": "in",
+      "port": "Q2_1_D",
       "labelled": true
     },
     {
@@ -581,36 +819,11 @@
       "block": "tail",
       "port": "U0_G",
       "labelled": true
-    },
-    {
-      "net": "vss",
-      "block": "in",
-      "port": "TAP_S",
-      "labelled": true
-    },
-    {
-      "net": "vss",
-      "block": "tail",
-      "port": "TAP_S",
-      "labelled": true
-    },
-    {
-      "net": "vdd",
-      "block": "load",
-      "port": "TAP_S",
-      "labelled": true
     }
   ],
-  "unrouted_nets": [
-    "n1",
-    "n2",
-    "tail",
-    "vdd",
-    "vinn",
-    "vinp"
-  ],
+  "unrouted_nets": [],
   "drc_hints": {
-    "min_spacing_um": null,
+    "min_spacing_um": 1.0,
     "matched_groups": [
       {
         "matched_group_id": "diff_pair:mirror:2",
@@ -635,19 +848,20 @@
       }
     ],
     "notes": [
-      "net 'n1' could not be routed: routing not requested",
-      "net 'n2' could not be routed: routing not requested",
-      "net 'tail' could not be routed: routing not requested",
-      "net 'vdd' could not be routed: routing not requested",
-      "net 'vinn' could not be routed: routing not requested",
-      "net 'vinp' could not be routed: routing not requested",
-      "pin 'vss' (block 'in' port 'TAP_S') repeats a net name already promoted into the composed cell's own ports[] -- only the first is addressable by name if this response is reused as a blocks[].generator_report",
-      "pin 'vss' (block 'tail' port 'TAP_S') repeats a net name already promoted into the composed cell's own ports[] -- only the first is addressable by name if this response is reused as a blocks[].generator_report"
+      "pin 'vdd' (block 'load' port 'TAP_S') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written",
+      "pin 'vss' (block 'tail' port 'TAP_S') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written",
+      "pin 'vinp' (block 'in' port 'Q2_1_G') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written",
+      "pin 'vinn' (block 'in' port 'Q1_1_G') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written",
+      "pin 'tail' (block 'in' port 'Q1_1_S') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written",
+      "pin 'n1' (block 'in' port 'Q1_1_D') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written",
+      "pin 'n2' (block 'in' port 'Q2_1_D') is also wired by a connectivity[] net of the same name -- reported in ports[] only; its label is supplied by the router, no duplicate label was written"
     ]
   },
   "warnings": [],
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev3808+g1ad4a837f657",
+    "klt_git_commit": "1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f6577813bc367c29a0b948c0bff66fda",
     "klayout_version": "0.30.12",
     "pdk": {
       "name": "gf180mcuD",

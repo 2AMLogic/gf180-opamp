@@ -4,7 +4,17 @@
   "layout": {
     "file": "../gds/first_stage.gds",
     "deck": "gf180mcu",
-    "top": "first_stage"
+    "top": "first_stage",
+    "declared_pins": [
+      "vdd",
+      "vss",
+      "vinp",
+      "vinn",
+      "tail",
+      "n1",
+      "n2",
+      "ibias"
+    ]
   },
   "reference": {
     "netlist": "../ref/first_stage.klt.spice",

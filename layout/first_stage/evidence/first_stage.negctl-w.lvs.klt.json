@@ -1,0 +1,373 @@
+{
+  "schema_version": 3,
+  "engine": "klayout",
+  "layout": {
+    "path": "layout/first_stage/gds/first_stage.gds",
+    "scope": "repo"
+  },
+  "reference": {
+    "path": "layout/first_stage/ref/first_stage.negctl-w.klt.spice",
+    "scope": "repo"
+  },
+  "top": "first_stage",
+  "reference_top": "FIRST_STAGE",
+  "reference_conversion": {
+    "form": "subckt-call",
+    "deck": null,
+    "device_map": null
+  },
+  "parameter_tolerance": null,
+  "options": {
+    "combine_devices": true,
+    "combine_devices_per_circuit": null,
+    "combine_devices_max_attempts": 5,
+    "flatten_layout": false,
+    "flatten_reference": false,
+    "netgen_setup": null,
+    "parameter_tolerance": null,
+    "compare_parameters": {
+      "nfet": [
+        "W",
+        "L"
+      ],
+      "pfet": [
+        "W",
+        "L"
+      ]
+    },
+    "power_connectivity": null,
+    "anchor_top_level_pins": null,
+    "strict_top_level_pin_count": false,
+    "compare_mos_flavour": false,
+    "ignore_mos_bulk": false,
+    "supply_nets": [
+      "GND",
+      "VCC",
+      "VDD",
+      "VGND",
+      "VPWR",
+      "VSS"
+    ],
+    "finfet_bulk": null
+  },
+  "hints_applied": null,
+  "constant_nets_applied": null,
+  "status": "mismatch",
+  "power_connectivity": {
+    "status": "unchecked",
+    "reason": "reference.form is 'subckt-call', whose reference netlist carries its own power/ground pins and nets -- they take part in the ordinary compare, so this check (which exists to cover the signal-only 'gate-level-verilog' form) does not apply",
+    "power_pins": [],
+    "power_pins_derivation": null,
+    "instance_count": 0,
+    "expected_nets": null,
+    "unchecked_expected_pins": [],
+    "excluded_pins": [],
+    "findings": [],
+    "finding_count": 0
+  },
+  "body_verification": {
+    "status": "verified",
+    "reason": null,
+    "device_classes": [],
+    "device_count": 0,
+    "inspected_count": 5,
+    "findings": [],
+    "finding_count": 0
+  },
+  "device_parameter_coverage": [
+    {
+      "class": "nfet",
+      "device_kind": "mos",
+      "layout_devices": 3,
+      "reference_devices": 3,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "AS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "AD",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PD",
+          "reason": "secondary"
+        }
+      ]
+    },
+    {
+      "class": "pfet",
+      "device_kind": "mos",
+      "layout_devices": 2,
+      "reference_devices": 2,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "AS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "AD",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PD",
+          "reason": "secondary"
+        }
+      ]
+    }
+  ],
+  "mismatches_omitted": false,
+  "mismatch_count": 6,
+  "error_count": 5,
+  "category_counts": {
+    "device.property": 1,
+    "topology": 5
+  },
+  "category_error_counts": {
+    "device.property": 1,
+    "topology": 4
+  },
+  "counts": {
+    "nets": {
+      "layout": 8,
+      "reference": 8,
+      "matched": 4
+    },
+    "devices": {
+      "layout": 5,
+      "reference": 5,
+      "matched": 4
+    },
+    "pins": {
+      "layout": 8,
+      "reference": 8,
+      "matched": 8
+    }
+  },
+  "pin_set_difference": {
+    "deck_synthesized_layout_pins": [],
+    "layout_only_pins": [],
+    "layout_only_pins_count": 0,
+    "layout_only_pins_truncated": false,
+    "reference_only_pins": [],
+    "reference_only_pins_count": 0,
+    "reference_only_pins_truncated": false
+  },
+  "ignored_layers": [],
+  "warnings": [],
+  "device_classes": [
+    "nfet",
+    "pfet",
+    "bjt",
+    "cap_mim_2f0_m4m5_noshield",
+    "cap_nmos_03v3",
+    "cap_nmos_03v3_dn",
+    "cap_pmos_03v3",
+    "cap_pmos_03v3_dn",
+    "cap_nmos_06v0",
+    "cap_nmos_06v0_dn",
+    "cap_pmos_06v0",
+    "cap_pmos_06v0_dn",
+    "cap_nmos_03v3_b",
+    "cap_pmos_03v3_b",
+    "cap_nmos_06v0_b",
+    "cap_pmos_06v0_b",
+    "resistor",
+    "diode_nd2ps_06v0",
+    "diode_pd2nw_06v0"
+  ],
+  "environment": {
+    "engine": "klayout",
+    "engine_version": "0.30.12",
+    "netgen_binary": null,
+    "layout_sha256": "19303294b03add3ef743ef4bf04e48bbe5249a4e06c7487cfc32e5259f74a953",
+    "reference_sha256": "0b814f35cbf00126c61bb5c69d7dfccb4eb00220d45033e4539218ebba15b686",
+    "extracted_netlist": null
+  },
+  "provenance": {
+    "klt_version": "0.9.3.dev3808+g1ad4a837f657",
+    "klt_git_commit": "1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klayout_version": "0.30.12",
+    "pdk": null,
+    "deck": {
+      "name": "gf180mcu",
+      "content_hash": "sha256:778e9a4eba34b67a0427367917b4c9c2602d44ff085d663affd302a8d0f197cd",
+      "released": false,
+      "options": {
+        "metal_top": "9K",
+        "mim_cap": "cap_mim_2f0_m4m5_noshield",
+        "poly_res": "1k"
+      },
+      "options_explicit": {
+        "metal_top": false,
+        "mim_cap": false,
+        "poly_res": false
+      },
+      "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
+    },
+    "input": {
+      "content_hash": "sha256:19303294b03add3ef743ef4bf04e48bbe5249a4e06c7487cfc32e5259f74a953",
+      "role": "layout"
+    },
+    "klayout_version_mismatch": false
+  },
+  "mismatches": [
+    {
+      "category": "device.property",
+      "severity": "error",
+      "description": "matched device parameter 'w_um' differs",
+      "side": "both",
+      "net": null,
+      "device": {
+        "layout": "\\$1",
+        "reference": "1_F0",
+        "class": "nfet"
+      },
+      "property": {
+        "name": "w_um",
+        "layout": 3.6,
+        "reference": 7.2
+      },
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "n1",
+        "layout_id": 3,
+        "reference": "N1",
+        "reference_id": 5
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "tail",
+        "layout_id": 1,
+        "reference": "TAIL",
+        "reference_id": 4
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "vinn",
+        "layout_id": 6,
+        "reference": "VINN",
+        "reference_id": 3
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "error",
+      "description": "nets were paired despite a name/identity conflict",
+      "side": "both",
+      "net": {
+        "layout": "vss",
+        "layout_id": 7,
+        "reference": "VSS",
+        "reference_id": 1
+      },
+      "device": null,
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    },
+    {
+      "category": "topology",
+      "severity": "warning",
+      "description": "device class has no counterpart on the other side, but no devices of this class were extracted either -- not a real topology mismatch: 'bjt'",
+      "side": "layout",
+      "net": null,
+      "device": {
+        "layout": null,
+        "reference": null,
+        "class": "bjt"
+      },
+      "property": null,
+      "details": null,
+      "circuit": null,
+      "instance": null,
+      "subcircuit": null
+    }
+  ],
+  "net_correspondence": [
+    {
+      "layout": "ibias",
+      "layout_id": 4,
+      "reference": "IBIAS",
+      "reference_id": 7,
+      "pin": true
+    },
+    {
+      "layout": "n2",
+      "layout_id": 0,
+      "reference": "N2",
+      "reference_id": 6,
+      "pin": true
+    },
+    {
+      "layout": "vdd",
+      "layout_id": 2,
+      "reference": "VDD",
+      "reference_id": 0,
+      "pin": true
+    },
+    {
+      "layout": "vinp",
+      "layout_id": 5,
+      "reference": "VINP",
+      "reference_id": 2,
+      "pin": true
+    }
+  ]
+}
