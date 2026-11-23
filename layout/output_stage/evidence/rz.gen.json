@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "generator": "res_array",
+  "cell_name": "output_stage_rz",
+  "gds_path": "gds/rz.gds",
+  "pdk": {
+    "name": "gf180mcuD",
+    "variant": "gf180mcuD",
+    "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+  },
+  "dbu_um": 0.0005,
+  "bbox_um": {
+    "x0": 0.0,
+    "y0": -0.22,
+    "x1": 23.04,
+    "y1": 2.22
+  },
+  "device_count": 1,
+  "ports": [
+    {
+      "name": "R0_A",
+      "net": null,
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 0.26,
+      "y_um": 1.0,
+      "width_um": 2.0,
+      "direction_deg": 180
+    },
+    {
+      "name": "R0_B",
+      "net": null,
+      "layer": {
+        "layer": 34,
+        "datatype": 0,
+        "name": null
+      },
+      "x_um": 22.78,
+      "y_um": 1.0,
+      "width_um": 2.0,
+      "direction_deg": 0
+    }
+  ],
+  "navigable_regions": [],
+  "drc_hints": {
+    "min_spacing_um": 0.5,
+    "foreign_clearance_um": 0.4,
+    "matched_group_id": "res_array:1",
+    "snapped_to_grid": false,
+    "notes": []
+  },
+  "warnings": [],
+  "provenance": {
+    "klt_version": "0.8.0",
+    "klayout_version": "0.30.12",
+    "pdk": {
+      "name": "gf180mcuD",
+      "source": "search root: ~/.ciel",
+      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
+      "ambiguous_sources": [
+        "search root: ~/.volare"
+      ]
+    },
+    "deck": null,
+    "input": null
+  }
+}
