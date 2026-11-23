@@ -1,11 +1,14 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
   "engine": "klayout",
   "layout": {
     "path": "layout/output_stage/gds/output_stage.gds",
     "scope": "repo"
   },
-  "reference": "../ref/output_stage.klt.spice",
+  "reference": {
+    "path": "layout/output_stage/ref/output_stage.klt.spice",
+    "scope": "repo"
+  },
   "top": "output_stage",
   "reference_top": "OUTPUT_STAGE",
   "reference_conversion": {
@@ -44,6 +47,7 @@
     "anchor_top_level_pins": null,
     "strict_top_level_pin_count": false,
     "compare_mos_flavour": false,
+    "ignore_mos_bulk": false,
     "supply_nets": [
       "GND",
       "VCC",
@@ -65,6 +69,7 @@
     "instance_count": 0,
     "expected_nets": null,
     "unchecked_expected_pins": [],
+    "excluded_pins": [],
     "findings": [],
     "finding_count": 0
   },
@@ -73,6 +78,7 @@
     "reason": null,
     "device_classes": [],
     "device_count": 0,
+    "inspected_count": 3,
     "findings": [],
     "finding_count": 0
   },
@@ -92,6 +98,62 @@
         },
         {
           "parameter": "P",
+          "reason": "secondary"
+        }
+      ]
+    },
+    {
+      "class": "nfet",
+      "device_kind": "mos",
+      "layout_devices": 2,
+      "reference_devices": 2,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "AS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "AD",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PD",
+          "reason": "secondary"
+        }
+      ]
+    },
+    {
+      "class": "pfet",
+      "device_kind": "mos",
+      "layout_devices": 1,
+      "reference_devices": 1,
+      "compared": [
+        "L",
+        "W"
+      ],
+      "not_compared": [
+        {
+          "parameter": "AS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "AD",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PS",
+          "reason": "secondary"
+        },
+        {
+          "parameter": "PD",
           "reason": "secondary"
         }
       ]
@@ -121,6 +183,7 @@
       ]
     }
   ],
+  "mismatches_omitted": false,
   "mismatch_count": 6,
   "error_count": 0,
   "category_counts": {
@@ -147,6 +210,17 @@
       "matched": 5
     }
   },
+  "pin_set_difference": {
+    "deck_synthesized_layout_pins": [],
+    "layout_only_pins": [],
+    "layout_only_pins_count": 0,
+    "layout_only_pins_truncated": false,
+    "reference_only_pins": [],
+    "reference_only_pins_count": 0,
+    "reference_only_pins_truncated": false
+  },
+  "ignored_layers": [],
+  "warnings": [],
   "device_classes": [
     "nfet",
     "pfet",
@@ -172,18 +246,20 @@
     "engine": "klayout",
     "engine_version": "0.30.12",
     "netgen_binary": null,
-    "layout_sha256": "3af96ba5689153a392aa50ac87eafb0c7e6978ad7dbe3ad9453d6e6b394ba151",
+    "layout_sha256": "9555a13c4d1b14e20c9d41b4eb49296ff503f546b87a532d9eb7d76acbde5587",
     "reference_sha256": "9a3d8036de65ac99e38492eaf6d7bb3c87a2481fbd403be6e334cd22719a6d1c",
     "extracted_netlist": null
   },
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev3808+g1ad4a837f657",
+    "klt_git_commit": "1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f6577813bc367c29a0b948c0bff66fda",
     "klayout_version": "0.30.12",
     "pdk": null,
     "deck": {
       "name": "gf180mcu",
-      "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
-      "released": true,
+      "content_hash": "sha256:778e9a4eba34b67a0427367917b4c9c2602d44ff085d663affd302a8d0f197cd",
+      "released": false,
       "options": {
         "metal_top": "9K",
         "mim_cap": "cap_mim_2f0_m4m5_noshield",
@@ -197,7 +273,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:3af96ba5689153a392aa50ac87eafb0c7e6978ad7dbe3ad9453d6e6b394ba151",
+      "content_hash": "sha256:9555a13c4d1b14e20c9d41b4eb49296ff503f546b87a532d9eb7d76acbde5587",
       "role": "layout"
     },
     "klayout_version_mismatch": false
@@ -353,32 +429,44 @@
   "net_correspondence": [
     {
       "layout": "ibias",
+      "layout_id": 4,
       "reference": "IBIAS",
+      "reference_id": 2,
       "pin": true
     },
     {
       "layout": "n2",
+      "layout_id": 1,
       "reference": "N2",
+      "reference_id": 0,
       "pin": true
     },
     {
       "layout": "nz",
+      "layout_id": 2,
       "reference": "NZ",
+      "reference_id": 5,
       "pin": false
     },
     {
       "layout": "vdd",
+      "layout_id": 0,
       "reference": "VDD",
+      "reference_id": 3,
       "pin": true
     },
     {
       "layout": "vout",
+      "layout_id": 3,
       "reference": "VOUT",
+      "reference_id": 1,
       "pin": true
     },
     {
       "layout": "vss",
+      "layout_id": 5,
       "reference": "VSS",
+      "reference_id": 4,
       "pin": true
     }
   ]
