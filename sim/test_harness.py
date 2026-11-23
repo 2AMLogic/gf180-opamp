@@ -16,6 +16,7 @@ runner-specific checks, kept here next to the `guard_dut_core` /
 from __future__ import annotations
 
 import argparse
+import gzip
 import os
 import re
 import sys
@@ -894,6 +895,69 @@ def fake_pdk(d: Path) -> harness.Pdk:
     ng.mkdir(parents=True)
     (ng / "design.ngspice").write_text("* stub\n")
     return harness.Pdk(d / "pdk", "gf180mcuD", "test")
+
+
+class PointDataGzipRoundTripTests(unittest.TestCase):
+    """`save_point_data` -> `rederive_dat` over plain `.dat` and gzip `.dat.gz`."""
+
+    HEADER = "time v(vout) v(vinp)"
+
+    @staticmethod
+    def _point(valid=True, n=5):
+        x = np.linspace(0.0, 1e-6, n)
+        return SimpleNamespace(x=x, y=np.sin(x * 1e6), vin=np.cos(x * 1e6), valid=valid, reason="bad point")
+
+    @staticmethod
+    def _extract(d):
+        return d
+
+    def _paths(self, d):
+        return (Path(d) / "pt.dat", Path(d) / "pt.dat.gz")
+
+    def test_valid_point_round_trips(self):
+        m = self._point()
+        with tempfile.TemporaryDirectory() as d:
+            for path in self._paths(d):
+                with self.subTest(path=path.name):
+                    harness.save_point_data(m, path, self.HEADER)
+                    magic = path.read_bytes()[:2]
+                    self.assertEqual(magic == b"\x1f\x8b", path.name.endswith(".gz"))
+                    got = harness.rederive_dat(path, self.HEADER, self._extract)
+                    np.testing.assert_allclose(got["time"], m.x, rtol=1e-8)
+                    np.testing.assert_allclose(got["v(vout)"], m.y, rtol=1e-8, atol=1e-9)
+                    np.testing.assert_allclose(got["v(vinp)"], m.vin, rtol=1e-8, atol=1e-9)
+
+    def test_flagged_invalid_point_with_samples_round_trips(self):
+        m = self._point(valid=False)
+        with tempfile.TemporaryDirectory() as d:
+            for path in self._paths(d):
+                with self.subTest(path=path.name):
+                    harness.save_point_data(m, path, self.HEADER)
+                    got = harness.rederive_dat(path, self.HEADER, self._extract)
+                    self.assertEqual(got["time"].size, m.x.size)
+
+    def test_zero_sample_point_writes_readable_marker(self):
+        m = SimpleNamespace(x=np.array([]), y=np.array([]), vin=np.array([]), valid=False, reason="no samples")
+        with tempfile.TemporaryDirectory() as d:
+            for path in self._paths(d):
+                with self.subTest(path=path.name):
+                    harness.save_point_data(m, path, self.HEADER)
+                    self.assertEqual(path.read_bytes()[:2] == b"\x1f\x8b", path.name.endswith(".gz"))
+                    opener = gzip.open if path.name.endswith(".gz") else open
+                    with opener(path, "rt") as fh:
+                        self.assertEqual(fh.read(), "# INVALID: no samples\n")
+                    # no column header: the existing ValueError, never BadGzipFile
+                    with self.assertRaisesRegex(ValueError, "no `time v\\(vout\\) v\\(vinp\\)` column header"):
+                        harness.rederive_dat(path, self.HEADER, self._extract)
+
+    def test_missing_header_raises_value_error_not_gzip_error(self):
+        with tempfile.TemporaryDirectory() as d:
+            for path in self._paths(d):
+                with self.subTest(path=path.name):
+                    m = self._point()
+                    harness.save_point_data(m, path, "other header")
+                    with self.assertRaisesRegex(ValueError, "column header"):
+                        harness.rederive_dat(path, self.HEADER, self._extract)
 
 
 class StaleDutMixin:
