@@ -6,9 +6,11 @@ Layout (klayout-tools driven) and DRC/LVS signoff artifacts.
   with a one-command regeneration recipe and per-cell DRC/LVS evidence. Not
   block layout and not signoff; see its README for scope and results.
 - [`first_stage/`](first_stage/README.md): the first-stage sub-block (XM1–XM5)
-  placed from the pilot's generator mappings (issue #328), with DRC evidence
-  and a documented routing gap. A placed, labelled sub-block — not block
-  layout, not signoff; see its README for scope and status.
+  composed and routed from the pilot's generator mappings (issue #328) at a
+  widened `diff_pair` column pitch — `unrouted_nets: []`, DRC clean, LVS match
+  against the schematic cut with all eight nets as pins, and a negative
+  control. A routed, labelled sub-block — not block layout, not signoff; see
+  its README for scope, placement/matching claims and the klt pin it needs.
 - [`output_stage/`](output_stage/README.md): the output-stage + compensation
   sub-block (XM6, XM7, XMB1, XCC, XRZ) composed and routed from the pilot's
   generator mappings (issue #424) — `unrouted_nets: []`, DRC clean, LVS match

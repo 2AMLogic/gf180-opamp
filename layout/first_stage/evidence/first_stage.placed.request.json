@@ -1,0 +1,228 @@
+{
+  "schema": "klt.gen_compose.request/1",
+  "pdk": {
+    "variant": "gf180mcuD"
+  },
+  "blocks": [
+    {
+      "id": "in",
+      "generator_report": "in.gen.json"
+    },
+    {
+      "id": "load",
+      "generator_report": "load.gen.json"
+    },
+    {
+      "id": "tail",
+      "generator_report": "tail.gen.json"
+    }
+  ],
+  "placement": {
+    "strategy": "row",
+    "order": [
+      "load",
+      "in",
+      "tail"
+    ],
+    "spacing_um": 1.0
+  },
+  "connectivity": [
+    {
+      "net": "n1",
+      "pins": [
+        {
+          "block": "in",
+          "port": "Q1_1_D"
+        },
+        {
+          "block": "in",
+          "port": "Q1_2_D"
+        },
+        {
+          "block": "load",
+          "port": "M1_1_D"
+        },
+        {
+          "block": "load",
+          "port": "M1_2_D"
+        },
+        {
+          "block": "load",
+          "port": "M1_1_G"
+        },
+        {
+          "block": "load",
+          "port": "M1_2_G"
+        },
+        {
+          "block": "load",
+          "port": "M2_1_G"
+        },
+        {
+          "block": "load",
+          "port": "M2_2_G"
+        }
+      ]
+    },
+    {
+      "net": "n2",
+      "pins": [
+        {
+          "block": "in",
+          "port": "Q2_1_D"
+        },
+        {
+          "block": "in",
+          "port": "Q2_2_D"
+        },
+        {
+          "block": "load",
+          "port": "M2_1_D"
+        },
+        {
+          "block": "load",
+          "port": "M2_2_D"
+        }
+      ]
+    },
+    {
+      "net": "tail",
+      "pins": [
+        {
+          "block": "in",
+          "port": "Q1_1_S"
+        },
+        {
+          "block": "in",
+          "port": "Q2_1_S"
+        },
+        {
+          "block": "in",
+          "port": "Q2_2_S"
+        },
+        {
+          "block": "in",
+          "port": "Q1_2_S"
+        },
+        {
+          "block": "tail",
+          "port": "U0_D"
+        }
+      ]
+    },
+    {
+      "net": "vdd",
+      "pins": [
+        {
+          "block": "load",
+          "port": "M1_1_S"
+        },
+        {
+          "block": "load",
+          "port": "M1_2_S"
+        },
+        {
+          "block": "load",
+          "port": "M2_1_S"
+        },
+        {
+          "block": "load",
+          "port": "M2_2_S"
+        },
+        {
+          "block": "load",
+          "port": "TAP_S"
+        }
+      ]
+    },
+    {
+      "net": "vinn",
+      "pins": [
+        {
+          "block": "in",
+          "port": "Q1_1_G"
+        },
+        {
+          "block": "in",
+          "port": "Q1_2_G"
+        }
+      ]
+    },
+    {
+      "net": "vinp",
+      "pins": [
+        {
+          "block": "in",
+          "port": "Q2_1_G"
+        },
+        {
+          "block": "in",
+          "port": "Q2_2_G"
+        }
+      ]
+    },
+    {
+      "net": "vss",
+      "pins": [
+        {
+          "block": "tail",
+          "port": "U0_S"
+        },
+        {
+          "block": "in",
+          "port": "TAP_S"
+        },
+        {
+          "block": "tail",
+          "port": "TAP_S"
+        }
+      ]
+    }
+  ],
+  "pins": [
+    {
+      "net": "vdd",
+      "block": "load",
+      "port": "TAP_S"
+    },
+    {
+      "net": "vss",
+      "block": "tail",
+      "port": "TAP_S"
+    },
+    {
+      "net": "vinp",
+      "block": "in",
+      "port": "Q2_1_G"
+    },
+    {
+      "net": "vinn",
+      "block": "in",
+      "port": "Q1_1_G"
+    },
+    {
+      "net": "tail",
+      "block": "in",
+      "port": "Q1_1_S"
+    },
+    {
+      "net": "n1",
+      "block": "in",
+      "port": "Q1_1_D"
+    },
+    {
+      "net": "n2",
+      "block": "in",
+      "port": "Q2_1_D"
+    },
+    {
+      "net": "ibias",
+      "block": "tail",
+      "port": "U0_G"
+    }
+  ],
+  "options": {
+    "cell_name": "first_stage",
+    "output": "gds/first_stage.gds"
+  }
+}

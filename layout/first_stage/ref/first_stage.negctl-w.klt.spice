@@ -1,0 +1,19 @@
+* NEGATIVE CONTROL for first_stage -- XM1 W deliberately 7.2u (schematic 3.6u).
+* klt lvs must report a mismatch with a device.property error against
+* the unchanged gds/first_stage.gds; a match would mean the (W, L) compare is
+* insensitive to the diff_pair's splits-folded width.
+* schematic-derived sub-netlist for first_stage: XM5+XM1+XM2+XM3+XM4 cut mechanically from
+* design/netlist/opamp_two_stage.spice -- the five instance cards, unchanged.
+* (issue #328; ad/as/pd/ps and nrd/nrs are carried verbatim.)
+.subckt first_stage vdd vss vinp vinn tail n1 n2 ibias
+XM5 tail ibias vss vss nfet_03v3 L=2u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM1 n1 vinn tail vss nfet_03v3 L=1u W=7.2u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM2 n2 vinp tail vss nfet_03v3 L=1u W=3.6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM3 n1 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+XM4 n2 n1 vdd vdd pfet_03v3 L=1u W=6u nf=2 ad='int((nf+1)/2) * W/nf * 0.18u' as='int((nf+2)/2) * W/nf * 0.18u' pd='2*int((nf+1)/2) * (W/nf + 0.18u)'
++ ps='2*int((nf+2)/2) * (W/nf + 0.18u)' nrd='0.18u / W' nrs='0.18u / W' sa=0 sb=0 sd=0 m=1
+.ends
