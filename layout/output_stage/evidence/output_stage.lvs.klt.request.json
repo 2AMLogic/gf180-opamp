@@ -7,7 +7,14 @@
     "top": "output_stage",
     "deck_options": {
       "poly_res": "1k"
-    }
+    },
+    "declared_pins": [
+      "n2",
+      "vout",
+      "ibias",
+      "vdd",
+      "vss"
+    ]
   },
   "reference": {
     "netlist": "../ref/output_stage.klt.spice",

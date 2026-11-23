@@ -142,9 +142,9 @@
       "matched": 5
     },
     "pins": {
-      "layout": 6,
+      "layout": 5,
       "reference": 5,
-      "matched": 6
+      "matched": 5
     }
   },
   "device_classes": [
@@ -364,7 +364,7 @@
     {
       "layout": "nz",
       "reference": "NZ",
-      "pin": true
+      "pin": false
     },
     {
       "layout": "vdd",

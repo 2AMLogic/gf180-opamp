@@ -42,6 +42,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 
 STAGE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(STAGE, "..", ".."))
@@ -57,6 +58,10 @@ CELL = "output_stage"
 #: instance card order as they appear in the schematic
 INSTANCES = ("XM6", "XM7", "XMB1", "XCC", "XRZ")
 SUBNET_PORTS = "n2 vout ibias vdd vss"
+#: the sub-block's interface, derived from the declaration above. Extraction
+#: and LVS both receive it as the declared pin set, so internal nets (nz)
+#: stay internal even though they carry a route label.
+INTERFACE_PINS = SUBNET_PORTS.split()
 
 BLOCKS = (
     # id, generator, instances, mos flavor -- every size below is derived
@@ -290,11 +295,56 @@ def build_routed_request(placed_req, placed, gen_reports):
     return routed
 
 
+def preflight_engine(block):
+    """Check klt's klayout engine in scratch, before any output is replaced.
+
+    A rejected run must leave the previous gds/ ref/ extracted/ evidence/ and
+    results.json untouched, so the identity check cannot wait for the first
+    real `klt gen` (which only runs after those directories are wiped).
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        rep, rc = run(["klt", "gen", block["generator"], "--pdk", PDK,
+                       "--params", json.dumps(block["params"]),
+                       "--cell-name", "preflight",
+                       "-o", os.path.join(tmp, "preflight.gds"),
+                       "--format", "json"])
+        assert rc == 0, rep
+        pilot.check_engine(rep)
+
+
+def measure_bbox_um(gds_path):
+    """Routed footprint: the committed GDS's own top-cell bounding box (um)."""
+    import klayout.db as kdb
+    ly = kdb.Layout()
+    ly.read(gds_path)
+    b = ly.top_cell().dbbox()
+    return {"x0": b.left, "y0": b.bottom, "x1": b.right, "y1": b.top,
+            "width": round(b.width(), 2), "height": round(b.height(), 2)}
+
+
+def extracted_pins(path):
+    """Terminal list of the extracted top .subckt (continuations joined)."""
+    toks = []
+    in_card = False
+    for line in open(path).read().splitlines():
+        if not in_card:
+            t = line.split()
+            if t and t[0].lower() == ".subckt":
+                toks, in_card = t[2:], True
+        elif line.startswith("+"):
+            toks += line[1:].split()
+        else:
+            break
+    return toks
+
+
 def main():
     cards = pilot.schematic_cards()
     for inst in INSTANCES:
         if inst not in cards:
             raise SystemExit("instance %s not found in %s" % (inst, NETLIST))
+
+    preflight_engine(build_blocks(cards)[0])
 
     for d in ("gds", "ref", "evidence", "extracted"):
         shutil.rmtree(os.path.join(STAGE, d), ignore_errors=True)
@@ -362,16 +412,21 @@ def main():
         for l in net["legs"]:
             assert l.get("routed") is True, l
     results["routed"] = {
-        "cell": CELL, "bbox_um": routed["bbox_um"],
+        "cell": CELL,
+        # gen-compose's bbox is the placement bounds only; the routed
+        # footprint is measured from the GDS after the compose (below)
+        "placement_bbox_um": routed["bbox_um"],
         "unrouted_nets": routed["unrouted_nets"],
         "pins_labelled": [p["net"] for p in routed["pins"]],
         "nets": {n["net"]: {"status": n["status"],
                             "route_length_um": round(sum(l["route_length_um"] for l in n["legs"]), 2),
                             "legs": len(n["legs"])} for n in routed["nets"]},
     }
-    print("compose routed  bbox %s  all %d nets routed" %
+    rb = measure_bbox_um(os.path.join(STAGE, "gds/%s.gds" % CELL))
+    results["routed"]["bbox_um"] = rb
+    print("compose routed  placement bbox %s, routed GDS bbox %.2f x %.2f um  all %d nets routed" %
           ([round(routed["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")],
-           len(routed["nets"])), flush=True)
+           rb["width"], rb["height"], len(routed["nets"])), flush=True)
 
     # --- 5. DRC (the AC gate) ----------------------------------------------------
     deck, _ = klt(["deck", "rules", "--deck", DECK], "evidence/deck.rules.json")
@@ -397,7 +452,9 @@ def main():
 
     # --- 6. extract + LVS against the cut sub-netlist ---------------------------
     ext, rc = klt(["extract", "gds/%s.gds" % CELL, "--deck", DECK, "--pdk", PDK,
-                   "--deck-option", "poly_res=1k", "-o", "extracted/%s.klt.spice" % CELL],
+                   "--deck-option", "poly_res=1k",
+                   "--pins", ",".join(INTERFACE_PINS),
+                   "-o", "extracted/%s.klt.spice" % CELL],
                   "evidence/%s.extract.klt.json" % CELL, ok_rc=(0, 3))
     assert ext.get("status") == "extracted", ext.get("status")
     # expected device counts derive from the cards: fingers sum per flavor,
@@ -410,12 +467,16 @@ def main():
             key = model.split("_")[0]  # the extractor reports the bare flavor
             want[key] = want.get(key, 0) + int(prm["nf"])
     assert ext.get("device_counts") == want, (ext.get("device_counts"), want)
-    results["extract"] = {"status": ext.get("status"), "device_counts": ext.get("device_counts")}
+    got_pins = extracted_pins(os.path.join(STAGE, "extracted/%s.klt.spice" % CELL))
+    assert sorted(got_pins) == sorted(INTERFACE_PINS), (got_pins, INTERFACE_PINS)
+    results["extract"] = {"status": ext.get("status"), "device_counts": ext.get("device_counts"),
+                          "pins": got_pins}
 
     lvs_req = {
         "schema": "klt.lvs.request/1", "engine": "klayout",
         "layout": {"file": "../gds/%s.gds" % CELL, "deck": DECK, "top": CELL,
-                   "deck_options": {"poly_res": "1k"}},
+                   "deck_options": {"poly_res": "1k"},
+                   "declared_pins": list(INTERFACE_PINS)},
         "reference": {"netlist": "../ref/%s.klt.spice" % CELL, "top": CELL,
                       "form": "subckt-call"},
         "options": {"combine_devices": True,

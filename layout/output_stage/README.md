@@ -5,8 +5,8 @@ and XRZ from `design/netlist/opamp_two_stage.spice` (the output half of the
 core). This is NOT block layout, NOT the full core (#241 keeps joining the
 two halves, the MIM plate-orientation decision and the metal-stack decision
 record), NOT ERC, parasitic extraction or post-layout simulation (#279), and
-it makes **no area claim and no T1 claim**. The 140.64 × 21.11 µm footprint
-below is the placed+routed bounding box of five generated cells, not a
+it makes **no area claim and no T1 claim**. The 142.88 × 24.36 µm footprint
+below is the routed bounding box (measured from the GDS) of five generated cells, not a
 ratified or measured block area. `manifests/gf180-opamp.json` and
 `manifests/gf180-opamp.signoff.json` are not changed by this directory.**
 
@@ -102,10 +102,10 @@ asserted equal to the positive run's.
 
 | Check | Verdict |
 |---|---|
-| Routed composition | `output_stage` cell, bbox 140.64 × 21.11 µm (not an area claim), **`unrouted_nets: []`**, 6 nets routed, 5 pin labels |
+| Routed composition | `output_stage` cell, routed GDS bbox 142.88 × 24.36 µm, measured from `output_stage.gds` (placement-only bounds from gen-compose: 140.64 × 21.11 µm; not an area claim), **`unrouted_nets: []`**, 6 nets routed, 5 pin labels |
 | DRC, klt curated deck | **clean** (0 violations), **80 rules checked / 34 skipped**, deck `sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666` |
 | Extract (`poly_res=1k`) | 14 nfet + 24 pfet (all 38 MOS fingers of XM6/XM7/XMB1 recognised) + 1 MIM + 1 ppolyf |
-| LVS vs the cut sub-netlist | **match, `error_count: 0`** — 6/6 nets, 5/5 devices (`combine_devices` folds the fingers), pins 6 vs 5, matched 6 |
+| LVS vs the cut sub-netlist | **match, `error_count: 0`** — 6/6 nets, 5/5 devices (`combine_devices` folds the fingers), pins 5 vs 5, matched 5 (`nz` stays internal) |
 | Negative control | XCC `c_width` 16.8u → 20u in the reference only: **mismatch with 1 `device.property` error**, same layout sha256 as the positive |
 
 Deck coverage, quoted from the committed envelope
@@ -143,10 +143,12 @@ physically sits in the GDS: `vdd` at m6's `TAP_N` ring tap and `vss` at m7's
 `TAP_W` ring tap (port-side labels), while `n2`, `vout` and `ibias` are
 labelled by the router's own net-name label on their route planes —
 gen-compose deduplicates a `pins[]` label at a routing terminal against
-that route label rather than drawing it twice. Extraction sees all five
-nets (plus `nz`, whose route label makes it a sixth extracted pin; the
-reference keeps it internal and the comparer matches all pins —
-`counts.pins: layout 6, reference 5, matched 6`). Guard rings/taps come
+that route label rather than drawing it twice. Extraction and LVS are both given the
+declared interface (`--pins n2,vout,ibias,vdd,vss` / `layout.declared_pins`,
+derived from `SUBNET_PORTS` in `tools/output_stage.py`), so `nz` — which
+carries a route label — stays internal: the extracted `.subckt` has the same
+five terminals as the schematic cut and `counts.pins` is 5/5/5. The driver
+asserts the extracted terminal set equals the declared interface. Guard rings/taps come
 from the generators' own geometry (`add_guard_ring: true` per block, the
 pilot verified ring/tap drawing and bulk-tie behaviour per cell) plus
 inspection; `klt ring-check`/`klt tap-distance` are not expressible against
@@ -157,7 +159,7 @@ tap rings.
 
 ## Files
 
-- `regen.sh`, `tools/output_stage.py`: the recipe (imports the pilot's
+- `regen.sh`, `tools/output_stage.py`: the recipe (the klayout engine identity is checked in scratch before any output directory is replaced, so a rejected run leaves the previous artifacts untouched) (imports the pilot's
   `schematic_cards` / `num_um` / `check_engine` / `control_tripped` /
   `layout_sha256_matches` — not forked)
 - `gds/`: the five generated blocks + the composed, routed, labelled

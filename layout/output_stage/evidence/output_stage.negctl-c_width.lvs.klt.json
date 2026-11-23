@@ -146,9 +146,9 @@
       "matched": 4
     },
     "pins": {
-      "layout": 6,
+      "layout": 5,
       "reference": 5,
-      "matched": 6
+      "matched": 5
     }
   },
   "device_classes": [
@@ -343,7 +343,7 @@
       "side": "both",
       "net": null,
       "device": {
-        "layout": "\\$4",
+        "layout": "\\$39",
         "reference": "C",
         "class": "cap_mim_2f0_m4m5_noshield"
       },
