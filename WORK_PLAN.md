@@ -3,7 +3,7 @@
 Current Loom label state. Tracking and blocked items do not constitute ready work.
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-23T03:23:15Z (snapshot; compare against live labels)_
+_Generated: 2026-11-23T10:41:00Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -35,7 +35,8 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence
+- **#429**: Dedupe run/klt/sha256_file/cut_ref helpers across layout stage tools
 
 ## PRs Awaiting Review
 
@@ -47,7 +48,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#430**: refactor: dedupe run/klt/sha256_file/cut_ref helpers into pilot module
 
 ## Proposed
 
@@ -75,9 +76,9 @@ _None._
 | Very important | 1 |
 | Important | 4 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 0 |
+| In Progress (`loom:building`) | 2 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
+| Approved PRs awaiting merge | 1 |
 | Curated | 4 |
 | Architect / Hermit proposals | 2 |
 | Active epics | 0 |
