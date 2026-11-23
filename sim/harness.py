@@ -87,6 +87,7 @@ their API.
 
 from __future__ import annotations
 
+import gzip
 import hashlib
 import importlib.util
 import json
@@ -1043,13 +1044,24 @@ def tran_request(netlist: Path, pdk: Pdk, corners, temps, supplies, *, ac_reques
     return req
 
 
+def _open_text(path: Path, mode: str):
+    """Text-mode opener for a per-point trace: a gzip member when the name ends
+    in `.gz` (as `np.savetxt`/`np.loadtxt` already treat it), plain text otherwise.
+    `mode` is "r" or "w"."""
+    path = Path(path)
+    if path.name.endswith(".gz"):
+        return gzip.open(path, mode + "t")
+    return path.open(mode)
+
+
 def save_point_data(m, path: Path, header: str) -> None:
     """Every rawfile sample of the point: `header` columns (enough for the
     runner's `rederive()` to reproduce the extraction from the committed file alone)."""
     import numpy as np  # deferred: the rest of this module is numpy-free at import time
 
     if m.x.size == 0:
-        path.write_text(f"# INVALID: {m.reason}\n")
+        with _open_text(path, "w") as fh:
+            fh.write(f"# INVALID: {m.reason}\n")
         return
     head = ([] if m.valid else [f"INVALID: {m.reason}"]) + [header]
     np.savetxt(path, np.column_stack([m.x, m.y, m.vin]), header="\n".join(head), fmt=("%.9e", "%.10e", "%.10e"))
@@ -1184,11 +1196,13 @@ def rederive_dat(path: Path, header: str, extract):
     import numpy as np  # deferred: see save_point_data
 
     names = None
-    for line in path.read_text().splitlines():
-        if not line.startswith("#"):
-            break
-        if line[1:].strip() == header:
-            names = header.split()
+    with _open_text(path, "r") as fh:
+        for line in fh:
+            line = line.rstrip("\n")
+            if not line.startswith("#"):
+                break
+            if line[1:].strip() == header:
+                names = header.split()
     if names is None:
         raise ValueError(f"{path}: no `{header}` column header")
     d = np.loadtxt(path, ndmin=2)
