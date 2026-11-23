@@ -3,7 +3,7 @@
 Current Loom label state. Tracking and blocked items do not constitute ready work.
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-20T19:39:26Z (snapshot; compare against live labels)_
+_Generated: 2026-11-21T06:54:05Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
@@ -24,6 +24,7 @@ _None._
 - **#241**: T1 items 2, 3, 4, 11: compose the full op-amp core layout from the pilot cells and mint klt DRC, LVS and ERC evidence *(held)*
 - **#242**: T1 item 5: cite the retained klt sim reports per spec row, with declared gaps for rows not yet covered *(held)*
 - **#328**: layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence *(held)*
+- **#424**: layout: compose the output-stage and compensation sub-block (XM6, XM7, XMB1, XCC, XRZ) from the pilot generators with klt DRC and LVS evidence
 
 ## Ready
 
@@ -35,13 +36,13 @@ _None._
 
 Issues currently being built (`loom:building`).
 
-_None._
+- **#424**: layout: compose the output-stage and compensation sub-block (XM6, XM7, XMB1, XCC, XRZ) from the pilot generators with klt DRC and LVS evidence
 
 ## PRs Awaiting Review
 
 PRs waiting on Judge (`loom:review-requested`).
 
-_None._
+- **#426**: layout: add routed output-stage + compensation sub-block with DRC/LVS evidence
 
 ## Approved (Awaiting Merge)
 
@@ -75,10 +76,10 @@ _None._
 |------|-------|
 | Operator merge-risk holds | 0 |
 | Very important | 1 |
-| Important | 4 |
+| Important | 5 |
 | Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
-| In Progress (`loom:building`) | 0 |
-| PRs awaiting review | 0 |
+| In Progress (`loom:building`) | 1 |
+| PRs awaiting review | 1 |
 | Approved PRs awaiting merge | 0 |
 | Curated | 5 |
 | Architect / Hermit proposals | 3 |
