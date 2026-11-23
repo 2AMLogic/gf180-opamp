@@ -8,6 +8,14 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-23
 
+- **PR #430**: refactor: dedupe run/klt/sha256_file/cut_ref helpers into pilot module
+- **PR #436**: layout/output_stage: align the klt pin with pilot and first_stage (1ad4a837f657) and regenerate its evidence
+- **PR #435**: sim/report: stage only exercised sample tables and step traces in the test fixture
+- **PR #433**: feat: route the first-stage sub-block at a widened diff_pair pitch (DRC clean, LVS match) and bump the klt pin to 1ad4a837f657
+- **Issue #429** (closed): Dedupe run/klt/sha256_file/cut_ref helpers across layout stage tools
+- **Issue #432** (closed): layout/output_stage: bump the klt pin to 1ad4a837f657 with pilot and first_stage, and regenerate its evidence
+- **Issue #434** (closed): Limit report-test sample tables and step-response traces to exercised runs
+- **Issue #328** (closed): layout: compose the first-stage sub-block (XM1 to XM5) from the pilot generators with klt DRC and LVS evidence
 - **PR #426**: layout: add routed output-stage + compensation sub-block with DRC/LVS evidence
 - **Issue #424** (closed): layout: compose the output-stage and compensation sub-block (XM6, XM7, XMB1, XCC, XRZ) from the pilot generators with klt DRC and LVS evidence
 - **Issue #340** (closed): Consolidate 8 duplicate claim_record_paths append-only tests into sim/test_harness.py
