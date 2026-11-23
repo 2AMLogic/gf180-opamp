@@ -36,6 +36,15 @@ FULL_POINTS = [(m, t, v) for m in FULL_MOS for t in FULL_TEMPS for v in FULL_SUP
 SCOPES = {"limited": PASSIVE_POINTS, "full": FULL_POINTS}
 SCOPE_CELLS = {"limited": 27, "full": 405}
 
+#: Passive axes a study sweeps: "r" = RZ (resistor section), "c" = CC (MIM section).
+#: A dropped axis is pinned to "typical". The default is both (the uniform 3x3).
+ALL_PASSIVE_AXES = ("r", "c")
+
+#: Per-figure passive scope of `sim/slew-swing-power` (issue #322, DR-0009): slew
+#: responds to RZ and CC; swing only to RZ; quiescent power to neither. Consumers
+#: that pass no axes (`sim/gain-gbw-pm`) keep the full 3x3.
+FIGURE_PASSIVE_AXES = {"slew": ("r", "c"), "swing": ("r",), "power": ()}
+
 Key = tuple  # (process name, temperature_c, supply_v)
 
 
@@ -45,8 +54,14 @@ def scope_points(scope: str) -> list:
     return list(SCOPES[scope])
 
 
+def figure_cells(scope: str, fig: str) -> int:
+    """Cells one figure's request runs at `scope` under its per-figure passive axes."""
+    return len(scope_points(scope)) * len(passive_combos(FIGURE_PASSIVE_AXES[fig]))
+
+
 def scope_description(scope: str) -> str:
-    """One-line scope statement carried in every record (limited vs full)."""
+    """One-line scope statement carried in every record (limited vs full) for the
+    uniform 3x3 matrix (per-figure scoping is described by the consumer)."""
     pts = scope_points(scope)
     n = len(pts) * len(PASSIVE_LEVELS) ** 2
     if scope == "full":
@@ -88,35 +103,42 @@ def split_passive_key(k: Key) -> tuple[str, str, str]:
     return mos, rpart.removeprefix("r-"), cpart.removeprefix("c-")
 
 
-def passive_combos() -> list[tuple[str, str]]:
-    return [(r, c) for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS]
+def passive_combos(axes=ALL_PASSIVE_AXES) -> list[tuple[str, str]]:
+    """(RZ level, CC level) pairs; an axis not in `axes` is pinned to "typical"."""
+    unknown = set(axes) - set(ALL_PASSIVE_AXES)
+    if unknown:
+        raise ValueError(f"unknown passive axes {sorted(unknown)}; choose from {ALL_PASSIVE_AXES}")
+    rs = PASSIVE_LEVELS if "r" in axes else ("typical",)
+    cs = PASSIVE_LEVELS if "c" in axes else ("typical",)
+    return [(r, c) for r in rs for c in cs]
 
 
-def passive_process_axis(points=PASSIVE_POINTS) -> list[dict]:
+def passive_process_axis(points=PASSIVE_POINTS, axes=ALL_PASSIVE_AXES) -> list[dict]:
     mos = list(dict.fromkeys(p[0] for p in points))
     return [
         {"name": passive_name(m, r, c), "sections": [m, *passive_sections(r, c)]}
         for m in mos
-        for r, c in passive_combos()
+        for r, c in passive_combos(axes)
     ]
 
 
-def passive_expected_keys(points=PASSIVE_POINTS) -> list[Key]:
+def passive_expected_keys(points=PASSIVE_POINTS, axes=ALL_PASSIVE_AXES) -> list[Key]:
     return [
         (passive_name(m, r, c), float(t), float(v))
         for (m, t, v) in points
-        for r, c in passive_combos()
+        for r, c in passive_combos(axes)
     ]
 
 
-def apply_passive_matrix(req: dict, points=PASSIVE_POINTS) -> dict:
+def apply_passive_matrix(req: dict, points=PASSIVE_POINTS, axes=ALL_PASSIVE_AXES) -> dict:
     """Turn a request built for the T/VDD cross product of `points` into the
     ONE passive corner-matrix request: replace the process axis with the
     MOS x RZ x CC axis and remove, via klt's `exclude`, the cross-product cells
-    that are not study points. Mutates and returns `req`."""
+    that are not study points. `axes` restricts the swept passive axes (default
+    both). Mutates and returns `req`."""
     temps = sorted({p[1] for p in points})
     vdds = sorted({p[2] for p in points})
-    req["corners"]["process"] = passive_process_axis(points)
+    req["corners"]["process"] = passive_process_axis(points, axes)
     req["corners"]["supply_v"] = {"vdd": list(vdds), "vcm": [round(v / 2, 6) for v in vdds]}
     req["corners"]["temperature_c"] = list(temps)
     want = set(points)
@@ -126,7 +148,7 @@ def apply_passive_matrix(req: dict, points=PASSIVE_POINTS) -> dict:
             for v in vdds:
                 if (m, t, v) in want:
                     continue
-                for r, c in passive_combos():
+                for r, c in passive_combos(axes):
                     exclude.append({
                         "process": passive_name(m, r, c),
                         "temperature_c": t,

@@ -37,9 +37,13 @@ Target specification and decision records. Spec changes require a decision recor
   [`0007-noise-offset-requirement-basis.md`](decision-records/0007-noise-offset-requirement-basis.md)
   (**proposed preparation draft**, issue #62: consumer-derived noise/offset
   requirement basis and a bounded validation plan; proposes no number and
-  changes no row), and
+  changes no row),
   [`0008-buck-compensation-load-gbw-pm-row.md`](decision-records/0008-buck-compensation-load-gbw-pm-row.md)
   (**proposed preparation draft**, issue #295: states `gf180-buck`'s actual
   type-III compensation load and a bounded validation bench for a
   load-specific GBW/PM row; proposes no number and changes no row, the
-  10 MHz / 2 pF row is untouched).
+  10 MHz / 2 pF row is untouched), and
+  [`0009-per-figure-passive-scope.md`](decision-records/0009-per-figure-passive-scope.md)
+  (**decided**, issue #322, operator ruling 2026-11-23: scopes the
+  `slew-swing-power` passive RZ x CC matrix per figure — slew 3 x 3, swing RZ
+  only, power neither; changes no spec row).

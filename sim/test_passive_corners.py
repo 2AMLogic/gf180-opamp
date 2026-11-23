@@ -69,6 +69,41 @@ class ScopeTests(unittest.TestCase):
                     n = sum(1 for k in keys if pc.split_passive_key(k)[0] == mos and k[1] == t and k[2] == v)
                     self.assertEqual(n, 9, (mos, t, v))
 
+    def test_per_figure_axes_give_45_135_405_full_and_3_9_27_limited(self):
+        """Issue #322 / DR-0009: slew RZ x CC, swing RZ only, power neither."""
+        self.assertEqual(pc.FIGURE_PASSIVE_AXES, {"slew": ("r", "c"), "swing": ("r",), "power": ()})
+        for scope, want in (("full", {"power": 45, "swing": 135, "slew": 405}),
+                            ("limited", {"power": 3, "swing": 9, "slew": 27})):
+            for fig, n in want.items():
+                keys = pc.passive_expected_keys(pc.scope_points(scope), pc.FIGURE_PASSIVE_AXES[fig])
+                self.assertEqual((len(keys), len(set(keys))), (n, n), (scope, fig))
+                self.assertEqual(pc.figure_cells(scope, fig), n)
+        # dropped axes are pinned to typical; kept axes cover every level
+        swing = [pc.split_passive_key(k)[1:] for k in pc.passive_expected_keys(axes=("r",))]
+        self.assertEqual({c for _, c in swing}, {"typical"})
+        self.assertEqual({r for r, _ in swing}, set(pc.PASSIVE_LEVELS))
+        self.assertEqual(pc.passive_combos(()), [("typical", "typical")])
+        # the default is still the uniform 3x3 (gain-gbw-pm is unchanged)
+        self.assertEqual(len(pc.passive_combos()), 9)
+        self.assertEqual(len(pc.passive_expected_keys(pc.scope_points("full"))), 405)
+        with self.assertRaises(ValueError):
+            pc.passive_combos(("x",))
+
+    def test_reduced_request_is_the_reduced_cross_product(self):
+        for scope in ("limited", "full"):
+            pts = pc.scope_points(scope)
+            for fig, axes in pc.FIGURE_PASSIVE_AXES.items():
+                req = pc.apply_passive_matrix({"corners": {}}, pts, axes)
+                self.assertEqual(emulate_klt(req), set(pc.passive_expected_keys(pts, axes)), (scope, fig))
+
+    def test_reduced_key_set_exactness_still_flags_bad_cells(self):
+        want = pc.passive_expected_keys(pc.scope_points("full"), ())
+        self.assertEqual(pc.key_set_problems(want, want), [])
+        self.assertIn("missing", pc.key_set_problems(want[1:], want)[0])
+        self.assertIn("duplicate", pc.key_set_problems(want + [want[0]], want)[0])
+        full = pc.passive_expected_keys(pc.scope_points("full"))
+        self.assertEqual(len(pc.key_set_problems(full, want)), 405 - 45)
+
     def test_full_request_is_the_whole_cross_product(self):
         req = pc.apply_passive_matrix({"corners": {}}, pc.scope_points("full"))
         self.assertEqual(len(req["corners"]["process"]), 45)

@@ -511,14 +511,23 @@ class PassiveCornerTests(unittest.TestCase):
     def _req(self, fig="slew"):
         return r.passive_request(fig, Path("/x/tb.spice"), self.PDK)
 
-    def test_one_matrix_with_exactly_the_27_study_cells_per_figure(self):
+    LIMITED_CELLS = {"slew": 27, "swing": 9, "power": 3}
+    FULL_CELLS = {"slew": 405, "swing": 135, "power": 45}
+
+    def test_one_matrix_with_exactly_the_per_figure_study_cells(self):
         for fig in r.FIGURES:
             req = self._req(fig)
             axis = req["corners"]["process"]
-            self.assertEqual(len(axis), 27)
+            self.assertEqual(len(axis), self.LIMITED_CELLS[fig])
             by = {a["name"]: a["sections"] for a in axis}
-            self.assertEqual(by[r.pc.passive_name("ss", "worst", "best")], ["ss", "res_ss", "mimcap_ff"])
-            self.assertEqual(by[r.pc.passive_name("fs", "best", "worst")], ["fs", "res_ff", "mimcap_ss"])
+            if fig == "slew":
+                self.assertEqual(by[r.pc.passive_name("ss", "worst", "best")], ["ss", "res_ss", "mimcap_ff"])
+                self.assertEqual(by[r.pc.passive_name("fs", "best", "worst")], ["fs", "res_ff", "mimcap_ss"])
+            if fig == "swing":
+                self.assertEqual(by[r.pc.passive_name("ss", "worst", "typical")], ["ss", "res_ss", "mimcap_typical"])
+                self.assertNotIn(r.pc.passive_name("ss", "worst", "best"), by)
+            if fig == "power":
+                self.assertEqual(set(by), {r.pc.passive_name(m, "typical", "typical") for m in ("fs", "ss", "typical")})
             sup = req["corners"]["supply_v"]
             cells = set()
             for a in axis:
@@ -527,8 +536,8 @@ class PassiveCornerTests(unittest.TestCase):
                         e = {"process": a["name"], "temperature_c": t, "supply_v": {"vdd": vdd}}
                         if e not in req["exclude"]:
                             cells.add((a["name"], float(t), float(vdd)))
-            self.assertEqual(cells, set(r.pc.passive_expected_keys()))
-            self.assertEqual(len(cells), 27)
+            self.assertEqual(cells, set(r.pc.passive_expected_keys(axes=r.pc.FIGURE_PASSIVE_AXES[fig])))
+            self.assertEqual(len(cells), self.LIMITED_CELLS[fig])
             # the figure's own analysis/measurements are kept (not the ac request's)
             self.assertEqual(req["analysis"], r.mc.analysis_for(fig, r.IBIAS_A))
 
@@ -538,11 +547,12 @@ class PassiveCornerTests(unittest.TestCase):
             expand = ksim._expand_corners
         except Exception:
             self.skipTest("klt expander not importable")
-        req = self._req()
-        pts = expand(req["corners"], req["exclude"])
-        got = {(p.process if isinstance(p.process, str) else p.process["name"], p.temperature_c, p.supply_v["vdd"])
-               for p in pts}
-        self.assertEqual(got, set(r.pc.passive_expected_keys()))
+        for fig in r.FIGURES:
+            req = self._req(fig)
+            pts = expand(req["corners"], req.get("exclude", []))
+            got = {(p.process if isinstance(p.process, str) else p.process["name"], p.temperature_c, p.supply_v["vdd"])
+                   for p in pts}
+            self.assertEqual(got, set(r.pc.passive_expected_keys(axes=r.pc.FIGURE_PASSIVE_AXES[fig])), fig)
 
     def test_default_grid_request_is_unchanged(self):
         req = r.make_request("slew", Path("/x/tb.spice"), self.PDK, r.CORNERS, r.TEMPS_C, r.SUPPLIES_V)
@@ -570,10 +580,10 @@ class PassiveCornerTests(unittest.TestCase):
         self.assertTrue(r.pc.deck_section_problems(k, bad))
         self.assertTrue(r.pc.deck_section_problems(k, ""))
 
-    def _fake_report(self, tmp, drop=None, extra=False, vals=None):
+    def _fake_report(self, tmp, drop=None, extra=False, vals=None, keys=None):
         """A klt-style report whose rawfiles are synthetic power waveforms."""
         corners = []
-        for k in r.pc.passive_expected_keys():
+        for k in (keys if keys is not None else r.pc.passive_expected_keys()):
             if k == drop:
                 continue
             d = Path(tmp) / r.g.point_stem(k)
@@ -593,23 +603,24 @@ class PassiveCornerTests(unittest.TestCase):
 
     def test_extraction_over_a_synthetic_report(self):
         with tempfile.TemporaryDirectory() as t:
-            rep = self._fake_report(t)
-            res, arts, problems = r.analyse_passive_report("power", rep, r.pc.passive_expected_keys())
+            pkeys = r.pc.passive_expected_keys(axes=r.pc.FIGURE_PASSIVE_AXES["power"])
+            rep = self._fake_report(t, keys=pkeys)
+            res, arts, problems = r.analyse_passive_report("power", rep, pkeys)
             self.assertEqual(problems, [])
-            self.assertEqual(len(res), 27)
+            self.assertEqual(len(res), 3)
             self.assertTrue(all(m.valid for m in res.values()))
 
     def test_missing_extra_and_wrong_section_cells_are_rejected(self):
-        keys = r.pc.passive_expected_keys()
+        keys = r.pc.passive_expected_keys(axes=r.pc.FIGURE_PASSIVE_AXES["power"])
         with tempfile.TemporaryDirectory() as t:
-            _, _, p = r.analyse_passive_report("power", self._fake_report(t, drop=keys[0]), keys)
+            _, _, p = r.analyse_passive_report("power", self._fake_report(t, drop=keys[0], keys=keys), keys)
             self.assertTrue(any("missing result" in x for x in p))
         with tempfile.TemporaryDirectory() as t:
-            _, _, p = r.analyse_passive_report("power", self._fake_report(t, extra=True), keys)
+            _, _, p = r.analyse_passive_report("power", self._fake_report(t, extra=True, keys=keys), keys)
             self.assertTrue(p)
         with tempfile.TemporaryDirectory() as t:
-            rep = self._fake_report(t)
-            deck = Path(rep["corners"][3]["artifacts"]["deck"])
+            rep = self._fake_report(t, keys=keys)
+            deck = Path(rep["corners"][1]["artifacts"]["deck"])
             deck.write_text(deck.read_text().replace("res_", "resX_"))
             _, _, p = r.analyse_passive_report("power", rep, keys)
             self.assertTrue(any("deck loads sections" in x for x in p))
@@ -643,13 +654,18 @@ class PassiveCornerTests(unittest.TestCase):
         self.assertIn("9.50", md)
 
     def test_full_scope_request_report_and_record(self):
-        """Issue #150: the full scope is 45 points x 9 RZ/CC = 405 cells per figure."""
+        """Issue #150: full scope is 45 points; DR-0009 (#322) scopes the passive axes per figure
+        (slew 405 / swing 135 / power 45 cells)."""
         pts = r.pc.scope_points("full")
-        req = r.passive_request("power", Path("/x/tb.spice"), self.PDK, pts)
-        self.assertEqual(len(req["corners"]["process"]), 45)
-        self.assertNotIn("exclude", req)
+        for fig, n in self.FULL_CELLS.items():
+            req = r.passive_request(fig, Path("/x/tb.spice"), self.PDK, pts)
+            self.assertEqual(len(req["corners"]["process"]), n // 9 if fig != "slew" else 45, fig)
+            self.assertNotIn("exclude", req)
+            self.assertEqual(r.pc.figure_cells("full", fig), n)
+            self.assertEqual(r.pc.figure_cells("limited", fig), self.LIMITED_CELLS[fig])
         keys = r.pc.passive_expected_keys(pts)
         self.assertEqual(len(keys), 405)
+        pkeys = r.pc.passive_expected_keys(pts, r.pc.FIGURE_PASSIVE_AXES["power"])
         with tempfile.TemporaryDirectory() as t:
             rep = self._fake_report_for(t, keys)
             res, _, problems = r.analyse_passive_report("power", rep, keys)
@@ -660,7 +676,7 @@ class PassiveCornerTests(unittest.TestCase):
             self.assertTrue(any("missing" in x for x in p))
             _, _, p = r.analyse_passive_report("power", {"corners": rep["corners"] + [rep["corners"][0]]}, keys)
             self.assertTrue(any("duplicate" in x for x in p))
-            _, _, p = r.analyse_passive_report("power", rep, r.pc.passive_expected_keys())
+            _, _, p = r.analyse_passive_report("power", rep, pkeys)
             self.assertTrue(any("unexpected" in x for x in p))
         res = {k: r.Metrics(fig="slew", valid=True, slew_vus=14.0) for k in keys}
         bad = (r.pc.passive_name("sf", "worst", "best"), -40.0, 3.63)
@@ -676,6 +692,30 @@ class PassiveCornerTests(unittest.TestCase):
         self.assertIn("passes at 404/405 cells", md)
         self.assertIn("sf / -40 C / 3.63 V, RZ worst, CC best", md)
         self.assertEqual(md.count("\n### "), 45)
+        self.assertIn("slew sweeps RZ x CC (9 combination(s) per point, 405 cells)", md)
+        self.assertNotIn("Invariance asserted", md)  # slew drops nothing
+
+    def test_reduced_figures_state_invariance_and_cite_evidence(self):
+        pts = r.pc.scope_points("full")
+        res = {}
+        for fig in ("swing", "power"):
+            for k in r.pc.passive_expected_keys(pts, r.pc.FIGURE_PASSIVE_AXES[fig]):
+                res[fig, k] = r.Metrics(fig=fig, valid=True, power_uw=250.0, swing_v=2.5)
+        all_results = {f: {k: m for (ff, k), m in res.items() if ff == f} for f in ("swing", "power")}
+        verdicts = {f: r.judge_figure(f, all_results.get(f), requested=f in all_results) for f in r.FIGURES}
+        md = r.build_passive_record(
+            record="20261010-000000-abcdef0", stamp=__import__("datetime").datetime(2026, 10, 10),
+            pdk=self.PDK, ngspice="n", klt_version="k", backend_descs={}, all_results=all_results,
+            verdicts=verdicts, ctrls=[], ctrl_bad=[], dut_sha="0" * 64, not_run={}, figs=("swing", "power"), scope="full",
+        )
+        self.assertIn("swing: 135 cells", md)
+        self.assertIn("power: 45 cells", md)
+        self.assertIn("Invariance asserted, not re-derived (swing)**: CC is held", md)
+        self.assertIn("Invariance asserted, not re-derived (power)**: RZ and CC are held", md)
+        self.assertIn("20261018-142357-91dab49", md)
+        self.assertIn("20261011-052206-c635487", md)
+        self.assertIn("0009-per-figure-passive-scope.md", md)
+        self.assertNotIn("change vs typ./typ.", md.split("### Quiescent power", 1)[1].split("### Output swing", 1)[0])
 
     def _fake_report_for(self, tmp, keys):
         corners = []

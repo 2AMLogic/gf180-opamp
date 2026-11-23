@@ -1073,12 +1073,23 @@ def build_record(
 PASSIVE_TITLE = "# slew/swing/power passive-corner study"
 
 
+#: Evidence cited by every reduced-scope record for the dropped passive axes (DR-0009).
+INVARIANCE_EVIDENCE = (
+    "Basis: the two full-scope 3x3 records `20261018-142357-91dab49` and `20261011-052206-c635487` "
+    "(each 45 / 105 / 405 distinct power / swing / slew results over 405 cells) showed power invariant to both RZ and CC "
+    "and swing invariant to CC; see `spec/decision-records/0009-per-figure-passive-scope.md`. "
+    "The shared helpers keep the uniform 3x3 as their default (`pc.ALL_PASSIVE_AXES`), so a full audit needs no helper change."
+)
+
+
 def passive_request(fig: str, netlist: Path, pdk: Pdk, points=pc.PASSIVE_POINTS) -> dict:
-    """ONE corner-matrix request for one figure: MOS x RZ x CC x T x VDD, with
-    the cross-product cells that are not study points excluded (27 cells)."""
+    """ONE corner-matrix request for one figure: MOS x RZ x CC x T x VDD over the
+    passive axes that figure responds to (`pc.FIGURE_PASSIVE_AXES`, DR-0009), with
+    the cross-product cells that are not study points excluded."""
     temps = sorted({p[1] for p in points})
     vdds = sorted({p[2] for p in points})
-    return pc.apply_passive_matrix(make_request(fig, netlist, pdk, [], temps, vdds), points)
+    return pc.apply_passive_matrix(make_request(fig, netlist, pdk, [], temps, vdds), points,
+                                  pc.FIGURE_PASSIVE_AXES[fig])
 
 
 def analyse_passive_report(fig: str, report: dict, want: list[Key]):
@@ -1102,7 +1113,7 @@ def passive_summary(results: dict[Key, Metrics], fig: str, points=pc.PASSIVE_POI
     for (m, t, v) in points:
         base = results.get((pc.passive_name(m, "typical", "typical"), t, v))
         rows = {}
-        for r_, c_ in pc.passive_combos():
+        for r_, c_ in pc.passive_combos(pc.FIGURE_PASSIVE_AXES[fig]):
             mt = results.get((pc.passive_name(m, r_, c_), t, v))
             if mt is None:
                 continue
@@ -1132,7 +1143,7 @@ def build_passive_record(
     add = L.append
     ran = [f for f in FIGURES if all_results.get(f) is not None]
     points = pc.scope_points(scope)
-    ncell = len(pc.passive_expected_keys(points))
+    cells = {f: pc.figure_cells(scope, f) for f in FIGURES}
     add(f"{PASSIVE_TITLE} (RZ x CC) -- record {record}")
     add("")
     add(f"- **Date (UTC)**: {stamp:%Y-%m-%d %H:%M:%S}")
@@ -1161,16 +1172,23 @@ def build_passive_record(
     add("## Conditions")
     add("")
     add(f"- **PDK**: {pdk.path} (open_pdks {pdk.version}); ngspice {ngspice}; klt {klt_version}")
-    add("- **Execution** (per figure, each ONE `klt sim` corner-matrix request of "
-        f"{ncell} cells):")
+    add("- **Execution** (per figure, each ONE `klt sim` corner-matrix request over the passive axes that figure responds to, DR-0009):")
     for f in ran:
-        add(f"  - {f}: {backend_descs.get(f, '')}")
+        add(f"  - {f}: {cells[f]} cells; {backend_descs.get(f, '')}")
     add(f"- **DUT**: `design/netlist/opamp_two_stage.spice` (normalised sha256 `{dut_sha}`); snapshot `netlist-snapshots/{record}.spice`")
     add("- **Points**: " + "; ".join(f"{m} / {t:g} C / {v:.2f} V" for m, t, v in points)
-        + f", each x 3 RZ levels x 3 CC levels = {ncell} cells; ibias = 10 uA, same benches and extraction as the 45-point grid.")
+        + "; ibias = 10 uA, same benches and extraction as the 45-point grid.")
+    add("- **Passive axes per figure** (DR-0009, issue #322): " + "; ".join(
+        f"{f} sweeps {' x '.join({'r': 'RZ', 'c': 'CC'}[a] for a in pc.FIGURE_PASSIVE_AXES[f]) or 'neither passive axis'} "
+        f"({cells[f] // len(points)} combination(s) per point, {cells[f]} cells)" for f in ran) + ".")
+    for f in ran:
+        dropped = [{"r": "RZ", "c": "CC"}[a] for a in pc.ALL_PASSIVE_AXES if a not in pc.FIGURE_PASSIVE_AXES[f]]
+        if dropped:
+            add(f"- **Invariance asserted, not re-derived ({f})**: {' and '.join(dropped)} {'is' if len(dropped) == 1 else 'are'} held at `typical` for {f}. "
+                f"{INVARIANCE_EVIDENCE}")
     add("- **Passive-section policy (swept)**: RZ (`ppolyf_u_1k`) uses `res_typical` / `res_ff` (best, 0.8x) / `res_ss` (worst, 1.2x); "
         "CC (`cap_mim_2f0_m4m5_noshield`) uses `mimcap_typical` / `mimcap_ff` (best, 0.9x) / `mimcap_ss` (worst, 1.1x). "
-        "All nine combinations run independently at each point. Each cell's generated deck was checked to load exactly the "
+        "Every combination of the axes a figure sweeps runs independently at each point (a dropped axis stays `typical`). Each cell's generated deck was checked to load exactly the "
         "sections its name encodes. \"best\"/\"worst\" are the PDK ff/ss labels, not a claim about which is worse for a row; the tables decide.")
     add("")
     add("## Results")
@@ -1178,6 +1196,16 @@ def build_passive_record(
         label, _, bound, unit, direction = ROWS[f]
         cmp_ = ">=" if direction == "min" else "<="
         summ = passive_summary(all_results[f], f, points)
+        if not pc.FIGURE_PASSIVE_AXES[f]:
+            add("")
+            add(f"### {label} (passives typical; invariant to RZ and CC, DR-0009; bound {cmp_} {bound:g} {unit})")
+            add("")
+            add(f"| MOS | T (C) | VDD (V) | {unit} | vs bound |")
+            add("|---|---|---|---|---|")
+            for (m, t, v), rows in summ.items():
+                for (mt, d, ok) in rows.values():
+                    add(f"| {m} | {t:g} | {v:.2f} | {_val(mt, f)} | {'PASS' if ok else 'FAIL'} |")
+            continue
         for (m, t, v), rows in summ.items():
             add("")
             add(f"### {label} -- {m} / {t:g} C / {v:.2f} V (bound {cmp_} {bound:g} {unit})")
@@ -1226,13 +1254,14 @@ def build_passive_record(
 def run_passive(pdk: Pdk, args, figs) -> int:
     scope = getattr(args, "passive_scope", "limited")
     points = pc.scope_points(scope)
-    want = pc.passive_expected_keys(points)
-    assert len(want) == pc.SCOPE_CELLS[scope], (scope, len(want))
+    wants = {f: pc.passive_expected_keys(points, pc.FIGURE_PASSIVE_AXES[f]) for f in figs}
+    for f in figs:
+        assert len(wants[f]) == pc.figure_cells(scope, f), (scope, f, len(wants[f]))
     record, stamp = allocate_record_id(REPO_ROOT)
     paths = claim_run_paths(HERE, record, plots=False)
     ngspice = ngspice_version()
     kver = klt_version()
-    print(f"record {record}: passive-corner study ({scope}), {len(want)} cells x {len(figs)} figures ({', '.join(figs)}), PDK={pdk.path}, klt {kver}")
+    print(f"record {record}: passive-corner study ({scope}), {', '.join(f'{f} {len(wants[f])}' for f in figs)} cells, PDK={pdk.path}, klt {kver}")
     all_results: dict[str, dict[Key, Metrics] | None] = {}
     all_arts: dict[str, dict] = {}
     reports: dict[str, dict] = {}
@@ -1257,7 +1286,7 @@ def run_passive(pdk: Pdk, args, figs) -> int:
                 print(f"ERROR: {fig}: {not_run[fig]}", file=sys.stderr)
                 all_results[fig] = None
                 continue
-            results, arts, problems = analyse_passive_report(fig, report, want)
+            results, arts, problems = analyse_passive_report(fig, report, wants[fig])
             if problems:
                 not_run[fig] = "the passive-corner study did not complete cleanly: " + "; ".join(problems[:6])
                 print(f"ERROR: {fig}: {not_run[fig]}", file=sys.stderr)
