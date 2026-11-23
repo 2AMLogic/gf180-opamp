@@ -29,17 +29,15 @@ What this builds (issue #328, the first slice of #241):
 Outputs are deterministic (no wall-clock content) and written under
 layout/first_stage/.
 """
-import hashlib
 import json
 import os
 import shutil
-import subprocess
 import sys
 
 FIRST = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(FIRST, "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "layout", "pilot", "tools"))
-import pilot  # noqa: E402  (reuse: num_um, schematic_cards, check_engine)
+import pilot  # noqa: E402  (reuse: num_um, schematic_cards, check_engine, klt, sha256_file, cut_ref)
 
 PDK = "gf180mcuD"
 NETLIST = "design/netlist/opamp_two_stage.spice"
@@ -84,50 +82,8 @@ PINS = (
 
 PLACEMENT = {"strategy": "row", "order": ["load", "in", "tail"], "spacing_um": 1.0}
 
-
-def run(args, out_path=None, ok_rc=(0,)):
-    r = subprocess.run(args, capture_output=True, text=True, cwd=FIRST)
-    if out_path is not None:
-        open(os.path.join(FIRST, out_path), "w").write(r.stdout)
-    if r.returncode not in ok_rc and not r.stdout.strip():
-        raise SystemExit("klt %s failed (rc %d): %s" % (args[1], r.returncode, r.stderr[-800:]))
-    return json.loads(r.stdout), r.returncode
-
-
-def klt(args, out_path, ok_rc=(0,)):
-    return run(["klt"] + args + ["--format", "json"], out_path, ok_rc)
-
-
-def sha256_file(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 16), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def cut_ref(cards):
-    """Cut the five instance cards verbatim (continuation lines included)."""
-    text = open(os.path.join(REPO, NETLIST)).read()
-    lines = text.splitlines()
-    out = []
-    for inst in INSTANCES:
-        for i, line in enumerate(lines):
-            if line.split() and line.split()[0] == inst:
-                out.append(line)
-                j = i + 1
-                while j < len(lines) and lines[j].startswith("+"):
-                    out.append(lines[j])
-                    j += 1
-                break
-        else:
-            raise SystemExit("instance %s not found in %s" % (inst, NETLIST))
-    header = ("* schematic-derived sub-netlist for %s: %s cut mechanically from\n"
-              "* %s -- the five instance cards, unchanged.\n"
-              "* (issue #328; ad/as/pd/ps and nrd/nrs are carried verbatim.)\n"
-              % (CELL, "+".join(INSTANCES), NETLIST))
-    body = "\n".join([".subckt %s %s" % (CELL, SUBNET_PORTS)] + out + [".ends"]) + "\n"
-    return header + body
+#: provenance note cut_ref writes into the reference sub-netlist header
+REF_NOTE = ("issue #328; ad/as/pd/ps and nrd/nrs are carried verbatim.",)
 
 
 def build_groups(cards):
@@ -177,10 +133,10 @@ def main():
     gen_reports = {}
     for g in groups:
         gds = "gds/%s.gds" % g["id"]
-        rep, rc = klt(["gen", g["generator"], "--pdk", PDK,
-                       "--params", json.dumps(g["params"]),
-                       "--cell-name", "%s_%s" % (CELL, g["id"]),
-                       "-o", gds], "evidence/%s.gen.json" % g["id"])
+        rep, rc = pilot.klt(["gen", g["generator"], "--pdk", PDK,
+                             "--params", json.dumps(g["params"]),
+                             "--cell-name", "%s_%s" % (CELL, g["id"]),
+                             "-o", gds], FIRST, "evidence/%s.gen.json" % g["id"])
         assert rc == 0, rep
         pilot.check_engine(rep)
         rep["gds_path"] = gds  # the report's absolute path is not stable
@@ -192,7 +148,8 @@ def main():
               [round(rep["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")]), flush=True)
 
     # --- 2. reference sub-netlist ------------------------------------------------
-    open(os.path.join(FIRST, "ref/first_stage.klt.spice"), "w").write(cut_ref(cards))
+    open(os.path.join(FIRST, "ref/first_stage.klt.spice"), "w").write(
+        pilot.cut_ref(INSTANCES, CELL, SUBNET_PORTS, REF_NOTE))
 
     # --- 3. placed composition (the deliverable) ---------------------------------
     connectivity = [{"net": net, "pins": [{"block": b, "port": p} for b, p in pins]}
@@ -208,8 +165,8 @@ def main():
         "options": {"cell_name": CELL, "output": "gds/%s.gds" % CELL},
     }
     json.dump(placed_req, open(os.path.join(FIRST, "evidence/first_stage.compose.request.json"), "w"), indent=2)
-    placed, rc = klt(["gen-compose", "evidence/first_stage.compose.request.json"],
-                     "evidence/first_stage.compose.json", ok_rc=(0, 3))
+    placed, rc = pilot.klt(["gen-compose", "evidence/first_stage.compose.request.json"],
+                           FIRST, "evidence/first_stage.compose.json", ok_rc=(0, 3))
     assert rc == 3, "placed compose: expected exit 3 (placed, nets open), got %d" % rc
     assert placed["unrouted_nets"] == sorted(NET_PINS), placed["unrouted_nets"]
     for net in placed["nets"]:
@@ -218,11 +175,11 @@ def main():
           [round(placed["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")], flush=True)
 
     # --- 4. DRC (the AC 4 gate) ---------------------------------------------------
-    deck, _ = klt(["deck", "rules", "--deck", DECK], "evidence/deck.rules.json")
-    drc, rc = klt(["drc", "gds/%s.gds" % CELL, "--deck", DECK, "--pdk", PDK],
-                  "evidence/first_stage.drc.klt.json", ok_rc=(0, 3))
+    deck, _ = pilot.klt(["deck", "rules", "--deck", DECK], FIRST, "evidence/deck.rules.json")
+    drc, rc = pilot.klt(["drc", "gds/%s.gds" % CELL, "--deck", DECK, "--pdk", PDK],
+                        FIRST, "evidence/first_stage.drc.klt.json", ok_rc=(0, 3))
     cov = drc.get("coverage", {})
-    gds_sha = sha256_file(os.path.join(FIRST, "gds/%s.gds" % CELL))
+    gds_sha = pilot.sha256_file(os.path.join(FIRST, "gds/%s.gds" % CELL))
     results["placed"] = {
         "cell": CELL, "bbox_um": placed["bbox_um"],
         "unrouted_nets": placed["unrouted_nets"],
@@ -242,9 +199,9 @@ def main():
            deck.get("content_hash", "")[:22]), flush=True)
 
     # --- 5. extract + LVS (recorded as-is; see README for the routing gap) -------
-    ext, rc = klt(["extract", "gds/%s.gds" % CELL, "--deck", DECK, "--pdk", PDK,
-                   "-o", "extracted/%s.klt.spice" % CELL],
-                  "evidence/first_stage.extract.klt.json", ok_rc=(0, 3))
+    ext, rc = pilot.klt(["extract", "gds/%s.gds" % CELL, "--deck", DECK, "--pdk", PDK,
+                         "-o", "extracted/%s.klt.spice" % CELL],
+                        FIRST, "evidence/first_stage.extract.klt.json", ok_rc=(0, 3))
     assert ext.get("status") == "extracted", ext.get("status")
     lvs_req = {
         "schema": "klt.lvs.request/1", "engine": "klayout",
@@ -255,8 +212,8 @@ def main():
                     "compare_parameters": {"nfet": ["W", "L"], "pfet": ["W", "L"]}},
     }
     json.dump(lvs_req, open(os.path.join(FIRST, "evidence/first_stage.lvs.klt.request.json"), "w"), indent=2)
-    lvs, rc = klt(["lvs", "evidence/first_stage.lvs.klt.request.json"],
-                  "evidence/first_stage.lvs.klt.json", ok_rc=(0, 3))
+    lvs, rc = pilot.klt(["lvs", "evidence/first_stage.lvs.klt.request.json"],
+                        FIRST, "evidence/first_stage.lvs.klt.json", ok_rc=(0, 3))
     results["lvs"] = {
         "status": lvs.get("status"), "error_count": lvs.get("error_count"),
         "mismatch_count": lvs.get("mismatch_count"),
@@ -276,12 +233,12 @@ def main():
     # --- 6. routed attempt (non-normative evidence; see README) ------------------
     routed_req = build_routed_attempt(placed_req, placed, gen_reports)
     json.dump(routed_req, open(os.path.join(FIRST, "evidence/first_stage.routed-attempt.request.json"), "w"), indent=2)
-    routed, rc = klt(["gen-compose", "evidence/first_stage.routed-attempt.request.json"],
-                     "evidence/first_stage.routed-attempt.json", ok_rc=(0, 3))
+    routed, rc = pilot.klt(["gen-compose", "evidence/first_stage.routed-attempt.request.json"],
+                           FIRST, "evidence/first_stage.routed-attempt.json", ok_rc=(0, 3))
     routed_summary = {"unrouted_nets": routed.get("unrouted_nets"),
                       "nets": {n["net"]: n["status"] for n in routed["nets"]}}
-    drc_r, rc = klt(["drc", "gds/%s_routed.gds" % CELL, "--deck", DECK, "--pdk", PDK],
-                    "evidence/first_stage.routed-attempt.drc.klt.json", ok_rc=(0, 3))
+    drc_r, rc = pilot.klt(["drc", "gds/%s_routed.gds" % CELL, "--deck", DECK, "--pdk", PDK],
+                          FIRST, "evidence/first_stage.routed-attempt.drc.klt.json", ok_rc=(0, 3))
     routed_summary["drc"] = {"status": drc_r.get("status"),
                              "violations": drc_r.get("violation_count"),
                              "rules": sorted({v.get("rule") for v in (drc_r.get("violations") or [])})}
