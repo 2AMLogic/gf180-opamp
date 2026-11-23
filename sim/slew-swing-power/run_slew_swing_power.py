@@ -1406,8 +1406,9 @@ def main(argv: list[str] | None = None) -> int:
                          "at fs/125C/2.97V, ss/125C/2.97V and nominal, one klt corner-matrix request per figure; mints a "
                          "side-study record the aggregate report never selects")
     ap.add_argument("--passive-scope", choices=["limited", "full"], default="limited",
-                    help="with --passive-corners: 'limited' (default, issue #97) = 3 screening points x 9 RZ/CC = 27 cells "
-                         "per figure; 'full' (issue #150) = all 5 MOS x 3 T x 3 VDD x 9 RZ/CC = 405 cells per figure")
+                    help="with --passive-corners: 'limited' (default, issue #97) = 3 screening points; 'full' (issue #150) = "
+                         "all 5 MOS x 3 T x 3 VDD. Passive axes are scoped per figure (DR-0009): slew RZ x CC "
+                         "(27 limited / 405 full cells), swing RZ only (9 / 135), power neither (3 / 45)")
     ap.add_argument("--strict", action="store_true", help="exit 1 when a ratified row misses")
     add_batch_args(ap, backend_help="klt execution backend for the 45-point grids (default: klt's own resolution, e.g. $KLT_SIM_BACKEND)")
     ap.add_argument("--figures", default=",".join(FIGURES),
