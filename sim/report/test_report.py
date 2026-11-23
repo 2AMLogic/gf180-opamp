@@ -56,6 +56,7 @@ OFF_NOM_REC = "20261009-072205-96bf3cc"  # issue #45: 5 corners at 27 C / 3.30 V
 OFF_GRID_MD = f"{OFF}/records/{OFF_GRID_REC}.md"
 OFF_NOM_MD = f"{OFF}/records/{OFF_NOM_REC}.md"
 OFF_GRID_CSV = f"{OFF}/corners/{OFF_GRID_REC}/offset_samples.csv"
+OFF_NOM_CSV = f"{OFF}/corners/{OFF_NOM_REC}/offset_samples.csv"  # nominal-format record's retained table
 GAIN_STUDY_MD = "sim/gain-gbw-pm/records/20261010-161720-0127eb7.md"  # issue #70 side study (supplementary, #121)
 SSP_STUDY_MD = "sim/slew-swing-power/records/20261010-162823-0127eb7.md"  # issue #97 side study (supplementary, #121)
 PSRR = "sim/psrr"
@@ -67,6 +68,7 @@ STEP_REC = "20261011-140956-cb03235"  # issue #113 retuned follower step record 
 STEP_PRE_RETUNE_REC = "20261010-082214-a2cc91f"  # issue #113 first record: pre-retune DUT
 STEP_MD = f"{STEP}/records/{STEP_REC}.md"
 STEP_DIR = f"{STEP}/corners/{STEP_REC}"
+STEP_PRE_RETUNE_DIR = f"{STEP}/corners/{STEP_PRE_RETUNE_REC}"  # DUT-rejection test reads its traces
 STEP_FIX_DAT = f"{STEP_DIR}/typical_27c_3.30v.dat"  # not-settled fixture point
 
 
@@ -93,17 +95,22 @@ def make_root(tmp: Path) -> Path:
     shutil.copy(REPO / "spec" / "target-spec.md", tmp / "spec" / "target-spec.md")
     # ICMR (issue #90): the retained per-sample evidence and the record addendum are report inputs
     # offset grid (issue #120): its retained per-sample evidence is a report input too
-    for p in (list((REPO / ICMR).glob("corners/*/samples.csv")) + list((REPO / ICMR).glob("records/*-addendum/ADDENDUM.md"))
-              + list((REPO / OFF).glob("corners/*/offset_samples.csv"))
-              + list((REPO / CMC).glob("corners/*/samples.csv"))  # CMRR mismatch MC (issue #124)
-              + list((REPO / PMC).glob("corners/*/samples.csv"))  # PSRR mismatch MC (issue #182)
+    # the runs the suite exercises only (issue #434): the wildcard searches copied seven
+    # archival CSVs and 45 archival traces (~8 MiB) no test reads
+    for p in (list((REPO / ICMR).glob("records/*-addendum/ADDENDUM.md"))
+              + [REPO / ICMR_CSV,
+                 REPO / OFF_GRID_CSV, REPO / OFF_NOM_CSV,
+                 REPO / CMC_CSV,  # CMRR mismatch MC (issue #124)
+                 REPO / PMC_CSV,  # PSRR mismatch MC (issue #182)
+                 REPO / GMC_CSV]  # gain/GBW/PM mismatch MC (issue #172)
               # full PSRR passive study (issue #173): the selected study's (issue #416) retained
               # per-cell curves and partition membership, not every archival study's
               + [REPO / PSRR_STUDY_DIR / "partitions.json",
                  *(REPO / PSRR_STUDY_DIR).glob("*.psrr.dat")]
-              + list((REPO / GMC).glob("corners/*/samples.csv"))  # gain/GBW/PM mismatch MC (issue #172)
-              # follower step-response study (issue #198): its retained per-point transients
-              + list((REPO / "sim/step-response").glob("corners/*/*.dat"))):
+              # follower step-response study (issue #198): the selected and pre-retune runs'
+              # retained per-point transients (the pre-retune DUT rejection needs its traces)
+              + list((REPO / STEP_DIR).glob("*.dat"))
+              + list((REPO / STEP_PRE_RETUNE_DIR).glob("*.dat"))):
         dst = tmp / p.relative_to(REPO)
         dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy(p, dst)
