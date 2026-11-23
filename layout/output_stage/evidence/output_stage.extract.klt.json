@@ -6,10 +6,10 @@
   },
   "deck": "gf180mcu",
   "top": "output_stage",
-  "dbu_um": 0.0005,
+  "dbu_um": 0.001,
   "netlist_path": "extracted/output_stage.klt.spice",
-  "netlist_sha256": "a745bb2c96d4a5c8de2d46f509fb80bf4cf63e35ac8a734e5d5327b52dcacaa9",
-  "netlist_normalized_sha256": "775249a57b7221e647058b1196868b9e5b53fffa4b818f778412319ef18ef09c",
+  "netlist_sha256": "cfbc0919b89ceb4566fee43c395edf8faa969e4f68392eccc4cf1c614f0eeea7",
+  "netlist_normalized_sha256": "64154d0cbe7eaf1e2f459a6f2d1edfecb85e67eac191f78031ade382e9d99ba8",
   "status": "extracted",
   "device_count": 40,
   "net_count": 6,
@@ -99,7 +99,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$1",
+          "cell": "output_stage_mb1__core",
           "array_index": null
         }
       ]
@@ -127,7 +127,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -155,7 +155,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -183,7 +183,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -211,7 +211,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -239,7 +239,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -267,7 +267,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -295,7 +295,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -323,7 +323,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -351,7 +351,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -379,7 +379,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -407,7 +407,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$1",
+          "cell": "output_stage_mb1__core",
           "array_index": null
         }
       ]
@@ -435,7 +435,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -463,7 +463,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -491,7 +491,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -519,7 +519,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -547,7 +547,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -575,7 +575,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -603,7 +603,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -631,7 +631,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -659,7 +659,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -687,7 +687,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -715,7 +715,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -743,7 +743,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -771,7 +771,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -799,7 +799,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -827,7 +827,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -855,7 +855,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -883,7 +883,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -911,7 +911,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -939,7 +939,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -967,7 +967,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array",
+          "cell": "output_stage_m6__core",
           "array_index": null
         }
       ]
@@ -990,7 +990,7 @@
           "array_index": null
         },
         {
-          "cell": "cap_array",
+          "cell": "output_stage_cc__core",
           "array_index": null
         }
       ]
@@ -1018,7 +1018,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -1044,7 +1044,7 @@
           "array_index": null
         },
         {
-          "cell": "res_array",
+          "cell": "output_stage_rz__core",
           "array_index": null
         }
       ]
@@ -1072,7 +1072,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -1100,7 +1100,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -1128,7 +1128,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -1156,7 +1156,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -1184,7 +1184,7 @@
           "array_index": null
         },
         {
-          "cell": "mos_array$2",
+          "cell": "output_stage_m7__core",
           "array_index": null
         }
       ]
@@ -1195,6 +1195,7 @@
       "name": "ibias",
       "pin": true,
       "device_count": 16,
+      "structural_id": null,
       "net_id": 6,
       "pin_index": 0,
       "label_positions_um": [
@@ -1209,6 +1210,7 @@
       "name": "n2",
       "pin": true,
       "device_count": 25,
+      "structural_id": null,
       "net_id": 3,
       "pin_index": 1,
       "label_positions_um": [
@@ -1223,6 +1225,7 @@
       "name": "nz",
       "pin": false,
       "device_count": 2,
+      "structural_id": null,
       "net_id": 4,
       "pin_index": null,
       "label_positions_um": [
@@ -1237,6 +1240,7 @@
       "name": "vdd",
       "pin": true,
       "device_count": 48,
+      "structural_id": null,
       "net_id": 2,
       "pin_index": 2,
       "label_positions_um": [
@@ -1256,6 +1260,7 @@
       "name": "vout",
       "pin": true,
       "device_count": 37,
+      "structural_id": null,
       "net_id": 5,
       "pin_index": 3,
       "label_positions_um": [
@@ -1270,6 +1275,7 @@
       "name": "vss",
       "pin": true,
       "device_count": 29,
+      "structural_id": null,
       "net_id": 7,
       "pin_index": 4,
       "label_positions_um": [
@@ -1307,6 +1313,13 @@
   "unbiased_pmos_body_nets": [],
   "single_terminal_nets": [],
   "dead_metal": [],
+  "dead_metal_omitted": false,
+  "dead_metal_summary": {
+    "clusters": 0,
+    "shapes": 0,
+    "area_um2": 0.0,
+    "by_layer": []
+  },
   "matched_device_groups": [],
   "def_pin_promotion": null,
   "pin_renames": null,
@@ -1320,30 +1333,30 @@
   ],
   "def_pins": null,
   "label_layers": null,
+  "device_models": null,
   "probes": [],
   "pdk": {
     "variant": "gf180mcuD",
     "root": {
-      "path": ".pdk-root",
-      "scope": "repo"
+      "path": null,
+      "scope": "external"
     },
     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
   },
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev3808+g1ad4a837f657",
+    "klt_git_commit": "1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f6577813bc367c29a0b948c0bff66fda",
     "klayout_version": "0.30.12",
     "pdk": {
       "name": "gf180mcuD",
       "source": "search root: ~/.ciel",
-      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
-      "ambiguous_sources": [
-        "search root: ~/.volare"
-      ]
+      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
     },
     "deck": {
       "name": "gf180mcu",
-      "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
-      "released": true,
+      "content_hash": "sha256:778e9a4eba34b67a0427367917b4c9c2602d44ff085d663affd302a8d0f197cd",
+      "released": false,
       "options": {
         "metal_top": "9K",
         "mim_cap": "cap_mim_2f0_m4m5_noshield",
@@ -1357,7 +1370,7 @@
       "options_hash": "sha256:6a7dc7660a470994263c5ca8ace6d8ac8c605d77e6876a9c5490949de6e7cb05"
     },
     "input": {
-      "content_hash": "sha256:3af96ba5689153a392aa50ac87eafb0c7e6978ad7dbe3ad9453d6e6b394ba151",
+      "content_hash": "sha256:9555a13c4d1b14e20c9d41b4eb49296ff503f546b87a532d9eb7d76acbde5587",
       "role": "layout"
     }
   },
@@ -1372,13 +1385,15 @@
   "timing": {
     "stages": {
       "read_layout": 0.001,
-      "device_extraction": 0.015,
+      "device_extraction": 0.02,
       "diagnostics": 0.0,
+      "unsupported_devices": 0.001,
+      "unmodeled_marker_diagnostic": 0.0,
       "netlist_write": 0.001,
       "netlist_hash": 0.0,
       "netlist_normalized_hash": 0.0
     },
-    "total_seconds": 0.106,
-    "unattributed_seconds": 0.089
+    "total_seconds": 0.052,
+    "unattributed_seconds": 0.029
   }
 }

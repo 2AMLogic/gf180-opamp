@@ -33,7 +33,7 @@ What this builds (issue #424, the second slice of #241):
      control value): it must report a device.property error, proving the
      parameter compare (C, A) is live.
 
-Outputs are deterministic (no wall-clock content in the GDS; klt 0.8.0 zeros
+Outputs are deterministic (no wall-clock content in the GDS; klt zeros
 the GDS timestamp records) and written under layout/output_stage/.
 """
 import hashlib

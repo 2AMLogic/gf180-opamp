@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "deck": "gf180mcu",
-  "content_hash": "sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666",
+  "content_hash": "sha256:778e9a4eba34b67a0427367917b4c9c2602d44ff085d663affd302a8d0f197cd",
   "nominal_dbu_um": 0.001,
   "rules": [
     {
@@ -132,6 +132,31 @@
         "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
         "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
         "rule_id": "DF.1a_MV",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "comp.width.moscap.1",
+      "description": "minimum COMP width under the MOS-capacitor marker (MOSCAP)",
+      "check": "width",
+      "layers": [
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "7.5 Comp",
+      "value_um": 1.0,
+      "value_dbu": 1000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/comp.rb",
+        "rule_id": "DF.1c",
         "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
       }
     },
@@ -2307,6 +2332,60 @@
       }
     },
     {
+      "id": "mvsd.ongrid.1",
+      "description": "mvsd vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "MVSD"
+      ],
+      "layer_refs": [
+        {
+          "name": "MVSD",
+          "layer": 210,
+          "datatype": 0
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "mvsd_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "mvpsd.ongrid.1",
+      "description": "mvpsd vertices must be on the 0.005um manufacturing grid",
+      "check": "ongrid",
+      "layers": [
+        "MVPSD"
+      ],
+      "layer_refs": [
+        {
+          "name": "MVPSD",
+          "layer": 11,
+          "datatype": 39
+        }
+      ],
+      "scope": "OFFGRID",
+      "value_um": null,
+      "value_dbu": null,
+      "limits": {
+        "grid_um": 0.005
+      },
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/geom.rb",
+        "rule_id": "mvpsd_OFFGRID",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
       "id": "efuse_mk.ongrid.1",
       "description": "efuse_mk vertices must be on the 0.005um manufacturing grid",
       "check": "ongrid",
@@ -3381,6 +3460,304 @@
         "rule_id": "GR.2",
         "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
       }
+    },
+    {
+      "id": "mvsd.width.1",
+      "description": "minimum MVSD (LDNMOS drain) width",
+      "check": "width",
+      "layers": [
+        "MVSD"
+      ],
+      "layer_refs": [
+        {
+          "name": "MVSD",
+          "layer": 210,
+          "datatype": 0
+        }
+      ],
+      "scope": "MDN",
+      "value_um": 1.0,
+      "value_dbu": 1000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/ldnmos.rb",
+        "rule_id": "MDN.1",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "mvsd.separation.dnwell.1",
+      "description": "minimum MVSD (LDNMOS drain) spacing to DNWELL",
+      "check": "separation",
+      "layers": [
+        "MVSD",
+        "DNWELL"
+      ],
+      "layer_refs": [
+        {
+          "name": "MVSD",
+          "layer": 210,
+          "datatype": 0
+        },
+        {
+          "name": "DNWELL",
+          "layer": 12,
+          "datatype": 0
+        }
+      ],
+      "scope": "MDN",
+      "value_um": 6.0,
+      "value_dbu": 6000,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/ldnmos.rb",
+        "rule_id": "MDN.14",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "ldmos_xtor.enclosing.mvpsd.1",
+      "description": "LDMOS_XTOR must enclose every MVPSD (LDPMOS drain) shape",
+      "check": "enclosing",
+      "layers": [
+        "LDMOS_XTOR",
+        "MVPSD"
+      ],
+      "layer_refs": [
+        {
+          "name": "LDMOS_XTOR",
+          "layer": 226,
+          "datatype": 0
+        },
+        {
+          "name": "MVPSD",
+          "layer": 11,
+          "datatype": 39
+        }
+      ],
+      "scope": "MDP",
+      "value_um": 0.0,
+      "value_dbu": 0,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/ldpmos.rb",
+        "rule_id": "MDP.6",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "efuse_mk.enclosing.lvs_source.1",
+      "description": "EFUSE_MK must enclose LVS_SOURCE",
+      "check": "enclosing",
+      "layers": [
+        "efuse_mk",
+        "LVS_SOURCE"
+      ],
+      "layer_refs": [
+        {
+          "name": "efuse_mk",
+          "layer": 80,
+          "datatype": 5
+        },
+        {
+          "name": "LVS_SOURCE",
+          "layer": 100,
+          "datatype": 8
+        }
+      ],
+      "scope": "EF",
+      "value_um": 0.0,
+      "value_dbu": 0,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/efuse.rb",
+        "rule_id": "EF.14",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "efuse_mk.space.1",
+      "description": "minimum EFUSE_MK to EFUSE_MK space",
+      "check": "space",
+      "layers": [
+        "efuse_mk"
+      ],
+      "layer_refs": [
+        {
+          "name": "efuse_mk",
+          "layer": 80,
+          "datatype": 5
+        }
+      ],
+      "scope": "EF",
+      "value_um": 0.26,
+      "value_dbu": 260,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/efuse.rb",
+        "rule_id": "EF.17",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "plfuse.separation.comp.1",
+      "description": "minimum PLFUSE space to Comp",
+      "check": "separation",
+      "layers": [
+        "plfuse",
+        "Comp"
+      ],
+      "layer_refs": [
+        {
+          "name": "plfuse",
+          "layer": 125,
+          "datatype": 5
+        },
+        {
+          "name": "Comp",
+          "layer": 22,
+          "datatype": 0
+        }
+      ],
+      "scope": "EF",
+      "value_um": 2.73,
+      "value_dbu": 2730,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/efuse.rb",
+        "rule_id": "EF.20",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "plfuse.separation.nplus.1",
+      "description": "minimum PLFUSE space to Nplus",
+      "check": "separation",
+      "layers": [
+        "plfuse",
+        "Nplus"
+      ],
+      "layer_refs": [
+        {
+          "name": "plfuse",
+          "layer": 125,
+          "datatype": 5
+        },
+        {
+          "name": "Nplus",
+          "layer": 32,
+          "datatype": 0
+        }
+      ],
+      "scope": "EF",
+      "value_um": 2.73,
+      "value_dbu": 2730,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/efuse.rb",
+        "rule_id": "EF.20",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "plfuse.separation.esd.1",
+      "description": "minimum PLFUSE space to ESD",
+      "check": "separation",
+      "layers": [
+        "plfuse",
+        "ESD"
+      ],
+      "layer_refs": [
+        {
+          "name": "plfuse",
+          "layer": 125,
+          "datatype": 5
+        },
+        {
+          "name": "ESD",
+          "layer": 24,
+          "datatype": 0
+        }
+      ],
+      "scope": "EF",
+      "value_um": 2.73,
+      "value_dbu": 2730,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/efuse.rb",
+        "rule_id": "EF.20",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "plfuse.separation.sab.1",
+      "description": "minimum PLFUSE space to SAB",
+      "check": "separation",
+      "layers": [
+        "plfuse",
+        "SAB"
+      ],
+      "layer_refs": [
+        {
+          "name": "plfuse",
+          "layer": 125,
+          "datatype": 5
+        },
+        {
+          "name": "SAB",
+          "layer": 49,
+          "datatype": 0
+        }
+      ],
+      "scope": "EF",
+      "value_um": 2.73,
+      "value_dbu": 2730,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/efuse.rb",
+        "rule_id": "EF.20",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
+    },
+    {
+      "id": "plfuse.separation.resistor.1",
+      "description": "minimum PLFUSE space to Resistor",
+      "check": "separation",
+      "layers": [
+        "plfuse",
+        "Resistor"
+      ],
+      "layer_refs": [
+        {
+          "name": "plfuse",
+          "layer": 125,
+          "datatype": 5
+        },
+        {
+          "name": "Resistor",
+          "layer": 62,
+          "datatype": 0
+        }
+      ],
+      "scope": "EF",
+      "value_um": 2.73,
+      "value_dbu": 2730,
+      "limits": {},
+      "provenance": {
+        "source_repo": "google/globalfoundries-pdk-libs-gf180mcu_fd_pv",
+        "source_path": "libs.tech/klayout/tech/drc/rule_decks/efuse.rb",
+        "rule_id": "EF.20",
+        "commit": "f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
+      }
     }
   ],
   "unmodeled_rules": [
@@ -3409,6 +3786,30 @@
     "DV.7",
     "DV.8",
     "DV.9",
+    "EF.01",
+    "EF.02",
+    "EF.03",
+    "EF.04a",
+    "EF.04b",
+    "EF.04c",
+    "EF.04d",
+    "EF.05",
+    "EF.06",
+    "EF.07",
+    "EF.08",
+    "EF.09",
+    "EF.10",
+    "EF.11",
+    "EF.12",
+    "EF.13",
+    "EF.15",
+    "EF.16a",
+    "EF.16b",
+    "EF.18",
+    "EF.19",
+    "EF.21",
+    "EF.22a",
+    "EF.22b",
     "ESD.10",
     "ESD.3a",
     "ESD.3b",
@@ -3430,6 +3831,76 @@
     "M3.2b",
     "M4.2b",
     "M5.2b",
+    "MDN.10a",
+    "MDN.10b",
+    "MDN.10c",
+    "MDN.10d",
+    "MDN.10ei",
+    "MDN.10eii",
+    "MDN.10f",
+    "MDN.11",
+    "MDN.12",
+    "MDN.13a",
+    "MDN.13b",
+    "MDN.13c",
+    "MDN.13d",
+    "MDN.15a",
+    "MDN.15b",
+    "MDN.17",
+    "MDN.2a",
+    "MDN.2b",
+    "MDN.3a",
+    "MDN.3b",
+    "MDN.4a",
+    "MDN.4b",
+    "MDN.5ai",
+    "MDN.5aii",
+    "MDN.5b",
+    "MDN.5c",
+    "MDN.6",
+    "MDN.6a",
+    "MDN.7",
+    "MDN.7a",
+    "MDN.8a",
+    "MDN.8b",
+    "MDN.9",
+    "MDP.1",
+    "MDP.10",
+    "MDP.10a",
+    "MDP.10b",
+    "MDP.11",
+    "MDP.12",
+    "MDP.13a",
+    "MDP.13b",
+    "MDP.13c",
+    "MDP.15",
+    "MDP.16a",
+    "MDP.16b",
+    "MDP.17a",
+    "MDP.17c",
+    "MDP.1a",
+    "MDP.2",
+    "MDP.3",
+    "MDP.3ai",
+    "MDP.3aii",
+    "MDP.3b",
+    "MDP.3c",
+    "MDP.3d",
+    "MDP.4",
+    "MDP.4a",
+    "MDP.4b",
+    "MDP.5",
+    "MDP.5a",
+    "MDP.6a",
+    "MDP.7",
+    "MDP.8",
+    "MDP.9a",
+    "MDP.9b",
+    "MDP.9c",
+    "MDP.9d",
+    "MDP.9ei",
+    "MDP.9eii",
+    "MDP.9f",
     "MSLOT.1",
     "MSLOT.2",
     "MSLOT.3",
@@ -3457,6 +3928,25 @@
     "NW.5_MV",
     "NW.6_MV",
     "NW.7_MV",
+    "PAD.1",
+    "PAD.10",
+    "PAD.11",
+    "PAD.12",
+    "PAD.13",
+    "PAD.14",
+    "PAD.15",
+    "PAD.16",
+    "PAD.17",
+    "PAD.18",
+    "PAD.19a",
+    "PAD.19b",
+    "PAD.2",
+    "PAD.20",
+    "PAD.5",
+    "PAD.6",
+    "PAD.7",
+    "PAD.8",
+    "PAD.9",
     "PL.1_MV",
     "PL.1a_MV",
     "PL.2_MV",
@@ -3484,6 +3974,11 @@
   ],
   "marker_blind_layers": [],
   "layer_table": [
+    {
+      "name": "MVPSD",
+      "layer": 11,
+      "datatype": 39
+    },
     {
       "name": "DNWELL",
       "layer": 12,
@@ -3605,6 +4100,11 @@
       "datatype": 0
     },
     {
+      "name": "LVS_SOURCE",
+      "layer": 100,
+      "datatype": 8
+    },
+    {
       "name": "RES_MK",
       "layer": 110,
       "datatype": 5
@@ -3643,6 +4143,16 @@
       "name": "GUARD_RING_MK",
       "layer": 167,
       "datatype": 5
+    },
+    {
+      "name": "MVSD",
+      "layer": 210,
+      "datatype": 0
+    },
+    {
+      "name": "LDMOS_XTOR",
+      "layer": 226,
+      "datatype": 0
     },
     {
       "name": "Schottky_diode",

@@ -6,7 +6,7 @@
 * pin vdd
 * pin vout
 * pin vss
-.SUBCKT output_stage ibias n2 vdd vout vss
+.SUBCKT output_stage n2 vout ibias vdd vss
 * device instance $1 r0 *1 46.3,2.32 nfet
 X$1 ibias ibias vss vss nfet_03v3 L=2U W=3U AS=1.5P AD=0.87P PS=7U PD=3.58U
 * device instance $2 r0 *1 48.88,2.32 nfet

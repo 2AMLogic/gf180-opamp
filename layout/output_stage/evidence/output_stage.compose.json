@@ -8,7 +8,7 @@
     "variant": "gf180mcuD",
     "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
   },
-  "dbu_um": 0.0005,
+  "dbu_um": 0.001,
   "bbox_um": {
     "x0": -1.23,
     "y0": -1.23,
@@ -99,7 +99,7 @@
       "generator": "mos_array",
       "cell_name": "output_stage_m6",
       "source_path": "gds/m6.gds",
-      "source_digest": "sha256:fee3589b76a0e071950fa9751ea9cfae2e5f9e66f04d5fc94eab85b8b60dbe74",
+      "source_digest": "sha256:727d5f6208afda765f09c0b6357b971591fac7b9f9bc8328527930c5b58952c4",
       "offset_um": {
         "x": 0.0,
         "y": 0.0
@@ -111,6 +111,7 @@
         "y1": 6.69
       },
       "orientation": "none",
+      "placed_cell_name": "m6__output_stage_m6",
       "abuts": []
     },
     {
@@ -119,7 +120,7 @@
       "generator": "mos_array",
       "cell_name": "output_stage_mb1",
       "source_path": "gds/mb1.gds",
-      "source_digest": "sha256:9de647a2713871967317eb06d9357bac2813716e15f53e276ad4590fc4a6719e",
+      "source_digest": "sha256:e6607a9bb27e450d4f25f451e7167d5d152959a5ce94962106f56592815c4366",
       "offset_um": {
         "x": 44.8,
         "y": 0.0
@@ -131,6 +132,7 @@
         "y1": 6.69
       },
       "orientation": "none",
+      "placed_cell_name": "mb1__output_stage_mb1",
       "abuts": []
     },
     {
@@ -139,7 +141,7 @@
       "generator": "mos_array",
       "cell_name": "output_stage_m7",
       "source_path": "gds/m7.gds",
-      "source_digest": "sha256:1c5f201d525a0cc2952a254a42215ec1675cb72963868ababe225f560caa226c",
+      "source_digest": "sha256:ade2d2aa8f782fc2372c53bcac28c62b0ced861e87d5c55188dc7a2bf8496008",
       "offset_um": {
         "x": 56.839999999999996,
         "y": 0.0
@@ -151,6 +153,7 @@
         "y1": 6.69
       },
       "orientation": "none",
+      "placed_cell_name": "m7__output_stage_m7",
       "abuts": []
     },
     {
@@ -159,7 +162,7 @@
       "generator": "cap_array",
       "cell_name": "output_stage_cc",
       "source_path": "gds/cc.gds",
-      "source_digest": "sha256:b4083e308965d16f69ab3bbecc8292c7b3b47591a9383b654a96e2160f536122",
+      "source_digest": "sha256:82013caedb91ce81ad1a6672e7f2df0780f34b9bbd8c4257098efcf3cf8ccdf5",
       "offset_um": {
         "x": 93.44999999999999,
         "y": 0.0
@@ -171,6 +174,7 @@
         "y1": 19.88
       },
       "orientation": "none",
+      "placed_cell_name": "cc__output_stage_cc",
       "abuts": []
     },
     {
@@ -179,7 +183,7 @@
       "generator": "res_array",
       "cell_name": "output_stage_rz",
       "source_path": "gds/rz.gds",
-      "source_digest": "sha256:5ce076331257e298ab95237c7d8eef94ccb538f1e71080ec4aa30f23fded7b4f",
+      "source_digest": "sha256:a33ce22e212015b5a58231995d37b4bb40bb1aaebff7694c36aac064187ca25a",
       "offset_um": {
         "x": 116.36999999999999,
         "y": 0.0
@@ -191,6 +195,7 @@
         "y1": 2.22
       },
       "orientation": "none",
+      "placed_cell_name": "rz__output_stage_rz",
       "abuts": []
     }
   ],
@@ -564,15 +569,14 @@
   },
   "warnings": [],
   "provenance": {
-    "klt_version": "0.8.0",
+    "klt_version": "0.9.3.dev3808+g1ad4a837f657",
+    "klt_git_commit": "1ad4a837f6577813bc367c29a0b948c0bff66fda",
+    "klt_reinstall_spec": "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f6577813bc367c29a0b948c0bff66fda",
     "klayout_version": "0.30.12",
     "pdk": {
       "name": "gf180mcuD",
       "source": "search root: ~/.ciel",
-      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7",
-      "ambiguous_sources": [
-        "search root: ~/.volare"
-      ]
+      "version": "open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7"
     },
     "deck": null,
     "input": null

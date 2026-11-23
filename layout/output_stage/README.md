@@ -72,21 +72,26 @@ layout/output_stage/regen.sh
 
 Same identity gate as `layout/pilot/regen.sh` and
 `layout/first_stage/regen.sh`; refuses to run on any mismatch, then rebuilds
-`gds/ ref/ extracted/ evidence/` and `results.json`. **No pin is bumped by
-this directory** (AC: do not bump any pin in this issue).
+`gds/ ref/ extracted/ evidence/` and `results.json`. The pin was bumped from
+`klt 0.8.0` deliberately (issue #432) so all three sibling directories share
+one klt identity; #424's original AC froze it because the bump was out of
+scope there, not because the pin was permanent. When a release carries
+commit `1ad4a837f657`, bump all three directories together again and
+re-verify the numbers here.
 
 | Item | Pinned identity |
 |---|---|
-| klayout-tools | `klt 0.8.0` (release; throwaway env first on PATH, e.g. `uv venv V && uv pip install --python V/bin/python klayout-tools==0.8.0 klayout==0.30.12 && PATH=V/bin:$PATH layout/output_stage/regen.sh`) |
+| klayout-tools | `klt 0.9.3.dev3808+g1ad4a837f657` — commit `1ad4a837f657` of `2AMLogic/klayout-tools`, **not a PyPI release**: no release up to 0.9.2 carries it (`layout/first_stage/` needs its `diff_pair` `pitch_x_um`, klt#6242). Reproduce in a throwaway env first on PATH: `uv venv V && uv pip install --python V/bin/python "klayout-tools @ git+https://github.com/2AMLogic/klayout-tools@1ad4a837f657" klayout==0.30.12 && PATH=V/bin:$PATH layout/output_stage/regen.sh` (that exact install reports the pinned version string) |
 | PDK | `gf180mcuD`, `open_pdks f6eeac7dad085ffcc829ccfd721f7b4ce39edcf7` (`~/.ciel/gf180mcuD`) |
 | klayout python / klt's engine | `0.30.12`, pinned explicitly (`PILOT_KLAYOUT_PIN`); `tools/output_stage.py` refuses the run on a mismatch |
 
 Nothing is installed on the host; no ngspice is run.
 
-**Reproducibility, as measured at the pin above (klt 0.8.0 / klayout
-0.30.12): regenerations are byte-identical.** Two consecutive runs of
-`regen.sh` from a clean checkout produce the same composed-GDS sha256
-(`3af96ba5689153a392aa50ac87eafb0c7e6978ad7dbe3ad9453d6e6b394ba151`) and a
+**Reproducibility, as measured at the pin above (klt
+0.9.3.dev3808+g1ad4a837f657 / klayout 0.30.12): regenerations are
+byte-identical.** Two consecutive runs of `regen.sh` from a clean checkout
+produce the same composed-GDS sha256
+(`9555a13c4d1b14e20c9d41b4eb49296ff503f546b87a532d9eb7d76acbde5587`) and a
 byte-identical `results.json` (verified with `cmp` while preparing this
 README). The one moving field across runs is
 `evidence/output_stage.extract.klt.json`'s `timing.*` wall-clock block —
@@ -103,17 +108,26 @@ asserted equal to the positive run's.
 | Check | Verdict |
 |---|---|
 | Routed composition | `output_stage` cell, routed GDS bbox 142.88 × 24.36 µm, measured from `output_stage.gds` (placement-only bounds from gen-compose: 140.64 × 21.11 µm; not an area claim), **`unrouted_nets: []`**, 6 nets routed, 5 pin labels |
-| DRC, klt curated deck | **clean** (0 violations), **80 rules checked / 34 skipped**, deck `sha256:0eb6df1bafc5106ec50bd58479dbd7cda36bb685f1ef18cd3a2244a6e7e48666` |
+| DRC, klt curated deck | **clean** (0 violations), **80 rules checked / 47 skipped**, deck `sha256:778e9a4eba34b67a0427367917b4c9c2602d44ff085d663affd302a8d0f197cd` |
 | Extract (`poly_res=1k`) | 14 nfet + 24 pfet (all 38 MOS fingers of XM6/XM7/XMB1 recognised) + 1 MIM + 1 ppolyf |
 | LVS vs the cut sub-netlist | **match, `error_count: 0`** — 6/6 nets, 5/5 devices (`combine_devices` folds the fingers), pins 5 vs 5, matched 5 (`nz` stays internal) |
 | Negative control | XCC `c_width` 16.8u → 20u in the reference only: **mismatch with 1 `device.property` error**, same layout sha256 as the positive |
 
 Deck coverage, quoted from the committed envelope
-(`evidence/output_stage.drc.klt.json` → `coverage`): 80 rules checked, 34
+(`evidence/output_stage.drc.klt.json` → `coverage`): 80 rules checked, 47
 skipped, and `layers_in_stream_without_rules` = `34/10, 36/10, 42/10, 46/10,
 81/10` — exactly the five *label* purpose layers the compose step writes
 (`Metal1..Metal5` LABEL datatypes), which carry no geometry and so have no
-rules. "DRC, klt curated" is klt's curated `gf180mcu` deck only (a subset of
+rules. At the old pin (`klt 0.8.0`) the same cell measured 80 checked / 34
+skipped against the 114-rule deck (`sha256:0eb6df1b…`); the pin bump moved
+the curated `gf180mcu` deck to 127 rules (`sha256:778e9a4e…`), and the 13
+new rules are all skipped for these cells — verdicts and `rules_checked`
+are unchanged, exactly as measured on the pilot and first_stage in #328.
+The GDS stream itself also changed shape at the new pin for the same reason
+as the siblings: the generator writes dbu `0.001` instead of `0.0005` and
+names each core subcell `<cell>__core`, so every layout hash changed (old
+composed GDS `3af96ba5…` → new `9555a13c…`) while the routed bbox and every
+extracted quantity stayed put. "DRC, klt curated" is klt's curated `gf180mcu` deck only (a subset of
 the foundry rules; antenna and density are not covered), so `clean` is not
 foundry DRC signoff (#282 keeps the PDK runset unavailable on these
 workers).
