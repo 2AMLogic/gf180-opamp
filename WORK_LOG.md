@@ -8,6 +8,9 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-23
 
+- **PR #437**: sim/harness: gzip-aware save_point_data/rederive_dat with .dat/.dat.gz round-trip tests
+- **Issue #334** (closed): Adopt .dat.gz in the five direct-np.savetxt sim drivers (the deferred ~312 MB half of #321)
+- **Issue #321** (closed): Make harness save_point_data/rederive_dat gzip-aware, with a .dat/.dat.gz round-trip test
 - **PR #430**: refactor: dedupe run/klt/sha256_file/cut_ref helpers into pilot module
 - **PR #436**: layout/output_stage: align the klt pin with pilot and first_stage (1ad4a837f657) and regenerate its evidence
 - **PR #435**: sim/report: stage only exercised sample tables and step traces in the test fixture
