@@ -3,12 +3,12 @@
 Current Loom label state. Tracking and blocked items do not constitute ready work.
 
 <!-- guide:plan-body:start -->
-_Generated: 2026-11-24T01:45:00Z (snapshot; compare against live labels)_
+_Generated: 2026-11-24T11:30:00Z (snapshot; compare against live labels)_
 ## Operator Attention: Merge-Risk-Hold Pileup
 
 Judge-approved PRs under a hold (`loom:blocked` or `loom:operator`) — only a human merge decision is missing.
 
-_None._
+- **#441**: sim: scope slew-swing-power passive axes per figure (DR-0009)
 
 ## Very Important
 
@@ -28,7 +28,7 @@ _None._
 
 Human-approved issues (`loom:issue`) ready for implementation — excluding held (`loom:blocked`/`loom:operator`/`loom:frozen`), `loom:building`, and issues closed by an open `loom:pr` PR (listed under Approved).
 
-- **#439**: Consolidate layout regen.sh pin wrappers and remaining duplicated stage-tool helpers
+_None._
 
 ## In Progress
 
@@ -46,7 +46,7 @@ _None._
 
 PRs that passed review and are queued for Champion auto-merge (`loom:pr`).
 
-_None._
+- **#441**: sim: scope slew-swing-power passive axes per figure (DR-0009)
 
 ## Proposed
 
@@ -68,13 +68,13 @@ _None._
 
 | Bucket | Count |
 |------|-------|
-| Operator merge-risk holds | 0 |
+| Operator merge-risk holds | 1 |
 | Very important | 1 |
 | Important | 3 |
-| Ready (`loom:issue`, net of holds/building/merge-pending) | 1 |
+| Ready (`loom:issue`, net of holds/building/merge-pending) | 0 |
 | In Progress (`loom:building`) | 1 |
 | PRs awaiting review | 0 |
-| Approved PRs awaiting merge | 0 |
+| Approved PRs awaiting merge | 1 |
 | Curated | 3 |
 | Architect / Hermit proposals | 0 |
 | Active epics | 0 |
