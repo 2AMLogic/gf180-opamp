@@ -42,16 +42,31 @@ a dropped axis being held at `typical`:
 | swing | RZ only (CC = typical) | 135 | 9 |
 | power | none (RZ = CC = typical) | 45 | 3 |
 
-That removes 660 of 1215 cells per full-scope run (60 of 81 limited).
+That removes 630 of 1215 cells per full-scope run (585 retained: 45 + 405 + 135)
+and 42 of 81 per limited-scope run (39 retained: 3 + 27 + 9).
 
 - **Invariance is asserted, not re-derived, on future runs.** The records
   written by the reduced runner state the dropped axes per figure and cite the
   two records above as the basis, instead of re-printing all-`+0.0` tables.
 - **Audit stays available.** `sim/passive_corners.py` keeps the uniform 3 x 3
   as the default of every helper (`passive_combos`, `passive_process_axis`,
-  `passive_expected_keys`, `apply_passive_matrix`); an audit over the full
-  matrix needs only the runner to pass `ALL_PASSIVE_AXES`. No new CLI flag is
-  added by this record.
+  `passive_expected_keys`, `apply_passive_matrix`). The slew-swing-power runner
+  takes the per-figure axes as an argument, so a uniform audit (405 cells per
+  figure at full scope, 1215 in all) is built, run, validated and recorded
+  with the same code path, no new CLI flag (programmatic recipe):
+
+  ```python
+  import run_slew_swing_power as r
+  args.passive_scope = "full"                      # 45 points
+  r.run_passive(pdk, args, r.FIGURES, axes=r.UNIFORM_AXES)
+  ```
+
+  `axes` drives `passive_request`, the exact expected-key validation
+  (`passive_expected_keys`, 405 keys per figure) and the record, whose
+  `**Passive axes per figure**` line then reads `405 cells` for all three.
+  `test_uniform_audit_request_and_expected_keys` and
+  `test_uniform_audit_record_is_ingested_as_405_per_figure` verify the 405
+  cells per figure and that `sim/report` ingests the audit record.
 - **`sim/gain-gbw-pm` is unchanged**, as are `sim/psrr` and `sim/cmrr`.
 - **Existing records and waveforms are append-only and untouched.**
 - **Spec rows are untouched.** `spec/target-spec.md` already grounds the

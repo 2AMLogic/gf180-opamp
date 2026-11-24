@@ -59,16 +59,35 @@ def figure_cells(scope: str, fig: str) -> int:
     return len(scope_points(scope)) * len(passive_combos(FIGURE_PASSIVE_AXES[fig]))
 
 
-def scope_description(scope: str) -> str:
-    """One-line scope statement carried in every record (limited vs full) for the
-    uniform 3x3 matrix (per-figure scoping is described by the consumer)."""
+def scope_totals(scope: str, axes=None) -> tuple[int, int]:
+    """(cells run, cells of the uniform 3x3 matrix) summed over the three figures at `scope`;
+    `axes` maps figure -> swept passive axes (default `FIGURE_PASSIVE_AXES`)."""
+    axes = FIGURE_PASSIVE_AXES if axes is None else axes
+    n = len(scope_points(scope))
+    return (sum(n * len(passive_combos(axes[f])) for f in axes),
+            n * len(passive_combos(ALL_PASSIVE_AXES)) * len(axes))
+
+
+def scope_description(scope: str, axes=None) -> str:
+    """One-line scope statement carried in every record (limited vs full). Without `axes`
+    it describes the uniform 3x3 matrix; with `axes` (figure -> swept passive axes, e.g.
+    `FIGURE_PASSIVE_AXES`) it states the cells each figure actually ran."""
     pts = scope_points(scope)
     n = len(pts) * len(PASSIVE_LEVELS) ** 2
+    if axes is None:
+        if scope == "full":
+            return (f"FULL operating envelope: {len(FULL_MOS)} MOS corners x {len(FULL_TEMPS)} temperatures x "
+                    f"{len(FULL_SUPPLIES)} supplies x 3 RZ x 3 CC = {n} cells per figure")
+        return (f"LIMITED screening: {len(pts)} selected MOS/T/VDD points x 3 RZ x 3 CC = {n} cells per figure; "
+                "not a full passive-by-PVT cross product")
+    per = ", ".join(f"{f} {len(pts) * len(passive_combos(axes[f]))}" for f in axes)
+    run, uniform = scope_totals(scope, axes)
+    tail = f"cells per figure: {per} ({run} of the uniform 3x3's {uniform})"
     if scope == "full":
         return (f"FULL operating envelope: {len(FULL_MOS)} MOS corners x {len(FULL_TEMPS)} temperatures x "
-                f"{len(FULL_SUPPLIES)} supplies x 3 RZ x 3 CC = {n} cells per figure")
-    return (f"LIMITED screening: {len(pts)} selected MOS/T/VDD points x 3 RZ x 3 CC = {n} cells per figure; "
-            "not a full passive-by-PVT cross product")
+                f"{len(FULL_SUPPLIES)} supplies = {len(pts)} points, each figure over the passive axes it responds to; {tail}")
+    return (f"LIMITED screening: {len(pts)} selected MOS/T/VDD points, each figure over the passive axes it responds to; "
+            f"{tail}; not a full passive-by-PVT cross product")
 
 
 def key_set_problems(got, want) -> list[str]:

@@ -577,7 +577,7 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
             **{k_: prov[k_] for k_ in ("pdk_open_pdks", "ngspice_local", "ngspice_engine", "klt_client", "backend",
                                        "fleet_runner_mismatch")},
             "measurement_config": fresh,
-            "scope": ex["scope"] if "scope" in ex else study_scope(ex["points"], spec.get("scope", "limited")),
+            "scope": ex["scope"] if "scope" in ex else study_scope(ex["points"], spec.get("scope", "limited"), ex.get("figure_cells")),
             "rows": list(spec["rows"]),
             "figures": ex["figures"],
             "not_measured": ex["not_measured"],
@@ -598,10 +598,16 @@ def build_supplementary(root: Path, manifest: dict, spec_by_key: dict, dut_prefi
 
 def study_row_note(st: dict, row_key: str) -> str:
     """Row-detail citation of a side study, derived from its tables (never a verdict)."""
+    if "figure_cells" in st["scope"]:
+        per = ", ".join(f"{k} {v}" for k, v in st["scope"]["figure_cells"].items())
+        cells = (f"cells per figure: {per}; {len(st['scope']['points'])} MOS/T/VDD points x the RZ x CC axes each figure "
+                 "responds to, DR-0009, not the uniform RZ x CC cross product at every point)")
+    else:
+        cells = (f"{st['scope']['cells']} cells = {len(st['scope']['points'])} MOS/T/VDD points x RZ x CC, "
+                 + ("the full passive-by-PVT cross product)" if st["scope"]["full_pvt_cross_product"]
+                    else "not a full passive-by-PVT cross product)"))
     head = (f"supplementary side study `{st['path']}` (not a selected verdict record; outside this row's verdict and "
-            f"point count; {st['scope']['cells']} cells = {len(st['scope']['points'])} MOS/T/VDD points x RZ x CC, "
-            + ("the full passive-by-PVT cross product)" if st["scope"]["full_pvt_cross_product"]
-               else "not a full passive-by-PVT cross product)"))
+            f"point count; {cells}")
     if st.get("bound_free"):
         return (f"{head} measures, as information only with no verdict (bound-free: the row's bound is proposed, "
                 f"not ratified): " + "; ".join(psrr_study_observation(f) for f in st["figures"].values()))

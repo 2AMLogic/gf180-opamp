@@ -688,7 +688,8 @@ class PassiveCornerTests(unittest.TestCase):
             verdicts=verdicts, ctrls=[], ctrl_bad=[], dut_sha="0" * 64, not_run={}, figs=("slew",), scope="full",
         )
         self.assertIn("**Scope**: `full`", md)
-        self.assertIn("= 405 cells", md)
+        self.assertIn("cells per figure: slew 405, swing 135, power 45 (585 of the uniform 3x3's 1215)", md)
+        self.assertNotIn("405 cells per figure", md)
         self.assertIn("passes at 404/405 cells", md)
         self.assertIn("sf / -40 C / 3.63 V, RZ worst, CC best", md)
         self.assertEqual(md.count("\n### "), 45)
@@ -716,6 +717,91 @@ class PassiveCornerTests(unittest.TestCase):
         self.assertIn("20261011-052206-c635487", md)
         self.assertIn("0009-per-figure-passive-scope.md", md)
         self.assertNotIn("change vs typ./typ.", md.split("### Quiescent power", 1)[1].split("### Output swing", 1)[0])
+
+    # -- report ingestion of the reduced record (issue #322 review) ---------------------
+    @staticmethod
+    def _studies():
+        rep = str(HERE.parent / "report")
+        if rep not in sys.path:
+            sys.path.insert(0, rep)
+        import studies
+        return studies
+
+    def _record(self, scope, axes=None, drop=None):
+        pts = r.pc.scope_points(scope)
+        ax = r.pc.FIGURE_PASSIVE_AXES if axes is None else axes
+        all_results = {}
+        for fig in r.FIGURES:
+            res = {}
+            for k in r.pc.passive_expected_keys(pts, ax[fig]):
+                res[k] = r.Metrics(fig=fig, valid=True, power_uw=250.0, slew_vus=14.0, swing_v=2.5)
+            all_results[fig] = res
+        verdicts = {f: r.judge_figure(f, all_results[f], requested=True) for f in r.FIGURES}
+        return r.build_passive_record(
+            record="20261010-000000-abcdef0", stamp=__import__("datetime").datetime(2026, 10, 10),
+            pdk=self.PDK, ngspice="n", klt_version="k", backend_descs={}, all_results=all_results,
+            verdicts=verdicts, ctrls=[], ctrl_bad=[], dut_sha="0" * 64, not_run={}, figs=r.FIGURES,
+            scope=scope, axes=axes,
+        )
+
+    def test_reduced_record_is_ingested_with_exact_per_figure_cells(self):
+        st = self._studies()
+        for scope in ("limited", "full"):
+            md = self._record(scope)
+            out = st.extract_ssp_passive_study(md, "x")
+            got = {f: out["figures"][f]["total"] for f in r.FIGURES}
+            self.assertEqual(got, {f: r.pc.figure_cells(scope, f) for f in r.FIGURES}, scope)
+            self.assertEqual(len(out["points"]), len(r.pc.scope_points(scope)))
+            sc = st.study_scope(out["points"], scope, out["figure_cells"])
+            self.assertEqual(sc["figure_cells"], got)
+            self.assertIn("cells per figure", sc["text"])
+            self.assertNotIn("= 405 cells", sc["text"])
+        # a uniform record keeps the historical scope text
+        uni = st.extract_ssp_passive_study(self._record("full", r.UNIFORM_AXES), "x")
+        self.assertNotIn("figure_cells", st.study_scope(uni["points"], "full", uni["figure_cells"]))
+
+    def test_uniform_audit_record_is_ingested_as_405_per_figure(self):
+        st = self._studies()
+        md = self._record("full", r.UNIFORM_AXES)
+        self.assertNotIn("Invariance asserted", md)
+        self.assertIn("cells per figure: power 405, slew 405, swing 405 (1215 of the uniform 3x3's 1215)", md)
+        out = st.extract_ssp_passive_study(md, "x")
+        self.assertEqual({f: out["figures"][f]["total"] for f in r.FIGURES}, {f: 405 for f in r.FIGURES})
+
+    def test_historical_3x3_record_is_still_ingested(self):
+        st = self._studies()
+        rec = HERE / "records" / "20261018-142357-91dab49.md"
+        out = st.extract_ssp_passive_study(rec.read_text(), "x")
+        self.assertEqual({f: out["figures"][f]["total"] for f in r.FIGURES}, {f: 405 for f in r.FIGURES})
+
+    def test_reduced_reader_rejects_wrong_cell_sets(self):
+        st = self._studies()
+        md = self._record("limited")
+        # a swing table that gained a CC row is not the RZ-only table the record declares
+        bad = md.replace("| worst | typical | 2.500 | +0.0 | PASS |\n",
+                         "| worst | typical | 2.500 | +0.0 | PASS |\n| worst | best | 2.500 | +0.0 | PASS |\n", 1)
+        self.assertNotEqual(bad, md)
+        with self.assertRaises(st.ReportError):
+            st.extract_ssp_passive_study(bad, "x")
+        # a missing power row
+        flat = [ln for ln in md.split("### Quiescent power", 1)[1].splitlines() if "| 250.0 |" in ln][:1]
+        self.assertEqual(len(flat), 1)
+        with self.assertRaises(st.ReportError):
+            st.extract_ssp_passive_study(md.replace(flat[0] + "\n", "", 1), "x")
+        # axes line inconsistent with its own counts
+        with self.assertRaises(st.ReportError):
+            st.extract_ssp_passive_study(md.replace("swing sweeps RZ (3 combination(s)", "swing sweeps RZ (9 combination(s)"), "x")
+
+    def test_scope_totals_count_what_ran(self):
+        self.assertEqual(r.pc.scope_totals("full"), (585, 1215))
+        self.assertEqual(r.pc.scope_totals("limited"), (39, 81))
+
+    def test_uniform_audit_request_and_expected_keys(self):
+        pts = r.pc.scope_points("full")
+        for fig in r.FIGURES:
+            req = r.passive_request(fig, Path("/x/tb.spice"), self.PDK, pts, r.UNIFORM_AXES)
+            self.assertEqual(len(req["corners"]["process"]), 5 * 9, fig)
+            self.assertEqual(len(r.pc.passive_expected_keys(pts, r.UNIFORM_AXES[fig])), 405, fig)
 
     def _fake_report_for(self, tmp, keys):
         corners = []

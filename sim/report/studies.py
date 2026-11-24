@@ -74,11 +74,14 @@ def study_provenance(text: str, label: str) -> dict:
 
 
 def _study_points(text: str, label: str) -> list:
-    """The MOS/T/VDD points the study states, in its order; each x 3 RZ x 3 CC cells."""
-    m = re.search(r"^- \*\*Points\*\*: (.+?), each x 3 RZ levels x 3 CC levels = (\d+) cells", section(text, "Conditions"),
-                  re.M)
+    """The MOS/T/VDD points the study states, in its order. Historical records state
+    `each x 3 RZ levels x 3 CC levels = N cells`; reduced-scope records (DR-0009) state
+    `, N points` and carry the per-figure cell counts in the 'Passive axes per figure' line."""
+    m = re.search(r"^- \*\*Points\*\*: (.+?)(?:, each x 3 RZ levels x 3 CC levels = (\d+) cells|, (\d+) points); ibias",
+                  section(text, "Conditions"), re.M)
     if not m:
-        raise ReportError(f"{label}: no '- **Points**' line (MOS/T/VDD points x 3 RZ x 3 CC = N cells) in Conditions")
+        raise ReportError(f"{label}: no '- **Points**' line (MOS/T/VDD points, each x 3 RZ x 3 CC = N cells, or N points) "
+                          "in Conditions")
     pts = []
     for part in m.group(1).split(";"):
         pm = re.fullmatch(_PT, part.strip())
@@ -87,14 +90,52 @@ def _study_points(text: str, label: str) -> list:
         if pm.groups() in pts:
             raise ReportError(f"{label}: duplicate study point {fmt_point(*pm.groups())} in the Points line")
         pts.append(pm.groups())
-    n = len(pts) * len(PASSIVE_LEVELS) ** 2
-    if int(m.group(2)) != n:
-        raise ReportError(f"{label}: Points line states {m.group(2)} cells, but {len(pts)} points x 3 RZ x 3 CC = {n}")
+    if m.group(3) is not None:
+        if int(m.group(3)) != len(pts):
+            raise ReportError(f"{label}: Points line states {m.group(3)} points, but lists {len(pts)}")
+    else:
+        n = len(pts) * len(PASSIVE_LEVELS) ** 2
+        if int(m.group(2)) != n:
+            raise ReportError(f"{label}: Points line states {m.group(2)} cells, but {len(pts)} points x 3 RZ x 3 CC = {n}")
     return pts
 
 
-def _study_cells(body: str, label: str, where: str, ncols: int) -> dict:
-    """One RZ x CC table: {(rz, cc): cells}; every combination exactly once."""
+_AXES_NAMES = {"neither passive axis": (), "RZ": ("r",), "CC": ("c",), "RZ x CC": ("r", "c")}
+
+
+def _figure_combos(axes: tuple) -> list:
+    """(RZ, CC) levels one figure's cells cover; a dropped axis is pinned to 'typical'."""
+    rs = PASSIVE_LEVELS if "r" in axes else ("typical",)
+    cs = PASSIVE_LEVELS if "c" in axes else ("typical",)
+    return [(r, c) for r in rs for c in cs]
+
+
+def _ssp_axes(text: str, label: str, pts: list) -> dict:
+    """Passive axes each slew/swing/power figure swept, from the 'Passive axes per figure' line.
+    A record without the line (every pre-DR-0009 record) swept RZ x CC for all three figures.
+    The stated per-point and total cell counts are checked against the axes."""
+    full = {k: ("r", "c") for k in ("power", "slew", "swing")}
+    m = re.search(r"^- \*\*Passive axes per figure\*\*[^:]*: (.+)\.$", section(text, "Conditions"), re.M)
+    if not m:
+        return full
+    out = {}
+    for part in m.group(1).split("; "):
+        pm = re.fullmatch(r"(power|slew|swing) sweeps (neither passive axis|RZ x CC|RZ|CC) "
+                          r"\((\d+) combination\(s\) per point, (\d+) cells\)", part.strip())
+        if not pm or pm.group(1) in out:
+            raise ReportError(f"{label}: malformed or duplicate entry '{part.strip()}' in the 'Passive axes per figure' line")
+        axes = _AXES_NAMES[pm.group(2)]
+        k = len(_figure_combos(axes))
+        if (int(pm.group(3)), int(pm.group(4))) != (k, k * len(pts)):
+            raise ReportError(f"{label}: '{pm.group(1)} sweeps {pm.group(2)}' implies {k} combination(s) per point and "
+                              f"{k * len(pts)} cells, but the line states {pm.group(3)} and {pm.group(4)}")
+        out[pm.group(1)] = axes
+    return {**full, **out}
+
+
+def _study_cells(body: str, label: str, where: str, ncols: int, combos=None) -> dict:
+    """One RZ x CC table: {(rz, cc): cells}; every expected combination (default all 9) exactly once."""
+    combos = combos or [(r, c) for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS]
     lines = [ln for ln in body.splitlines() if ln.startswith("|")]
     if len(lines) < 3:
         raise ReportError(f"{label}: no RZ x CC table under '### {where}'")
@@ -106,10 +147,14 @@ def _study_cells(body: str, label: str, where: str, ncols: int) -> dict:
         if (c[0], c[1]) in out:
             raise ReportError(f"{label}: duplicate cell RZ {c[0]}, CC {c[1]} under '### {where}'")
         out[(c[0], c[1])] = c
-    missing = [(r, c) for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS if (r, c) not in out]
+    missing = [rc for rc in combos if rc not in out]
+    extra = [rc for rc in out if rc not in combos]
     if missing:
-        raise ReportError(f"{label}: '### {where}' is missing {len(missing)} of 9 RZ x CC cells "
+        raise ReportError(f"{label}: '### {where}' is missing {len(missing)} of {len(combos)} RZ x CC cells "
                           f"(first: RZ {missing[0][0]}, CC {missing[0][1]})")
+    if extra:
+        raise ReportError(f"{label}: '### {where}' has an RZ x CC cell outside the {len(combos)} this figure sweeps "
+                          f"(RZ {extra[0][0]}, CC {extra[0][1]})")
     return out
 
 
@@ -256,41 +301,86 @@ def extract_ssp_passive_study(text: str, label: str) -> dict:
         claims[key] = _claim(m, {"verdict": 2, "pass": 6, "total": 7, "fail": 8, "worst": 9, "wp": 10})
     if not figs:
         raise ReportError(f"{label}: no measured slew / swing / power verdict line in the record header")
+    axes = _ssp_axes(text, label, pts)
     hrx = re.compile(r"(Quiescent power|Slew rate.*?|Output swing) -- " + _PT + r" \(bound (<=|>=) ([\d.]+) (uW|V/us|Vpp)\)")
+    # a figure that sweeps neither passive axis (power, DR-0009) is one flat MOS/T/VDD table
+    frx = re.compile(r"(Quiescent power) \(passives typical; invariant to RZ and CC, DR-0009; bound (<=|>=) ([\d.]+) (uW|V/us|Vpp)\)")
     vals = {k: {} for k in figs}
     flags = {k: {} for k in figs}
     seen = set()
+
+    def _bound_check(key, heading, sense, bound, unit):
+        if (sense, float(bound), unit) != (figs[key]["sense"], figs[key]["bound_value"], figs[key]["unit"]):
+            raise ReportError(f"{label}: '### {heading}' states a bound other than its verdict line's "
+                              f"{figs[key]['bound_text']}")
+
     for heading, body in _study_sections(text, label):
+        fm = frx.fullmatch(heading)
+        if fm:
+            key = _ssp_key(fm.group(1))
+            if key not in figs:
+                raise ReportError(f"{label}: unexpected results table '### {heading}' (no matching verdict line)")
+            if axes[key]:
+                raise ReportError(f"{label}: '### {heading}' is the flat table of a figure that sweeps no passive axis, "
+                                  f"but the record says {key} sweeps RZ/CC")
+            if (key, None) in seen:
+                raise ReportError(f"{label}: duplicate results table '### {heading}'")
+            seen.add((key, None))
+            _bound_check(key, heading, fm.group(2), fm.group(3), fm.group(4))
+            lines = [ln for ln in body.splitlines() if ln.startswith("|")]
+            if len(lines) < 3:
+                raise ReportError(f"{label}: no MOS/T/VDD table under '### {heading}'")
+            for ln in lines[2:]:
+                c = split_cells(ln)
+                if len(c) != 5:
+                    raise ReportError(f"{label}: malformed row under '### {heading}': {ln.strip()}")
+                pm = re.fullmatch(_PT, f"{c[0]} / {c[1]} C / {c[2]} V")
+                if not pm or pm.groups() not in pts:
+                    raise ReportError(f"{label}: row under '### {heading}' is at a point not in the Points line: {ln.strip()}")
+                k = (pm.groups(), "typical", "typical")
+                if k in vals[key]:
+                    raise ReportError(f"{label}: duplicate row for {fmt_point(*pm.groups())} under '### {heading}'")
+                vals[key][k] = _study_value(c[3], label, heading)
+                flags[key][k] = c[4]
+            continue
         hm = hrx.fullmatch(heading)
         key = _ssp_key(hm.group(1)) if hm else None
         if key is None or key not in figs:
             raise ReportError(f"{label}: unexpected results table '### {heading}' (no matching verdict line)")
+        if not axes[key]:
+            raise ReportError(f"{label}: '### {heading}' is a per-point RZ x CC table, but the record says {key} sweeps "
+                              "neither passive axis")
         pt = hm.groups()[1:4]
         if pt not in pts:
             raise ReportError(f"{label}: results table '### {heading}' is at a point not in the Points line")
         if (key, pt) in seen:
             raise ReportError(f"{label}: duplicate results table '### {heading}'")
         seen.add((key, pt))
-        if (hm.group(5), float(hm.group(6)), hm.group(7)) != (figs[key]["sense"], figs[key]["bound_value"],
-                                                               figs[key]["unit"]):
-            raise ReportError(f"{label}: '### {heading}' states a bound other than its verdict line's "
-                              f"{figs[key]['bound_text']}")
-        for (rz, cc), c in _study_cells(body, label, heading, 5).items():
+        _bound_check(key, heading, hm.group(5), hm.group(6), hm.group(7))
+        for (rz, cc), c in _study_cells(body, label, heading, 5, _figure_combos(axes[key])).items():
             vals[key][(pt, rz, cc)] = _study_value(c[2], label, heading)
             flags[key][(pt, rz, cc)] = c[4]
     for key in figs:
-        missing = [p for p in pts if (key, p) not in seen]
+        if not axes[key]:
+            missing = [p for p in pts if (p, "typical", "typical") not in vals[key]]
+        else:
+            missing = [p for p in pts if (key, p) not in seen]
         if missing:
             raise ReportError(f"{label}: no {figs[key]['label']} results table for study point {fmt_point(*missing[0])}")
-    figures = {k: _study_figure(label, figs[k], _cell_order(vals[k], pts), flags[k], claims[k]) for k in figs}
+        if not axes[key] and (key, None) not in seen:
+            raise ReportError(f"{label}: no {figs[key]['label']} results table")
+    figures = {k: _study_figure(label, figs[k], _cell_order(vals[k], pts, _figure_combos(axes[k])), flags[k], claims[k])
+               for k in figs}
     return {"prov": prov, "points": pts, "figures": figures,
+            "figure_cells": {k: v["total"] for k, v in figures.items()},
             "not_measured": {k: "the study did not measure this figure" for k in ("power", "slew", "swing")
                              if k not in figs}}
 
 
-def _cell_order(vals: dict, pts: list) -> dict:
+def _cell_order(vals: dict, pts: list, combos=None) -> dict:
     """Cells in study order: point (Points line), then RZ, then CC (typical, best, worst)."""
-    return {(p, r, c): vals[(p, r, c)] for p in pts for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS}
+    combos = combos or [(r, c) for r in PASSIVE_LEVELS for c in PASSIVE_LEVELS]
+    return {(p, r, c): vals[(p, r, c)] for p in pts for r, c in combos}
 
 
 # --------------------------------------------------------------------------
@@ -1148,10 +1238,12 @@ SUPPLEMENTARY["step-response-follower"]["extract"] = extract_step_response_study
 FULL_STUDY_POINTS = 45  # 5 MOS corners x 3 temperatures x 3 supplies
 
 
-def study_scope(pts: list, expect: str | None = None) -> dict:
+def study_scope(pts: list, expect: str | None = None, figure_cells: dict | None = None) -> dict:
     """Scope of a side study from its stated points. A study is FULL only when its Points line
     is the complete 5 x 3 x 3 grid; `expect` ('full') makes a mismatch an error so a limited
-    record cannot be selected under a full-grid key (or the reverse)."""
+    record cannot be selected under a full-grid key (or the reverse). `figure_cells` (figure ->
+    cells actually run, from a per-figure-scoped record, DR-0009) replaces the uniform 3 x 3 count
+    when the figures ran different numbers of cells."""
     n = len(pts) * len(PASSIVE_LEVELS) ** 2
     mos = {p[0] for p in pts}
     full = (len(pts) == FULL_STUDY_POINTS and len(set(pts)) == FULL_STUDY_POINTS and len(mos) == 5
@@ -1161,6 +1253,15 @@ def study_scope(pts: list, expect: str | None = None) -> dict:
     if expect is not None and (expect == "full") != full:
         raise ReportError(f"side study scope mismatch: selected under a {expect!r} key but its Points line states "
                           f"{len(pts)} points ({'full' if full else 'limited'} scope)")
+    if figure_cells and set(figure_cells.values()) != {n}:
+        per = ", ".join(f"{k} {v}" for k, v in figure_cells.items())
+        grid = (f"FULL passive-by-PVT envelope: 5 MOS corners x 3 temperatures x 3 supplies ({len(pts)} MOS/T/VDD points)"
+                if full else f"{len(pts)} selected MOS/T/VDD points ({'; '.join(fmt_point(*p) for p in pts)})")
+        return {"points": [fmt_point(*p) for p in pts], "rz_levels": list(PASSIVE_LEVELS),
+                "cc_levels": list(PASSIVE_LEVELS), "cells": sum(figure_cells.values()), "figure_cells": dict(figure_cells),
+                "full_pvt_cross_product": False,
+                "text": (f"{grid}, each figure over the RZ x CC axes it responds to (DR-0009), the rest held at typical: "
+                         f"cells per figure {per}; not the uniform {n}-cell RZ x CC cross product at every point")}
     if full:
         return {"points": [fmt_point(*p) for p in pts], "rz_levels": list(PASSIVE_LEVELS),
                 "cc_levels": list(PASSIVE_LEVELS), "cells": n, "full_pvt_cross_product": True,
