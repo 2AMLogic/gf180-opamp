@@ -38,26 +38,23 @@ the GDS timestamp records) and written under layout/output_stage/.
 """
 import json
 import os
-import shutil
 import sys
 
 STAGE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(STAGE, "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "layout", "pilot", "tools"))
-import pilot  # noqa: E402  (reuse: num_um, schematic_cards, check_engine, control_tripped, layout_sha256_matches, klt, sha256_file, cut_ref, preflight_engine, measure_bbox_um, extracted_pins)
+import pilot  # noqa: E402  (reuse: num_um)
+import stage  # noqa: E402  (the shared 7-step stage pipeline, issue #445)
 
-PDK = "gf180mcuD"
-NETLIST = "design/netlist/opamp_two_stage.spice"
-DECK = "gf180mcu"
 CELL = "output_stage"
 
 #: instance card order as they appear in the schematic
 INSTANCES = ("XM6", "XM7", "XMB1", "XCC", "XRZ")
+#: the sub-block's interface ports. The shared pipeline splits this into the
+#: declared pin set extraction and LVS receive (so internal nets (nz) stay
+#: internal even though they carry a route label) and into the routed
+#: pins_labelled assertion.
 SUBNET_PORTS = "n2 vout ibias vdd vss"
-#: the sub-block's interface, derived from the declaration above. Extraction
-#: and LVS both receive it as the declared pin set, so internal nets (nz)
-#: stay internal even though they carry a route label.
-INTERFACE_PINS = SUBNET_PORTS.split()
 
 BLOCKS = (
     # id, generator, instances, mos flavor -- every size below is derived
@@ -249,217 +246,51 @@ def build_routed_request(placed_req, placed, gen_reports):
     return routed
 
 
-def main():
-    cards = pilot.schematic_cards()
-    for inst in INSTANCES:
-        if inst not in cards:
-            raise SystemExit("instance %s not found in %s" % (inst, NETLIST))
+#: the device-parameter compare per model: the MOS (W, L), the MIM's
+#: (C, A), the resistor's (L, W)
+COMPARE_PARAMETERS = {"nfet": ["W", "L"], "pfet": ["W", "L"],
+                      "cap_mim_2f0_m4m5_noshield": ["C", "A"],
+                      "ppolyf_u_1k": ["L", "W"]}
 
-    first_block = build_blocks(cards)[0]
-    pilot.preflight_engine(STAGE, first_block["generator"], first_block["params"])
+#: the non-MOS devices the extractor must report alongside the MOS fingers
+#: (fingers sum per bare flavor, derived from the cards by the pipeline)
+EXTRA_DEVICE_COUNTS = {"cap_mim_2f0_m4m5_noshield": 1, "ppolyf_u_1k": 1}
 
-    for d in ("gds", "ref", "evidence", "extracted"):
-        shutil.rmtree(os.path.join(STAGE, d), ignore_errors=True)
-        os.makedirs(os.path.join(STAGE, d))
+#: extraction deck option (the pilot's poly_res=1k); the pipeline also
+#: forwards it to the LVS request's layout deck_options
+DECK_OPTIONS = ("poly_res=1k",)
 
-    blocks = build_blocks(cards)
-    results = {"schema": "gf180-opamp.layout-output-stage.results/1",
-               "netlist": NETLIST, "pdk": PDK, "deck": DECK,
-               "instances": list(INSTANCES), "blocks": []}
 
-    # --- 1. per-block generation ------------------------------------------------
-    gen_reports = {}
-    for g in blocks:
-        gds = "gds/%s.gds" % g["id"]
-        rep, rc = pilot.klt(["gen", g["generator"], "--pdk", PDK,
-                             "--params", json.dumps(g["params"]),
-                             "--cell-name", "%s_%s" % (CELL, g["id"]),
-                             "-o", gds], STAGE, "evidence/%s.gen.json" % g["id"])
-        assert rc == 0, rep
-        pilot.check_engine(rep)
-        rep["gds_path"] = gds  # the report's absolute path is not stable
-        json.dump(rep, open(os.path.join(STAGE, "evidence/%s.gen.json" % g["id"]), "w"), indent=2)
-        gen_reports[g["id"]] = rep
-        results["blocks"].append({"id": g["id"], "generator": g["generator"],
-                                  "instances": g["instances"], "params": g["params"],
-                                  "bbox_um": rep["bbox_um"], "ports": len(rep["ports"])})
-        print("gen %-4s %-10s bbox %s" % (g["id"], g["generator"],
-              [round(rep["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")]), flush=True)
-
-    # --- 2. reference sub-netlist ------------------------------------------------
-    open(os.path.join(STAGE, "ref/%s.klt.spice" % CELL), "w").write(
-        pilot.cut_ref(INSTANCES, CELL, SUBNET_PORTS, REF_NOTE))
-
-    # --- 3. placed composition (connectivity validation; offsets feed routing) ---
-    connectivity = [{"net": net, "pins": [{"block": b, "port": p} for b, p in pins]}
-                    for net, pins in sorted(NET_PINS.items())]
-    placed_req = {
-        "schema": "klt.gen_compose.request/1",
-        "pdk": {"variant": PDK},
-        "blocks": [{"id": g["id"], "generator_report": "%s.gen.json" % g["id"]}
-                   for g in blocks],
-        "placement": PLACEMENT,
-        "connectivity": connectivity,
-        "pins": [dict(p) for p in PINS],
-        "options": {"cell_name": CELL, "output": "gds/%s.gds" % CELL},
-    }
-    json.dump(placed_req, open(os.path.join(STAGE, "evidence/%s.placed.request.json" % CELL), "w"), indent=2)
-    placed, rc = pilot.klt(["gen-compose", "evidence/%s.placed.request.json" % CELL],
-                           STAGE, "evidence/%s.placed.json" % CELL, ok_rc=(0, 3))
-    assert rc == 3, "placed compose: expected exit 3 (placed, nets open), got %d" % rc
-    assert placed["unrouted_nets"] == sorted(NET_PINS), placed["unrouted_nets"]
-    for net in placed["nets"]:
-        assert net["legs"][0].get("reason") == "routing not requested", net
-    print("compose placed  bbox %s  (routing not requested yet)" %
-          [round(placed["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")], flush=True)
-
-    # --- 4. routed composition (the deliverable) ---------------------------------
-    routed_req = build_routed_request(placed_req, placed, gen_reports)
-    json.dump(routed_req, open(os.path.join(STAGE, "evidence/%s.compose.request.json" % CELL), "w"), indent=2)
-    routed, rc = pilot.klt(["gen-compose", "evidence/%s.compose.request.json" % CELL],
-                           STAGE, "evidence/%s.compose.json" % CELL, ok_rc=(0, 3))
-    assert rc == 0, "routed compose rc %d: %s" % (rc, routed.get("error"))
-    assert routed["unrouted_nets"] == [], routed["unrouted_nets"]
-    for net in routed["nets"]:
-        assert net["status"] == "routed", net
-        for l in net["legs"]:
-            assert l.get("routed") is True, l
-    results["routed"] = {
-        "cell": CELL,
-        # gen-compose's bbox is the placement bounds only; the routed
-        # footprint is measured from the GDS after the compose (below)
-        "placement_bbox_um": routed["bbox_um"],
-        "unrouted_nets": routed["unrouted_nets"],
-        "pins_labelled": [p["net"] for p in routed["pins"]],
-        "nets": {n["net"]: {"status": n["status"],
-                            "route_length_um": round(sum(l["route_length_um"] for l in n["legs"]), 2),
-                            "legs": len(n["legs"])} for n in routed["nets"]},
-    }
-    rb = pilot.measure_bbox_um(os.path.join(STAGE, "gds/%s.gds" % CELL))
-    results["routed"]["bbox_um"] = rb
-    print("compose routed  placement bbox %s, routed GDS bbox %.2f x %.2f um  all %d nets routed" %
-          ([round(routed["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")],
-           rb["width"], rb["height"], len(routed["nets"])), flush=True)
-
-    # --- 5. DRC (the AC gate) ----------------------------------------------------
-    deck, _ = pilot.klt(["deck", "rules", "--deck", DECK], STAGE, "evidence/deck.rules.json")
-    drc, rc = pilot.klt(["drc", "gds/%s.gds" % CELL, "--deck", DECK, "--pdk", PDK],
-                        STAGE, "evidence/%s.drc.klt.json" % CELL, ok_rc=(0, 3))
-    cov = drc.get("coverage", {})
-    gds_sha = pilot.sha256_file(os.path.join(STAGE, "gds/%s.gds" % CELL))
-    results["routed"]["drc"] = {
-        "status": drc.get("status"), "violations": drc.get("violation_count"),
-        "rules_checked": len(cov.get("rules_checked", [])),
-        "rules_skipped": len(cov.get("rules_skipped", [])),
-        "layers_in_stream_without_rules": cov.get("layers_in_stream_without_rules"),
-        "deck_content_hash": deck.get("content_hash"),
-    }
-    results["routed"]["layout_sha256"] = gds_sha
-    assert drc.get("status") == "clean" and drc.get("violation_count") == 0, drc.get("status")
-    assert (drc.get("provenance") or {}).get("input") == {
-        "content_hash": "sha256:" + gds_sha, "role": "layout"}, drc.get("provenance")
-    print("drc clean: %d rules checked, %d skipped (%s)" %
-          (results["routed"]["drc"]["rules_checked"],
-           results["routed"]["drc"]["rules_skipped"],
-           deck.get("content_hash", "")[:22]), flush=True)
-
-    # --- 6. extract + LVS against the cut sub-netlist ---------------------------
-    ext, rc = pilot.klt(["extract", "gds/%s.gds" % CELL, "--deck", DECK, "--pdk", PDK,
-                         "--deck-option", "poly_res=1k",
-                         "--pins", ",".join(INTERFACE_PINS),
-                         "-o", "extracted/%s.klt.spice" % CELL],
-                        STAGE, "evidence/%s.extract.klt.json" % CELL, ok_rc=(0, 3))
-    assert ext.get("status") == "extracted", ext.get("status")
-    # expected device counts derive from the cards: fingers sum per flavor,
-    # one MIM, one resistor
-    want = {"cap_mim_2f0_m4m5_noshield": 1, "ppolyf_u_1k": 1}
-    for inst, (_, model, prm) in cards.items():
-        if inst not in INSTANCES:
-            continue
-        if model.startswith(("nfet", "pfet")):
-            key = model.split("_")[0]  # the extractor reports the bare flavor
-            want[key] = want.get(key, 0) + int(prm["nf"])
-    assert ext.get("device_counts") == want, (ext.get("device_counts"), want)
-    got_pins = pilot.extracted_pins(os.path.join(STAGE, "extracted/%s.klt.spice" % CELL))
-    assert sorted(got_pins) == sorted(INTERFACE_PINS), (got_pins, INTERFACE_PINS)
-    results["extract"] = {"status": ext.get("status"), "device_counts": ext.get("device_counts"),
-                          "pins": got_pins}
-
-    lvs_req = {
-        "schema": "klt.lvs.request/1", "engine": "klayout",
-        "layout": {"file": "../gds/%s.gds" % CELL, "deck": DECK, "top": CELL,
-                   "deck_options": {"poly_res": "1k"},
-                   "declared_pins": list(INTERFACE_PINS)},
-        "reference": {"netlist": "../ref/%s.klt.spice" % CELL, "top": CELL,
-                      "form": "subckt-call"},
-        "options": {"combine_devices": True,
-                    "compare_parameters": {"nfet": ["W", "L"], "pfet": ["W", "L"],
-                                           "cap_mim_2f0_m4m5_noshield": ["C", "A"],
-                                           "ppolyf_u_1k": ["L", "W"]}},
-    }
-    json.dump(lvs_req, open(os.path.join(STAGE, "evidence/%s.lvs.klt.request.json" % CELL), "w"), indent=2)
-    lvs, rc = pilot.klt(["lvs", "evidence/%s.lvs.klt.request.json" % CELL],
-                        STAGE, "evidence/%s.lvs.klt.json" % CELL, ok_rc=(0, 3))
-    results["lvs"] = {
-        "status": lvs.get("status"), "error_count": lvs.get("error_count"),
-        "mismatch_count": lvs.get("mismatch_count"),
-        "counts": lvs.get("counts"),
-        "category_error_counts": lvs.get("category_error_counts"),
-        "layout_sha256": (lvs.get("environment") or {}).get("layout_sha256"),
-    }
-    assert lvs.get("status") == "match" and lvs.get("error_count") == 0, lvs.get("status")
-    assert results["lvs"]["layout_sha256"] == gds_sha, "lvs envelope GDS sha mismatch"
-    print("lvs %s (errors %d, counts %s)" % (lvs.get("status"), lvs.get("error_count"),
-                                             lvs.get("counts")), flush=True)
-
-    # --- 7. negative control: same GDS, XCC c_width wrong in the reference -------
+def build_neg_control(cards, true_ref):
+    """build_neg_control hook for the shared pipeline: XCC's plate width
+    wrong in the reference copy only (see NEG_CONTROL); the GDS is never
+    touched."""
     nc = NEG_CONTROL
-    true_ref = open(os.path.join(STAGE, "ref/%s.klt.spice" % CELL)).read()
     true_value = cards[nc["instance"]][2][nc["param"]]
     tok = "%s=%s" % (nc["param"], true_value)
     assert tok in true_ref, tok
-    stem = "%s.negctl-%s" % (CELL, nc["param"])
-    open(os.path.join(STAGE, "ref/%s.klt.spice" % stem), "w").write(
-        "* NEGATIVE CONTROL for %s -- XCC %s deliberately %s (schematic %s).\n"
-        "* klt lvs must report a mismatch with a device.property error against\n"
-        "* the unchanged gds/%s.gds; a match would mean the (C, A) compare is\n"
-        "* insensitive to the plate size this slice claims it checks.\n%s"
-        % (CELL, nc["param"], nc["wrong"], true_value, CELL,
-           true_ref.replace(tok, "%s=%s" % (nc["param"], nc["wrong"]))))
-    nc_req = dict(lvs_req, reference=dict(lvs_req["reference"],
-                                          netlist="../ref/%s.klt.spice" % stem))
-    json.dump(nc_req, open(os.path.join(STAGE, "evidence/%s.lvs.klt.request.json" % stem), "w"), indent=2)
-    ncenv, rc = pilot.klt(["lvs", "evidence/%s.lvs.klt.request.json" % stem],
-                          STAGE, "evidence/%s.lvs.klt.json" % stem, ok_rc=(0, 3))
-    cec = ncenv.get("category_error_counts") or {}
-    ctl = {"altered_parameter": nc["param"],
-           "schematic_value": true_value, "control_value": nc["wrong"],
-           "parameters_compared": {"cap_mim_2f0_m4m5_noshield": ["C", "A"]},
-           "status": ncenv.get("status"), "error_count": ncenv.get("error_count"),
-           "category_error_counts": cec,
-           "device_property_errors": cec.get("device.property", 0),
-           "klt_exit_code": rc,
-           "layout_sha256": (ncenv.get("environment") or {}).get("layout_sha256"),
-           "layout_sha256_matches_positive":
-               pilot.layout_sha256_matches(ncenv.get("environment") or {},
-                                           lvs.get("environment") or {}),
-           "reference_netlist": "ref/%s.klt.spice" % stem,
-           "request": "evidence/%s.lvs.klt.request.json" % stem,
-           "evidence": "evidence/%s.lvs.klt.json" % stem}
-    ctl["tripped"] = pilot.control_tripped(ctl)
-    results["negative_control"] = ctl
-    if not ctl["tripped"]:
-        raise SystemExit("negative control did not trip: %s=%s gave status=%s, "
-                         "device.property errors=%d, layout unchanged=%s"
-                         % (nc["param"], nc["wrong"], ctl["status"],
-                            ctl["device_property_errors"],
-                            ctl["layout_sha256_matches_positive"]))
-    print("negctl c_width=%s: %s, device.property=%d, layout unchanged=%s"
-          % (nc["wrong"], ctl["status"], ctl["device_property_errors"],
-             ctl["layout_sha256_matches_positive"]), flush=True)
+    text = ("* NEGATIVE CONTROL for %s -- %s %s deliberately %s (schematic %s).\n"
+            "* klt lvs must report a mismatch with a device.property error against\n"
+            "* the unchanged gds/%s.gds; a match would mean the (C, A) compare is\n"
+            "* insensitive to the plate size this slice claims it checks.\n%s"
+            % (CELL, nc["instance"], nc["param"], nc["wrong"], true_value, CELL,
+               true_ref.replace(tok, "%s=%s" % (nc["param"], nc["wrong"]))))
+    return text, {"altered_parameter": nc["param"],
+                  "schematic_value": true_value, "control_value": nc["wrong"],
+                  "parameters_compared": {"cap_mim_2f0_m4m5_noshield": ["C", "A"]}}
 
-    json.dump(results, open(os.path.join(STAGE, "results.json"), "w"), indent=2)
-    print("results.json written", flush=True)
+
+def main():
+    stage.run_stage_pipeline(
+        stage_dir=STAGE, cell=CELL,
+        results_schema="gf180-opamp.layout-output-stage.results/1",
+        instances=INSTANCES, subnet_ports=SUBNET_PORTS, ref_note=REF_NOTE,
+        placement=PLACEMENT, net_pins=NET_PINS, pins=PINS, blocks_key="blocks",
+        build_blocks=build_blocks, build_routed_request=build_routed_request,
+        build_neg_control=build_neg_control, preflight_first_block=True,
+        extract_deck_options=DECK_OPTIONS,
+        extra_device_counts=EXTRA_DEVICE_COUNTS,
+        lvs_compare_parameters=COMPARE_PARAMETERS)
 
 
 if __name__ == "__main__":

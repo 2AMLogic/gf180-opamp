@@ -147,8 +147,10 @@ def cut_ref(instances, cell, ports, note_lines):
         else:
             raise SystemExit("instance %s not found in %s" % (inst, NETLIST))
     header = ("* schematic-derived sub-netlist for %s: %s cut mechanically from\n"
-              "* %s -- the five instance cards, unchanged.\n* (%s)\n"
-              % (cell, "+".join(instances), NETLIST, "\n* ".join(note_lines)))
+              "* %s -- the %s instance cards, unchanged.\n* (%s)\n"
+              % (cell, "+".join(instances), NETLIST,
+                 "five" if len(instances) == 5 else str(len(instances)),
+                 "\n* ".join(note_lines)))
     body = "\n".join([".subckt %s %s" % (cell, ports)] + out + [".ends"]) + "\n"
     return header + body
 

@@ -174,8 +174,10 @@ tap rings.
 ## Files
 
 - `regen.sh`, `tools/output_stage.py`: the recipe (the klayout engine identity is checked in scratch before any output directory is replaced, so a rejected run leaves the previous artifacts untouched) (imports the pilot's
-  `schematic_cards` / `num_um` / `check_engine` / `control_tripped` /
-  `layout_sha256_matches` — not forked)
+  leaf helpers and the shared 7-step stage pipeline
+  `layout/pilot/tools/stage.py` (#445); this tool keeps only the stage's
+  topology constants, block builder, routing plan and negative-control
+  mutator — not forked)
 - `gds/`: the five generated blocks + the composed, routed, labelled
   `output_stage.gds`
 - `ref/`: the schematic cut (five cards verbatim) + the negative control's
