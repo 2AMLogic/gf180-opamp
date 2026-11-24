@@ -6,6 +6,11 @@ Merged pull requests and closed issues recorded by Guide.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-24
+
+- **PR #443**: refactor: share the layout regen pin gate and stage-tool helpers
+- **Issue #439** (closed): Consolidate layout regen.sh pin wrappers and remaining duplicated stage-tool helpers
+
 ### 2026-11-23
 
 - **PR #437**: sim/harness: gzip-aware save_point_data/rederive_dat with .dat/.dat.gz round-trip tests
