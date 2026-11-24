@@ -37,27 +37,25 @@ block moves between runs. Everything is written under layout/first_stage/.
 import json
 import os
 import re
-import shutil
 import sys
 import tempfile
 
 FIRST = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(FIRST, "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "layout", "pilot", "tools"))
-import pilot  # noqa: E402  (reuse: num_um, schematic_cards, check_engine, control_tripped, layout_sha256_matches, klt, run, sha256_file, cut_ref, preflight_engine, measure_bbox_um, extracted_pins)
+import pilot  # noqa: E402  (reuse: num_um, klt)
+import stage  # noqa: E402  (the shared 7-step stage pipeline, issue #445)
 
 PDK = "gf180mcuD"
-NETLIST = "design/netlist/opamp_two_stage.spice"
-DECK = "gf180mcu"
 CELL = "first_stage"
 
 #: instance card order as they appear in the schematic
 INSTANCES = ("XM5", "XM1", "XM2", "XM3", "XM4")
+#: the sub-block's interface ports. The shared pipeline splits this into the
+#: declared pin set extraction and LVS receive (so the layout side sees the
+#: same port set as the reference .subckt) and into the routed pins_labelled
+#: assertion.
 SUBNET_PORTS = "vdd vss vinp vinn tail n1 n2 ibias"
-#: the sub-block's interface, derived from the declaration above. Extraction
-#: and LVS both receive it as the declared pin set so the layout side sees the
-#: same port set as the reference .subckt.
-INTERFACE_PINS = SUBNET_PORTS.split()
 
 GROUPS = (
     # id, generator, instances, mos flavor -- every size below is derived
@@ -142,11 +140,10 @@ def min_col_pitch(params):
     minimum follows the unit extent, hence L): a sub-minimum override is
     clamped up to it and reported as `drc_hints.pitch.min_col_pitch_um`."""
     with tempfile.TemporaryDirectory() as tmp:
-        rep, rc = pilot.run(["klt", "gen", "diff_pair", "--pdk", PDK,
+        rep, rc = pilot.klt(["gen", "diff_pair", "--pdk", PDK,
                        "--params", json.dumps(dict(params, pitch_x_um=0.01)),
                        "--cell-name", "pitch_probe",
-                       "-o", os.path.join(tmp, "probe.gds"),
-                       "--format", "json"], FIRST)
+                       "-o", os.path.join(tmp, "probe.gds")], FIRST)
         assert rc == 0, rep
         pitch = (rep.get("drc_hints") or {}).get("pitch") or {}
         assert pitch.get("pitch_x_clamped") is True, pitch
@@ -342,190 +339,32 @@ def build_routed_request(placed_req, placed, gen_reports):
     return routed
 
 
-def main():
-    cards = pilot.schematic_cards()
-    for inst in INSTANCES:
-        if inst not in cards:
-            raise SystemExit("instance %s not found in %s" % (inst, NETLIST))
+#: the (W, L) device-parameter compare for the stage's MOS devices, shared
+#: by the positive LVS run and recorded by the negative control
+COMPARE_PARAMETERS = {"nfet": ["W", "L"], "pfet": ["W", "L"]}
 
-    pilot.preflight_engine(FIRST)
 
-    for d in ("gds", "ref", "evidence", "extracted"):
-        shutil.rmtree(os.path.join(FIRST, d), ignore_errors=True)
-        os.makedirs(os.path.join(FIRST, d))
+def check_group_gen(group, rep, entry):
+    """on_block_gen hook for the shared pipeline: the diff_pair pitch checks
+    on the generation report -- the widened pitch must be honoured, not
+    clamped, and must be exactly the generator's legal minimum plus
+    PITCH_MARGIN_UM. Adds the `pitch` field to the results entry and returns
+    the per-block print suffix."""
+    pitch = (rep.get("drc_hints") or {}).get("pitch")
+    if group["generator"] != "diff_pair":
+        return ""
+    # the override must have been honoured, not clamped
+    assert pitch and pitch.get("pitch_x_clamped") is False, pitch
+    assert abs(pitch["col_pitch_um"] - group["params"]["pitch_x_um"]) < 1e-9, pitch
+    assert abs(pitch["col_pitch_um"] - pitch["min_col_pitch_um"] - PITCH_MARGIN_UM) < 1e-9, pitch
+    entry["pitch"] = pitch
+    return "  col pitch %s (min %s)" % (pitch["col_pitch_um"], pitch["min_col_pitch_um"])
 
-    groups = build_groups(cards)
-    results = {"schema": "gf180-opamp.layout-first-stage.results/1",
-               "netlist": NETLIST, "pdk": PDK, "deck": DECK,
-               "instances": list(INSTANCES), "groups": []}
 
-    # --- 1. per-group generation ------------------------------------------------
-    gen_reports = {}
-    for g in groups:
-        gds = "gds/%s.gds" % g["id"]
-        rep, rc = pilot.klt(["gen", g["generator"], "--pdk", PDK,
-                       "--params", json.dumps(g["params"]),
-                       "--cell-name", "%s_%s" % (CELL, g["id"]),
-                       "-o", gds], FIRST, "evidence/%s.gen.json" % g["id"])
-        assert rc == 0, rep
-        pilot.check_engine(rep)
-        rep["gds_path"] = gds  # the report's absolute path is not stable
-        json.dump(rep, open(os.path.join(FIRST, "evidence/%s.gen.json" % g["id"]), "w"), indent=2)
-        gen_reports[g["id"]] = rep
-        entry = {"id": g["id"], "generator": g["generator"], "instances": g["instances"],
-                 "params": g["params"], "bbox_um": rep["bbox_um"], "ports": len(rep["ports"])}
-        pitch = (rep.get("drc_hints") or {}).get("pitch")
-        if g["generator"] == "diff_pair":
-            # the override must have been honoured, not clamped
-            assert pitch and pitch.get("pitch_x_clamped") is False, pitch
-            assert abs(pitch["col_pitch_um"] - g["params"]["pitch_x_um"]) < 1e-9, pitch
-            assert abs(pitch["col_pitch_um"] - pitch["min_col_pitch_um"] - PITCH_MARGIN_UM) < 1e-9, pitch
-            entry["pitch"] = pitch
-        results["groups"].append(entry)
-        print("gen %-5s %-9s bbox %s%s" % (g["id"], g["generator"],
-              [round(rep["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")],
-              "  col pitch %s (min %s)" % (pitch["col_pitch_um"], pitch["min_col_pitch_um"])
-              if pitch else ""), flush=True)
-
-    # --- 2. reference sub-netlist ------------------------------------------------
-    open(os.path.join(FIRST, "ref/first_stage.klt.spice"), "w").write(
-        pilot.cut_ref(INSTANCES, CELL, SUBNET_PORTS, REF_NOTE))
-
-    # --- 3. placed composition (connectivity validation; offsets feed routing) ---
-    connectivity = [{"net": net, "pins": [{"block": b, "port": p} for b, p in pins]}
-                    for net, pins in sorted(NET_PINS.items())]
-    placed_req = {
-        "schema": "klt.gen_compose.request/1",
-        "pdk": {"variant": PDK},
-        "blocks": [{"id": g["id"], "generator_report": "%s.gen.json" % g["id"]}
-                   for g in groups],
-        "placement": PLACEMENT,
-        "connectivity": connectivity,
-        "pins": [dict(p) for p in PINS],
-        "options": {"cell_name": CELL, "output": "gds/%s.gds" % CELL},
-    }
-    json.dump(placed_req, open(os.path.join(FIRST, "evidence/first_stage.placed.request.json"), "w"), indent=2)
-    placed, rc = pilot.klt(["gen-compose", "evidence/first_stage.placed.request.json"], FIRST,
-                     "evidence/first_stage.placed.json", ok_rc=(0, 3))
-    assert rc == 3, "placed compose: expected exit 3 (placed, nets open), got %d" % rc
-    assert placed["unrouted_nets"] == sorted(NET_PINS), placed["unrouted_nets"]
-    for net in placed["nets"]:
-        assert net["legs"][0].get("reason") == "routing not requested", net
-    results["placed"] = {
-        "note": "declare-only connectivity validation (routing omitted): every "
-                "multi-terminal net is validated and reported open, as expected",
-        "bbox_um": placed["bbox_um"],
-        "unrouted_nets": placed["unrouted_nets"],
-        "pins_labelled": [p["net"] for p in placed["pins"]],
-    }
-    print("compose placed  bbox %s  (%d nets validated, routing not requested)" %
-          ([round(placed["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")], len(placed["nets"])),
-          flush=True)
-
-    # --- 4. routed composition (the deliverable) ---------------------------------
-    routed_req = build_routed_request(placed_req, placed, gen_reports)
-    json.dump(routed_req, open(os.path.join(FIRST, "evidence/first_stage.compose.request.json"), "w"), indent=2)
-    routed, rc = pilot.klt(["gen-compose", "evidence/first_stage.compose.request.json"], FIRST,
-                     "evidence/first_stage.compose.json", ok_rc=(0, 3))
-    assert rc == 0, "routed compose rc %d: unrouted %s, error %s" % (
-        rc, routed.get("unrouted_nets"), routed.get("error"))
-    assert routed["unrouted_nets"] == [], routed["unrouted_nets"]
-    for net in routed["nets"]:
-        assert net["status"] == "routed", net
-        for l in net["legs"]:
-            assert l.get("routed") is True, l
-    pins_labelled = [p["net"] for p in routed["pins"]]
-    results["routed"] = {
-        "cell": CELL,
-        # gen-compose's bbox is the placement bounds only; the routed
-        # footprint is measured from the GDS after the compose (below)
-        "placement_bbox_um": routed["bbox_um"],
-        "unrouted_nets": routed["unrouted_nets"],
-        "pins_labelled": pins_labelled,
-        "nets": {n["net"]: {"status": n["status"], "plane": NET_PLANE[n["net"]],
-                            "route_length_um": round(sum(l["route_length_um"] for l in n["legs"]), 2),
-                            "legs": len(n["legs"])} for n in routed["nets"]},
-    }
-    assert sorted(set(pins_labelled)) == sorted(INTERFACE_PINS), pins_labelled
-    assert len(pins_labelled) == len(INTERFACE_PINS), pins_labelled
-    rb = pilot.measure_bbox_um(os.path.join(FIRST, "gds/%s.gds" % CELL))
-    results["routed"]["bbox_um"] = rb
-    print("compose routed  placement bbox %s, routed GDS bbox %.2f x %.2f um  all %d nets routed, pins %s" %
-          ([round(routed["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")],
-           rb["width"], rb["height"], len(routed["nets"]), pins_labelled), flush=True)
-
-    # --- 5. DRC (the AC gate) ----------------------------------------------------
-    deck, _ = pilot.klt(["deck", "rules", "--deck", DECK], FIRST, "evidence/deck.rules.json")
-    drc, rc = pilot.klt(["drc", "gds/%s.gds" % CELL, "--deck", DECK, "--pdk", PDK], FIRST,
-                  "evidence/first_stage.drc.klt.json", ok_rc=(0, 3))
-    cov = drc.get("coverage", {})
-    gds_sha = pilot.sha256_file(os.path.join(FIRST, "gds/%s.gds" % CELL))
-    results["routed"]["drc"] = {
-        "status": drc.get("status"), "violations": drc.get("violation_count"),
-        "rules_checked": len(cov.get("rules_checked", [])),
-        "rules_skipped": len(cov.get("rules_skipped", [])),
-        "layers_in_stream_without_rules": cov.get("layers_in_stream_without_rules"),
-        "deck_content_hash": deck.get("content_hash"),
-    }
-    results["routed"]["layout_sha256"] = gds_sha
-    if not (drc.get("status") == "clean" and drc.get("violation_count") == 0):
-        for v in (drc.get("violations") or [])[:12]:
-            print("DRC %s: %s" % (v.get("rule"), json.dumps(v)[:400]), flush=True)
-    assert drc.get("status") == "clean" and drc.get("violation_count") == 0, drc.get("status")
-    assert (drc.get("provenance") or {}).get("input") == {
-        "content_hash": "sha256:" + gds_sha, "role": "layout"}, drc.get("provenance")
-    print("drc clean: %d rules checked, %d skipped (%s)" %
-          (results["routed"]["drc"]["rules_checked"],
-           results["routed"]["drc"]["rules_skipped"],
-           deck.get("content_hash", "")[:22]), flush=True)
-
-    # --- 6. extract + LVS against the cut sub-netlist ---------------------------
-    ext, rc = pilot.klt(["extract", "gds/%s.gds" % CELL, "--deck", DECK, "--pdk", PDK,
-                   "--pins", ",".join(INTERFACE_PINS),
-                   "-o", "extracted/%s.klt.spice" % CELL], FIRST,
-                  "evidence/first_stage.extract.klt.json", ok_rc=(0, 3))
-    assert ext.get("status") == "extracted", ext.get("status")
-    # expected device counts derive from the cards: fingers sum per flavor
-    want = {}
-    for inst in INSTANCES:
-        model = cards[inst][1]
-        want[model.split("_")[0]] = want.get(model.split("_")[0], 0) + int(cards[inst][2]["nf"])
-    assert ext.get("device_counts") == want, (ext.get("device_counts"), want)
-    got_pins = pilot.extracted_pins(os.path.join(FIRST, "extracted/%s.klt.spice" % CELL))
-    assert sorted(got_pins) == sorted(INTERFACE_PINS), (got_pins, INTERFACE_PINS)
-    results["extract"] = {"status": ext.get("status"), "device_counts": ext.get("device_counts"),
-                          "pins": got_pins}
-
-    lvs_req = {
-        "schema": "klt.lvs.request/1", "engine": "klayout",
-        "layout": {"file": "../gds/%s.gds" % CELL, "deck": DECK, "top": CELL,
-                   "declared_pins": list(INTERFACE_PINS)},
-        "reference": {"netlist": "../ref/first_stage.klt.spice", "top": CELL,
-                      "form": "subckt-call"},
-        "options": {"combine_devices": True,
-                    "compare_parameters": {"nfet": ["W", "L"], "pfet": ["W", "L"]}},
-    }
-    json.dump(lvs_req, open(os.path.join(FIRST, "evidence/first_stage.lvs.klt.request.json"), "w"), indent=2)
-    lvs, rc = pilot.klt(["lvs", "evidence/first_stage.lvs.klt.request.json"], FIRST,
-                  "evidence/first_stage.lvs.klt.json", ok_rc=(0, 3))
-    results["lvs"] = {
-        "status": lvs.get("status"), "error_count": lvs.get("error_count"),
-        "mismatch_count": lvs.get("mismatch_count"),
-        "counts": lvs.get("counts"),
-        "category_error_counts": lvs.get("category_error_counts"),
-        "layout_sha256": (lvs.get("environment") or {}).get("layout_sha256"),
-    }
-    if not (lvs.get("status") == "match" and lvs.get("error_count") == 0):
-        for m in (lvs.get("mismatches") or [])[:12]:
-            print("LVS %s: %s" % (m.get("category"), json.dumps(m)[:400]), flush=True)
-    assert lvs.get("status") == "match" and lvs.get("error_count") == 0, lvs.get("status")
-    assert results["lvs"]["layout_sha256"] == gds_sha, "lvs envelope GDS sha mismatch"
-    print("lvs %s (errors %d, counts %s)" % (lvs.get("status"), lvs.get("error_count"),
-                                             lvs.get("counts")), flush=True)
-
-    # --- 7. negative control: same GDS, XM1 w wrong in the reference -------------
+def build_neg_control(cards, true_ref):
+    """build_neg_control hook for the shared pipeline: XM1's width doubled in
+    the reference copy only (see NEG_CONTROL); the GDS is never touched."""
     nc = NEG_CONTROL
-    true_ref = open(os.path.join(FIRST, "ref/first_stage.klt.spice")).read()
     true_value = cards[nc["instance"]][2][nc["param"]]
     assert nc["double"], nc
     wrong = "%gu" % (pilot.num_um(true_value) * 2)  # '3.6u' -> '7.2u'
@@ -534,48 +373,27 @@ def main():
     tok = re.compile(r"(?im)^(%s\s[^\n]*?\b%s=)%s(?=\s)"
                      % (re.escape(nc["instance"]), re.escape(nc["param"]), re.escape(true_value)))
     assert len(tok.findall(true_ref)) == 1, tok.pattern
-    stem = "%s.negctl-%s" % (CELL, nc["param"])
-    open(os.path.join(FIRST, "ref/%s.klt.spice" % stem), "w").write(
-        "* NEGATIVE CONTROL for %s -- %s %s deliberately %s (schematic %s).\n"
-        "* klt lvs must report a mismatch with a device.property error against\n"
-        "* the unchanged gds/%s.gds; a match would mean the (W, L) compare is\n"
-        "* insensitive to the diff_pair's splits-folded width.\n%s"
-        % (CELL, nc["instance"], nc["param"].upper(), wrong, true_value, CELL,
-           tok.sub(r"\g<1>%s" % wrong, true_ref)))
-    nc_req = dict(lvs_req, reference=dict(lvs_req["reference"],
-                                          netlist="../ref/%s.klt.spice" % stem))
-    json.dump(nc_req, open(os.path.join(FIRST, "evidence/%s.lvs.klt.request.json" % stem), "w"), indent=2)
-    ncenv, rc = pilot.klt(["lvs", "evidence/%s.lvs.klt.request.json" % stem], FIRST,
-                    "evidence/%s.lvs.klt.json" % stem, ok_rc=(0, 3))
-    cec = ncenv.get("category_error_counts") or {}
-    ctl = {"altered_instance": nc["instance"], "altered_parameter": nc["param"],
-           "schematic_value": true_value, "control_value": wrong,
-           "parameters_compared": {"nfet": ["W", "L"], "pfet": ["W", "L"]},
-           "status": ncenv.get("status"), "error_count": ncenv.get("error_count"),
-           "category_error_counts": cec,
-           "device_property_errors": cec.get("device.property", 0),
-           "klt_exit_code": rc,
-           "layout_sha256": (ncenv.get("environment") or {}).get("layout_sha256"),
-           "layout_sha256_matches_positive":
-               pilot.layout_sha256_matches(ncenv.get("environment") or {},
-                                           lvs.get("environment") or {}),
-           "reference_netlist": "ref/%s.klt.spice" % stem,
-           "request": "evidence/%s.lvs.klt.request.json" % stem,
-           "evidence": "evidence/%s.lvs.klt.json" % stem}
-    ctl["tripped"] = pilot.control_tripped(ctl)
-    results["negative_control"] = ctl
-    if not ctl["tripped"]:
-        raise SystemExit("negative control did not trip: %s=%s gave status=%s, "
-                         "device.property errors=%d, layout unchanged=%s"
-                         % (nc["param"], wrong, ctl["status"],
-                            ctl["device_property_errors"],
-                            ctl["layout_sha256_matches_positive"]))
-    print("negctl %s=%s: %s, device.property=%d, layout unchanged=%s"
-          % (nc["param"], wrong, ctl["status"], ctl["device_property_errors"],
-             ctl["layout_sha256_matches_positive"]), flush=True)
+    text = ("* NEGATIVE CONTROL for %s -- %s %s deliberately %s (schematic %s).\n"
+            "* klt lvs must report a mismatch with a device.property error against\n"
+            "* the unchanged gds/%s.gds; a match would mean the (W, L) compare is\n"
+            "* insensitive to the diff_pair's splits-folded width.\n%s"
+            % (CELL, nc["instance"], nc["param"].upper(), wrong, true_value, CELL,
+               tok.sub(r"\g<1>%s" % wrong, true_ref)))
+    return text, {"altered_instance": nc["instance"], "altered_parameter": nc["param"],
+                  "schematic_value": true_value, "control_value": wrong,
+                  "parameters_compared": COMPARE_PARAMETERS}
 
-    json.dump(results, open(os.path.join(FIRST, "results.json"), "w"), indent=2)
-    print("results.json written", flush=True)
+
+def main():
+    stage.run_stage_pipeline(
+        stage_dir=FIRST, cell=CELL,
+        results_schema="gf180-opamp.layout-first-stage.results/1",
+        instances=INSTANCES, subnet_ports=SUBNET_PORTS, ref_note=REF_NOTE,
+        placement=PLACEMENT, net_pins=NET_PINS, pins=PINS, blocks_key="groups",
+        build_blocks=build_groups, build_routed_request=build_routed_request,
+        build_neg_control=build_neg_control, on_block_gen=check_group_gen,
+        record_placed=True, net_plane=NET_PLANE,
+        lvs_compare_parameters=COMPARE_PARAMETERS)
 
 
 if __name__ == "__main__":

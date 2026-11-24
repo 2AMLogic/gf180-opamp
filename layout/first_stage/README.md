@@ -184,9 +184,11 @@ envelope has no `environment` block, not a missing hash.)
 
 ## Files
 
-- `regen.sh`, `tools/first_stage.py`: the recipe (imports the pilot's
-  `schematic_cards` / `num_um` / `check_engine` / `control_tripped` /
-  `layout_sha256_matches` — not forked)
+- `regen.sh`, `tools/first_stage.py`: the recipe (imports the pilot's leaf
+  helpers and the shared 7-step stage pipeline
+  `layout/pilot/tools/stage.py` (#445); this tool keeps only the stage's
+  topology constants, group builder, routing plan and negative-control
+  mutator — not forked)
 - `gds/`: the three generated groups + the composed, routed, labelled
   `first_stage.gds`
 - `ref/first_stage.klt.spice`: the mechanically cut reference sub-netlist;
