@@ -44,11 +44,10 @@ import tempfile
 FIRST = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(FIRST, "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "layout", "pilot", "tools"))
-import pilot  # noqa: E402  (reuse: num_um, schematic_cards, check_engine, control_tripped, layout_sha256_matches, klt, sha256_file, cut_ref)
+import pilot  # noqa: E402  (reuse: num_um, schematic_cards, check_engine, control_tripped, layout_sha256_matches, klt, run, sha256_file, cut_ref, preflight_engine, measure_bbox_um, extracted_pins)
 
 PDK = "gf180mcuD"
 NETLIST = "design/netlist/opamp_two_stage.spice"
-KLAYOUT_PIN = os.environ.get("PILOT_KLAYOUT_PIN")  # exported by regen.sh
 DECK = "gf180mcu"
 CELL = "first_stage"
 
@@ -135,23 +134,6 @@ NET_PLANE = {
 #: (W, L). XM1 is a diff_pair leg, so the control proves the composed LVS
 #: compares the splits-folded width against the schematic's single nf=2 W.
 NEG_CONTROL = {"instance": "XM1", "param": "w", "double": True}
-
-
-def preflight_engine():
-    """Check klt's klayout engine in scratch, before any output is replaced.
-
-    A rejected run must leave the previous gds/ ref/ extracted/ evidence/ and
-    results.json untouched, so the identity check cannot wait for the first
-    real `klt gen` (which only runs after those directories are wiped).
-    """
-    with tempfile.TemporaryDirectory() as tmp:
-        rep, rc = pilot.run(["klt", "gen", "mos_array", "--pdk", PDK,
-                       "--params", json.dumps({"w_um": 1.0, "l_um": 1.0, "fingers": 1}),
-                       "--cell-name", "preflight",
-                       "-o", os.path.join(tmp, "preflight.gds"),
-                       "--format", "json"], FIRST)
-        assert rc == 0, rep
-        pilot.check_engine(rep)
 
 
 def min_col_pitch(params):
@@ -360,39 +342,13 @@ def build_routed_request(placed_req, placed, gen_reports):
     return routed
 
 
-def measure_bbox_um(gds_path):
-    """Routed footprint: the committed GDS's own top-cell bounding box (um)."""
-    import klayout.db as kdb
-    ly = kdb.Layout()
-    ly.read(gds_path)
-    b = ly.top_cell().dbbox()
-    return {"x0": b.left, "y0": b.bottom, "x1": b.right, "y1": b.top,
-            "width": round(b.width(), 2), "height": round(b.height(), 2)}
-
-
-def extracted_pins(path):
-    """Terminal list of the extracted top .subckt (continuations joined)."""
-    toks = []
-    in_card = False
-    for line in open(path).read().splitlines():
-        if not in_card:
-            t = line.split()
-            if t and t[0].lower() == ".subckt":
-                toks, in_card = t[2:], True
-        elif line.startswith("+"):
-            toks += line[1:].split()
-        else:
-            break
-    return toks
-
-
 def main():
     cards = pilot.schematic_cards()
     for inst in INSTANCES:
         if inst not in cards:
             raise SystemExit("instance %s not found in %s" % (inst, NETLIST))
 
-    preflight_engine()
+    pilot.preflight_engine(FIRST)
 
     for d in ("gds", "ref", "evidence", "extracted"):
         shutil.rmtree(os.path.join(FIRST, d), ignore_errors=True)
@@ -492,7 +448,7 @@ def main():
     }
     assert sorted(set(pins_labelled)) == sorted(INTERFACE_PINS), pins_labelled
     assert len(pins_labelled) == len(INTERFACE_PINS), pins_labelled
-    rb = measure_bbox_um(os.path.join(FIRST, "gds/%s.gds" % CELL))
+    rb = pilot.measure_bbox_um(os.path.join(FIRST, "gds/%s.gds" % CELL))
     results["routed"]["bbox_um"] = rb
     print("compose routed  placement bbox %s, routed GDS bbox %.2f x %.2f um  all %d nets routed, pins %s" %
           ([round(routed["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")],
@@ -535,7 +491,7 @@ def main():
         model = cards[inst][1]
         want[model.split("_")[0]] = want.get(model.split("_")[0], 0) + int(cards[inst][2]["nf"])
     assert ext.get("device_counts") == want, (ext.get("device_counts"), want)
-    got_pins = extracted_pins(os.path.join(FIRST, "extracted/%s.klt.spice" % CELL))
+    got_pins = pilot.extracted_pins(os.path.join(FIRST, "extracted/%s.klt.spice" % CELL))
     assert sorted(got_pins) == sorted(INTERFACE_PINS), (got_pins, INTERFACE_PINS)
     results["extract"] = {"status": ext.get("status"), "device_counts": ext.get("device_counts"),
                           "pins": got_pins}
