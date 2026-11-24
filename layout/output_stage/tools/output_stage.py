@@ -40,16 +40,14 @@ import json
 import os
 import shutil
 import sys
-import tempfile
 
 STAGE = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(STAGE, "..", ".."))
 sys.path.insert(0, os.path.join(REPO, "layout", "pilot", "tools"))
-import pilot  # noqa: E402  (reuse: num_um, schematic_cards, check_engine, control_tripped, layout_sha256_matches, klt, run, sha256_file, cut_ref)
+import pilot  # noqa: E402  (reuse: num_um, schematic_cards, check_engine, control_tripped, layout_sha256_matches, klt, sha256_file, cut_ref, preflight_engine, measure_bbox_um, extracted_pins)
 
 PDK = "gf180mcuD"
 NETLIST = "design/netlist/opamp_two_stage.spice"
-KLAYOUT_PIN = os.environ.get("PILOT_KLAYOUT_PIN")  # exported by regen.sh
 DECK = "gf180mcu"
 CELL = "output_stage"
 
@@ -251,55 +249,14 @@ def build_routed_request(placed_req, placed, gen_reports):
     return routed
 
 
-def preflight_engine(block):
-    """Check klt's klayout engine in scratch, before any output is replaced.
-
-    A rejected run must leave the previous gds/ ref/ extracted/ evidence/ and
-    results.json untouched, so the identity check cannot wait for the first
-    real `klt gen` (which only runs after those directories are wiped).
-    """
-    with tempfile.TemporaryDirectory() as tmp:
-        rep, rc = pilot.klt(["gen", block["generator"], "--pdk", PDK,
-                             "--params", json.dumps(block["params"]),
-                             "--cell-name", "preflight",
-                             "-o", os.path.join(tmp, "preflight.gds")], STAGE)
-        assert rc == 0, rep
-        pilot.check_engine(rep)
-
-
-def measure_bbox_um(gds_path):
-    """Routed footprint: the committed GDS's own top-cell bounding box (um)."""
-    import klayout.db as kdb
-    ly = kdb.Layout()
-    ly.read(gds_path)
-    b = ly.top_cell().dbbox()
-    return {"x0": b.left, "y0": b.bottom, "x1": b.right, "y1": b.top,
-            "width": round(b.width(), 2), "height": round(b.height(), 2)}
-
-
-def extracted_pins(path):
-    """Terminal list of the extracted top .subckt (continuations joined)."""
-    toks = []
-    in_card = False
-    for line in open(path).read().splitlines():
-        if not in_card:
-            t = line.split()
-            if t and t[0].lower() == ".subckt":
-                toks, in_card = t[2:], True
-        elif line.startswith("+"):
-            toks += line[1:].split()
-        else:
-            break
-    return toks
-
-
 def main():
     cards = pilot.schematic_cards()
     for inst in INSTANCES:
         if inst not in cards:
             raise SystemExit("instance %s not found in %s" % (inst, NETLIST))
 
-    preflight_engine(build_blocks(cards)[0])
+    first_block = build_blocks(cards)[0]
+    pilot.preflight_engine(STAGE, first_block["generator"], first_block["params"])
 
     for d in ("gds", "ref", "evidence", "extracted"):
         shutil.rmtree(os.path.join(STAGE, d), ignore_errors=True)
@@ -378,7 +335,7 @@ def main():
                             "route_length_um": round(sum(l["route_length_um"] for l in n["legs"]), 2),
                             "legs": len(n["legs"])} for n in routed["nets"]},
     }
-    rb = measure_bbox_um(os.path.join(STAGE, "gds/%s.gds" % CELL))
+    rb = pilot.measure_bbox_um(os.path.join(STAGE, "gds/%s.gds" % CELL))
     results["routed"]["bbox_um"] = rb
     print("compose routed  placement bbox %s, routed GDS bbox %.2f x %.2f um  all %d nets routed" %
           ([round(routed["bbox_um"][k], 2) for k in ("x0", "y0", "x1", "y1")],
@@ -423,7 +380,7 @@ def main():
             key = model.split("_")[0]  # the extractor reports the bare flavor
             want[key] = want.get(key, 0) + int(prm["nf"])
     assert ext.get("device_counts") == want, (ext.get("device_counts"), want)
-    got_pins = extracted_pins(os.path.join(STAGE, "extracted/%s.klt.spice" % CELL))
+    got_pins = pilot.extracted_pins(os.path.join(STAGE, "extracted/%s.klt.spice" % CELL))
     assert sorted(got_pins) == sorted(INTERFACE_PINS), (got_pins, INTERFACE_PINS)
     results["extract"] = {"status": ext.get("status"), "device_counts": ext.get("device_counts"),
                           "pins": got_pins}

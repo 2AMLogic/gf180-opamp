@@ -25,6 +25,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 
 PILOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 REPO = os.path.abspath(os.path.join(PILOT, "..", ".."))
@@ -116,7 +117,7 @@ def klt(args, cwd, out_path=None, ok_rc=(0,)):
 
 def klt_json(args, out_path, ok_rc=(0,)):
     """Run a klt verb with --format json, store stdout verbatim, return parsed."""
-    return run(["klt"] + args + ["--format", "json"], PILOT, out_path, ok_rc)
+    return klt(args, PILOT, out_path, ok_rc)
 
 
 def sha256_file(path):
@@ -169,6 +170,54 @@ def check_engine(rep):
             "klt's klayout engine is %s, want %s: install klayout==%s into the same "
             "environment as the klt on PATH (regen.sh pins it as KLAYOUT_PIN)."
             % (got, KLAYOUT_PIN, KLAYOUT_PIN))
+
+
+def preflight_engine(cwd, generator="mos_array", params=None):
+    """Check klt's klayout engine in scratch, before any output is replaced.
+
+    A rejected run must leave the previous gds/ ref/ extracted/ evidence/ and
+    results.json untouched, so the identity check cannot wait for the first
+    real `klt gen` (which only runs after those directories are wiped).  With
+    no explicit probe the scratch probe is the pilot's one-unit mos_array;
+    the output stage passes its first block's own generator and params.
+    """
+    if params is None:
+        params = {"w_um": 1.0, "l_um": 1.0, "fingers": 1}
+    with tempfile.TemporaryDirectory() as tmp:
+        rep, rc = klt(["gen", generator, "--pdk", PDK,
+                       "--params", json.dumps(params),
+                       "--cell-name", "preflight",
+                       "-o", os.path.join(tmp, "preflight.gds")], cwd)
+        assert rc == 0, rep
+        check_engine(rep)
+
+
+def measure_bbox_um(gds_path):
+    """Routed footprint: the committed GDS's own top-cell bounding box (um)."""
+    import klayout.db as kdb
+    ly = kdb.Layout()
+    ly.read(gds_path)
+    b = ly.top_cell().dbbox()
+    return {"x0": b.left, "y0": b.bottom, "x1": b.right, "y1": b.top,
+            "width": round(b.width(), 2), "height": round(b.height(), 2)}
+
+
+def extracted_pins(path):
+    """Terminal list of the extracted top .subckt (continuations joined)."""
+    with open(path) as f:
+        lines = f.read().splitlines()
+    toks = []
+    in_card = False
+    for line in lines:
+        if not in_card:
+            t = line.split()
+            if t and t[0].lower() == ".subckt":
+                toks, in_card = t[2:], True
+        elif line.startswith("+"):
+            toks += line[1:].split()
+        else:
+            break
+    return toks
 
 
 def lvs_request(cell, gds, ref_path, opts):
