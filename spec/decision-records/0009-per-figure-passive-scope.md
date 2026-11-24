@@ -86,6 +86,25 @@ and 42 of 81 per limited-scope run (39 retained: 3 + 27 + 9).
 
 ## Verification
 
-The reduced full-scope run (`sim/slew-swing-power/records/` entry referenced in
-the carrying PR) is compared cell by cell against `20261018-142357-91dab49`;
-the reduced run must reproduce the original values for every cell it keeps.
+The reduced full-scope run is record
+`sim/slew-swing-power/records/20261123-213924-a25bbbc.md`. It is compared cell
+by cell against `20261018-142357-91dab49` (its `Comparison to
+20261018-142357-91dab49` bullet is the authoritative statement). The criterion
+met, per figure, is:
+
+- power: 45/45 `.dat` files byte-identical and 45/45 printed values identical
+  to the corresponding original cells.
+- swing: 135/135 `.dat` files byte-identical and 135/135 printed values
+  identical to the corresponding original cells.
+- slew (full 3 x 3 kept, 405 cells; compared across the ngspice-42 ->
+  ngspice-47 toolchain move): 402/405 printed values identical to 2 decimals;
+  3/405 differ by 0.01 V/us (<= 0.066 % relative), all in `ff / -40 C`
+  (named in the record's comparison bullet). All 405 cells pass the ratified
+  >= 10 V/us bound with >= 4.25 V/us margin.
+
+The bit-for-bit criterion validates the coverage reduction, i.e. the axes
+dropped for power and swing; those are exactly the cells that reproduce
+byte-for-byte. Slew's coverage is not reduced, so its comparison is a
+cross-toolchain reproducibility observation and not evidence for or against
+per-figure scoping. The slew deviation is accepted (reviewer ruling on PR
+#441); no bound or verdict moves, and `spec/target-spec.md` is unchanged.
