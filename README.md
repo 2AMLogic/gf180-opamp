@@ -51,8 +51,12 @@ below:
   the same five corners x 300 samples at 27 C / 3.30 V) beside them as
   separate, ungraded information. Their numeric bounds are
   not ratified.
-- **Not yet measured:** post-layout verification (no layout evidence; area is
-  open).
+- **Layout evidence.** The routed first stage and output stage (including
+  compensation) each pass the curated DRC deck and match their schematic
+  sub-netlists under LVS. Full-core integration, area measurement and
+  post-layout verification remain open.
+  [First-stage results](layout/first_stage/results.json) ·
+  [Output-stage results](layout/output_stage/results.json)
 
 The selected 45-point records use typical passives; they do not sweep RZ/CC.
 Two 27-cell passive-corner screening studies on the retuned design (RZ and CC

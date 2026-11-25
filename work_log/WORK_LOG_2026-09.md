@@ -2,6 +2,22 @@
 
 Sections moved byte-for-byte from [WORK_LOG.md](../WORK_LOG.md) by `loom-daemon work-docs archive`.
 
+### 2026-09-23
+
+- **Issue #16** (closed): Champion: Merge-Risk Hold Digest
+
+### 2026-09-22
+
+- **PR #29**: feat: add integrator view and spec consumers section for fleet reuse
+- **Issue #27** (closed): 2am: reuse rule 9 — name this block's consumers in the spec, carry their requirement rows, publish the integrator view as data
+
+### 2026-09-21
+
+- **PR #26**: spec: ratify target-spec.md — partial ratification via DR-3
+- **PR #25**: feat: add a klt signoff block manifest as the graded T1 verdict of record
+- **Issue #24** (closed): spec: ratify target-spec.md — it is DRAFT, which blocks T1 item 5 (and items 6/7/8 that grade against its rows)
+- **Issue #23** (closed): Commit a klt signoff block manifest so this block's T1 state is graded, not hand-read
+
 ### 2026-09-15
 
 - **PR #22**: Add sim/gain-gbw-pm/: first circuit-level spec-row testbench with a one-command driver
