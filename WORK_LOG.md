@@ -8,6 +8,8 @@ Merged pull requests and closed issues recorded by Guide.
 
 ### 2026-11-24
 
+- **PR #446**: layout: hoist the shared 7-step stage pipeline into pilot/tools
+- **Issue #445** (closed): Hoist the duplicated 7-step layout stage pipeline shared by first_stage and output_stage
 - **PR #443**: refactor: share the layout regen pin gate and stage-tool helpers
 - **Issue #439** (closed): Consolidate layout regen.sh pin wrappers and remaining duplicated stage-tool helpers
 
@@ -408,20 +410,4 @@ Merged pull requests and closed issues recorded by Guide.
 - **PR #33**: ci: pin actions/checkout to a commit digest in signoff.yml
 - **Issue #34** (closed): ngspice solver-tolerance convention: keep the default (coordination from sg13g2-opamp DR-0005)
 - **Issue #32** (closed): Pin actions/checkout to a digest so PR #28's Renovate quarantine actually binds
-
-### 2026-09-23
-
-- **Issue #16** (closed): Champion: Merge-Risk Hold Digest
-
-### 2026-09-22
-
-- **PR #29**: feat: add integrator view and spec consumers section for fleet reuse
-- **Issue #27** (closed): 2am: reuse rule 9 — name this block's consumers in the spec, carry their requirement rows, publish the integrator view as data
-
-### 2026-09-21
-
-- **PR #26**: spec: ratify target-spec.md — partial ratification via DR-3
-- **PR #25**: feat: add a klt signoff block manifest as the graded T1 verdict of record
-- **Issue #24** (closed): spec: ratify target-spec.md — it is DRAFT, which blocks T1 item 5 (and items 6/7/8 that grade against its rows)
-- **Issue #23** (closed): Commit a klt signoff block manifest so this block's T1 state is graded, not hand-read
 
