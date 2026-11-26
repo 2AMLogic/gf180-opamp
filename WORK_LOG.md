@@ -6,6 +6,10 @@ Merged pull requests and closed issues recorded by Guide.
 
 - [2026-09](work_log/WORK_LOG_2026-09.md)
 
+### 2026-11-26
+
+- **Issue #214** (closed): Remove Loom guard/sweep docs and scripts unrelated to opamp design (~1,060 LOC)
+
 ### 2026-11-24
 
 - **PR #446**: layout: hoist the shared 7-step stage pipeline into pilot/tools
