@@ -220,8 +220,11 @@ The 45-point grid pairs every MOS corner with `res_typical` / `mimcap_typical`.
 `--passive-corners` is an opt-in side study that measures slew, swing and
 quiescent power across independent RZ (`res_typical/ff/ss`) x CC
 (`mimcap_typical/ff/ss`) sections at the three binding points the gain study
-used (fs / 125 C / 2.97 V, ss / 125 C / 2.97 V, typical / 27 C / 3.30 V): 27
-cells per figure, one `klt sim` corner-matrix request per figure (batch fleet on
+used (fs / 125 C / 2.97 V, ss / 125 C / 2.97 V, typical / 27 C / 3.30 V). Since
+DR-0009 (issue #322) each figure sweeps only the passive axes it responds to,
+the rest held at `typical`: slew RZ x CC (27 cells at this scope), swing RZ
+only (9), power neither (3), 39 of the uniform 3x3's 81. One `klt sim`
+corner-matrix request per figure (batch fleet on
 dispatch workers; a refused submit is reported and no record is written, never
 a local grid). The slew number is a transient measurement, not the analytic
 1/CC scaling in the gain study. Each cell's generated deck is checked to load
@@ -234,10 +237,12 @@ helpers live in `sim/passive_corners.py`, shared with the gain driver.
 
 `--passive-scope limited` (the default) is the three-point study above and is
 unchanged. `--passive-scope full` crosses all 5 MOS corners x 3 temperatures x
-3 supplies (the 45-point grid) with the 9 independent RZ x CC combinations:
-405 cells per figure, one `klt sim` corner-matrix request per figure (no
-`exclude`; the process axis carries the 45 MOS x RZ x CC names). The runner
-requires exactly the 405 expected keys (missing, duplicated and unexpected
+3 supplies (the 45-point grid), each figure over the independent RZ x CC axes it
+responds to (DR-0009): slew 405 cells, swing 135,
+power 45, 585 of the uniform 3x3's 1215 (630 saved). One `klt sim` corner-matrix
+request per figure (no `exclude`; the process axis carries the MOS x RZ x CC
+names). The runner requires exactly each figure's expected keys (405 / 135 / 45;
+missing, duplicated and unexpected
 cells are errors), checks every generated deck against the sections its name
 encodes, and writes no record unless every requested figure is complete. The
 sweep is deterministic (no Monte Carlo seeds) and is not partitioned: each
